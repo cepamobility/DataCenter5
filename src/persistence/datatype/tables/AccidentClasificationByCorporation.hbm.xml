@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.datatype.tables" >
+    <class name="AccidentClasificationByCorporation" table="AccidentClasificationByCorporation">
+	 	<id column="id" name="id">
+            <generator class="sequence"> 
+            	<param name="sequence">AccidentClasificationByCorporation_Sequence</param>
+            </generator>
+        </id>
+        <property	name="resourceBundleId" type="java.lang.String" column="resourceBundleId"/>                		        		
+        <property	name="corporationId" type="integer" column="corporationId"/>                		        		        
+        <property 	name="active" />
+
+   </class>
+</hibernate-mapping>

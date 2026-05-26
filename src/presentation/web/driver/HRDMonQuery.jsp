@@ -1,0 +1,237 @@
+<%@page language="java"
+	import="business.*"
+	import="communication.language.*"
+	import="communication.util.*"
+	import="java.util.*"
+	import="presentation.translator.web.util.*"
+	import="presentation.translator.web.driver.*"
+	import="communication.driver.tables.*"
+	import="communication.security.*"
+	import="communication.administration.corporation.tables.*"
+    errorPage="../exception.jsp"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html" 
+%>
+
+<%@ taglib uri="/WEB-INF/struts-bean.tld"
+        prefix="bean" 
+%>
+<%!
+	RequestDispatcher dispatcher; 
+	Text messages; String pathLanguage;
+	SystemAccess sys; DriverData data; 
+%> 
+<%
+ 	sys = (SystemAccess)session.getAttribute("SystemAccess");
+  	int corporationId = sys.getUserSessionData().getFilter().getCorporationId().intValue();
+  	String check = null;
+      check = Util.checkPermission(sys,SecurityConstants.HRD_BRASIL_QUERY);
+  	if(check!=null) {
+  		response.sendRedirect(request.getContextPath()+check);
+  	}else{
+  		messages=sys.getText();
+  		// Para mensajes de error:
+  		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+  		dispatcher.include(request,response);
+  		// Fin mensajes de error.
+  		
+  		Collection count = new LinkedList();
+  		for(int i = 1; i < 6; i++) {
+  	count.add(new OptionItem(String.valueOf(i),String.valueOf(i)));	    
+  		}
+  		session.setAttribute("count",count);
+  		
+  		Collection format = new LinkedList();
+  		format.add(new OptionItem("HTML","HTML"));	    
+  		format.add(new OptionItem("PDF","PDF"));	    
+  		format.add(new OptionItem("XLS","XLS"));	    
+  		session.setAttribute("format",format);
+  	
+  		session.setAttribute("url","driver/HRDMonQuery.jsp");
+  		
+  		if(session.getAttribute("DriverHRDQueryForm") == null) {
+  		    DriverHRDQueryForm form = new DriverHRDQueryForm();
+  		    session.setAttribute("DriverHRDQueryForm",form);
+  		}
+  		
+  		Collection years = new LinkedList();
+  	    years.add(new OptionItem("",""));
+  		for(int i = 1998; i <= 2050; i++) {
+  	years.add(new OptionItem(String.valueOf(i),String.valueOf(i)));
+  		}
+  		session.setAttribute("years",years);
+  		
+  		Collection months = new LinkedList();
+  	    months.add(new OptionItem("",""));
+  		for(int i = 1; i <= 12; i++) { 
+  		    months.add(new OptionItem(messages.getText("generic.month."+String.valueOf(i)),String.valueOf(i)));
+  		}
+  		session.setAttribute("months",months);
+  		String status = String.valueOf(DriverData.ACTIVE);
+  		
+  		Collection reportType = new LinkedList();
+  		reportType.add(new OptionItem(messages.getText("generic.vehicle.reportType.resumed"),DriverData.RESUMED));	    
+  		reportType.add(new OptionItem(messages.getText("generic.vehicle.reportType.detailedhrd"),DriverData.DETAILED_HRD_EVENTS));	
+  		reportType.add(new OptionItem(messages.getText("generic.vehicle.reportType.detailedall"),DriverData.DETAILED_ALL_EVENTS));	
+  		
+  		session.setAttribute("reportType",reportType);
+ %>
+
+<script>
+	function changeCombo(radio,combo) {
+		var el = document.forms[2].elements[radio];
+		document.forms[2].elements[combo].disabled = !el[2].checked;
+	}
+</script>
+<script>
+function changeType(value){
+	document.forms[2].type.value = value;
+
+}
+</script>
+<script language="javascript" src='./menu/js/driverFunctions.js' type='text/javascript' >
+</script>
+
+<html:html>
+
+	<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	<head/>
+
+	<body bgcolor="#FFFFFF">
+		<html:form action="/DriverHRDMonQuery">			
+			<table width="600" border="0" align="center" cellpadding="0" cellspacing="0">
+				<tr class="guide1">
+					<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText("query.hrdmon.title")%>' />
+  				</tr>
+	      		<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+      			</tr>
+	      		<tr>
+    	    		<td width="49%" valign="top">
+						<table width="100%" border="0" cellpadding="0" cellspacing="0">
+							<tr>
+								<td>
+									<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.personaldata")%>' />
+									<table width="100%" border="0" cellpadding="0" cellspacing="0">
+										<tr class="linetwo">
+        									<th align="left">
+												<%=messages.getText("generic.driver.driverdata.firstname")%>
+											</th>
+											<td align="right">
+												<html:text property="firstname" size="25" styleClass="input" />    
+											</td>
+										</tr>  
+										<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr class="linetwo">
+        									<th align="left">
+												<%=messages.getText("generic.driver.driverdata.lastname")%>
+											</th>
+											<td align="right">
+												<html:text property="lastname" size="25" styleClass="input" />    
+											</td>
+										</tr> 
+										<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+											<td colspan="2"  align="right" class="texts">
+												<table>
+													<tr class="linetwo">
+								                        <td valign="middle"> 
+								                          	<input type="radio" class="input2" name="status" value='<%=DriverData.ACTIVE%>' <%=(Integer.parseInt(status) == DriverData.ACTIVE) ? "checked" : ""%>><span class="input2"><%=messages.getText("generic.messages.active")%></span>
+														</td>													
+							                        	<td valign="middle"> 
+							                          		<input type="radio" class="input2" name="status" value='<%=DriverData.EXCLUDED%>' <%=(Integer.parseInt(status) == DriverData.EXCLUDED) ? "checked" : ""%>><span class="input2"><%=messages.getText("generic.messages.excluded")%></span>
+														</td>
+							                        	<td valign="middle"> 
+							                          		<input type="radio" class="input2" name="status" value='<%=DriverData.ALL%>' <%=(Integer.parseInt(status) == DriverData.ALL) ? "checked" : ""%>><span class="input2"><%=messages.getText("generic.messages.all.pl")%></span>
+														</td>
+													</tr>
+												</table>
+											</td>
+										</tr> 
+										<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+						        		<tr>
+											<td colspan="2" align="left" class="texts">
+												<table>
+													<tr class="linetwo">
+        												<th align="left">
+        													<%=messages.getText("driver.hrd.includeinevitable")%>
+														</th>
+														<td align="right">
+															<html:select property="avoidable" styleClass="input" >
+																<html:option value="false"><%=messages.getText("generic.messages.no")%></html:option>
+																<html:option value="true"><%=messages.getText("generic.messages.yes")%></html:option>
+															</html:select>    
+														</td>
+													</tr>
+												</table>
+											</td>
+										</tr>	
+									</table>
+									<jsp:include  page="../component/utilityboxbottom.jsp" />
+								</td>
+							</tr>
+				      		<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+			      			</tr>
+			      			<tr>
+				    			<td valign="top">
+									<table width="100%" border="0" cellpadding="0" cellspacing="0">
+										<jsp:include page='<%="/util/divgeo"+sys.getUserSessionData().getFilter().getGeoLevelCount()+".jsp?form=DriverHRDMonQueryForm&consult=true"%>' />
+									</table>
+								</td>
+							</tr>
+						</table>
+					</td>
+    				<td width="2%">&nbsp;</td>
+    				<td width="49%" valign="top">
+						<table width="100%" border="0" cellpadding="0" cellspacing="0">
+						<jsp:include page='<%="/util/divorg.jsp?form=DriverHRDMonQueryForm&consult=true"%>' />
+						</table>
+					</td>
+  				</tr>
+	      		<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+      			</tr>
+				<tr>
+					<td align="left" class="texts" colspan="3">
+						<jsp:include  page="../component/utilitybox4top.jsp" />
+							<table width="100%" class="texts1" border="0" cellpadding="0" cellspacing="0">
+								<tr class="lineone">
+									<td align="left" class="lineone">
+										<span class="input"><b><%=messages.getText("generic.messages.output")%></b></span>&nbsp;
+									</td>
+									<td align="left" class="lineone">
+										<html:select property="output" styleClass="input" >
+											<html:options collection="format" property="value" labelProperty="label"/>
+										</html:select>							          				
+									</td>
+									<td align="left" class="lineone" width="90%">&nbsp;</td>
+								</tr>
+								<tr class="lineone">
+									<td align="left" class="lineone">
+										<span class="input"><b><%=messages.getText("generic.messages.type")%></b></span>&nbsp;
+									</td>
+									<td align="left" class="lineone">
+										<html:select property="reportType" styleClass="input">
+											<html:options collection="reportType" property="value" labelProperty="label"/>
+										</html:select>							          				
+									</td>
+									<td align="right"  class="lineone" width="90%">
+										<html:submit styleClass="input" value='<%=messages.getText("generic.messages.consult")%>' />
+									</td>
+								</tr>
+							</table>
+						<jsp:include  page="../component/utilitybox4bottom.jsp" />
+					</td>			
+				</tr>
+			</table>
+		</html:form>
+	
+<%@ include  file = '../util/jsp/googleanalytics.jsp' %>	
+	</body>
+</html:html>
+<% 
+	}  // Fin del control de seguridad y permisos.
+%>

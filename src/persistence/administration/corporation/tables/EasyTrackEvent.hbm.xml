@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.administration.corporation.tables" >
+
+	<class name="EasyTrackEvent" table="easytrackevents">
+		<id column="id" name="id" type="java.lang.Long">
+            <generator class="sequence">
+            	<param name="sequence">EasyTrackEvents_Sequence</param>
+            </generator>
+		</id>
+		<property 	name="ci" 	type="java.lang.String" column="ci" />
+		<property name="driver"	column="driver" type="java.lang.Integer" />
+		<property name="vehicle"	column="vehicle" type="java.lang.Integer" />
+	   	<property 	name="fechaHora" 	type="java.sql.Timestamp"  column="fechaHora"/>
+   		<property 	name="matricula" 	type="java.lang.String" column="matricula" />
+   		<property 	name="empresa" 	type="java.lang.String" column="empresa" />
+   		<property 	name="dEvento" 	type="java.lang.String" column="devento" />
+   		<property name="velDef"	column="velDef" type="java.lang.Integer" />
+   		<property name="velGps"	column="velGps" type="java.lang.Integer" />
+   		<property name="velVehiculo"	column="velVehiculo" type="java.lang.Integer" />
+   		<property name="Viaje"	column="Viaje" type="java.lang.Long" />
+   		<property name="IdReporte"	column="idreporte" type="java.lang.Long" />
+   		
+  	</class>
+</hibernate-mapping>

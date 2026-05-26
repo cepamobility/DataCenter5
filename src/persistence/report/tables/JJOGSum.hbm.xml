@@ -1,0 +1,56 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.report.tables">
+    <class name="JJOGSum" table="jjogsum">
+
+        <id	column="id"	name="id"	type="java.lang.Integer">
+            <generator class="sequence">
+            	<param name="sequence">JJReports_og_Sequence</param>
+            </generator>
+        </id>
+        
+        <property	name="lineLabel"	type="java.lang.String"		column="lineLabel"		not-null="true" />
+        
+        <property	name="operatingGroup"	type="java.lang.String"		column="operatingGroup"		not-null="true" />
+    
+        <property	name="order"	type="java.lang.Integer"		column="lineorder"		not-null="true" />
+    
+	    <property	name="averageVehicles"	type="java.lang.Integer"		column="averageVehicles"		not-null="true" />
+    
+        <property	name="totalMiles"	type="java.lang.Double"		column="totalMiles"		not-null="true" />
+	    
+	    <property	name="salesMiles"	type="java.lang.Double"		column="salesMiles"		not-null="true" />
+	    
+	    <property	name="nonSalesMiles"	type="java.lang.Double"		column="nonSalesMiles"		not-null="true" />
+	    
+	    <property	name="drivers"	type="java.lang.Integer"		column="drivers"		not-null="true" />
+	
+	    <property	name="averageMiles"	type="java.lang.Double"		column="averageMiles"		not-null="true" />
+	
+	    <property	name="totalCrashes"	type="java.lang.Integer"		column="totalCrashes"		not-null="true" />
+	    <property	name="salesCrashes"	type="java.lang.Integer"		column="salesCrashes"		not-null="true" />
+	    <property	name="nonSalesCrashes"	type="java.lang.Integer"		column="nonSalesCrashes"		not-null="true" />
+	
+	    <property	name="cpmm"	type="java.lang.Double"		column="cpmm"		not-null="true" />
+	    <property	name="salesCpmm"	type="java.lang.Double"		column="salesCpmm"		not-null="true" />
+	    <property	name="nonSalesCpmm"	type="java.lang.Double"		column="nonSalesCpmm"		not-null="true" />
+	
+	    <property	name="annualizedProjection"	type="java.lang.Double"		column="annualizedProjection"		not-null="true" />
+	
+	    <property	name="totalIncidents"	type="java.lang.Integer"		column="totalIncidents"		not-null="true" />
+	
+	    <property	name="injured"	type="java.lang.Integer"		column="injured"		not-null="true" />
+	    <property	name="salesInjured"	type="java.lang.Integer"		column="salesInjured"		not-null="true" />
+	    <property	name="nonSalesInjured"	type="java.lang.Integer"		column="nonSalesInjured"		not-null="true" />
+	
+	    <property	name="ipmm"	type="java.lang.Double"		column="ipmm"		not-null="true" />
+	    <property	name="salesIpmm"	type="java.lang.Double"		column="salesIpmm"		not-null="true" />
+	    <property	name="nonSalesIpmm"	type="java.lang.Double"		column="nonSalesIpmm"		not-null="true" />
+	 
+	    <many-to-one name="snapshot" column="snapshot" not-null="true"/>
+	    
+    </class>
+</hibernate-mapping>

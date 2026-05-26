@@ -1,0 +1,5398 @@
+package presentation.translator.web.event;
+
+
+import java.rmi.RemoteException;
+import java.sql.Time;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.LinkedList;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.struts.action.ActionMapping;
+
+import presentation.translator.web.driver.DriverDivOrgForm;
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.CountryData;
+import communication.administration.corporation.tables.DivOrgData;
+import communication.administration.corporation.tables.GeoItemData;
+import communication.administration.corporation.tables.ItemData;
+import communication.administration.user.UserSessionData;
+import communication.datatype.tables.AccidentClasificationDataType;
+import communication.datatype.tables.AccidentFactorsDataType;
+import communication.datatype.tables.CirculationDirectionDataType;
+import communication.datatype.tables.ClimateDataType;
+import communication.datatype.tables.CollisionClasificationDataType;
+import communication.datatype.tables.ConditionRoutDataType;
+import communication.datatype.tables.IncidentClasificationDataType;
+import communication.datatype.tables.LightingDataType;
+import communication.datatype.tables.PavementDataType;
+import communication.datatype.tables.TrafficControlDataType;
+import communication.datatype.tables.TypeVehicleDataType;
+import communication.datatype.tables.VehicleBehaviourDataType;
+import communication.datatype.tables.WayDataType;
+import communication.datatype.tables.ZoneDataType;
+import communication.driver.tables.DriverData;
+import communication.event.tables.EventDataType;
+import communication.event.tables.VehicleInvolvedDataType;
+import communication.vehicle.tables.VehicleData;
+
+/**
+ * @author jrodriguez
+ */
+public class EventForm extends DriverDivOrgForm {
+
+    private static final long serialVersionUID = 1L;
+
+    public static final String ACCIDENT = "0";
+    public static final String INCIDENT = "1";
+    public static final String NEARMISS = "2";
+
+    private String id;
+	private String driverid;
+
+    private String status;
+    private String state;
+
+    private String city;
+
+    private String vehicleId;
+
+    private String vehicleplate;
+    private String vehicletrade;
+    private String vehiclemodel;
+    private String vehicleyear;
+    private String vehiclecompanycar;
+    private String vehicleeconomicnumber;
+    
+    /* Agregado para Forestales */
+    private String vehicletype;
+    /* fin Agregado para Forestales */
+    
+    private String date;
+	private String month;
+	private String year;
+    
+    private String nodatahour;  
+    private String hour;  
+    private String minute;
+
+    private String zone;
+    private String working;
+    /* Agregado para FOSA */
+    private String workingHours; 
+    /* Fin Agregado para FOSA */
+    private String policeReport;
+    
+    private String damage;
+        
+    private String description;
+
+    private String clasification;
+    private String clasification1;
+    private String clasification2;
+    private String clasification3;
+    private String clasificationText;
+    
+    private String collision;
+    
+    private String handle;
+
+    private String hitrun;
+
+    private String principalFactor;
+    
+    private String distractor;
+    private String distractorOption1;
+    private String distractorOption2;
+    private String distractorOption3;
+    private String distractorOption4;
+    private String distractorOption5;
+    private String distractorOption6;
+    
+    private String factortooclose;
+    private String factorhighspeed;
+    private String factorsigns;
+    private String factorturn;
+    private String factorlight;
+    private String factorstop;
+    private String factorsleep;
+    private String factordistraction;
+    private String factorother;
+    private String factorchangelane;
+    private String factoralcohol;
+    private String factorovertaking;
+    private String factorConcience;
+    private String factorOtherParking;
+    private String factorOtherCrossing;
+    private String factorOtherStanding;
+    private String factorMecanicFail;
+    
+    private String collisionangle;
+
+    private String maxspeed;
+    private String collisionspeed;
+    private String vehiclespeed;
+    private String reportedspeed;
+    private String speedunit;
+
+    private String selfbelt;
+    private String alcohol;
+    private String cellular;
+    private String othervehicles;
+
+
+    private String driverstate;
+    private String dayslost;
+    private String otherpartydayslost;
+    private String fatalitiesfunccount;
+    private String fatalitiesothercount;
+    private String injuredfunccount;
+    private String injuredothercount;
+    private String safefunccount;
+    private String safeothercount;
+    private String cost;
+    private String carCost;
+
+    private String damage1;
+    private String damage2;
+    private String damage3;
+    private String damage4;
+    private String damage5;
+    private String damage6;
+    private String damage7;
+    private String damage8;
+    private String damage9;
+    private String damage10;
+
+    private String monsantoClasification;
+    
+    
+    /* Forestales */
+    private String damage11, damage12, damage13, damage14, damage15, damage16,
+    	damage17, damage18, damage19, damage20, damage21, damage22, damage23, 
+    	damage24, damage25, damage26, damage27, damage28, damage29, damage30,
+    	damage31, damage32, damage33, damage34, damage35, damage36, damage37,
+    	damage38, damage39, damage40, damage41, damage42;
+    /* Fin forestales */
+    private String doubleCabin; 
+    
+    
+    private String lighting;
+    private String condition;
+    private String direction;
+    private String way;
+    private String control;
+    private String controlMultiple;
+    private String controlMultipleOption1;
+    private String controlMultipleOption2;
+    private String controlMultipleOption3;
+    private String controlMultipleOption4;
+    private String controlMultipleOption5;
+    private String controlMultipleOption6;
+    private String controlMultipleOption7;
+    private String controlMultipleOption8;
+    
+    private String pavement;
+    private String climate;
+
+    private String vehiclecount;
+
+    private String vehicleInvolvedId1;
+    private String vehicleInvolvedId2;
+    private String vehicleInvolvedId3;
+    private String vehicleInvolvedId4;
+    private String vehicleInvolvedId5;
+
+    private String vehicleType1;
+    private String vehicleType2;
+    private String vehicleType3;
+    private String vehicleType4;
+    private String vehicleType5;
+    
+    private String behaviourType1;
+    private String behaviourType2;
+    private String behaviourType3;
+    private String behaviourType4;
+    private String behaviourType5;
+    
+    private String hitrun1;
+    private String hitrun2;
+    private String hitrun3;
+    private String hitrun4;
+    private String hitrun5;
+
+    private String principalFactor1;
+    private String principalFactor2;
+    private String principalFactor3;
+    private String principalFactor4;
+    private String principalFactor5;
+
+    private String factortooclose1;
+    private String factorhighspeed1;
+    private String factorsigns1;
+    private String factorturn1;
+    private String factorlight1;
+    private String factorstop1;
+    private String factorother1;
+    private String factorchangelane1;
+    private String factoralcohol1;
+    private String factorovertaking1;
+    private String factorConcience1;
+    private String factorsleep1;
+    private String factordistraction1;
+    private String factorOtherParking1;
+    private String factorOtherCrossing1;
+    private String factorOtherStanding1;
+
+    private String factortooclose2;
+    private String factorhighspeed2;
+    private String factorsigns2;
+    private String factorturn2;
+    private String factorlight2;
+    private String factorstop2;
+    private String factorother2;
+    private String factorchangelane2;
+    private String factoralcohol2;
+    private String factorovertaking2;
+    private String factorConcience2;
+    private String factorsleep2;
+    private String factordistraction2;
+    private String factorOtherParking2;
+    private String factorOtherCrossing2;
+    private String factorOtherStanding2;
+    
+    private String factortooclose3;
+    private String factorhighspeed3;
+    private String factorsigns3;
+    private String factorturn3;
+    private String factorlight3;
+    private String factorstop3;
+    private String factorother3;
+    private String factorchangelane3;
+    private String factoralcohol3;
+    private String factorovertaking3;
+    private String factorConcience3;
+    private String factorsleep3;
+    private String factordistraction3;
+    private String factorOtherParking3;
+    private String factorOtherCrossing3;
+    private String factorOtherStanding3;
+
+    private String factortooclose4;
+    private String factorhighspeed4;
+    private String factorsigns4;
+    private String factorturn4;
+    private String factorlight4;
+    private String factorstop4;
+    private String factorother4;
+    private String factorchangelane4;
+    private String factoralcohol4;
+    private String factorovertaking4;
+    private String factorConcience4;
+    private String factorsleep4;
+    private String factordistraction4;
+    private String factorOtherParking4;
+    private String factorOtherCrossing4;
+    private String factorOtherStanding4;
+
+    private String factortooclose5;
+    private String factorhighspeed5;
+    private String factorsigns5;
+    private String factorturn5;
+    private String factorlight5;
+    private String factorstop5;
+    private String factorother5;
+    private String factorchangelane5;
+    private String factoralcohol5;
+    private String factorovertaking5;
+    private String factorConcience5;
+    private String factorsleep5;
+    private String factordistraction5;
+    private String factorOtherParking5;
+    private String factorOtherCrossing5;
+    private String factorOtherStanding5;
+
+    private String contact1;
+    private String contact2;
+    private String contact3;
+    private String contact4;
+    private String contact5;
+
+    private String pedestriancount;
+    private String pedestrian1;
+    private String pedestrian2;
+    private String pedestrian3;
+
+    private String pedestrianother1;
+    private String pedestrianother2;
+    private String pedestrianother3;
+    
+    private String comment;
+    protected String evitability;
+    private String recomendation;
+
+    private String supervisedClasification;    
+    private String supervisedCollision;
+
+    private String nonrecordable;
+    private String supervisionObservations;
+    private String loteMonth; // Allergan
+    private String loteYear; // Allergan
+    
+    
+    private String severity;
+
+    private String clasificationType;
+    
+    private String charged;
+    private String whoDrives;
+    private String damageCharge;
+    private String realCost;
+
+    private String alcoholBreath;
+    private String stoppedVehicle;
+
+    private String extracost1;
+    private String extracost2;
+    private String extracost3;
+    private String extracost4;
+    private String extracost5;
+    private String extracost6;
+    private String extracost7;
+    private String extracost8;
+    
+   	private String ensuranceDay;
+   	private String ensuranceMonth;
+   	private String ensuranceYear;
+
+   	private String companyAmount;
+   	private String driverAmount;
+   	private String thirdAmount;
+   	
+   	private String folioNumber; // cimsa
+   	private String sapNumber; // cimsa
+
+   	private String points;
+   	
+   	public EventForm() {
+        vehiclecount = "0";
+        pedestriancount = "0";
+        points="0";
+        
+    }
+    
+    /**
+     * @param driverid
+     */
+    public EventForm(DriverData driver) {
+        if(driver != null) {
+            this.driverid = String.valueOf(driver.getId());
+            vehiclecount = "0";
+            pedestriancount = "0";
+            points = "0";
+            setDivisionData(driver.getDivOrgsIterator(),(GeoItemData)driver.getCountry().getItemIterator().next());
+        }
+    }
+
+    /**
+     * @param driverid
+     */
+    public EventForm(EventDataType event,UserSessionData userSessionData) {
+        this.id = String.valueOf(event.getId());
+        this.driverid = String.valueOf(event.getDriver().getId());
+       
+        if (event.getPoints() == null){
+        	this.points = "0";
+        }else{
+        	this.points = String.valueOf(event.getPoints().intValue());
+        }
+        
+        this.state = event.getState();
+        
+        setDivisionData(event.getDivOrgs().iterator(),(GeoItemData)event.getCountry().getItemIterator().next());
+
+        city = event.getCity();
+
+        if(event.getVehicle() != null) {
+            vehicleId = String.valueOf(event.getVehicle().getId());            
+        }else {
+            vehicleplate = event.getPlate();
+            vehicletrade = event.getTrade();
+            if(vehicletrade.equals("Sin Datos")) {
+                vehicletrade = "generic.messages.nodata";
+            }
+            vehiclemodel = event.getModel();
+            vehicleyear = String.valueOf(event.getYear());
+            vehiclecompanycar = String.valueOf(event.getCompanyCar());
+            vehicleeconomicnumber = event.getEconomicNumber();
+        }
+        
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(event.getDate());
+        date = String.valueOf(calendar.get(Calendar.DAY_OF_MONTH));
+        month = String.valueOf(calendar.get(Calendar.MONTH) + 1);
+        year = String.valueOf(calendar.get(Calendar.YEAR));
+        
+        nodatahour = String.valueOf(event.getHour() == null);
+        if(event.getHour() != null) {
+            calendar.setTime(event.getHour());
+            hour = String.valueOf(calendar.get(Calendar.HOUR_OF_DAY));  
+            minute = String.valueOf(calendar.get(Calendar.MINUTE));
+        }
+
+        zone = event.getZone().getResourceBundleId();
+        if(event.getWorking() == null) {
+            working = "";
+        }else if(event.getWorking().equals("t")){
+            working = "generic.messages.yes";
+        }else if(event.getWorking().equals("t")){
+            working = "generic.messages.no";
+        }else {
+            working = event.getWorking();
+        }
+        policeReport = event.getPoliceReport();
+        
+        damage = String.valueOf(event.isDamage());
+            
+        description = event.getStory();
+
+        collision = event.getCollision().getResourceBundleId();
+        
+    	if(event.getAccident() != null) {
+    		clasification = event.getAccident().getResourceBundleId();
+        	clasificationType = ACCIDENT;
+    	}else if(event.getIncident() != null) {
+    		clasification = event.getIncident().getResourceBundleId();
+        	clasificationType = INCIDENT;
+    	}else{
+    		clasification = event.getNearmiss().getResourceBundleId();
+        	clasificationType = NEARMISS;
+    	}
+    	
+    	if(event.getClasification1()!=null){
+    		clasification1= event.getClasification1().getResourceBundleId();	
+    	}
+    	if(event.getClasification2()!=null){
+    		clasification2= event.getClasification2().getResourceBundleId();	
+    	}
+    	if(event.getClasification3()!=null){
+    		clasification3= event.getClasification3().getResourceBundleId();	
+    	}
+    	
+    	clasificationText=event.getClasificationText();
+    	
+        
+        handle = event.getHandle().getResourceBundleId();
+
+        hitrun = event.getHitrun();
+
+        if(event.getPrincipalFactor() != null)
+        	principalFactor = event.getPrincipalFactor().getResourceBundleId();
+        collisionangle = event.getCollisionAngle();
+
+        if(event.getMaxSpeed() != null) {
+            maxspeed = String.valueOf(event.getMaxSpeed());
+        }
+        if(event.getCollisionSpeed() != null) {
+            collisionspeed = String.valueOf(event.getCollisionSpeed());
+        }
+        if(event.getVehicleSpeed() != null) {
+            vehiclespeed = String.valueOf(event.getVehicleSpeed());
+        }
+        if(event.getReportedSpeed() != null) {
+            reportedspeed = String.valueOf(event.getReportedSpeed());
+        }
+        if(event.getSpeedUnit() != null) {
+            speedunit = String.valueOf(event.getSpeedUnit());
+        }
+
+        selfbelt = event.getSelfbelt();
+        alcohol = event.getAlcohol();
+        cellular = event.getCellular();
+        othervehicles = event.getOthervehicles();
+
+        driverstate = event.getDriverstate();
+        if(event.getDayslost() != null) {
+            dayslost = String.valueOf(event.getDayslost());
+        }
+        if(event.getOtherpartydayslost() != null) {
+            otherpartydayslost = String.valueOf(event.getOtherpartydayslost());
+        }
+        if(event.getFatalitiesfunccount() != null) {
+            fatalitiesfunccount = String.valueOf(event.getFatalitiesfunccount());
+        }
+        if(event.getFatalitiesothercount() != null) {
+            fatalitiesothercount = String.valueOf(event.getFatalitiesothercount());
+        }
+        if(event.getInjuredfunccount() != null) {
+            injuredfunccount = String.valueOf(event.getInjuredfunccount());
+        }
+        if(event.getInjuredothercount() != null) {
+            injuredothercount = String.valueOf(event.getInjuredothercount());
+        }
+        if(event.getSafefunccount() != null) {
+        	safefunccount = String.valueOf(event.getSafefunccount());
+        }
+        if(event.getSafeothercount() != null) {
+        	safeothercount = String.valueOf(event.getSafeothercount());
+        }
+        if(event.getCost() != null) {
+            cost = String.valueOf(event.getCost());
+        }
+        if(event.getCarCost() != null) {
+            carCost = String.valueOf(event.getCarCost());
+        }
+
+
+        damage1 = String.valueOf(event.isDamage1());
+        damage2 = String.valueOf(event.isDamage2());
+        damage3 = String.valueOf(event.isDamage3());
+        damage4 = String.valueOf(event.isDamage4());
+        damage5 = String.valueOf(event.isDamage5());
+        damage6 = String.valueOf(event.isDamage6());
+        damage7 = String.valueOf(event.isDamage7());
+        damage8 = String.valueOf(event.isDamage8());
+        damage9 = String.valueOf(event.isDamage9());
+        damage10 = String.valueOf(event.isDamage10());
+        
+        /* Forestales */
+        damage11 = String.valueOf(event.isDamage(11));
+        damage12 = String.valueOf(event.isDamage(12));
+        damage13 = String.valueOf(event.isDamage(13));
+        damage14 = String.valueOf(event.isDamage(14));
+        damage15 = String.valueOf(event.isDamage(15));
+        damage16 = String.valueOf(event.isDamage(16));
+        damage17 = String.valueOf(event.isDamage(17));
+        damage18 = String.valueOf(event.isDamage(18));
+        damage19 = String.valueOf(event.isDamage(19));
+        damage20 = String.valueOf(event.isDamage(20));
+        damage21 = String.valueOf(event.isDamage(21));
+        damage22 = String.valueOf(event.isDamage(22));
+        damage23 = String.valueOf(event.isDamage(23));
+        damage24 = String.valueOf(event.isDamage(24));
+        damage25 = String.valueOf(event.isDamage(25));
+        damage26 = String.valueOf(event.isDamage(26));
+        damage27 = String.valueOf(event.isDamage(27));
+        damage28 = String.valueOf(event.isDamage(28));
+        damage29 = String.valueOf(event.isDamage(29));
+        damage30 = String.valueOf(event.isDamage(30));
+        damage31 = String.valueOf(event.isDamage(31));
+        damage32 = String.valueOf(event.isDamage(32));
+        damage33 = String.valueOf(event.isDamage(33));
+        damage34 = String.valueOf(event.isDamage(34));
+        damage35 = String.valueOf(event.isDamage(35));
+        damage36 = String.valueOf(event.isDamage(36));
+        damage37 = String.valueOf(event.isDamage(37));
+        damage38 = String.valueOf(event.isDamage(38));
+        damage39 = String.valueOf(event.isDamage(39));
+        damage40 = String.valueOf(event.isDamage(40));
+        damage41 = String.valueOf(event.isDamage(41));
+        damage42 = String.valueOf(event.isDamage(42));
+        
+        /* Fin Forestales */
+             
+
+
+        lighting = event.getLighting().getResourceBundleId();
+        condition = event.getCondition().getResourceBundleId();
+        direction = event.getDirection().getResourceBundleId();
+        way = event.getWay().getResourceBundleId();
+        control = event.getControl().getResourceBundleId();
+        pavement = event.getPavement().getResourceBundleId();
+        climate = event.getClimate().getResourceBundleId();
+
+        vehiclecount = String.valueOf(event.getVehiclesInvolved().size());
+        
+        Iterator it = event.getVehiclesInvolved().iterator();
+        while(it.hasNext()) {
+            VehicleInvolvedDataType vehicle = (VehicleInvolvedDataType)it.next();
+            switch(vehicle.getNumber().intValue()) {
+                case 1:
+                    vehicleInvolvedId1 = String.valueOf(vehicle.getInvolvedid());
+                    vehicleType1 = vehicle.getTypeVehicle().getResourceBundleId();
+                    behaviourType1 = vehicle.getBehaviourVehicle().getResourceBundleId();
+                    hitrun1 = vehicle.getHitrun();
+                    principalFactor1 = vehicle.getPrincipalFactor().getResourceBundleId();
+                    factortooclose1 = String.valueOf(vehicle.isFactortooclose());
+                    factorhighspeed1 = String.valueOf(vehicle.isFactorhighspeed());
+                    factorsigns1 = String.valueOf(vehicle.isFactorsigns());
+                    factorturn1 = String.valueOf(vehicle.isFactorturn());
+                    factorlight1 = String.valueOf(vehicle.isFactorlight());
+                    factorstop1 = String.valueOf(vehicle.isFactorstop());
+                    factorother1 = String.valueOf(vehicle.isFactorother());
+                    factorchangelane1 = String.valueOf(vehicle.isFactorchangelane());
+                    factoralcohol1 = String.valueOf(vehicle.isFactoralcohol());
+                    factorovertaking1 = String.valueOf(vehicle.isFactorovertaking());
+                    factorConcience1= String.valueOf(vehicle.isFactorConcience());
+                    factorsleep1 = String.valueOf(vehicle.isFactorsleep());
+                    factordistraction1 = String.valueOf(vehicle.isFactordistract());
+                    factorOtherParking1 = String.valueOf(vehicle.isFactorOtherParking());
+                    factorOtherCrossing1 = String.valueOf(vehicle.isFactorOtherCrossing());
+                    factorOtherStanding1 = String.valueOf(vehicle.isFactorOtherStanding());
+                    contact1 = vehicle.getContact();
+                    break;
+                case 2:
+                    vehicleInvolvedId2 = String.valueOf(vehicle.getInvolvedid());
+                    vehicleType2 = vehicle.getTypeVehicle().getResourceBundleId();
+                    behaviourType2 = vehicle.getBehaviourVehicle().getResourceBundleId();
+                    hitrun2 = vehicle.getHitrun();
+                    principalFactor2 = vehicle.getPrincipalFactor().getResourceBundleId();
+                    factortooclose2 = String.valueOf(vehicle.isFactortooclose());
+                    factorhighspeed2 = String.valueOf(vehicle.isFactorhighspeed());
+                    factorsigns2 = String.valueOf(vehicle.isFactorsigns());
+                    factorturn2 = String.valueOf(vehicle.isFactorturn());
+                    factorlight2 = String.valueOf(vehicle.isFactorlight());
+                    factorstop2 = String.valueOf(vehicle.isFactorstop());
+                    factorother2 = String.valueOf(vehicle.isFactorother());
+                    factorchangelane2 = String.valueOf(vehicle.isFactorchangelane());
+                    factoralcohol2 = String.valueOf(vehicle.isFactoralcohol());
+                    factorovertaking2 = String.valueOf(vehicle.isFactorovertaking());
+                    factorConcience2= String.valueOf(vehicle.isFactorConcience());
+                    factorsleep2 = String.valueOf(vehicle.isFactorsleep());
+                    factordistraction2 = String.valueOf(vehicle.isFactordistract());
+                    factorOtherParking2 = String.valueOf(vehicle.isFactorOtherParking());
+                    factorOtherCrossing2 = String.valueOf(vehicle.isFactorOtherCrossing());
+                    factorOtherStanding2 = String.valueOf(vehicle.isFactorOtherStanding());
+                    contact2 = vehicle.getContact();
+                    break;
+                case 3:
+                    vehicleInvolvedId3 = String.valueOf(vehicle.getInvolvedid());
+                    vehicleType3 = vehicle.getTypeVehicle().getResourceBundleId();
+                    behaviourType3 = vehicle.getBehaviourVehicle().getResourceBundleId();
+                    hitrun3 = vehicle.getHitrun();
+                    principalFactor3 = vehicle.getPrincipalFactor().getResourceBundleId();
+                    factortooclose3 = String.valueOf(vehicle.isFactortooclose());
+                    factorhighspeed3 = String.valueOf(vehicle.isFactorhighspeed());
+                    factorsigns3 = String.valueOf(vehicle.isFactorsigns());
+                    factorturn3 = String.valueOf(vehicle.isFactorturn());
+                    factorlight3 = String.valueOf(vehicle.isFactorlight());
+                    factorstop3 = String.valueOf(vehicle.isFactorstop());
+                    factorother3 = String.valueOf(vehicle.isFactorother());
+                    factorchangelane3 = String.valueOf(vehicle.isFactorchangelane());
+                    factoralcohol3 = String.valueOf(vehicle.isFactoralcohol());
+                    factorovertaking3 = String.valueOf(vehicle.isFactorovertaking());
+                    factorConcience3= String.valueOf(vehicle.isFactorConcience());
+                    factorsleep3 = String.valueOf(vehicle.isFactorsleep());
+                    factordistraction3 = String.valueOf(vehicle.isFactordistract());
+                    factorOtherParking3 = String.valueOf(vehicle.isFactorOtherParking());
+                    factorOtherCrossing3 = String.valueOf(vehicle.isFactorOtherCrossing());
+                    factorOtherStanding3 = String.valueOf(vehicle.isFactorOtherStanding());
+                    contact3 = vehicle.getContact();
+                    break;
+                case 4:
+                    vehicleInvolvedId4 = String.valueOf(vehicle.getInvolvedid());
+                    vehicleType4 = vehicle.getTypeVehicle().getResourceBundleId();
+                    behaviourType4 = vehicle.getBehaviourVehicle().getResourceBundleId();
+                    hitrun4 = vehicle.getHitrun();
+                    principalFactor4 = vehicle.getPrincipalFactor().getResourceBundleId();
+                    factortooclose4 = String.valueOf(vehicle.isFactortooclose());
+                    factorhighspeed4 = String.valueOf(vehicle.isFactorhighspeed());
+                    factorsigns4 = String.valueOf(vehicle.isFactorsigns());
+                    factorturn4 = String.valueOf(vehicle.isFactorturn());
+                    factorlight4 = String.valueOf(vehicle.isFactorlight());
+                    factorstop4 = String.valueOf(vehicle.isFactorstop());
+                    factorother4 = String.valueOf(vehicle.isFactorother());
+                    factorchangelane4 = String.valueOf(vehicle.isFactorchangelane());
+                    factoralcohol4 = String.valueOf(vehicle.isFactoralcohol());
+                    factorovertaking4 = String.valueOf(vehicle.isFactorovertaking());
+                    factorConcience4= String.valueOf(vehicle.isFactorConcience());
+                    factorsleep4 = String.valueOf(vehicle.isFactorsleep());
+                    factordistraction4 = String.valueOf(vehicle.isFactordistract());
+                    factorOtherParking4 = String.valueOf(vehicle.isFactorOtherParking());
+                    factorOtherCrossing4 = String.valueOf(vehicle.isFactorOtherCrossing());
+                    factorOtherStanding4 = String.valueOf(vehicle.isFactorOtherStanding());
+                    contact4 = vehicle.getContact();
+                    break;
+                case 5:
+                    vehicleInvolvedId5 = String.valueOf(vehicle.getInvolvedid());
+                    vehicleType5 = vehicle.getTypeVehicle().getResourceBundleId();
+                    behaviourType5 = vehicle.getBehaviourVehicle().getResourceBundleId();
+                    hitrun5 = vehicle.getHitrun();
+                    principalFactor5 = vehicle.getPrincipalFactor().getResourceBundleId();
+                    factortooclose5 = String.valueOf(vehicle.isFactortooclose());
+                    factorhighspeed5 = String.valueOf(vehicle.isFactorhighspeed());
+                    factorsigns5 = String.valueOf(vehicle.isFactorsigns());
+                    factorturn5 = String.valueOf(vehicle.isFactorturn());
+                    factorlight5 = String.valueOf(vehicle.isFactorlight());
+                    factorstop5 = String.valueOf(vehicle.isFactorstop());
+                    factorother5 = String.valueOf(vehicle.isFactorother());
+                    factorchangelane5 = String.valueOf(vehicle.isFactorchangelane());
+                    factoralcohol5 = String.valueOf(vehicle.isFactoralcohol());
+                    factorovertaking5 = String.valueOf(vehicle.isFactorovertaking());
+                    factorConcience5= String.valueOf(vehicle.isFactorConcience());
+                    factorsleep5 = String.valueOf(vehicle.isFactorsleep());
+                    factordistraction5 = String.valueOf(vehicle.isFactordistract());
+                    factorOtherParking5 = String.valueOf(vehicle.isFactorOtherParking());
+                    factorOtherCrossing5 = String.valueOf(vehicle.isFactorOtherCrossing());
+                    factorOtherStanding5 = String.valueOf(vehicle.isFactorOtherStanding());
+                    contact5 = vehicle.getContact();
+                    break;
+            }
+        }
+        
+        //se setea con 0 pedestrian debido a que no va a aparecer mas en el form
+        pedestriancount = "0";//String.valueOf(event.getPedestrianCount());
+        pedestrian1 = event.getPedestrian1();
+        pedestrian2 = event.getPedestrian2();
+        pedestrian3 = event.getPedestrian3();
+
+        pedestrianother1 = event.getPedestrianComment1();
+        pedestrianother2 = event.getPedestrianComment2();
+        pedestrianother3 = event.getPedestrianComment3();
+        
+        severity = (event.getSeverity() == null) ? "0" : String.valueOf(event.getSeverity());
+            
+        recomendation = event.getRecomendation();
+        evitability = event.getEvitability();
+        nonrecordable = String.valueOf(event.getNonrecordable());
+        supervisionObservations = event.getSuperivisionObservations();
+        
+        if(event.getSupervisedAccident() != null) {
+        	supervisedClasification = event.getSupervisedAccident().getResourceBundleId();
+        }else if(event.getSupervisedIncident() != null) {
+        	supervisedClasification = event.getSupervisedIncident().getResourceBundleId();
+        }
+        if(event.getSupervisedCollision() != null) {
+        	supervisedCollision = event.getSupervisedCollision().getResourceBundleId();
+        }
+        
+        boolean monsanto = userSessionData.getFilter().getCorporationId().intValue() == CorporationData.MONSANTO && userSessionData.hasSecondEventSupervision(event.getCountryId());
+        boolean klabin = userSessionData.getFilter().getCorporationId().intValue() == CorporationData.KLABIN;
+        boolean anglo = userSessionData.getFilter().getCorporationId().intValue() == CorporationData.ANGLO;
+        if(monsanto) {
+            if(event.getAccident() != null) {
+            	monsantoClasification = "accident";
+            }else if(event.getIncident() != null) {
+            	monsantoClasification = "incident";             	
+            }else {
+            	monsantoClasification = "nearmiss";             	
+            }
+        
+    	}
+    	if(klabin || anglo) {
+            monsantoClasification = (event.getAccident() != null) ? "accident" : "incident"; 
+        }
+        workingHours = ((event.getWorkingHours() != null)?
+        		event.getWorkingHours().toString():null);
+        
+        charged = (event.getCharged() == null) ? "0" : String.valueOf(event.getCharged());
+        whoDrives = event.getWhoDrives();
+        damageCharge = (event.getDamageCharge() == null) ? "0" : String.valueOf(event.getDamageCharge());
+        realCost = String.valueOf(event.isRealCost());
+        alcoholBreath = event.getAlcoholBreath();
+        stoppedVehicle = event.getStoppedVehicle();
+        
+        extracost1 = (event.getExtraCost1() == null) ? "" : String.valueOf(event.getExtraCost1());
+        extracost2 = (event.getExtraCost2() == null) ? "" : String.valueOf(event.getExtraCost2());
+        extracost3 = (event.getExtraCost3() == null) ? "" : String.valueOf(event.getExtraCost3());
+        extracost4 = (event.getExtraCost4() == null) ? "" : String.valueOf(event.getExtraCost4());
+        extracost5 = (event.getExtraCost5() == null) ? "" : String.valueOf(event.getExtraCost5());
+        extracost6 = (event.getExtraCost6() == null) ? "" : String.valueOf(event.getExtraCost6());
+        extracost7 = (event.getExtraCost7() == null) ? "" : String.valueOf(event.getExtraCost7());
+        extracost8 = (event.getExtraCost8() == null) ? "" : String.valueOf(event.getExtraCost8());
+        
+        if(event.getEnsuranceDate() != null) {
+        	Calendar c = Calendar.getInstance();
+        	c.setTime(event.getEnsuranceDate());
+            ensuranceDay = String.valueOf(c.get(Calendar.DATE));
+            ensuranceMonth = String.valueOf(c.get(Calendar.MONDAY)+1);
+            ensuranceYear = String.valueOf(c.get(Calendar.YEAR));
+        }
+        driverAmount = (event.getDriverAmount() == null) ? "" : String.valueOf(event.getDriverAmount());
+        thirdAmount = (event.getThirdAmount() == null) ? "" : String.valueOf(event.getThirdAmount());
+        companyAmount = (event.getCompanyAmount() == null) ? "" : String.valueOf(event.getCompanyAmount());
+        
+        
+        if (event.getLote() != null){
+        	Calendar c = Calendar.getInstance();
+        	c.setTime(event.getLote());
+        	this.loteMonth = String.valueOf(c.get(Calendar.MONTH)+1); // Enero es 0
+        	this.loteYear = String.valueOf(c.get(Calendar.YEAR));
+        }else{
+        	this.loteMonth = null;
+        	this.loteYear = null;
+        }
+        
+        folioNumber = (event.getFolioNumber() == null) ? "": String.valueOf(event.getFolioNumber());
+        sapNumber = (event.getSapNumber() == null) ? "": String.valueOf(event.getSapNumber());
+        doubleCabin = String.valueOf(event.isDoubleCabin());
+        distractor = event.getDistractor(); // pepsico
+        controlMultiple = event.getControlMultiple(); // pepsico
+        
+    }
+    
+    
+    
+    public String getClasification1() {
+		return clasification1;
+	}
+
+	public void setClasification1(String clasification1) {
+		this.clasification1 = clasification1;
+	}
+
+	public String getClasification2() {
+		return clasification2;
+	}
+
+	public void setClasification2(String clasification2) {
+		this.clasification2 = clasification2;
+	}
+
+	public String getClasification3() {
+		return clasification3;
+	}
+
+	public void setClasification3(String clasification3) {
+		this.clasification3 = clasification3;
+	}
+
+	public String getClasificationText() {
+		return clasificationText;
+	}
+
+	public void setClasificationText(String clasificationText) {
+		this.clasificationText = clasificationText;
+	}
+
+	/**
+	 * @return the loteMonth
+	 */
+	public String getLoteMonth() {
+		return loteMonth;
+	}
+
+	/**
+	 * @param loteMonth the loteMonth to set
+	 */
+	public void setLoteMonth(String loteMonth) {
+		this.loteMonth = loteMonth;
+	}
+
+	/**
+	 * @return the loteYear
+	 */
+	public String getLoteYear() {
+		return loteYear;
+	}
+
+	/**
+	 * @param loteYear the loteYear to set
+	 */
+	public void setLoteYear(String loteYear) {
+		this.loteYear = loteYear;
+	}
+
+	public void reset(ActionMapping mapping, HttpServletRequest request) {
+    	driverstate = "datatype.driverstate.safe";
+    	
+    }
+
+    /**
+     * @param it
+     */
+    private void setDivisionData(Iterator it, GeoItemData geoItem1) {
+        setCountry1(String.valueOf(geoItem1.getId()));
+        if(geoItem1.getSubItems() != null) {
+            GeoItemData geoItem2 = (GeoItemData)geoItem1.getSubItems().getItemIterator().next();
+            setCountry2(String.valueOf(geoItem2.getId()));
+            if(geoItem2.getSubItems() != null) {
+                GeoItemData geoItem3 = (GeoItemData)geoItem2.getSubItems().getItemIterator().next();
+                setCountry3(String.valueOf(geoItem3.getId()));
+            }
+        }
+
+        int i = 1;
+        while(it.hasNext()) {
+            DivOrgData divOrgData = (DivOrgData)it.next();
+            ItemData item1 = (ItemData)divOrgData.getDivOrgLevels().getItemIterator().next();
+            setDivOrg(String.valueOf(item1.getId()),i,1);
+            if(item1.getSubItems() != null) {
+                ItemData item2 = (ItemData)item1.getSubItems().getItemIterator().next();
+                setDivOrg(String.valueOf(item2.getId()),i,2);
+                if(item2.getSubItems() != null) {
+                    ItemData item3 = (ItemData)item2.getSubItems().getItemIterator().next();
+                    setDivOrg(String.valueOf(item3.getId()),i,3);
+                }
+            }
+            i++;
+        }
+    }
+
+    /**
+     * 
+     * Valida todos los campos del evento
+     * @param userRequest
+     * @return
+     */
+    public String validate(UserSessionData userRequest) {
+
+        if(Util.empty(driverid) || !Util.isNumber(driverid)) {
+            return "generic.event.eventdata.driverInvalid";
+        }
+        
+        for(int j = 0; j < userRequest.getFilter().getDivOrgCount(); j++) {
+            for(int i = 1; i <= userRequest.getFilter().getDivOrgLevel(j); i++) {
+                if(Util.empty(getDivOrg(j+1,i))) {
+                    return "generic.event.eventdata.emptyDivOrg";
+                }
+            }
+        }
+        
+        if(Util.empty(getCountry1())) {
+            return "generic.event.eventdata.emptyDivGeo";
+        }
+        if(userRequest.getFilter().getGeoLevelCount()>1 && Util.empty(getCountry2())) {
+            return "generic.event.eventdata.emptyDivGeo";
+        }
+        if(userRequest.getFilter().getGeoLevelCount()>2 && Util.empty(getCountry3())) {
+            return "generic.event.eventdata.emptyDivGeo";
+        }
+
+        if(!Util.empty(vehicleId)) {
+            if(!Util.isNumber(vehicleId)) {
+                return "generic.event.eventdata.vehicleInvalid";
+            }
+        }else {
+            if(Util.empty(vehicleplate)) {
+                return "generic.event.eventdata.vehicle.plateEmpty";                
+            }
+            if(Util.empty(vehicletrade)) {
+                return "generic.event.eventdata.vehicle.tradeEmpty";                
+            }
+            if(Util.empty(vehiclemodel)) {
+                return "generic.event.eventdata.vehicle.modelEmpty";                
+            }
+            if(Util.empty(vehicleyear)) {
+                return "generic.event.eventdata.vehicle.yearEmpty";                
+            }
+        }
+        
+        try {
+            Date eventDate = Util.getDate(date,month,year);
+            if(eventDate == null) {
+                return "generic.event.eventdata.dateEmpty";
+            }
+            if(!Util.checkDate(Integer.parseInt(date),Integer.parseInt(month),Integer.parseInt(year))) {
+                return "generic.event.eventdata.dateinvalid";
+            }
+            if(Integer.parseInt(year) <= 1995) {
+                return "generic.event.eventdata.less1995";
+            }
+        }catch(Exception e) {
+            return "generic.event.eventdata.dateInvalid";
+        }
+        
+        if(!isChecked(nodatahour)) {
+            try {
+                Time time = Util.getTime(hour,minute);
+                if(time == null) {
+                    return "generic.event.eventdata.timeEmpty";
+                }
+                if(!Util.checkHour(Integer.parseInt(hour),Integer.parseInt(minute))) {
+                    return "generic.event.eventdata.hourInvalid";
+                }
+            }catch(Exception e) {
+                return "generic.event.eventdata.timeInvalid";
+            }
+        }
+        
+        if(Util.empty(clasificationType)) {
+            return "generic.event.eventdata.clasificationTypeEmpty";                
+        }
+
+        if(Util.empty(working)) {
+            return "generic.event.eventdata.workingEmpty";                
+        }
+
+        if(Util.empty(zone)) {
+            return "generic.event.eventdata.zoneEmpty";                
+        }
+
+        if(Util.empty(description)) {
+            return "generic.event.eventdata.descriptionEmpty";                
+        }
+
+        if(Util.empty(collision)) {
+            return "generic.event.eventdata.collisionSelect";                
+        }
+
+        if(Util.empty(clasification)) {
+            return "generic.event.eventdata.clasificationSelect";                
+        }
+
+        if(Util.empty(handle)) {
+            return "generic.event.handle.empty";
+        }
+
+        if(Util.empty(principalFactor)) {
+            return "generic.event.principalFactor.empty";
+        }
+
+        if(Util.empty(way)) {
+            return "generic.event.way.empty";
+        }
+
+        if(Util.empty(direction)) {
+            return "generic.event.direction.empty";
+        }
+        
+        if(Util.empty(control) && userRequest.getCorporationId() != CorporationData.PEPSICO) {
+            return "generic.event.control.empty";
+        }
+        
+        if(Util.empty(climate)) {
+            return "generic.event.climate.empty";
+        }
+        
+        if(Util.empty(pavement)) {
+            return "generic.event.pavement.empty";
+        }
+        
+        if(Util.empty(condition)) {
+            return "generic.event.condition.empty";
+        }
+        
+        if(Util.empty(lighting)) {
+            return "generic.event.lighting.empty";
+        }
+        
+        if (dayslost.trim()!=""){
+        	try{
+        		Integer.parseInt(dayslost.trim());
+        	}catch(java.lang.IllegalArgumentException e){
+        		return "generic.event.lostdays.notnumber";
+        	}
+        }
+        
+        if (otherpartydayslost.trim()!=""){
+        	try{
+        		Integer.parseInt(otherpartydayslost.trim());
+        	}catch(java.lang.IllegalArgumentException e){
+        		return "generic.event.lostdays.notnumber";
+        	}
+        }
+        
+        if (maxspeed.trim()!=""){
+        	try{
+        		Integer.parseInt(maxspeed.trim());
+        	}catch(java.lang.IllegalArgumentException e){
+        		return "generic.event.maxspeed.notnumber";
+        	}
+        }
+        
+        if (collisionspeed.trim()!=""){
+        	try{
+        		Integer.parseInt(collisionspeed.trim());
+        	}catch(java.lang.IllegalArgumentException e){
+        		return "generic.event.collisionspeed.notnumber";
+        	}
+        }
+        if (vehiclespeed.trim()!=""){
+        	try{
+        		Integer.parseInt(vehiclespeed.trim());
+        	}catch(java.lang.IllegalArgumentException e){
+        		return "generic.event.vehiclespeed.notnumber";
+        	}
+        }
+        if (reportedspeed.trim()!=""){
+        	try{
+        		Integer.parseInt(reportedspeed.trim());
+        	}catch(java.lang.IllegalArgumentException e){
+        		return "generic.event.reportedspeed.notnumber";
+        	}
+        }
+        if (alcohol.trim()!=""){
+        	try{
+        		Integer.parseInt(alcohol.trim());
+        	}catch(java.lang.IllegalArgumentException e){
+        		return "generic.event.alcohol.notnumber";
+        	}
+        }
+        if(userRequest.getFilter().getCorporationId().intValue() == CorporationData.MONSANTO 
+        		&& Integer.parseInt(country2) == CountryData.BRASIL_ID.intValue()) {
+        	
+        	if(Util.empty(cost.trim())) {
+        		return "generic.event.cost.empty";
+        	}else {
+	        	try{
+	        		int costValue = Integer.parseInt(cost.trim());
+	        		if(costValue <= 0) {
+		        		return "generic.event.cost.notzero";
+	        		}
+	        	}catch(java.lang.IllegalArgumentException e){
+	        		return "generic.event.vehiclecost.notinteger";
+	        	}
+        	}
+        }else {
+	        if (cost.trim()!=""){
+	        	try{
+	        		Integer.parseInt(cost.trim());
+	        	}catch(java.lang.IllegalArgumentException e){
+	        		return "generic.event.vehiclecost.notinteger";
+	        	}
+	        }
+        }
+        for(int i = 1; i <= Integer.parseInt(vehiclecount); i++) {
+            if(Util.empty(getVehicleInvolvedData(i,1))) {
+                return "generic.event.vehicletype.empty";
+            }
+            if(Util.empty(getVehicleInvolvedData(i,2))) {
+                return "generic.event.vehiclebehaviour.empty";
+            }
+            if(Util.empty(getVehicleInvolvedData(i,3))) {
+                return "generic.event.vehicleprincipalfactor.empty";
+            }
+        }
+
+        if(Integer.parseInt(pedestriancount) > 0) {
+            if(Util.empty(pedestrian1)) {
+                return "generic.event.pedestrian.action.empty";
+            }
+        }
+        if(Integer.parseInt(pedestriancount) > 1) {
+            if(Util.empty(pedestrian2)) {
+                return "generic.event.pedestrian.action.empty";
+            }
+        }
+        if(Integer.parseInt(pedestriancount) > 2) {
+            if(Util.empty(pedestrian3)) {
+                return "generic.event.pedestrian.action.empty";
+            }
+        }
+        
+
+        if(!Util.empty(folioNumber) && !Util.isNumber(folioNumber.trim())) {
+            return "generic.event.eventdata.folioNumber.notanumber";
+        }
+        if(!Util.empty(sapNumber) && !Util.isNumber(sapNumber.trim())) {
+            return "generic.event.eventdata.sapNumber.notanumber";
+        }
+
+        if(userRequest.getCorporationId() == CorporationData.CIMSA &&
+        		Util.empty(whoDrives) ){
+            return "generic.event.eventdata.whodrives.empty";
+        }
+        
+        if(userRequest.isBrasilCorporation()) {
+            if(Util.empty(state)) {
+                return "generic.eventerror.state";
+            }
+            if(Util.empty(city)) {
+                return "generic.eventerror.city";
+            }
+        }
+        return null;
+    }
+
+    /**
+     * 
+     * @param i
+     * @param j
+     * @return
+     */
+    public String getVehicleInvolvedData(int i, int j) {
+        switch(i) {
+            case 1:
+                switch(j) {
+                    case 1:
+                        return vehicleType1;
+                    case 2:
+                        return behaviourType1;
+                    case 3:
+                        return principalFactor1;
+                }
+            case 2:
+                switch(j) {
+                    case 1:
+                        return vehicleType2;
+                    case 2:
+                        return behaviourType2;
+                    case 3:
+                        return principalFactor2;
+                }
+            case 3:
+                switch(j) {
+                    case 1:
+                        return vehicleType3;
+                    case 2:
+                        return behaviourType3;
+                    case 3:
+                        return principalFactor3;
+                }
+            case 4:
+                switch(j) {
+                    case 1:
+                        return vehicleType4;
+                    case 2:
+                        return behaviourType4;
+                    case 3:
+                        return principalFactor4;
+                }
+            case 5:
+                switch(j) {
+                    case 1:
+                        return vehicleType5;
+                    case 2:
+                        return behaviourType5;
+                    case 3:
+                        return principalFactor5;
+                }
+        }
+        return null;
+    }
+    
+
+    /**
+     * 
+     * @param i
+     * @param j
+     * @param value
+     * @return
+     */
+    public String setVehicleData(int i, int j, String value) {
+        switch(i) {
+            case 1:
+                switch(j) {
+                    case 1:
+                        this.vehicleType1 = value;
+                        break;
+                    case 2:
+                        this.behaviourType1 = value;
+                        break;                    
+                }
+                break;
+            case 2:
+                switch(j) {
+                    case 1:
+                        this.vehicleType2 = value;
+                        break;
+                    case 2:
+                        this.behaviourType2 = value;
+                        break;
+                }
+                break;
+            case 3:
+                switch(j) {
+                    case 1:
+                        this.vehicleType3 = value;
+                        break;
+                    case 2:
+                        this.behaviourType3 = value;
+                        break;
+                }
+                break;
+            case 4:
+                switch(j) {
+                    case 1:
+                        this.vehicleType4 = value;
+                        break;
+                    case 2:
+                        this.behaviourType4 = value;
+                        break;
+                }
+                break;
+            case 5:
+                switch(j) {
+                    case 1:
+                        this.vehicleType5 = value;
+                        break;
+                    case 2:
+                        this.behaviourType5 = value;
+                        break;
+                }
+                break;
+        }
+        return null;
+    }
+
+    /**
+     * @return Returns the alcohol.
+     */
+    public String getAlcohol() {
+        return alcohol;
+    }
+
+    /**
+     * @return Returns the behaviourType1.
+     */
+    public String getBehaviourType1() {
+        return behaviourType1;
+    }
+
+    /**
+     * @return Returns the behaviourType2.
+     */
+    public String getBehaviourType2() {
+        return behaviourType2;
+    }
+
+    /**
+     * @return Returns the behaviourType3.
+     */
+    public String getBehaviourType3() {
+        return behaviourType3;
+    }
+
+    /**
+     * @return Returns the behaviourType4.
+     */
+    public String getBehaviourType4() {
+        return behaviourType4;
+    }
+
+    /**
+     * @return Returns the behaviourType5.
+     */
+    public String getBehaviourType5() {
+        return behaviourType5;
+    }
+
+    /**
+     * @return Returns the cellular.
+     */
+    public String getCellular() {
+        return cellular;
+    }
+
+    /**
+     * @return Returns the city.
+     */
+    public String getCity() {
+        return city;
+    }
+
+    /**
+     * @return Returns the climate.
+     */
+    public String getClimate() {
+        return climate;
+    }
+
+    /**
+     * @return Returns the condition.
+     */
+    public String getCondition() {
+        return condition;
+    }
+
+    /**
+     * @return Returns the contact1.
+     */
+    public String getContact1() {
+        return contact1;
+    }
+
+    /**
+     * @return Returns the contact2.
+     */
+    public String getContact2() {
+        return contact2;
+    }
+
+    /**
+     * @return Returns the contact3.
+     */
+    public String getContact3() {
+        return contact3;
+    }
+
+    /**
+     * @return Returns the contact4.
+     */
+    public String getContact4() {
+        return contact4;
+    }
+
+    /**
+     * @return Returns the contact5.
+     */
+    public String getContact5() {
+        return contact5;
+    }
+
+    /**
+     * @return Returns the control.
+     */
+    public String getControl() {
+        return control;
+    }
+
+    /**
+     * @return Returns the cost.
+     */
+    public String getCost() {
+        return cost;
+    }
+
+    /**
+     * @return Returns the damage.
+     */
+    public String getDamage() {
+        return damage;
+    }
+
+    /**
+     * @return Returns the damage1.
+     */
+    public String getDamage1() {
+        return damage1;
+    }
+
+    /**
+     * @return Returns the damage2.
+     */
+    public String getDamage2() {
+        return damage2;
+    }
+
+    /**
+     * @return Returns the damage3.
+     */
+    public String getDamage3() {
+        return damage3;
+    }
+
+    /**
+     * @return Returns the damage4.
+     */
+    public String getDamage4() {
+        return damage4;
+    }
+
+    /**
+     * @return Returns the damage5.
+     */
+    public String getDamage5() {
+        return damage5;
+    }
+
+    /**
+     * @return Returns the damage6.
+     */
+    public String getDamage6() {
+        return damage6;
+    }
+
+    /**
+     * @return Returns the damage7.
+     */
+    public String getDamage7() {
+        return damage7;
+    }
+
+    /**
+     * @return Returns the damage8.
+     */
+    public String getDamage8() {
+        return damage8;
+    }
+
+    /**
+     * @return Returns the damage9.
+     */
+    public String getDamage9() {
+        return damage9;
+    }
+
+    /**
+     * @return Returns the date.
+     */
+    public String getDate() {
+        return date;
+    }
+
+    /**
+     * @return Returns the dayslost.
+     */
+    public String getDayslost() {
+        return dayslost;
+    }
+
+    /**
+     * @return Returns the description.
+     */
+    public String getDescription() {
+        return description;
+    }
+
+    /**
+     * @return Returns the direction.
+     */
+    public String getDirection() {
+        return direction;
+    }
+
+    /**
+     * @return Returns the driverid.
+     */
+    public String getDriverid() {
+        return driverid;
+    }
+
+    /**
+     * @return Returns the driverstate.
+     */
+    public String getDriverstate() {
+        return driverstate;
+    }
+
+    /**
+     * @return Returns the factoralcohol.
+     */
+    public String getFactoralcohol() {
+        return factoralcohol;
+    }
+
+    /**
+     * @return Returns the factoralcohol1.
+     */
+    public String getFactoralcohol1() {
+        return factoralcohol1;
+    }
+
+    /**
+     * @return Returns the factoralcohol2.
+     */
+    public String getFactoralcohol2() {
+        return factoralcohol2;
+    }
+
+    /**
+     * @return Returns the factoralcohol3.
+     */
+    public String getFactoralcohol3() {
+        return factoralcohol3;
+    }
+
+    /**
+     * @return Returns the factoralcohol4.
+     */
+    public String getFactoralcohol4() {
+        return factoralcohol4;
+    }
+
+    /**
+     * @return Returns the factoralcohol5.
+     */
+    public String getFactoralcohol5() {
+        return factoralcohol5;
+    }
+    
+    /**
+     * @return Returns the factorConcience.
+     */
+    public String getFactorConcience() {
+        return factorConcience;
+    }
+    
+    /**
+     * @return Returns the factorConcience1.
+     */
+    public String getFactorConcience1() {
+        return factorConcience1;
+    }
+    
+    /**
+     * @return Returns the factorConcience2.
+     */
+    public String getFactorConcience2() {
+        return factorConcience2;
+    }
+    
+    /**
+     * @return Returns the factorConcience3.
+     */
+    public String getFactorConcience3() {
+        return factorConcience3;
+    }
+    
+    /**
+     * @return Returns the factorConcience4.
+     */
+    public String getFactorConcience4() {
+        return factorConcience4;
+    }
+    
+    /**
+     * @return Returns the factorConcience5.
+     */
+    public String getFactorConcience5() {
+        return factorConcience5;
+    }
+    
+    /**
+     * @return Returns the factorchangelane.
+     */
+    public String getFactorchangelane() {
+        return factorchangelane;
+    }
+
+    /**
+     * @return Returns the factorchangelane1.
+     */
+    public String getFactorchangelane1() {
+        return factorchangelane1;
+    }
+
+    /**
+     * @return Returns the factorchangelane2.
+     */
+    public String getFactorchangelane2() {
+        return factorchangelane2;
+    }
+
+    /**
+     * @return Returns the factorchangelane3.
+     */
+    public String getFactorchangelane3() {
+        return factorchangelane3;
+    }
+
+    /**
+     * @return Returns the factorchangelane4.
+     */
+    public String getFactorchangelane4() {
+        return factorchangelane4;
+    }
+
+    /**
+     * @return Returns the factorchangelane5.
+     */
+    public String getFactorchangelane5() {
+        return factorchangelane5;
+    }
+
+    /**
+     * @return Returns the factorhighspeed.
+     */
+    public String getFactorhighspeed() {
+        return factorhighspeed;
+    }
+
+    /**
+     * @return Returns the factorhighspeed1.
+     */
+    public String getFactorhighspeed1() {
+        return factorhighspeed1;
+    }
+
+    /**
+     * @return Returns the factorhighspeed2.
+     */
+    public String getFactorhighspeed2() {
+        return factorhighspeed2;
+    }
+
+    /**
+     * @return Returns the factorhighspeed3.
+     */
+    public String getFactorhighspeed3() {
+        return factorhighspeed3;
+    }
+
+    /**
+     * @return Returns the factorhighspeed4.
+     */
+    public String getFactorhighspeed4() {
+        return factorhighspeed4;
+    }
+
+    /**
+     * @return Returns the factorhighspeed5.
+     */
+    public String getFactorhighspeed5() {
+        return factorhighspeed5;
+    }
+
+    /**
+     * @return Returns the factorlight.
+     */
+    public String getFactorlight() {
+        return factorlight;
+    }
+
+    /**
+     * @return Returns the factorlight1.
+     */
+    public String getFactorlight1() {
+        return factorlight1;
+    }
+
+    /**
+     * @return Returns the factorlight2.
+     */
+    public String getFactorlight2() {
+        return factorlight2;
+    }
+
+    /**
+     * @return Returns the factorlight3.
+     */
+    public String getFactorlight3() {
+        return factorlight3;
+    }
+
+    /**
+     * @return Returns the factorlight4.
+     */
+    public String getFactorlight4() {
+        return factorlight4;
+    }
+
+    /**
+     * @return Returns the factorlight5.
+     */
+    public String getFactorlight5() {
+        return factorlight5;
+    }
+
+    /**
+     * @return Returns the factorother.
+     */
+    public String getFactorother() {
+        return factorother;
+    }
+
+    /**
+     * @return Returns the factorother1.
+     */
+    public String getFactorother1() {
+        return factorother1;
+    }
+
+    /**
+     * @return Returns the factorother2.
+     */
+    public String getFactorother2() {
+        return factorother2;
+    }
+
+    /**
+     * @return Returns the factorother3.
+     */
+    public String getFactorother3() {
+        return factorother3;
+    }
+
+    /**
+     * @return Returns the factorother4.
+     */
+    public String getFactorother4() {
+        return factorother4;
+    }
+
+    /**
+     * @return Returns the factorother5.
+     */
+    public String getFactorother5() {
+        return factorother5;
+    }
+
+    /**
+     * @return Returns the factorovertaking.
+     */
+    public String getFactorovertaking() {
+        return factorovertaking;
+    }
+
+    /**
+     * @return Returns the factorovertaking1.
+     */
+    public String getFactorovertaking1() {
+        return factorovertaking1;
+    }
+
+    /**
+     * @return Returns the factorovertaking2.
+     */
+    public String getFactorovertaking2() {
+        return factorovertaking2;
+    }
+
+    /**
+     * @return Returns the factorovertaking3.
+     */
+    public String getFactorovertaking3() {
+        return factorovertaking3;
+    }
+
+    /**
+     * @return Returns the factorovertaking4.
+     */
+    public String getFactorovertaking4() {
+        return factorovertaking4;
+    }
+
+    /**
+     * @return Returns the factorovertaking5.
+     */
+    public String getFactorovertaking5() {
+        return factorovertaking5;
+    }
+
+    /**
+     * @return Returns the factorsigns.
+     */
+    public String getFactorsigns() {
+        return factorsigns;
+    }
+
+    /**
+     * @return Returns the factorsigns1.
+     */
+    public String getFactorsigns1() {
+        return factorsigns1;
+    }
+
+    /**
+     * @return Returns the factorsigns2.
+     */
+    public String getFactorsigns2() {
+        return factorsigns2;
+    }
+
+    /**
+     * @return Returns the factorsigns3.
+     */
+    public String getFactorsigns3() {
+        return factorsigns3;
+    }
+
+    /**
+     * @return Returns the factorsigns4.
+     */
+    public String getFactorsigns4() {
+        return factorsigns4;
+    }
+
+    /**
+     * @return Returns the factorsigns5.
+     */
+    public String getFactorsigns5() {
+        return factorsigns5;
+    }
+
+    /**
+     * @return Returns the factorstop.
+     */
+    public String getFactorstop() {
+        return factorstop;
+    }
+
+    /**
+     * @return Returns the factorstop1.
+     */
+    public String getFactorstop1() {
+        return factorstop1;
+    }
+
+    /**
+     * @return Returns the factorstop2.
+     */
+    public String getFactorstop2() {
+        return factorstop2;
+    }
+
+    /**
+     * @return Returns the factorstop3.
+     */
+    public String getFactorstop3() {
+        return factorstop3;
+    }
+
+    /**
+     * @return Returns the factorstop4.
+     */
+    public String getFactorstop4() {
+        return factorstop4;
+    }
+
+    /**
+     * @return Returns the factorstop5.
+     */
+    public String getFactorstop5() {
+        return factorstop5;
+    }
+
+    /**
+     * @return Returns the factortooclose.
+     */
+    public String getFactortooclose() {
+        return factortooclose;
+    }
+
+    /**
+     * @return Returns the factortooclose1.
+     */
+    public String getFactortooclose1() {
+        return factortooclose1;
+    }
+
+    /**
+     * @return Returns the factortooclose2.
+     */
+    public String getFactortooclose2() {
+        return factortooclose2;
+    }
+
+    /**
+     * @return Returns the factortooclose3.
+     */
+    public String getFactortooclose3() {
+        return factortooclose3;
+    }
+
+    /**
+     * @return Returns the factortooclose4.
+     */
+    public String getFactortooclose4() {
+        return factortooclose4;
+    }
+
+    /**
+     * @return Returns the factortooclose5.
+     */
+    public String getFactortooclose5() {
+        return factortooclose5;
+    }
+
+    /**
+     * @return Returns the factorturn.
+     */
+    public String getFactorturn() {
+        return factorturn;
+    }
+
+    /**
+     * @return Returns the factorturn1.
+     */
+    public String getFactorturn1() {
+        return factorturn1;
+    }
+
+    /**
+     * @return Returns the factorturn2.
+     */
+    public String getFactorturn2() {
+        return factorturn2;
+    }
+
+    /**
+     * @return Returns the factorturn3.
+     */
+    public String getFactorturn3() {
+        return factorturn3;
+    }
+
+    /**
+     * @return Returns the factorturn4.
+     */
+    public String getFactorturn4() {
+        return factorturn4;
+    }
+
+    /**
+     * @return Returns the factorturn5.
+     */
+    public String getFactorturn5() {
+        return factorturn5;
+    }
+    
+    /**
+     * @return Returns the fatalitiescount.
+     */
+    public String getFatalitiesothercount() {
+        return fatalitiesothercount;
+    }
+
+    /**
+     * @return Returns the fatalitiescount.
+     */
+    public String getFatalitiesfunccount() {
+        return fatalitiesfunccount;
+    }
+
+    /**
+     * @return Returns the handle.
+     */
+    public String getHandle() {
+        return handle;
+    }
+
+    /**
+     * @return Returns the hitrun.
+     */
+    public String getHitrun() {
+        return hitrun;
+    }
+
+    /**
+     * @return Returns the hitrun1.
+     */
+    public String getHitrun1() {
+        return hitrun1;
+    }
+
+    /**
+     * @return Returns the hitrun2.
+     */
+    public String getHitrun2() {
+        return hitrun2;
+    }
+
+    /**
+     * @return Returns the hitrun3.
+     */
+    public String getHitrun3() {
+        return hitrun3;
+    }
+
+    /**
+     * @return Returns the hitrun4.
+     */
+    public String getHitrun4() {
+        return hitrun4;
+    }
+
+    /**
+     * @return Returns the hitrun5.
+     */
+    public String getHitrun5() {
+        return hitrun5;
+    }
+
+    /**
+     * @return Returns the hour.
+     */
+    public String getHour() {
+        return hour;
+    }
+
+    /**
+     * @return Returns the id.
+     */
+    public String getId() {
+        return id;
+    }
+
+    /**
+     * @return Returns the injuredcount.
+     */
+    public String getInjuredfunccount() {
+        return injuredfunccount;
+    }
+
+    /**
+     * @return Returns the injuredcount.
+     */
+    public String getInjuredothercount() {
+        return injuredothercount;
+    }
+
+    /**
+     * @return Returns the safefunccount.
+     */
+    public String getSafefunccount() {
+        return safefunccount;
+    }
+    
+    /**
+     * @return Returns the safeothercount.
+     */
+    public String getSafeothercount() {
+        return safeothercount;
+    }
+
+    /**
+     * @return Returns the lighting.
+     */
+    public String getLighting() {
+        return lighting;
+    }
+
+    /**
+     * @return Returns the minute.
+     */
+    public String getMinute() {
+        return minute;
+    }
+
+    /**
+     * @return Returns the month.
+     */
+    public String getMonth() {
+        return month;
+    }
+
+    /**
+     * @return Returns the othervehicles.
+     */
+    public String getOthervehicles() {
+        return othervehicles;
+    }
+
+    /**
+     * @return Returns the pavement.
+     */
+    public String getPavement() {
+        return pavement;
+    }
+
+    /**
+     * @return Returns the pedestrian1.
+     */
+    public String getPedestrian1() {
+        return pedestrian1;
+    }
+
+    /**
+     * @return Returns the pedestrian2.
+     */
+    public String getPedestrian2() {
+        return pedestrian2;
+    }
+
+    /**
+     * @return Returns the pedestrian3.
+     */
+    public String getPedestrian3() {
+        return pedestrian3;
+    }
+
+    /**
+     * @return Returns the pedestriancount.
+     */
+    public String getPedestriancount() {
+        return pedestriancount;
+    }
+
+    /**
+     * @return Returns the selfbelt.
+     */
+    public String getSelfbelt() {
+        return selfbelt;
+    }
+
+    
+    /**
+     * @return Returns the collisionspeed.
+     */
+    public String getCollisionspeed() {
+        return collisionspeed;
+    }
+
+    /**
+     * @return Returns the maxspeed.
+     */
+    public String getMaxspeed() {
+        return maxspeed;
+    }
+
+    /**
+     * @return Returns the speedunit.
+     */
+    public String getSpeedunit() {
+        return speedunit;
+    }
+
+    /**
+     * @return Returns the vehiclespeed.
+     */
+    public String getVehiclespeed() {
+        return vehiclespeed;
+    }
+
+    /**
+     * @return Returns the vehiclecount.
+     */
+    public String getVehiclecount() {
+        return vehiclecount;
+    }
+
+    /**
+     * @return Returns the vehicleId.
+     */
+    public String getVehicleId() {
+        return vehicleId;
+    }
+
+    /**
+     * @return Returns the vehiclemodel.
+     */
+    public String getVehiclemodel() {
+        return vehiclemodel;
+    }
+
+    /**
+     * @return Returns the vehicleplate.
+     */
+    public String getVehicleplate() {
+        return vehicleplate;
+    }
+
+    /**
+     * @return Returns the vehicletrade.
+     */
+    public String getVehicletrade() {
+        return vehicletrade;
+    }
+
+    /**
+     * @return Returns the vehicleType1.
+     */
+    public String getVehicleType1() {
+        return vehicleType1;
+    }
+
+    /**
+     * @return Returns the vehicleType2.
+     */
+    public String getVehicleType2() {
+        return vehicleType2;
+    }
+
+    /**
+     * @return Returns the vehicleType3.
+     */
+    public String getVehicleType3() {
+        return vehicleType3;
+    }
+
+    /**
+     * @return Returns the vehicleType4.
+     */
+    public String getVehicleType4() {
+        return vehicleType4;
+    }
+
+    /**
+     * @return Returns the vehicleType5.
+     */
+    public String getVehicleType5() {
+        return vehicleType5;
+    }
+
+    /**
+     * @return Returns the vehicleyear.
+     */
+    public String getVehicleyear() {
+        return vehicleyear;
+    }
+
+    /**
+     * @return Returns the vehicleyear.
+     */
+    public String getVehiclecompanycar() {
+        return vehiclecompanycar;
+    }
+
+    /**
+     * @return Returns the way.
+     */
+    public String getWay() {
+        return way;
+    }
+
+    /**
+     * @return Returns the year.
+     */
+    public String getYear() {
+        return year;
+    }
+
+    /**
+     * @return Returns the zone.
+     */
+    public String getZone() {
+        return zone;
+    }
+
+    /**
+     * @return Returns the pedestrianother1.
+     */
+    public String getPedestrianother1() {
+        return pedestrianother1;
+    }
+
+    /**
+     * @return Returns the pedestrianother2.
+     */
+    public String getPedestrianother2() {
+        return pedestrianother2;
+    }
+
+    /**
+     * @return Returns the pedestrianother3.
+     */
+    public String getPedestrianother3() {
+        return pedestrianother3;
+    }
+
+    /**
+     * @param pedestrianother1 The pedestrianother1 to set.
+     */
+    public void setPedestrianother1(String pedestrianother1) {
+        this.pedestrianother1 = pedestrianother1;
+    }
+
+    /**
+     * @param pedestrianother2 The pedestrianother2 to set.
+     */
+    public void setPedestrianother2(String pedestrianother2) {
+        this.pedestrianother2 = pedestrianother2;
+    }
+
+    /**
+     * @param pedestrianother3 The pedestrianother3 to set.
+     */
+    public void setPedestrianother3(String pedestrianother3) {
+        this.pedestrianother3 = pedestrianother3;
+    }
+
+    /**
+     * @param alcohol The alcohol to set.
+     */
+    public void setAlcohol(String alcohol) {
+        this.alcohol = alcohol;
+    }
+
+    /**
+     * @param behaviourType1 The behaviourType1 to set.
+     */
+    public void setBehaviourType1(String behaviourType1) {
+        this.behaviourType1 = behaviourType1;
+    }
+
+    /**
+     * @param behaviourType2 The behaviourType2 to set.
+     */
+    public void setBehaviourType2(String behaviourType2) {
+        this.behaviourType2 = behaviourType2;
+    }
+
+    /**
+     * @param behaviourType3 The behaviourType3 to set.
+     */
+    public void setBehaviourType3(String behaviourType3) {
+        this.behaviourType3 = behaviourType3;
+    }
+
+    /**
+     * @param behaviourType4 The behaviourType4 to set.
+     */
+    public void setBehaviourType4(String behaviourType4) {
+        this.behaviourType4 = behaviourType4;
+    }
+
+    /**
+     * @param behaviourType5 The behaviourType5 to set.
+     */
+    public void setBehaviourType5(String behaviourType5) {
+        this.behaviourType5 = behaviourType5;
+    }
+
+    /**
+     * @param cellular The cellular to set.
+     */
+    public void setCellular(String cellular) {
+        this.cellular = cellular;
+    }
+
+    /**
+     * @param city The city to set.
+     */
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    /**
+     * @param climate The climate to set.
+     */
+    public void setClimate(String climate) {
+        this.climate = climate;
+    }
+
+    /**
+     * @param condition The condition to set.
+     */
+    public void setCondition(String condition) {
+        this.condition = condition;
+    }
+
+    /**
+     * @param contact1 The contact1 to set.
+     */
+    public void setContact1(String contact1) {
+        this.contact1 = contact1;
+    }
+
+    /**
+     * @param contact2 The contact2 to set.
+     */
+    public void setContact2(String contact2) {
+        this.contact2 = contact2;
+    }
+
+    /**
+     * @param contact3 The contact3 to set.
+     */
+    public void setContact3(String contact3) {
+        this.contact3 = contact3;
+    }
+
+    /**
+     * @param contact4 The contact4 to set.
+     */
+    public void setContact4(String contact4) {
+        this.contact4 = contact4;
+    }
+
+    /**
+     * @param contact5 The contact5 to set.
+     */
+    public void setContact5(String contact5) {
+        this.contact5 = contact5;
+    }
+
+    /**
+     * @param control The control to set.
+     */
+    public void setControl(String control) {
+        this.control = control;
+    }
+
+    /**
+     * @param cost The cost to set.
+     */
+    public void setCost(String cost) {
+        this.cost = cost;
+    }
+
+    /**
+     * @param damage The damage to set.
+     */
+    public void setDamage(String damage) {
+        this.damage = damage;
+    }
+
+    /**
+     * @param damage1 The damage1 to set.
+     */
+    public void setDamage1(String damage1) {
+        this.damage1 = damage1;
+    }
+
+    /**
+     * @param damage2 The damage2 to set.
+     */
+    public void setDamage2(String damage2) {
+        this.damage2 = damage2;
+    }
+
+    /**
+     * @param damage3 The damage3 to set.
+     */
+    public void setDamage3(String damage3) {
+        this.damage3 = damage3;
+    }
+
+    /**
+     * @param damage4 The damage4 to set.
+     */
+    public void setDamage4(String damage4) {
+        this.damage4 = damage4;
+    }
+
+    /**
+     * @param damage5 The damage5 to set.
+     */
+    public void setDamage5(String damage5) {
+        this.damage5 = damage5;
+    }
+
+    /**
+     * @param damage6 The damage6 to set.
+     */
+    public void setDamage6(String damage6) {
+        this.damage6 = damage6;
+    }
+
+    /**
+     * @param damage7 The damage7 to set.
+     */
+    public void setDamage7(String damage7) {
+        this.damage7 = damage7;
+    }
+
+    /**
+     * @param damage8 The damage8 to set.
+     */
+    public void setDamage8(String damage8) {
+        this.damage8 = damage8;
+    }
+
+    /**
+     * @param damage9 The damage9 to set.
+     */
+    public void setDamage9(String damage9) {
+        this.damage9 = damage9;
+    }
+
+    /**
+     * @param date The date to set.
+     */
+    public void setDate(String date) {
+        this.date = date;
+    }
+
+    /**
+     * @param dayslost The dayslost to set.
+     */
+    public void setDayslost(String dayslost) {
+        this.dayslost = dayslost;
+    }
+
+    /**
+     * @param description The description to set.
+     */
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    /**
+     * @param direction The direction to set.
+     */
+    public void setDirection(String direction) {
+        this.direction = direction;
+    }
+
+    /**
+     * @param driverid The driverid to set.
+     */
+    public void setDriverid(String driverid) {
+        this.driverid = driverid;
+    }
+
+    /**
+     * @param driverstate The driverstate to set.
+     */
+    public void setDriverstate(String driverstate) {
+        this.driverstate = driverstate;
+    }
+
+    /**
+     * @param factoralcohol The factoralcohol to set.
+     */
+    public void setFactoralcohol(String factoralcohol) {
+        this.factoralcohol = factoralcohol;
+    }
+
+    /**
+     * @param factoralcohol1 The factoralcohol1 to set.
+     */
+    public void setFactoralcohol1(String factoralcohol1) {
+        this.factoralcohol1 = factoralcohol1;
+    }
+
+    /**
+     * @param factoralcohol2 The factoralcohol2 to set.
+     */
+    public void setFactoralcohol2(String factoralcohol2) {
+        this.factoralcohol2 = factoralcohol2;
+    }
+
+    /**
+     * @param factoralcohol3 The factoralcohol3 to set.
+     */
+    public void setFactoralcohol3(String factoralcohol3) {
+        this.factoralcohol3 = factoralcohol3;
+    }
+
+    /**
+     * @param factoralcohol4 The factoralcohol4 to set.
+     */
+    public void setFactoralcohol4(String factoralcohol4) {
+        this.factoralcohol4 = factoralcohol4;
+    }
+
+    /**
+     * @param factoralcohol5 The factoralcohol5 to set.
+     */
+    public void setFactoralcohol5(String factoralcohol5) {
+        this.factoralcohol5 = factoralcohol5;
+    }
+
+    /**
+     * @param factorchangelane The factorchangelane to set.
+     */
+    public void setFactorchangelane(String factorchangelane) {
+        this.factorchangelane = factorchangelane;
+    }
+
+    /**
+     * @param factorchangelane1 The factorchangelane1 to set.
+     */
+    public void setFactorchangelane1(String factorchangelane1) {
+        this.factorchangelane1 = factorchangelane1;
+    }
+
+    /**
+     * @param factorchangelane2 The factorchangelane2 to set.
+     */
+    public void setFactorchangelane2(String factorchangelane2) {
+        this.factorchangelane2 = factorchangelane2;
+    }
+
+    /**
+     * @param factorchangelane3 The factorchangelane3 to set.
+     */
+    public void setFactorchangelane3(String factorchangelane3) {
+        this.factorchangelane3 = factorchangelane3;
+    }
+
+    /**
+     * @param factorchangelane4 The factorchangelane4 to set.
+     */
+    public void setFactorchangelane4(String factorchangelane4) {
+        this.factorchangelane4 = factorchangelane4;
+    }
+
+    /**
+     * @param factorchangelane5 The factorchangelane5 to set.
+     */
+    public void setFactorchangelane5(String factorchangelane5) {
+        this.factorchangelane5 = factorchangelane5;
+    }
+
+    /**
+     * @param factorhighspeed The factorhighspeed to set.
+     */
+    public void setFactorhighspeed(String factorhighspeed) {
+        this.factorhighspeed = factorhighspeed;
+    }
+
+    /**
+     * @param factorhighspeed1 The factorhighspeed1 to set.
+     */
+    public void setFactorhighspeed1(String factorhighspeed1) {
+        this.factorhighspeed1 = factorhighspeed1;
+    }
+
+    /**
+     * @param factorhighspeed2 The factorhighspeed2 to set.
+     */
+    public void setFactorhighspeed2(String factorhighspeed2) {
+        this.factorhighspeed2 = factorhighspeed2;
+    }
+
+    /**
+     * @param factorhighspeed3 The factorhighspeed3 to set.
+     */
+    public void setFactorhighspeed3(String factorhighspeed3) {
+        this.factorhighspeed3 = factorhighspeed3;
+    }
+
+    /**
+     * @param factorhighspeed4 The factorhighspeed4 to set.
+     */
+    public void setFactorhighspeed4(String factorhighspeed4) {
+        this.factorhighspeed4 = factorhighspeed4;
+    }
+
+    /**
+     * @param factorhighspeed5 The factorhighspeed5 to set.
+     */
+    public void setFactorhighspeed5(String factorhighspeed5) {
+        this.factorhighspeed5 = factorhighspeed5;
+    }
+
+    /**
+     * @param factorlight The factorlight to set.
+     */
+    public void setFactorlight(String factorlight) {
+        this.factorlight = factorlight;
+    }
+
+    /**
+     * @param factorlight1 The factorlight1 to set.
+     */
+    public void setFactorlight1(String factorlight1) {
+        this.factorlight1 = factorlight1;
+    }
+
+    /**
+     * @param factorlight2 The factorlight2 to set.
+     */
+    public void setFactorlight2(String factorlight2) {
+        this.factorlight2 = factorlight2;
+    }
+
+    /**
+     * @param factorlight3 The factorlight3 to set.
+     */
+    public void setFactorlight3(String factorlight3) {
+        this.factorlight3 = factorlight3;
+    }
+
+    /**
+     * @param factorlight4 The factorlight4 to set.
+     */
+    public void setFactorlight4(String factorlight4) {
+        this.factorlight4 = factorlight4;
+    }
+
+    /**
+     * @param factorlight5 The factorlight5 to set.
+     */
+    public void setFactorlight5(String factorlight5) {
+        this.factorlight5 = factorlight5;
+    }
+
+    /**
+     * @param factorother The factorother to set.
+     */
+    public void setFactorother(String factorother) {
+        this.factorother = factorother;
+    }
+
+    /**
+     * @param factorother1 The factorother1 to set.
+     */
+    public void setFactorother1(String factorother1) {
+        this.factorother1 = factorother1;
+    }
+
+    /**
+     * @param factorother2 The factorother2 to set.
+     */
+    public void setFactorother2(String factorother2) {
+        this.factorother2 = factorother2;
+    }
+
+    /**
+     * @param factorother3 The factorother3 to set.
+     */
+    public void setFactorother3(String factorother3) {
+        this.factorother3 = factorother3;
+    }
+
+    /**
+     * @param factorother4 The factorother4 to set.
+     */
+    public void setFactorother4(String factorother4) {
+        this.factorother4 = factorother4;
+    }
+
+    /**
+     * @param factorother5 The factorother5 to set.
+     */
+    public void setFactorother5(String factorother5) {
+        this.factorother5 = factorother5;
+    }
+
+    /**
+     * @param factorovertaking The factorovertaking to set.
+     */
+    public void setFactorovertaking(String factorovertaking) {
+        this.factorovertaking = factorovertaking;
+    }
+
+    /**
+     * @param factorovertaking1 The factorovertaking1 to set.
+     */
+    public void setFactorovertaking1(String factorovertaking1) {
+        this.factorovertaking1 = factorovertaking1;
+    }
+
+    /**
+     * @param factorovertaking2 The factorovertaking2 to set.
+     */
+    public void setFactorovertaking2(String factorovertaking2) {
+        this.factorovertaking2 = factorovertaking2;
+    }
+
+    /**
+     * @param factorovertaking3 The factorovertaking3 to set.
+     */
+    public void setFactorovertaking3(String factorovertaking3) {
+        this.factorovertaking3 = factorovertaking3;
+    }
+
+    /**
+     * @param factorovertaking4 The factorovertaking4 to set.
+     */
+    public void setFactorovertaking4(String factorovertaking4) {
+        this.factorovertaking4 = factorovertaking4;
+    }
+
+    /**
+     * @param factorovertaking5 The factorovertaking5 to set.
+     */
+    public void setFactorovertaking5(String factorovertaking5) {
+        this.factorovertaking5 = factorovertaking5;
+    }
+
+    /**
+     * @param factorsigns The factorsigns to set.
+     */
+    public void setFactorsigns(String factorsigns) {
+        this.factorsigns = factorsigns;
+    }
+
+    /**
+     * @param factorsigns1 The factorsigns1 to set.
+     */
+    public void setFactorsigns1(String factorsigns1) {
+        this.factorsigns1 = factorsigns1;
+    }
+
+    /**
+     * @param factorsigns2 The factorsigns2 to set.
+     */
+    public void setFactorsigns2(String factorsigns2) {
+        this.factorsigns2 = factorsigns2;
+    }
+
+    /**
+     * @param factorsigns3 The factorsigns3 to set.
+     */
+    public void setFactorsigns3(String factorsigns3) {
+        this.factorsigns3 = factorsigns3;
+    }
+
+    /**
+     * @param factorsigns4 The factorsigns4 to set.
+     */
+    public void setFactorsigns4(String factorsigns4) {
+        this.factorsigns4 = factorsigns4;
+    }
+
+    /**
+     * @param factorsigns5 The factorsigns5 to set.
+     */
+    public void setFactorsigns5(String factorsigns5) {
+        this.factorsigns5 = factorsigns5;
+    }
+
+    /**
+     * @param factorstop The factorstop to set.
+     */
+    public void setFactorstop(String factorstop) {
+        this.factorstop = factorstop;
+    }
+
+    /**
+     * @param factorstop1 The factorstop1 to set.
+     */
+    public void setFactorstop1(String factorstop1) {
+        this.factorstop1 = factorstop1;
+    }
+
+    /**
+     * @param factorstop2 The factorstop2 to set.
+     */
+    public void setFactorstop2(String factorstop2) {
+        this.factorstop2 = factorstop2;
+    }
+
+    /**
+     * @param factorstop3 The factorstop3 to set.
+     */
+    public void setFactorstop3(String factorstop3) {
+        this.factorstop3 = factorstop3;
+    }
+
+    /**
+     * @param factorstop4 The factorstop4 to set.
+     */
+    public void setFactorstop4(String factorstop4) {
+        this.factorstop4 = factorstop4;
+    }
+
+    /**
+     * @param factorstop5 The factorstop5 to set.
+     */
+    public void setFactorstop5(String factorstop5) {
+        this.factorstop5 = factorstop5;
+    }
+
+    /**
+     * @param factortooclose The factortooclose to set.
+     */
+    public void setFactortooclose(String factortooclose) {
+        this.factortooclose = factortooclose;
+    }
+
+    /**
+     * @param factortooclose1 The factortooclose1 to set.
+     */
+    public void setFactortooclose1(String factortooclose1) {
+        this.factortooclose1 = factortooclose1;
+    }
+
+    /**
+     * @param factortooclose2 The factortooclose2 to set.
+     */
+    public void setFactortooclose2(String factortooclose2) {
+        this.factortooclose2 = factortooclose2;
+    }
+
+    /**
+     * @param factortooclose3 The factortooclose3 to set.
+     */
+    public void setFactortooclose3(String factortooclose3) {
+        this.factortooclose3 = factortooclose3;
+    }
+
+    /**
+     * @param factortooclose4 The factortooclose4 to set.
+     */
+    public void setFactortooclose4(String factortooclose4) {
+        this.factortooclose4 = factortooclose4;
+    }
+
+    /**
+     * @param factortooclose5 The factortooclose5 to set.
+     */
+    public void setFactortooclose5(String factortooclose5) {
+        this.factortooclose5 = factortooclose5;
+    }
+
+    /**
+     * @param factorturn The factorturn to set.
+     */
+    public void setFactorturn(String factorturn) {
+        this.factorturn = factorturn;
+    }
+
+    /**
+     * @param factorturn1 The factorturn1 to set.
+     */
+    public void setFactorturn1(String factorturn1) {
+        this.factorturn1 = factorturn1;
+    }
+
+    /**
+     * @param factorturn2 The factorturn2 to set.
+     */
+    public void setFactorturn2(String factorturn2) {
+        this.factorturn2 = factorturn2;
+    }
+
+    /**
+     * @param factorturn3 The factorturn3 to set.
+     */
+    public void setFactorturn3(String factorturn3) {
+        this.factorturn3 = factorturn3;
+    }
+
+    /**
+     * @param factorturn4 The factorturn4 to set.
+     */
+    public void setFactorturn4(String factorturn4) {
+        this.factorturn4 = factorturn4;
+    }
+
+    /**
+     * @param factorturn5 The factorturn5 to set.
+     */
+    public void setFactorturn5(String factorturn5) {
+        this.factorturn5 = factorturn5;
+    }
+
+    /**
+     * @param fatalitiescount The fatalitiescount to set.
+     */
+    public void setFatalitiesfunccount(String fatalitiesfunccount) {
+        this.fatalitiesfunccount = fatalitiesfunccount;
+    }
+
+    /**
+     * @param fatalitiescount The fatalitiescount to set.
+     */
+    public void setFatalitiesothercount(String fatalitiesothercount) {
+        this.fatalitiesothercount = fatalitiesothercount;
+    }
+
+    /**
+     * @param handle The handle to set.
+     */
+    public void setHandle(String handle) {
+        this.handle = handle;
+    }
+
+    /**
+     * @param hitrun The hitrun to set.
+     */
+    public void setHitrun(String hitrun) {
+        this.hitrun = hitrun;
+    }
+
+    /**
+     * @param hitrun1 The hitrun1 to set.
+     */
+    public void setHitrun1(String hitrun1) {
+        this.hitrun1 = hitrun1;
+    }
+
+    /**
+     * @param hitrun2 The hitrun2 to set.
+     */
+    public void setHitrun2(String hitrun2) {
+        this.hitrun2 = hitrun2;
+    }
+
+    /**
+     * @param hitrun3 The hitrun3 to set.
+     */
+    public void setHitrun3(String hitrun3) {
+        this.hitrun3 = hitrun3;
+    }
+
+    /**
+     * @param hitrun4 The hitrun4 to set.
+     */
+    public void setHitrun4(String hitrun4) {
+        this.hitrun4 = hitrun4;
+    }
+
+    /**
+     * @param hitrun5 The hitrun5 to set.
+     */
+    public void setHitrun5(String hitrun5) {
+        this.hitrun5 = hitrun5;
+    }
+
+    /**
+     * @param factorConcience The factorConcience to set.
+     */
+    public void setFactorConcience(String factorConcience) {
+        this.factorConcience = factorConcience;
+    }
+
+    /**
+     * @param factorConcience1 The factorConcience1 to set.
+     */
+    public void setFactorConcience1(String factorConcience1) {
+        this.factorConcience1 = factorConcience1;
+    }
+
+    /**
+     * @param factorConcience2 The factorConcience2 to set.
+     */
+    public void setFactorConcience2(String factorConcience2) {
+        this.factorConcience2 = factorConcience2;
+    }
+
+    /**
+     * @param factorConcience3 The factorConcience3 to set.
+     */
+    public void setFactorConcience3(String factorConcience3) {
+        this.factorConcience3 = factorConcience3;
+    }
+
+    /**
+     * @param factorConcience4 The factorConcience4 to set.
+     */
+    public void setFactorConcience4(String factorConcience4) {
+        this.factorConcience4 = factorConcience4;
+    }
+
+    /**
+     * @param factorConcience5 The factorConcience5 to set.
+     */
+    public void setFactorConcience5(String factorConcience5) {
+        this.factorConcience5 = factorConcience5;
+    }
+    
+    
+    
+    /**
+     * @param hour The hour to set.
+     */
+    public void setHour(String hour) {
+        this.hour = hour;
+    }
+
+    /**
+     * @param id The id to set.
+     */
+    public void setId(String id) {
+        this.id = id;
+    }
+
+
+    /**
+     * @param injuredcount The injuredcount to set.
+     */
+    public void setInjuredfunccount(String injuredfunccount) {
+        this.injuredfunccount = injuredfunccount;
+    }
+    
+    
+    /**
+     * @param injuredcount The injuredcount to set.
+     */
+    public void setInjuredothercount(String injuredothercount) {
+        this.injuredothercount = injuredothercount;
+    }
+
+    /**
+     * @param safefuncount The safecount to set.
+     */
+    public void setSafefunccount(String safefunccount) {
+        this.safefunccount = safefunccount;
+    }
+    
+    /**
+     * @param safeothercount The safecount to set.
+     */
+    public void setSafeothercount(String safeothercount) {
+        this.safeothercount = safeothercount;
+    }
+
+    /**
+     * @param lighting The lighting to set.
+     */
+    public void setLighting(String lighting) {
+        this.lighting = lighting;
+    }
+
+    /**
+     * @param minute The minute to set.
+     */
+    public void setMinute(String minute) {
+        this.minute = minute;
+    }
+
+    /**
+     * @param month The month to set.
+     */
+    public void setMonth(String month) {
+        this.month = month;
+    }
+
+    /**
+     * @param othervehicles The othervehicles to set.
+     */
+    public void setOthervehicles(String othervehicles) {
+        this.othervehicles = othervehicles;
+    }
+
+    /**
+     * @param pavement The pavement to set.
+     */
+    public void setPavement(String pavement) {
+        this.pavement = pavement;
+    }
+
+    /**
+     * @param pedestrian1 The pedestrian1 to set.
+     */
+    public void setPedestrian1(String pedestrian1) {
+        this.pedestrian1 = pedestrian1;
+    }
+
+    /**
+     * @param pedestrian2 The pedestrian2 to set.
+     */
+    public void setPedestrian2(String pedestrian2) {
+        this.pedestrian2 = pedestrian2;
+    }
+
+    /**
+     * @param pedestrian3 The pedestrian3 to set.
+     */
+    public void setPedestrian3(String pedestrian3) {
+        this.pedestrian3 = pedestrian3;
+    }
+
+    /**
+     * @param pedestriancount The pedestriancount to set.
+     */
+    public void setPedestriancount(String pedestriancount) {
+        this.pedestriancount = pedestriancount;
+    }
+
+    /**
+     * @param selfbelt The selfbelt to set.
+     */
+    public void setSelfbelt(String selfbelt) {
+        this.selfbelt = selfbelt;
+    }
+
+    /**
+     * @param vehiclecount The vehiclecount to set.
+     */
+    public void setVehiclecount(String vehiclecount) {
+        this.vehiclecount = vehiclecount;
+    }
+
+    /**
+     * @param vehicleId The vehicleId to set.
+     */
+    public void setVehicleId(String vehicleId) {
+        this.vehicleId = vehicleId;
+    }
+
+    /**
+     * @param vehiclemodel The vehiclemodel to set.
+     */
+    public void setVehiclemodel(String vehiclemodel) {
+        this.vehiclemodel = vehiclemodel;
+    }
+
+    /**
+     * @param vehicleplate The vehicleplate to set.
+     */
+    public void setVehicleplate(String vehicleplate) {
+        this.vehicleplate = vehicleplate;
+    }
+
+    /**
+     * @param vehicletrade The vehicletrade to set.
+     */
+    public void setVehicletrade(String vehicletrade) {
+        this.vehicletrade = vehicletrade;
+    }
+
+    /**
+     * @param vehicleType1 The vehicleType1 to set.
+     */
+    public void setVehicleType1(String vehicleType1) {
+        this.vehicleType1 = vehicleType1;
+    }
+
+    /**
+     * @param vehicleType2 The vehicleType2 to set.
+     */
+    public void setVehicleType2(String vehicleType2) {
+        this.vehicleType2 = vehicleType2;
+    }
+
+    /**
+     * @param vehicleType3 The vehicleType3 to set.
+     */
+    public void setVehicleType3(String vehicleType3) {
+        this.vehicleType3 = vehicleType3;
+    }
+
+    /**
+     * @param vehicleType4 The vehicleType4 to set.
+     */
+    public void setVehicleType4(String vehicleType4) {
+        this.vehicleType4 = vehicleType4;
+    }
+
+    /**
+     * @param vehicleType5 The vehicleType5 to set.
+     */
+    public void setVehicleType5(String vehicleType5) {
+        this.vehicleType5 = vehicleType5;
+    }
+
+    /**
+     * @param vehicleyear The vehicleyear to set.
+     */
+    public void setVehicleyear(String vehicleyear) {
+        this.vehicleyear = vehicleyear;
+    }
+
+    /**
+     * @param vehicleyear The vehicleyear to set.
+     */
+    public void setVehiclecompanycar(String vehiclecompanycar) {
+        this.vehiclecompanycar = vehiclecompanycar;
+    }
+
+    /**
+     * @param way The way to set.
+     */
+    public void setWay(String way) {
+        this.way = way;
+    }
+
+    /**
+     * @param year The year to set.
+     */
+    public void setYear(String year) {
+        this.year = year;
+    }
+
+    /**
+     * @param zone The zone to set.
+     */
+    public void setZone(String zone) {
+        this.zone = zone;
+    }
+    
+    public EventDataType getEventDataType(SystemAccess sys) throws RemoteException {
+        
+        EventDataType event = new EventDataType();
+        if(!Util.empty(id)) {
+            event.setId(new Integer(id.trim()));
+        }
+        
+        if (Util.isNumber(this.points)){
+        	event.setPoints(new Integer(this.points));
+        }else{
+        	event.setPoints(new Integer(0));
+        }
+        
+        event.setCorporation(new CorporationData(sys.getUserSessionData().getFilter().getCorporationId(), null, null, null, null, null));
+        event.setDriver(new DriverData(new Integer(driverid.trim())));
+        if(status != null) {
+            event.setStatus(new Integer(status.trim()));
+        }
+        
+        event.setState(state);
+        
+        event.setCountry(Util.getGeoLabelData(this));
+        event.setDivOrgs(Util.getDivOrgs(this, sys.getUserSessionData()));
+        if(!Util.empty(city)) {
+            event.setCity(city);
+        }
+        
+        if (!Util.empty(vehicleId)) {
+            event.setVehicle(new VehicleData(new Integer(vehicleId.trim())));
+        } else {
+            event.setPlate(vehicleplate);
+            event.setTrade(vehicletrade);
+            event.setModel(vehiclemodel);
+            event.setYear(vehicleyear.trim());
+            event.setEconomicNumber((vehicleeconomicnumber!=null)?vehicleeconomicnumber.trim():"");
+        }
+        event.setCompanyCar(isChecked(vehiclecompanycar));
+        
+        event.setDamage(isChecked(damage));
+
+        event.setDate(Util.getDate(date,month,year));
+        if(!isChecked(nodatahour)) {
+            event.setHour(Util.getTime(hour,minute));
+        }
+        event.setWorking(working);
+        
+        if(!Util.empty(zone)) {
+            event.setZone(new ZoneDataType(zone));
+        }
+        event.setPoliceReport(policeReport);
+        event.setStory(description);
+
+        
+        event.setHandle(new VehicleBehaviourDataType(handle));
+
+        event.setCollision(new CollisionClasificationDataType(collision));
+        
+        if(clasificationType.equals(INCIDENT)) {
+        	event.setIncident(new IncidentClasificationDataType(clasification));
+        }else if(clasificationType.equals(ACCIDENT)) {
+        	event.setAccident(new AccidentClasificationDataType(clasification));
+        }else {
+        	event.setNearmiss(new AccidentClasificationDataType(clasification));
+        }
+        
+        event.setHitrun(hitrun);
+
+        event.setPrincipalFactor(new AccidentFactorsDataType(principalFactor));
+        
+        event.setCollisionAngle(collisionangle);
+        
+        if(!Util.empty(driverstate)) {
+            event.setDriverstate(driverstate);
+        }
+        if(!Util.empty(dayslost)) {
+            event.setDayslost(new Integer(dayslost));
+        }
+        if(!Util.empty(otherpartydayslost)) {
+            event.setOtherpartydayslost(new Integer(otherpartydayslost.trim()));
+        }
+        event.setFatalitiesfunccount(new Integer(fatalitiesfunccount.trim()));
+        event.setFatalitiesothercount(new Integer(fatalitiesothercount.trim()));
+        event.setInjuredfunccount(new Integer(injuredfunccount.trim()));
+        event.setInjuredothercount(new Integer(injuredothercount.trim()));
+        event.setSafefunccount(new Integer(safefunccount.trim()));
+        event.setSafeothercount(new Integer(safeothercount.trim()));
+        
+        event.setDamage1(isChecked(damage1));
+        event.setDamage2(isChecked(damage2));
+        event.setDamage3(isChecked(damage3));
+        event.setDamage4(isChecked(damage4));
+        event.setDamage5(isChecked(damage5));
+        event.setDamage6(isChecked(damage6));
+        event.setDamage7(isChecked(damage7));
+        event.setDamage8(isChecked(damage8));
+        event.setDamage9(isChecked(damage9));
+        event.setDamage10(isChecked(damage10));
+        
+        /* Forestales y CIMSA*/
+        event.setDamage(1,isChecked(damage1));
+        event.setDamage(2,isChecked(damage2));
+        event.setDamage(3,isChecked(damage3));
+        event.setDamage(4,isChecked(damage4));
+        event.setDamage(5,isChecked(damage5));
+        event.setDamage(6,isChecked(damage6));
+        event.setDamage(7,isChecked(damage7));
+        event.setDamage(8,isChecked(damage8));
+        event.setDamage(9,isChecked(damage9));
+        event.setDamage(10,isChecked(damage10));
+        event.setDamage(11,isChecked(damage11));
+        event.setDamage(12,isChecked(damage12));
+        event.setDamage(13,isChecked(damage13));
+        event.setDamage(14,isChecked(damage14));
+        event.setDamage(15,isChecked(damage15));
+        event.setDamage(16,isChecked(damage16));
+        event.setDamage(17,isChecked(damage17));
+        event.setDamage(18,isChecked(damage18));
+        event.setDamage(19,isChecked(damage19));
+        event.setDamage(20,isChecked(damage20));
+        event.setDamage(21,isChecked(damage21));
+        event.setDamage(22,isChecked(damage22));
+        event.setDamage(23,isChecked(damage23));
+        event.setDamage(24,isChecked(damage24));
+        event.setDamage(25,isChecked(damage25));
+        event.setDamage(26,isChecked(damage26));
+        event.setDamage(27,isChecked(damage27));
+        event.setDamage(28,isChecked(damage28));
+        event.setDamage(29,isChecked(damage29));
+        event.setDamage(30,isChecked(damage30));
+        event.setDamage(31,isChecked(damage31));
+        event.setDamage(32,isChecked(damage32));
+        event.setDamage(33,isChecked(damage33));
+        event.setDamage(34,isChecked(damage34));
+        event.setDamage(35,isChecked(damage35));
+        event.setDamage(36,isChecked(damage36));
+        event.setDamage(37,isChecked(damage37));
+        event.setDamage(38,isChecked(damage38));
+        event.setDamage(39,isChecked(damage39));
+        event.setDamage(40,isChecked(damage40));
+        event.setDamage(41,isChecked(damage41));
+        event.setDamage(42,isChecked(damage42));
+        /* fin forestales */
+
+        event.setSelfbelt(selfbelt);
+        if(!Util.empty(alcohol)) {
+            event.setAlcohol(alcohol);
+        }
+        event.setOthervehicles(othervehicles);
+        event.setCellular(cellular);
+        
+        if(!Util.empty(maxspeed)) {
+            event.setMaxSpeed(new Integer(maxspeed.trim()));
+        }
+        if(!Util.empty(collisionspeed)) {
+            event.setCollisionSpeed(new Integer(collisionspeed.trim()));
+        }
+        if(!Util.empty(vehiclespeed)) {
+            event.setVehicleSpeed(new Integer(vehiclespeed.trim()));
+        }
+        if(!Util.empty(reportedspeed)) {
+            event.setReportedSpeed(new Integer(reportedspeed.trim()));
+        }
+        if(!Util.empty(speedunit)) {
+            event.setSpeedUnit(speedunit);
+        }
+        
+        event.setClimate(new ClimateDataType(climate));
+        event.setLighting(new LightingDataType(lighting));
+        event.setWay(new WayDataType(way));
+        event.setDirection(new CirculationDirectionDataType(direction));
+        event.setControl(new TrafficControlDataType(control));
+        
+        event.setPavement(new PavementDataType(pavement));
+        event.setCondition(new ConditionRoutDataType(condition));
+
+        event.setPedestrianCount(new Integer(pedestriancount.trim()));
+        event.setPedestrianComment1(pedestrianother1);
+        event.setPedestrian1(pedestrian1);
+        event.setPedestrianComment2(pedestrianother2);
+        event.setPedestrian2(pedestrian2);
+        event.setPedestrianComment3(pedestrianother3);
+        event.setPedestrian3(pedestrian3);
+
+        if(!Util.empty(cost) && Util.isNumber(cost.trim())) {
+            event.setCost(new Integer(cost.trim()));
+        }
+        if(!Util.empty(carCost) && Util.isNumber(carCost.trim())) {
+            event.setCarCost(new Integer(carCost.trim()));
+        }
+        
+        Collection vehicles = new LinkedList();
+        if(Integer.parseInt(vehiclecount) >= 1) {
+            vehicles.add(getVehicle(vehicleInvolvedId1, vehicleType1, behaviourType1, hitrun1,principalFactor1,factortooclose1,factorhighspeed1,factorsigns1
+                    ,factorturn1,factorlight1,factorstop1,factorother1,factorchangelane1,factoralcohol1,factorovertaking1,
+                    factorsleep1,factordistraction1,factorConcience1,factorOtherParking1,factorOtherCrossing1,factorOtherStanding1,contact1,1));            
+        }
+        if(Integer.parseInt(vehiclecount) >= 2) {
+            vehicles.add(getVehicle(vehicleInvolvedId2, vehicleType2, behaviourType2, hitrun2,principalFactor2,factortooclose2,factorhighspeed2,factorsigns2
+                ,factorturn2,factorlight2,factorstop2,factorother2,factorchangelane2,factoralcohol2,factorovertaking2,
+                factorsleep2,factordistraction2,factorConcience2,factorOtherParking2,factorOtherCrossing2,factorOtherStanding2,contact2,2));
+        }
+        if(Integer.parseInt(vehiclecount) >= 3) {
+            vehicles.add(getVehicle(vehicleInvolvedId3, vehicleType3, behaviourType3, hitrun3,principalFactor3,factortooclose3,factorhighspeed3,factorsigns3
+                ,factorturn3,factorlight3,factorstop3,factorother3,factorchangelane3,factoralcohol3,factorovertaking3,
+                factorsleep3,factordistraction3,factorConcience3,factorOtherParking3,factorOtherCrossing3,factorOtherStanding3,contact3,3));
+        }
+        if(Integer.parseInt(vehiclecount) >= 4) {
+            vehicles.add(getVehicle(vehicleInvolvedId4, vehicleType4, behaviourType4, hitrun4,principalFactor4,factortooclose4,factorhighspeed4,factorsigns4
+                ,factorturn4,factorlight4,factorstop4,factorother4,factorchangelane4,factoralcohol4,factorovertaking4,
+                factorsleep4,factordistraction4,factorConcience4,factorOtherParking4,factorOtherCrossing4,factorOtherStanding4,contact4,4));
+        }
+        if(Integer.parseInt(vehiclecount) >= 5) {
+            vehicles.add(getVehicle(vehicleInvolvedId5, vehicleType5, behaviourType5, hitrun5,principalFactor5,factortooclose5,factorhighspeed5,factorsigns5
+                ,factorturn5,factorlight5,factorstop5,factorother5,factorchangelane5,factoralcohol5,factorovertaking5,
+                factorsleep5,factordistraction5,factorConcience5,factorOtherParking5,factorOtherCrossing5,factorOtherStanding5,contact5,5));
+        }
+        event.setVehiclesInvolved(vehicles);
+        event.setRecomendation(recomendation);
+        event.setEvitability(evitability);
+        
+        if(sys.isCorporation(new int[] {CorporationData.FORESTALORIENTAL,CorporationData.CIMSA,CorporationData.MONTES_DE_PLATA,CorporationData.WEYERHAEUSER,CorporationData.SYNGENTA}) && !Util.empty(severity)) {
+            event.setSeverity(new Integer(severity));
+        }
+        
+        if(!Util.empty(supervisedCollision)) {
+            event.setSupervisedCollision(new CollisionClasificationDataType(supervisedCollision));
+        }
+        
+        if(!Util.empty(supervisedClasification)) {
+	        if(clasificationType.equals(INCIDENT)) {
+	            event.setSupervisedIncident(new IncidentClasificationDataType(supervisedClasification));
+	        }else {
+	            event.setSupervisedAccident(new AccidentClasificationDataType(supervisedClasification));
+	        }
+        }
+
+        event.setNonrecordable(Util.isChecked(nonrecordable));
+        event.setSuperivisionObservations(supervisionObservations);
+        event.setComment(comment);
+        
+        boolean monsanto = sys.getUserSessionData().getFilter().getCorporationId().intValue() == CorporationData.MONSANTO && sys.getUserSessionData().hasSecondEventSupervision(event.getCountryId());
+        boolean klabin = sys.getUserSessionData().getFilter().getCorporationId().intValue() == CorporationData.KLABIN;
+        boolean anglo = sys.getUserSessionData().getFilter().getCorporationId().intValue() == CorporationData.ANGLO;
+        if(monsanto || klabin || anglo) {
+            if(!Util.empty(monsantoClasification)) {
+                if(monsantoClasification.equals("accident")) {
+                    if(event.getAccident() == null) {
+                		if(event.getIncident() != null) {
+                			event.setAccident(new AccidentClasificationDataType(event.getIncident().getResourceBundleId()));
+                		}/*else {
+                			event.setAccident(new AccidentClasificationDataType(event.getNearmiss().getResourceBundleId()));                			
+                		}*/
+                    }
+                    event.setIncident(null);
+                   // event.setNearmiss(null);
+                }else if(monsantoClasification.equals("incident")) {
+                    if(event.getIncident() == null) {
+                		if(event.getAccident() != null) {
+                			event.setIncident(new IncidentClasificationDataType(event.getAccident().getResourceBundleId()));
+                		}/*else {
+                			event.setIncident(new IncidentClasificationDataType(event.getNearmiss().getResourceBundleId()));
+                		}*/
+                    }
+                    event.setAccident(null);
+                    //event.setNearmiss(null);
+                }/*else if(monsantoClasification.equals("nearmiss")) {
+                	if(event.getNearmiss() == null) {
+                		if(event.getAccident() != null) {
+                			event.setNearmiss(new AccidentClasificationDataType(event.getAccident().getResourceBundleId()));
+                		}else {
+                			event.setNearmiss(new AccidentClasificationDataType(event.getIncident().getResourceBundleId()));
+                		}
+                	}
+                    event.setAccident(null);
+                    event.setIncident(null);
+                }*/
+            }
+        }
+       	event.setWorkingHours(workingHours != null && Util.isNumber(workingHours.trim())? new Integer (workingHours.trim()): null);
+       	if(charged != null) {
+       		event.setCharged(charged.trim());
+       	}
+       	event.setWhoDrives(whoDrives);
+
+       	if(damageCharge != null) {
+       		event.setDamageCharge(damageCharge.trim());
+       	}
+       	
+       	event.setRealCost(isChecked(realCost));
+
+       	
+       	Date lote = null;
+        if (Util.isNumber(this.getLoteMonth()) && 
+        		Util.isNumber(this.getLoteYear())){
+        	Calendar c = Calendar.getInstance();
+        	c.set(Calendar.DATE, 1);
+        	c.set(Calendar.MONTH, (new Integer(this.getLoteMonth())).intValue() - 1);
+        	c.set(Calendar.YEAR, (new Integer(this.getLoteYear())).intValue());
+        	lote = c.getTime(); 
+        }
+       	event.setLote(lote);
+
+       	if(stoppedVehicle != null) {
+       		event.setStoppedVehicle(stoppedVehicle.trim());
+       	}
+       	if(alcoholBreath != null) {
+       		event.setAlcoholBreath(alcoholBreath.trim());
+       	}
+
+       	event.setExtraCost1(extracost1 != null && Util.isNumber(extracost1.trim())? new Integer (extracost1.trim()): null);
+       	event.setExtraCost2(extracost2 != null && Util.isNumber(extracost2.trim())? new Integer (extracost2.trim()): null);
+       	event.setExtraCost3(extracost3 != null && Util.isNumber(extracost3.trim())? new Integer (extracost3.trim()): null);
+       	event.setExtraCost4(extracost4 != null && Util.isNumber(extracost4.trim())? new Integer (extracost4.trim()): null);
+       	event.setExtraCost5(extracost5 != null && Util.isNumber(extracost5.trim())? new Integer (extracost5.trim()): null);
+       	event.setExtraCost6(extracost6 != null && Util.isNumber(extracost6.trim())? new Integer (extracost6.trim()): null);
+       	event.setExtraCost7(extracost7 != null && Util.isNumber(extracost7.trim())? new Integer (extracost7.trim()): null);
+       	event.setExtraCost8(extracost8 != null && Util.isNumber(extracost8.trim())? new Integer (extracost8.trim()): null);
+
+       	event.setEnsuranceDate(Util.getDate(ensuranceDay,ensuranceMonth,ensuranceYear));
+
+       	event.setCompanyAmount(companyAmount != null && Util.isNumber(companyAmount.trim())? new Integer (companyAmount.trim()): null);
+       	event.setDriverAmount(driverAmount != null && Util.isNumber(driverAmount.trim())? new Integer (driverAmount.trim()): null);
+       	event.setThirdAmount(thirdAmount != null && Util.isNumber(thirdAmount.trim())? new Integer (thirdAmount.trim()): null);
+
+       	event.setFolioNumber(folioNumber != null && Util.isNumber(folioNumber.trim()) ? 
+       				new Integer(folioNumber.trim()):null);
+       	event.setSapNumber(sapNumber != null && Util.isNumber(sapNumber.trim())?
+       				new Integer(sapNumber.trim()):null)	;
+       	
+        event.setDoubleCabin( (doubleCabin == null )?false : isChecked(doubleCabin.trim()));
+       	
+       	
+       	// Distractores de PEPSICO:
+        if( sys.getUserSessionData().getFilter().getCorporationId().intValue()== CorporationData.PEPSICO) {
+        	distractor = "";
+        	distractor += (Util.isChecked(getDistractorOption1())) ? "1" : "0";
+        	distractor += (Util.isChecked(getDistractorOption2())) ? "1" : "0";
+        	distractor += (Util.isChecked(getDistractorOption3())) ? "1" : "0";
+        	distractor += (Util.isChecked(getDistractorOption4())) ? "1" : "0";
+        	distractor += (Util.isChecked(getDistractorOption5())) ? "1" : "0";
+        	distractor += (Util.isChecked(getDistractorOption6())) ? "1" : "0";
+        }
+        event.setDistractor(distractor);
+        
+        // Señaolamiento o control de transito multiple PEPSICO:
+        if( sys.getUserSessionData().getFilter().getCorporationId().intValue()== CorporationData.PEPSICO) {
+        	controlMultiple = "";
+        	controlMultiple += (Util.isChecked(getControlMultipleOption1())) ? "1" : "0";
+        	controlMultiple += (Util.isChecked(getControlMultipleOption2())) ? "1" : "0";
+        	controlMultiple += (Util.isChecked(getControlMultipleOption3())) ? "1" : "0";
+        	controlMultiple += (Util.isChecked(getControlMultipleOption4())) ? "1" : "0";
+        	controlMultiple += (Util.isChecked(getControlMultipleOption5())) ? "1" : "0";
+        	controlMultiple += (Util.isChecked(getControlMultipleOption6())) ? "1" : "0";
+        	controlMultiple += (Util.isChecked(getControlMultipleOption7())) ? "1" : "0";
+        	// controlMultiple += (Util.isChecked(getControlMultipleOption8())) ? "1" : "0";
+        	event.setControl(new TrafficControlDataType("datatype.trafficcontrols.other"));
+        }
+        event.setControlMultiple(controlMultiple);
+       	
+        
+       	return event;
+
+    }
+
+    private VehicleInvolvedDataType getVehicle(String vehicleId,String vehicleType, String behaviourType, String hitrun,
+            String principalFactor,String factortooclose,String factorhighspeed,String factorsigns
+            ,String factorturn,String factorlight,String factorstop,String factorother,
+            String factorchangelane,String factoralcohol,String factorovertaking,String factoroversleep,
+            String factordistraction,String factorConcience,String factorOtherParking,String factorOtherCrossing, String factorOtherStanding, String contact, int number) {
+        
+        VehicleInvolvedDataType vehicle = new VehicleInvolvedDataType();
+        
+        if(!Util.empty(vehicleId)) {
+            vehicle.setInvolvedid(new Integer(vehicleId));
+        }
+        vehicle.setNumber(new Integer(number));
+        vehicle.setTypeVehicle(new TypeVehicleDataType(vehicleType));
+        vehicle.setBehaviourVehicle(new VehicleBehaviourDataType(behaviourType));
+        
+        vehicle.setHitrun(hitrun);
+
+        vehicle.setPrincipalFactor(new AccidentFactorsDataType(principalFactor));
+        
+        vehicle.setFactortooclose(isChecked(factortooclose));
+        vehicle.setFactorhighspeed(isChecked(factorhighspeed));
+        vehicle.setFactorsigns(isChecked(factorsigns));
+        vehicle.setFactorturn(isChecked(factorturn));
+        vehicle.setFactorlight(isChecked(factorlight));
+        vehicle.setFactorstop(isChecked(factorstop));
+        vehicle.setFactorother(isChecked(factorother));
+        vehicle.setFactorchangelane(isChecked(factorchangelane));
+        vehicle.setFactoralcohol(isChecked(factoralcohol));
+        vehicle.setFactorovertaking(isChecked(factorovertaking));
+        vehicle.setFactorsleep(isChecked(factorsleep));
+        vehicle.setFactordistract(isChecked(factordistraction));
+        vehicle.setFactorConcience(isChecked(factorConcience));
+        vehicle.setFactorOtherParking(isChecked(factorOtherParking));
+        vehicle.setFactorOtherCrossing(isChecked(factorOtherCrossing));
+        vehicle.setFactorOtherStanding(isChecked(factorOtherStanding));
+
+        vehicle.setContact(contact);
+        
+
+
+        return vehicle;
+    }
+    /**
+     * @return
+     */
+    public boolean isChecked(String label) {
+        if (!Util.empty(label) && label.toLowerCase().equals("on"))
+        	return true;
+        else 
+        	return false;
+    }
+
+    /**
+     * @return Returns the collisionangle.
+     */
+    public String getCollisionangle() {
+        return collisionangle;
+    }
+
+    /**
+     * @param collisionangle The collisionangle to set.
+     */
+    public void setCollisionangle(String collisionangle) {
+        this.collisionangle = collisionangle;
+    }
+
+    /**
+     * @param collisionspeed The collisionspeed to set.
+     */
+    public void setCollisionspeed(String collisionspeed) {
+        this.collisionspeed = collisionspeed;
+    }
+
+    /**
+     * @param maxspeed The maxspeed to set.
+     */
+    public void setMaxspeed(String maxspeed) {
+        this.maxspeed = maxspeed;
+    }
+
+    /**
+     * @param speedunit The speedunit to set.
+     */
+    public void setSpeedunit(String speedunit) {
+        this.speedunit = speedunit;
+    }
+
+    /**
+     * @param vehiclespeed The vehiclespeed to set.
+     */
+    public void setVehiclespeed(String vehiclespeed) {
+        this.vehiclespeed = vehiclespeed;
+    }
+
+    /**
+     * @return Returns the nodatahour.
+     */
+    public String getNodatahour() {
+        return nodatahour;
+    }
+
+    /**
+     * @param nodatahour The nodatahour to set.
+     */
+    public void setNodatahour(String nodatahour) {
+        this.nodatahour = nodatahour;
+    }
+
+    /**
+     * @return Returns the working.
+     */
+    public String getWorking() {
+        return working;
+    }
+
+    /**
+     * @param working The working to set.
+     */
+    public void setWorking(String working) {
+        this.working = working;
+    }
+
+    /**
+     * @return Returns the policeReport.
+     */
+    public String getPoliceReport() {
+        return policeReport;
+    }
+
+    /**
+     * @param policeReport The policeReport to set.
+     */
+    public void setPoliceReport(String policeReport) {
+        this.policeReport = policeReport;
+    }
+    
+    /**
+     * @return Returns the clasification.
+     */
+    public String getClasification() {
+        return clasification;
+    }
+
+    /**
+     * @return Returns the collision.
+     */
+    public String getCollision() {
+        return collision;
+    }
+
+    /**
+     * @param clasification The clasification to set.
+     */
+    public void setClasification(String clasification) {
+        this.clasification = clasification;
+    }
+
+    /**
+     * @param collision The collision to set.
+     */
+    public void setCollision(String collision) {
+        this.collision = collision;
+    }
+
+    /**
+     * @return Returns the principalFactor.
+     */
+    public String getPrincipalFactor() {
+        return principalFactor;
+    }
+
+    /**
+     * @param principalFactor The principalFactor to set.
+     */
+    public void setPrincipalFactor(String principalFactor) {
+        this.principalFactor = principalFactor;
+    }
+
+    /**
+     * @return Returns the factordistraction.
+     */
+    public String getFactordistraction() {
+        return factordistraction;
+    }
+
+    /**
+     * @return Returns the factorsleep.
+     */
+    public String getFactorsleep() {
+        return factorsleep;
+    }
+
+    /**
+     * @param factordistraction The factordistraction to set.
+     */
+    public void setFactordistraction(String factordistraction) {
+        this.factordistraction = factordistraction;
+    }
+
+    /**
+     * @param factorsleep The factorsleep to set.
+     */
+    public void setFactorsleep(String factorsleep) {
+        this.factorsleep = factorsleep;
+    }
+
+    /**
+     * @return Returns the reportedspeed.
+     */
+    public String getReportedspeed() {
+        return reportedspeed;
+    }
+
+    /**
+     * @param reportedspeed The reportedspeed to set.
+     */
+    public void setReportedspeed(String reportedspeed) {
+        this.reportedspeed = reportedspeed;
+    }
+
+    /**
+     * @return Returns the factordistraction1.
+     */
+    public String getFactordistraction1() {
+        return factordistraction1;
+    }
+
+    /**
+     * @return Returns the factordistraction2.
+     */
+    public String getFactordistraction2() {
+        return factordistraction2;
+    }
+
+    /**
+     * @return Returns the factordistraction3.
+     */
+    public String getFactordistraction3() {
+        return factordistraction3;
+    }
+
+    /**
+     * @return Returns the factordistraction4.
+     */
+    public String getFactordistraction4() {
+        return factordistraction4;
+    }
+
+    /**
+     * @return Returns the factordistraction5.
+     */
+    public String getFactordistraction5() {
+        return factordistraction5;
+    }
+
+    /**
+     * @return Returns the factorsleep1.
+     */
+    public String getFactorsleep1() {
+        return factorsleep1;
+    }
+
+    /**
+     * @return Returns the factorsleep2.
+     */
+    public String getFactorsleep2() {
+        return factorsleep2;
+    }
+
+    /**
+     * @return Returns the factorsleep3.
+     */
+    public String getFactorsleep3() {
+        return factorsleep3;
+    }
+
+    /**
+     * @return Returns the factorsleep4.
+     */
+    public String getFactorsleep4() {
+        return factorsleep4;
+    }
+
+    /**
+     * @return Returns the factorsleep5.
+     */
+    public String getFactorsleep5() {
+        return factorsleep5;
+    }
+
+    /**
+     * @param factordistraction1 The factordistraction1 to set.
+     */
+    public void setFactordistraction1(String factordistraction1) {
+        this.factordistraction1 = factordistraction1;
+    }
+
+    /**
+     * @param factordistraction2 The factordistraction2 to set.
+     */
+    public void setFactordistraction2(String factordistraction2) {
+        this.factordistraction2 = factordistraction2;
+    }
+
+    /**
+     * @param factordistraction3 The factordistraction3 to set.
+     */
+    public void setFactordistraction3(String factordistraction3) {
+        this.factordistraction3 = factordistraction3;
+    }
+
+    /**
+     * @param factordistraction4 The factordistraction4 to set.
+     */
+    public void setFactordistraction4(String factordistraction4) {
+        this.factordistraction4 = factordistraction4;
+    }
+
+    /**
+     * @param factordistraction5 The factordistraction5 to set.
+     */
+    public void setFactordistraction5(String factordistraction5) {
+        this.factordistraction5 = factordistraction5;
+    }
+
+    /**
+     * @param factorsleep1 The factorsleep1 to set.
+     */
+    public void setFactorsleep1(String factorsleep1) {
+        this.factorsleep1 = factorsleep1;
+    }
+
+    /**
+     * @param factorsleep2 The factorsleep2 to set.
+     */
+    public void setFactorsleep2(String factorsleep2) {
+        this.factorsleep2 = factorsleep2;
+    }
+
+    /**
+     * @param factorsleep3 The factorsleep3 to set.
+     */
+    public void setFactorsleep3(String factorsleep3) {
+        this.factorsleep3 = factorsleep3;
+    }
+
+    /**
+     * @param factorsleep4 The factorsleep4 to set.
+     */
+    public void setFactorsleep4(String factorsleep4) {
+        this.factorsleep4 = factorsleep4;
+    }
+
+    /**
+     * @param factorsleep5 The factorsleep5 to set.
+     */
+    public void setFactorsleep5(String factorsleep5) {
+        this.factorsleep5 = factorsleep5;
+    }
+
+    /**
+     * @return Returns the comment.
+     */
+    public String getComment() {
+        return comment;
+    }
+
+    /**
+     * @param comment The comment to set.
+     */
+    public void setComment(String comment) {
+        this.comment = comment;
+    }
+
+    /**
+     * @return Returns the damage10.
+     */
+    public String getDamage10() {
+        return damage10;
+    }
+
+    /**
+     * @param damage10 The damage10 to set.
+     */
+    public void setDamage10(String damage10) {
+        this.damage10 = damage10;
+    }
+
+    /**
+     * @return Returns the principalFactor1.
+     */
+    public String getPrincipalFactor1() {
+        return principalFactor1;
+    }
+
+    /**
+     * @return Returns the principalFactor2.
+     */
+    public String getPrincipalFactor2() {
+        return principalFactor2;
+    }
+
+    /**
+     * @return Returns the principalFactor3.
+     */
+    public String getPrincipalFactor3() {
+        return principalFactor3;
+    }
+
+    /**
+     * @return Returns the principalFactor4.
+     */
+    public String getPrincipalFactor4() {
+        return principalFactor4;
+    }
+
+    /**
+     * @return Returns the principalFactor5.
+     */
+    public String getPrincipalFactor5() {
+        return principalFactor5;
+    }
+
+    /**
+     * @param principalFactor1 The principalFactor1 to set.
+     */
+    public void setPrincipalFactor1(String principalFactor1) {
+        this.principalFactor1 = principalFactor1;
+    }
+
+    /**
+     * @param principalFactor2 The principalFactor2 to set.
+     */
+    public void setPrincipalFactor2(String principalFactor2) {
+        this.principalFactor2 = principalFactor2;
+    }
+
+    /**
+     * @param principalFactor3 The principalFactor3 to set.
+     */
+    public void setPrincipalFactor3(String principalFactor3) {
+        this.principalFactor3 = principalFactor3;
+    }
+
+    /**
+     * @param principalFactor4 The principalFactor4 to set.
+     */
+    public void setPrincipalFactor4(String principalFactor4) {
+        this.principalFactor4 = principalFactor4;
+    }
+
+    /**
+     * @param principalFactor5 The principalFactor5 to set.
+     */
+    public void setPrincipalFactor5(String principalFactor5) {
+        this.principalFactor5 = principalFactor5;
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    public String getOtherpartydayslost() {
+        return otherpartydayslost;
+    }
+
+    public void setOtherpartydayslost(String otherpartydayslost) {
+        this.otherpartydayslost = otherpartydayslost;
+    }
+
+    public String getStatus() {
+        return status;
+    }
+
+    public void setStatus(String status) {
+        this.status = status;
+    }
+
+    public String getVehicleInvolvedId1() {
+        return vehicleInvolvedId1;
+    }
+
+    public String getVehicleInvolvedId2() {
+        return vehicleInvolvedId2;
+    }
+
+    public String getVehicleInvolvedId3() {
+        return vehicleInvolvedId3;
+    }
+
+    public String getVehicleInvolvedId4() {
+        return vehicleInvolvedId4;
+    }
+
+    public String getVehicleInvolvedId5() {
+        return vehicleInvolvedId5;
+    }
+
+    public void setVehicleInvolvedId1(String vehicleInvolvedId1) {
+        this.vehicleInvolvedId1 = vehicleInvolvedId1;
+    }
+
+    public void setVehicleInvolvedId2(String vehicleInvolvedId2) {
+        this.vehicleInvolvedId2 = vehicleInvolvedId2;
+    }
+
+    public void setVehicleInvolvedId3(String vehicleInvolvedId3) {
+        this.vehicleInvolvedId3 = vehicleInvolvedId3;
+    }
+
+    public void setVehicleInvolvedId4(String vehicleInvolvedId4) {
+        this.vehicleInvolvedId4 = vehicleInvolvedId4;
+    }
+
+    public void setVehicleInvolvedId5(String vehicleInvolvedId5) {
+        this.vehicleInvolvedId5 = vehicleInvolvedId5;
+    }
+
+    public String getRecomendation() {
+        return recomendation;
+    }
+
+    public void setRecomendation(String recomendation) {
+        this.recomendation = recomendation;
+    }
+
+    public String getEvitability() {
+        return evitability;
+    }
+
+    public void setEvitability(String evitability) {
+        this.evitability = evitability;
+    }
+
+    public String getSupervisedClasification() {
+        return supervisedClasification;
+    }
+
+    public String getSupervisedCollision() {
+        return supervisedCollision;
+    }
+
+    public void setSupervisedClasification(String supervisedClasification) {
+        this.supervisedClasification = supervisedClasification;
+    }
+
+    public void setSupervisedCollision(String supervisedCollision) {
+        this.supervisedCollision = supervisedCollision;
+    }
+
+    public String getFactorOtherCrossing() {
+        return factorOtherCrossing;
+    }
+
+    public String getFactorOtherParking() {
+        return factorOtherParking;
+    }
+
+    public String getFactorOtherStanding() {
+        return factorOtherStanding;
+    }
+
+    public void setFactorOtherCrossing(String factorOtherCrossing) {
+        this.factorOtherCrossing = factorOtherCrossing;
+    }
+
+    public void setFactorOtherParking(String factorOtherParking) {
+        this.factorOtherParking = factorOtherParking;
+    }
+
+    public void setFactorOtherStanding(String factorOtherStanding) {
+        this.factorOtherStanding = factorOtherStanding;
+    }
+
+    public String getFactorOtherCrossing1() {
+        return factorOtherCrossing1;
+    }
+
+    public String getFactorOtherCrossing2() {
+        return factorOtherCrossing2;
+    }
+
+    public String getFactorOtherCrossing3() {
+        return factorOtherCrossing3;
+    }
+
+    public String getFactorOtherCrossing4() {
+        return factorOtherCrossing4;
+    }
+
+    public String getFactorOtherCrossing5() {
+        return factorOtherCrossing5;
+    }
+
+    public String getFactorOtherParking1() {
+        return factorOtherParking1;
+    }
+
+    public String getFactorOtherParking2() {
+        return factorOtherParking2;
+    }
+
+    public String getFactorOtherParking3() {
+        return factorOtherParking3;
+    }
+
+    public String getFactorOtherParking4() {
+        return factorOtherParking4;
+    }
+
+    public String getFactorOtherParking5() {
+        return factorOtherParking5;
+    }
+
+    public String getFactorOtherStanding1() {
+        return factorOtherStanding1;
+    }
+
+    public String getFactorOtherStanding2() {
+        return factorOtherStanding2;
+    }
+
+    public String getFactorOtherStanding3() {
+        return factorOtherStanding3;
+    }
+
+    public String getFactorOtherStanding4() {
+        return factorOtherStanding4;
+    }
+
+    public String getFactorOtherStanding5() {
+        return factorOtherStanding5;
+    }
+
+    public void setFactorOtherCrossing1(String factorOtherCrossing1) {
+        this.factorOtherCrossing1 = factorOtherCrossing1;
+    }
+
+    public void setFactorOtherCrossing2(String factorOtherCrossing2) {
+        this.factorOtherCrossing2 = factorOtherCrossing2;
+    }
+
+    public void setFactorOtherCrossing3(String factorOtherCrossing3) {
+        this.factorOtherCrossing3 = factorOtherCrossing3;
+    }
+
+    public void setFactorOtherCrossing4(String factorOtherCrossing4) {
+        this.factorOtherCrossing4 = factorOtherCrossing4;
+    }
+
+    public void setFactorOtherCrossing5(String factorOtherCrossing5) {
+        this.factorOtherCrossing5 = factorOtherCrossing5;
+    }
+
+    public void setFactorOtherParking1(String factorOtherParking1) {
+        this.factorOtherParking1 = factorOtherParking1;
+    }
+
+    public void setFactorOtherParking2(String factorOtherParking2) {
+        this.factorOtherParking2 = factorOtherParking2;
+    }
+
+    public void setFactorOtherParking3(String factorOtherParking3) {
+        this.factorOtherParking3 = factorOtherParking3;
+    }
+
+    public void setFactorOtherParking4(String factorOtherParking4) {
+        this.factorOtherParking4 = factorOtherParking4;
+    }
+
+    public void setFactorOtherParking5(String factorOtherParking5) {
+        this.factorOtherParking5 = factorOtherParking5;
+    }
+
+    public void setFactorOtherStanding1(String factorOtherStanding1) {
+        this.factorOtherStanding1 = factorOtherStanding1;
+    }
+
+    public void setFactorOtherStanding2(String factorOtherStanding2) {
+        this.factorOtherStanding2 = factorOtherStanding2;
+    }
+
+    public void setFactorOtherStanding3(String factorOtherStanding3) {
+        this.factorOtherStanding3 = factorOtherStanding3;
+    }
+
+    public void setFactorOtherStanding4(String factorOtherStanding4) {
+        this.factorOtherStanding4 = factorOtherStanding4;
+    }
+
+    public void setFactorOtherStanding5(String factorOtherStanding5) {
+        this.factorOtherStanding5 = factorOtherStanding5;
+    }
+
+	/**
+	 * @return Returns the damage11.
+	 */
+	public String getDamage11() {
+		return damage11;
+	}
+
+	/**
+	 * @param damage11 The damage11 to set.
+	 */
+	public void setDamage11(String damage11) {
+		this.damage11 = damage11;
+	}
+
+	/**
+	 * @return Returns the damage12.
+	 */
+	public String getDamage12() {
+		return damage12;
+	}
+
+	/**
+	 * @param damage12 The damage12 to set.
+	 */
+	public void setDamage12(String damage12) {
+		this.damage12 = damage12;
+	}
+
+	/**
+	 * @return Returns the damage13.
+	 */
+	public String getDamage13() {
+		return damage13;
+	}
+
+	/**
+	 * @param damage13 The damage13 to set.
+	 */
+	public void setDamage13(String damage13) {
+		this.damage13 = damage13;
+	}
+
+	/**
+	 * @return Returns the damage14.
+	 */
+	public String getDamage14() {
+		return damage14;
+	}
+
+	/**
+	 * @param damage14 The damage14 to set.
+	 */
+	public void setDamage14(String damage14) {
+		this.damage14 = damage14;
+	}
+
+	/**
+	 * @return Returns the damage15.
+	 */
+	public String getDamage15() {
+		return damage15;
+	}
+
+	/**
+	 * @param damage15 The damage15 to set.
+	 */
+	public void setDamage15(String damage15) {
+		this.damage15 = damage15;
+	}
+
+	/**
+	 * @return Returns the damage16.
+	 */
+	public String getDamage16() {
+		return damage16;
+	}
+
+	/**
+	 * @param damage16 The damage16 to set.
+	 */
+	public void setDamage16(String damage16) {
+		this.damage16 = damage16;
+	}
+
+	/**
+	 * @return Returns the damage17.
+	 */
+	public String getDamage17() {
+		return damage17;
+	}
+
+	/**
+	 * @param damage17 The damage17 to set.
+	 */
+	public void setDamage17(String damage17) {
+		this.damage17 = damage17;
+	}
+
+	/**
+	 * @return Returns the damage18.
+	 */
+	public String getDamage18() {
+		return damage18;
+	}
+
+	/**
+	 * @param damage18 The damage18 to set.
+	 */
+	public void setDamage18(String damage18) {
+		this.damage18 = damage18;
+	}
+
+	/**
+	 * @return Returns the damage19.
+	 */
+	public String getDamage19() {
+		return damage19;
+	}
+
+	/**
+	 * @param damage19 The damage19 to set.
+	 */
+	public void setDamage19(String damage19) {
+		this.damage19 = damage19;
+	}
+
+	/**
+	 * @return Returns the damage20.
+	 */
+	public String getDamage20() {
+		return damage20;
+	}
+
+	/**
+	 * @param damage20 The damage20 to set.
+	 */
+	public void setDamage20(String damage20) {
+		this.damage20 = damage20;
+	}
+
+	/**
+	 * @return Returns the damage21.
+	 */
+	public String getDamage21() {
+		return damage21;
+	}
+
+	/**
+	 * @param damage21 The damage21 to set.
+	 */
+	public void setDamage21(String damage21) {
+		this.damage21 = damage21;
+	}
+
+	/**
+	 * @return Returns the damage22.
+	 */
+	public String getDamage22() {
+		return damage22;
+	}
+
+	/**
+	 * @param damage22 The damage22 to set.
+	 */
+	public void setDamage22(String damage22) {
+		this.damage22 = damage22;
+	}
+
+	/**
+	 * @return Returns the damage23.
+	 */
+	public String getDamage23() {
+		return damage23;
+	}
+
+	/**
+	 * @param damage23 The damage23 to set.
+	 */
+	public void setDamage23(String damage23) {
+		this.damage23 = damage23;
+	}
+
+	/**
+	 * @return Returns the damage24.
+	 */
+	public String getDamage24() {
+		return damage24;
+	}
+
+	/**
+	 * @param damage24 The damage24 to set.
+	 */
+	public void setDamage24(String damage24) {
+		this.damage24 = damage24;
+	}
+
+	/**
+	 * @return Returns the damage25.
+	 */
+	public String getDamage25() {
+		return damage25;
+	}
+
+	/**
+	 * @param damage25 The damage25 to set.
+	 */
+	public void setDamage25(String damage25) {
+		this.damage25 = damage25;
+	}
+
+	/**
+	 * @return Returns the damage26.
+	 */
+	public String getDamage26() {
+		return damage26;
+	}
+
+	/**
+	 * @param damage26 The damage26 to set.
+	 */
+	public void setDamage26(String damage26) {
+		this.damage26 = damage26;
+	}
+
+	/**
+	 * @return Returns the damage27.
+	 */
+	public String getDamage27() {
+		return damage27;
+	}
+
+	/**
+	 * @param damage27 The damage27 to set.
+	 */
+	public void setDamage27(String damage27) {
+		this.damage27 = damage27;
+	}
+
+	/**
+	 * @return Returns the damage28.
+	 */
+	public String getDamage28() {
+		return damage28;
+	}
+
+	/**
+	 * @param damage28 The damage28 to set.
+	 */
+	public void setDamage28(String damage28) {
+		this.damage28 = damage28;
+	}
+
+	/**
+	 * @return Returns the damage29.
+	 */
+	public String getDamage29() {
+		return damage29;
+	}
+
+	/**
+	 * @param damage29 The damage29 to set.
+	 */
+	public void setDamage29(String damage29) {
+		this.damage29 = damage29;
+	}
+
+	/**
+	 * @return Returns the damage30.
+	 */
+	public String getDamage30() {
+		return damage30;
+	}
+
+	/**
+	 * @param damage30 The damage30 to set.
+	 */
+	public void setDamage30(String damage30) {
+		this.damage30 = damage30;
+	}
+
+	/**
+	 * @return Returns the damage31.
+	 */
+	public String getDamage31() {
+		return damage31;
+	}
+
+	/**
+	 * @param damage31 The damage31 to set.
+	 */
+	public void setDamage31(String damage31) {
+		this.damage31 = damage31;
+	}
+
+	/**
+	 * @return Returns the damage32.
+	 */
+	public String getDamage32() {
+		return damage32;
+	}
+
+	/**
+	 * @param damage32 The damage32 to set.
+	 */
+	public void setDamage32(String damage32) {
+		this.damage32 = damage32;
+	}
+
+	/**
+	 * @return Returns the damage33.
+	 */
+	public String getDamage33() {
+		return damage33;
+	}
+
+	/**
+	 * @param damage33 The damage33 to set.
+	 */
+	public void setDamage33(String damage33) {
+		this.damage33 = damage33;
+	}
+
+	/**
+	 * @return Returns the damage34.
+	 */
+	public String getDamage34() {
+		return damage34;
+	}
+
+	/**
+	 * @param damage34 The damage34 to set.
+	 */
+	public void setDamage34(String damage34) {
+		this.damage34 = damage34;
+	}
+
+	/**
+	 * @return Returns the damage35.
+	 */
+	public String getDamage35() {
+		return damage35;
+	}
+
+	/**
+	 * @param damage35 The damage35 to set.
+	 */
+	public void setDamage35(String damage35) {
+		this.damage35 = damage35;
+	}
+
+	/**
+	 * @return Returns the damage36.
+	 */
+	public String getDamage36() {
+		return damage36;
+	}
+
+	/**
+	 * @param damage36 The damage36 to set.
+	 */
+	public void setDamage36(String damage36) {
+		this.damage36 = damage36;
+	}
+
+	/**
+	 * @return Returns the damage37.
+	 */
+	public String getDamage37() {
+		return damage37;
+	}
+
+	/**
+	 * @param damage37 The damage37 to set.
+	 */
+	public void setDamage37(String damage37) {
+		this.damage37 = damage37;
+	}
+
+	/**
+	 * @return Returns the damage38.
+	 */
+	public String getDamage38() {
+		return damage38;
+	}
+
+	/**
+	 * @param damage38 The damage38 to set.
+	 */
+	public void setDamage38(String damage38) {
+		this.damage38 = damage38;
+	}
+
+	/**
+	 * @return Returns the damage39.
+	 */
+	public String getDamage39() {
+		return damage39;
+	}
+
+	/**
+	 * @param damage39 The damage39 to set.
+	 */
+	public void setDamage39(String damage39) {
+		this.damage39 = damage39;
+	}
+
+	/**
+	 * @return Returns the damage40.
+	 */
+	public String getDamage40() {
+		return damage40;
+	}
+
+	/**
+	 * @param damage40 The damage40 to set.
+	 */
+	public void setDamage40(String damage40) {
+		this.damage40 = damage40;
+	}
+
+	/**
+	 * @return Returns the damage41.
+	 */
+	public String getDamage41() {
+		return damage41;
+	}
+
+	/**
+	 * @param damage41 The damage41 to set.
+	 */
+	public void setDamage41(String damage41) {
+		this.damage41 = damage41;
+	}
+
+	/**
+	 * @return Returns the damage42.
+	 */
+	public String getDamage42() {
+		return damage42;
+	}
+
+	/**
+	 * @param damage42 The damage42 to set.
+	 */
+	public void setDamage42(String damage42) {
+		this.damage42 = damage42;
+	}
+
+	/**
+	 * @return Returns the vehicletype.
+	 */
+	public String getVehicletype() {
+		return vehicletype;
+	}
+
+	/**
+	 * @param vehicletype The vehicletype to set.
+	 */
+	public void setVehicletype(String vehicletype) {
+		this.vehicletype = vehicletype;
+	}
+
+    public String getNonrecordable() {
+        return nonrecordable;
+    }
+
+    public String getSupervisionObservations() {
+        return supervisionObservations;
+    }
+
+    public void setNonrecordable(String nonrecordable) {
+        this.nonrecordable = nonrecordable;
+    }
+
+    public void setSupervisionObservations(String supervisionObservations) {
+        this.supervisionObservations = supervisionObservations;
+    }
+
+    public String getMonsantoClasification() {
+        return monsantoClasification;
+    }
+
+    public void setMonsantoClasification(String monsantoClasification) {
+        this.monsantoClasification = monsantoClasification;
+    }
+
+    public String getCarCost() {
+        return carCost;
+    }
+
+    public void setCarCost(String carCost) {
+        this.carCost = carCost;
+    }
+
+    public String getSeverity() {
+        return severity;
+    }
+
+    public void setSeverity(String severity) {
+        this.severity = severity;
+    }
+
+	/**
+	 * @return the workingHours
+	 */
+	public String getWorkingHours() {
+		return workingHours;
+	}
+
+	/**
+	 * @param workingHours the workingHours to set
+	 */
+	public void setWorkingHours(String workingHours) {
+		this.workingHours = workingHours;
+	}
+
+	public String getClasificationType() {
+		return clasificationType;
+	}
+
+	public void setClasificationType(String clasificationType) {
+		this.clasificationType = clasificationType;
+	}
+
+	public String getCharged() {
+		return charged;
+	}
+
+	public void setCharged(String charged) {
+		this.charged = charged;
+	}
+
+	public String getDamageCharge() {
+		return damageCharge;
+	}
+	
+	
+
+	/**
+	 * @return the realCost
+	 */
+	public String getRealCost() {
+		return realCost;
+	}
+
+	/**
+	 * @param realCost the realCost to set
+	 */
+	public void setRealCost(String realCost) {
+		this.realCost = realCost;
+	}
+
+	public void setDamageCharge(String damageCharge) {
+		this.damageCharge = damageCharge;
+	}
+
+	public String getExtracost1() {
+		return extracost1;
+	}
+
+	public void setExtracost1(String extracost1) {
+		this.extracost1 = extracost1;
+	}
+
+	public String getExtracost2() {
+		return extracost2;
+	}
+
+	public void setExtracost2(String extracost2) {
+		this.extracost2 = extracost2;
+	}
+
+	public String getExtracost3() {
+		return extracost3;
+	}
+
+	public void setExtracost3(String extracost3) {
+		this.extracost3 = extracost3;
+	}
+
+	public String getExtracost4() {
+		return extracost4;
+	}
+
+	public void setExtracost4(String extracost4) {
+		this.extracost4 = extracost4;
+	}
+
+	public String getExtracost5() {
+		return extracost5;
+	}
+
+	public void setExtracost5(String extracost5) {
+		this.extracost5 = extracost5;
+	}
+
+	public String getExtracost6() {
+		return extracost6;
+	}
+
+	public void setExtracost6(String extracost6) {
+		this.extracost6 = extracost6;
+	}
+
+	public String getExtracost7() {
+		return extracost7;
+	}
+
+	public void setExtracost7(String extracost7) {
+		this.extracost7 = extracost7;
+	}
+
+	public String getExtracost8() {
+		return extracost8;
+	}
+
+	public void setExtracost8(String extracost8) {
+		this.extracost8 = extracost8;
+	}
+
+	public String getFactorMecanicFail() {
+		return factorMecanicFail;
+	}
+
+	public void setFactorMecanicFail(String factorMecanicFail) {
+		this.factorMecanicFail = factorMecanicFail;
+	}
+
+	public String getAlcoholBreath() {
+		return alcoholBreath;
+	}
+
+	public void setAlcoholBreath(String alcoholBreath) {
+		this.alcoholBreath = alcoholBreath;
+	}
+
+	public String getStoppedVehicle() {
+		return stoppedVehicle;
+	}
+
+	public void setStoppedVehicle(String stoppedVehicle) {
+		this.stoppedVehicle = stoppedVehicle;
+	}
+
+	public String getEnsuranceDay() {
+		return ensuranceDay;
+	}
+
+	public void setEnsuranceDay(String ensuranceDay) {
+		this.ensuranceDay = ensuranceDay;
+	}
+
+	public String getEnsuranceMonth() {
+		return ensuranceMonth;
+	}
+
+	public void setEnsuranceMonth(String ensuranceMonth) {
+		this.ensuranceMonth = ensuranceMonth;
+	}
+
+	public String getEnsuranceYear() {
+		return ensuranceYear;
+	}
+
+	public void setEnsuranceYear(String ensuranceYear) {
+		this.ensuranceYear = ensuranceYear;
+	}
+
+	public String getCompanyAmount() {
+		return companyAmount;
+	}
+
+	public void setCompanyAmount(String companyAmount) {
+		this.companyAmount = companyAmount;
+	}
+
+	public String getDriverAmount() {
+		return driverAmount;
+	}
+
+	public void setDriverAmount(String driverAmount) {
+		this.driverAmount = driverAmount;
+	}
+
+	public String getThirdAmount() {
+		return thirdAmount;
+	}
+
+	public void setThirdAmount(String thirdAmount) {
+		this.thirdAmount = thirdAmount;
+	}
+
+	/**
+	 * 
+	 * @return
+	 */
+	public String getPoints() {
+		return points;
+	}
+
+	/**
+	 * 
+	 * @param points
+	 */
+	public void setPoints(String points) {
+		this.points = points.trim();
+	}
+
+	/**
+	 * @return the folioNumber
+	 */
+	public String getFolioNumber() {
+		return folioNumber;
+	}
+
+	/**
+	 * @param folioNumber the folioNumber to set
+	 */
+	public void setFolioNumber(String folioNumber) {
+		this.folioNumber = folioNumber;
+	}
+
+	/**
+	 * @return the sapNumber
+	 */
+	public String getSapNumber() {
+		return sapNumber;
+	}
+
+	/**
+	 * @param sapNumber the sapNumber to set
+	 */
+	public void setSapNumber(String sapNumber) {
+		this.sapNumber = sapNumber;
+	}
+
+	public String getWhoDrives() {
+		return whoDrives;
+	}
+
+	public void setWhoDrives(String whoDrives) {
+		this.whoDrives = whoDrives;
+	}
+
+	/**
+	 * @return the doubleCabin
+	 */
+	public String getDoubleCabin() {
+		return doubleCabin;
+	}
+
+	/**
+	 * @param doubleCabin the doubleCabin to set
+	 */
+	public void setDoubleCabin(String doubleCabin) {
+		this.doubleCabin = doubleCabin;
+	}
+
+	/**
+	 * @return the distractor
+	 */
+	public String getDistractor() {
+		return distractor;
+	}
+
+	/**
+	 * @param distractor the distractor to set
+	 */
+	public void setDistractor(String distractor) {
+		this.distractor = distractor;
+	}
+
+	/**
+	 * @return the vehicleeconomicnumber
+	 */
+	public String getVehicleeconomicnumber() {
+		return vehicleeconomicnumber;
+	}
+
+	/**
+	 * @param vehicleeconomicnumber the vehicleeconomicnumber to set
+	 */
+	public void setVehicleeconomicnumber(String vehicleeconomicnumber) {
+		this.vehicleeconomicnumber = vehicleeconomicnumber;
+	}
+
+	/**
+	 * @return the distractorOption1
+	 */
+	public String getDistractorOption1() {
+		return distractorOption1;
+	}
+
+	/**
+	 * @param distractorOption1 the distractorOption1 to set
+	 */
+	public void setDistractorOption1(String distractorOption1) {
+		this.distractorOption1 = distractorOption1;
+	}
+
+	/**
+	 * @return the distractorOption2
+	 */
+	public String getDistractorOption2() {
+		return distractorOption2;
+	}
+
+	/**
+	 * @param distractorOption2 the distractorOption2 to set
+	 */
+	public void setDistractorOption2(String distractorOption2) {
+		this.distractorOption2 = distractorOption2;
+	}
+
+	/**
+	 * @return the distractorOption3
+	 */
+	public String getDistractorOption3() {
+		return distractorOption3;
+	}
+
+	/**
+	 * @param distractorOption3 the distractorOption3 to set
+	 */
+	public void setDistractorOption3(String distractorOption3) {
+		this.distractorOption3 = distractorOption3;
+	}
+
+	/**
+	 * @return the distractorOption4
+	 */
+	public String getDistractorOption4() {
+		return distractorOption4;
+	}
+
+	/**
+	 * @param distractorOption4 the distractorOption4 to set
+	 */
+	public void setDistractorOption4(String distractorOption4) {
+		this.distractorOption4 = distractorOption4;
+	}
+
+	/**
+	 * @return the distractorOption5
+	 */
+	public String getDistractorOption5() {
+		return distractorOption5;
+	}
+
+	/**
+	 * @param distractorOption5 the distractorOption5 to set
+	 */
+	public void setDistractorOption5(String distractorOption5) {
+		this.distractorOption5 = distractorOption5;
+	}
+
+	/**
+	 * @return the distractorOption6
+	 */
+	public String getDistractorOption6() {
+		return distractorOption6;
+	}
+
+	/**
+	 * @param distractorOption6 the distractorOption6 to set
+	 */
+	public void setDistractorOption6(String distractorOption6) {
+		this.distractorOption6 = distractorOption6;
+	}
+
+	/**
+	 * @return the controlMultipleOption1
+	 */
+	public String getControlMultipleOption1() {
+		return controlMultipleOption1;
+	}
+
+	/**
+	 * @param controlMultipleOption1 the controlMultipleOption1 to set
+	 */
+	public void setControlMultipleOption1(String controlMultipleOption1) {
+		this.controlMultipleOption1 = controlMultipleOption1;
+	}
+
+	/**
+	 * @return the controlMultipleOption2
+	 */
+	public String getControlMultipleOption2() {
+		return controlMultipleOption2;
+	}
+
+	/**
+	 * @param controlMultipleOption2 the controlMultipleOption2 to set
+	 */
+	public void setControlMultipleOption2(String controlMultipleOption2) {
+		this.controlMultipleOption2 = controlMultipleOption2;
+	}
+
+	/**
+	 * @return the controlMultipleOption3
+	 */
+	public String getControlMultipleOption3() {
+		return controlMultipleOption3;
+	}
+
+	/**
+	 * @param controlMultipleOption3 the controlMultipleOption3 to set
+	 */
+	public void setControlMultipleOption3(String controlMultipleOption3) {
+		this.controlMultipleOption3 = controlMultipleOption3;
+	}
+
+	/**
+	 * @return the controlMultipleOption4
+	 */
+	public String getControlMultipleOption4() {
+		return controlMultipleOption4;
+	}
+
+	/**
+	 * @param controlMultipleOption4 the controlMultipleOption4 to set
+	 */
+	public void setControlMultipleOption4(String controlMultipleOption4) {
+		this.controlMultipleOption4 = controlMultipleOption4;
+	}
+
+	/**
+	 * @return the controlMultipleOption5
+	 */
+	public String getControlMultipleOption5() {
+		return controlMultipleOption5;
+	}
+
+	/**
+	 * @param controlMultipleOption5 the controlMultipleOption5 to set
+	 */
+	public void setControlMultipleOption5(String controlMultipleOption5) {
+		this.controlMultipleOption5 = controlMultipleOption5;
+	}
+
+	/**
+	 * @return the controlMultipleOption6
+	 */
+	public String getControlMultipleOption6() {
+		return controlMultipleOption6;
+	}
+
+	/**
+	 * @param controlMultipleOption6 the controlMultipleOption6 to set
+	 */
+	public void setControlMultipleOption6(String controlMultipleOption6) {
+		this.controlMultipleOption6 = controlMultipleOption6;
+	}
+
+	/**
+	 * @return the controlMultipleOption7
+	 */
+	public String getControlMultipleOption7() {
+		return controlMultipleOption7;
+	}
+
+	/**
+	 * @param controlMultipleOption7 the controlMultipleOption7 to set
+	 */
+	public void setControlMultipleOption7(String controlMultipleOption7) {
+		this.controlMultipleOption7 = controlMultipleOption7;
+	}
+
+	/**
+	 * @return the controlMultipleOption8
+	 */
+	public String getControlMultipleOption8() {
+		return controlMultipleOption8;
+	}
+
+	/**
+	 * @param controlMultipleOption8 the controlMultipleOption8 to set
+	 */
+	public void setControlMultipleOption8(String controlMultipleOption8) {
+		this.controlMultipleOption8 = controlMultipleOption8;
+	}
+
+	/**
+	 * @return the controlMultiple
+	 */
+	public String getControlMultiple() {
+		return controlMultiple;
+	}
+
+	/**
+	 * @param controlMultiple the controlMultiple to set
+	 */
+	public void setControlMultiple(String controlMultiple) {
+		this.controlMultiple = controlMultiple;
+	}
+	
+	
+	
+	
+    
+}

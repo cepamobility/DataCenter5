@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.activity.tables"  >
+    <class name="ActivitySignature" table="activitysignature">
+		
+        <id	column="id"	name="id"	type="java.lang.Integer">
+            <generator class="sequence">
+            	<param name="sequence">ActivitySignature_Sequence</param>
+            </generator>
+        </id>
+        
+       <many-to-one name="registry" class="persistence.activity.tables.CEPAScheduleActivityRegistry"></many-to-one>               
+       <property name="signature"	type="text" column="signature" />        
+       
+   </class>
+
+</hibernate-mapping>

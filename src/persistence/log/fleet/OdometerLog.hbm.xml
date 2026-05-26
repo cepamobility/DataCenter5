@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.log.fleet" >
+	<class name="OdometerLog" table="odometerlog">
+        
+      <composite-id class="OdometerLogPK" name="pk" >
+			<key-property name="fleet" type="java.lang.Integer"	column="fleet" />
+	        <key-property name="vehicle" type="java.lang.Integer"	column="vehicle" />
+	        <key-property name="period" type="java.lang.Integer"	column="period" />
+    	    <key-property name="year" type="java.lang.Integer"	column="year" />
+       		<key-property name="userId"  type="java.lang.String"	column="userid" />
+       		<key-property name="date"  type="java.util.Date"	column="date" />
+       </composite-id>
+        
+   	    <property 	name="action"		type="java.lang.Integer"	column="action" />
+   	    
+   	    <property 	name="odometer"		type="java.lang.Integer"	column="odometer" />
+
+   	    <property 	name="accidents"	type="java.lang.Integer"	column="accidents" />
+   	    <property 	name="incidents"	type="java.lang.Integer"	column="incidents" />
+
+   	    <property 		name="fuel"			type="java.lang.Integer"	column="fuel" />
+        <property 	name="fuelType" 	type="java.lang.String"	column="fueltype"/>                        
+    </class>
+</hibernate-mapping>

@@ -1,0 +1,545 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE web-app PUBLIC "-//Sun Microsystems, Inc.//DTD Web Application 2.3//EN" "http://java.sun.com/dtd/web-app_2_2.dtd">
+
+<web-app>
+   	<icon></icon>
+	<display-name>Datacenter 5 - CEPA</display-name>
+	<description>CEPA - Datacenter 5 - Manejo de flotas</description>
+	<distributable/>	
+	<servlet>
+  		<servlet-name>action</servlet-name>
+  		<servlet-class>
+    			presentation.translator.web.util.ActionController
+  		</servlet-class>
+  		<init-param>
+    			<param-name>config</param-name>
+    			<param-value>
+      				/WEB-INF/struts-config.xml
+    			</param-value>
+  		</init-param>
+  		<init-param>
+    			<param-name>application</param-name>
+			<param-value>
+				communication.language.Text
+			</param-value>
+  		</init-param>
+		<init-param>
+    			<param-name>debug</param-name>
+    			<param-value>2</param-value>
+  		</init-param>
+  		<init-param>
+    			<param-name>mapping</param-name>
+    			<param-value>
+      				org.apache.struts.action.ActionMapping
+    			</param-value>
+  		</init-param>
+  		<load-on-startup>2</load-on-startup>
+ 	</servlet>
+ 	
+ 	<servlet>
+ 	 <servlet-name>Jersey</servlet-name>
+	    <servlet-class>com.sun.jersey.spi.container.servlet.ServletContainer</servlet-class>
+	    <init-param>
+	         	<param-name>com.sun.jersey.config.property.packages</param-name>
+	            <param-value>presentation.web.external;communication; business.ws.client;</param-value>
+	    </init-param>
+	    <init-param>
+	      <param-name>com.sun.jersey.api.json.POJOMappingFeature</param-name>
+          <param-value>true</param-value>
+         </init-param> 
+         <init-param>
+	         <param-name>com.sun.jersey.config.feature.DisableWADL</param-name>
+	         <param-value>true</param-value>
+	     </init-param>
+	</servlet>
+	
+ 	<servlet>
+  		<servlet-name>ImageService</servlet-name>
+  		<servlet-class>
+    			presentation.translator.web.vehicle.VehicleImageDisplayServlet
+  		</servlet-class>
+  	</servlet>
+  
+	 	<servlet>
+  		<servlet-name>ServletActivityFileDownload</servlet-name>
+  		<servlet-class>
+    			presentation.translator.web.activity.ServletActivityFileDownload
+  		</servlet-class>
+  	</servlet>
+	
+	<servlet-mapping>
+	    <servlet-name>Jersey</servlet-name>
+	    <url-pattern>/webapi/*</url-pattern>
+	</servlet-mapping>
+
+	<servlet-mapping>
+     		<servlet-name>action</servlet-name>
+     		<url-pattern>*.do</url-pattern>
+	</servlet-mapping>
+
+
+	<servlet-mapping>
+     		<servlet-name>ImageService</servlet-name>
+     		<url-pattern>ImageService</url-pattern>
+	</servlet-mapping>
+	<servlet-mapping>
+     		<servlet-name>ServletActivityFileDownload</servlet-name>
+     		<url-pattern>ServletActivityFileDownload</url-pattern>
+	</servlet-mapping>
+	
+ 
+ 
+    <!--
+    To use non XDoclet filters, create a filters.xml file that
+    contains the additional filters (eg Sitemesh) and place it in your
+    project's merge dir.  Don't include filter-mappings in this file,
+    include them in a file called filter-mappings.xml and put that in
+    the same directory.
+    -->
+
+    <!--
+    To use non XDoclet filter-mappings, create a filter-mappings.xml file that
+    contains the additional filter-mappings and place it in your
+    project's merge dir.
+    -->
+
+    <!--
+    To use non XDoclet listeners, create a listeners.xml file that
+    contains the additional listeners and place it in your
+    project's merge dir.
+    -->
+
+  <!--
+  To use non XDoclet servlets, create a servlets.xml file that
+  contains the additional servlets (eg Struts) and place it in your
+  project's merge dir.  Don't include servlet-mappings in this file,
+  include them in a file called servlet-mappings.xml and put that in
+  the same directory.
+  -->
+
+   <!--
+   To specify mime mappings, create a file named mime-mappings.xml, put it in your project's mergedir.
+   Organize mime-mappings.xml following this DTD slice:
+
+   <!ELEMENT mime-mapping (extension, mime-type)>
+   -->
+
+   <!--
+   To specify error pages, create a file named error-pages.xml, put it in your project's mergedir.
+   Organize error-pages.xml following this DTD slice:
+
+   <!ELEMENT error-page ((error-code | exception-type), location)>
+   -->
+
+  <!--
+  To add taglibs by xml, create a file called taglibs.xml and place it
+  in your merge dir.
+  -->
+
+   <!--
+   To set up security settings for your web app, create a file named web-security.xml, put it in your project's mergedir.
+   Organize web-security.xml following this DTD slice:
+
+   <!ELEMENT security-constraint (display-name?, web-resource-collection+, auth-constraint?, user-data-constraint?)>
+   <!ELEMENT web-resource-collection (web-resource-name, description?, url-pattern*, http-method*)>
+   <!ELEMENT web-resource-name (#PCDATA)>
+   <!ELEMENT url-pattern (#PCDATA)>
+   <!ELEMENT http-method (#PCDATA)>
+   <!ELEMENT user-data-constraint (description?, transport-guarantee)>
+   <!ELEMENT transport-guarantee (#PCDATA)>
+
+   <!ELEMENT login-config (auth-method?, realm-name?, form-login-config?)>
+   <!ELEMENT auth-method (#PCDATA)>
+   <!ELEMENT realm-name (#PCDATA)>
+   <!ELEMENT form-login-config (form-login-page, form-error-page)>
+   <!ELEMENT form-login-page (#PCDATA)>
+   <!ELEMENT form-error-page (#PCDATA)>
+   
+   
+   -->
+   
+	<session-config>
+    		<session-timeout>180</session-timeout>
+  	</session-config>
+ 	<welcome-file-list>
+  		<welcome-file>home.jsp</welcome-file>
+  	</welcome-file-list>
+	<error-page>
+		<error-code>403</error-code>
+		<location>/error.jsp</location>
+	</error-page>   
+	<error-page>
+		<error-code>404</error-code>
+		<location>/error.jsp</location>
+	</error-page>   
+	<error-page>
+		<error-code>500</error-code>
+		<location>/error.jsp</location>
+	</error-page>   
+
+	<taglib>
+  		<taglib-uri>
+    			/WEB-INF/struts-bean.tld
+  		</taglib-uri>
+  		<taglib-location>
+    			/WEB-INF/struts-bean.tld
+  		</taglib-location>
+	</taglib>
+	<taglib>
+  		<taglib-uri>
+    			/WEB-INF/struts-html.tld
+  		</taglib-uri>
+  		<taglib-location>
+    			/WEB-INF/struts-html.tld
+  		</taglib-location>
+	</taglib>
+	<taglib>
+  		<taglib-uri>
+    			/WEB-INF/struts-logic.tld
+  		</taglib-uri>
+  		<taglib-location>
+    			/WEB-INF/struts-logic.tld
+  		</taglib-location>
+	</taglib>
+	<taglib>
+  		<taglib-uri>
+    			/WEB-INF/struts-template.tld
+  		</taglib-uri>
+  		<taglib-location>
+    			/WEB-INF/struts-template.tld
+  		</taglib-location>
+	</taglib>
+  
+  	
+	<security-constraint>
+		<!--  <display-name>Usuario de Datacenter</display-name> -->
+		<web-resource-collection>
+			<web-resource-name>Usuario de Datacenter</web-resource-name>
+			<description>Pagina de inicio</description>
+			<!-- <url-pattern>/home.jsp</url-pattern> -->
+			<url-pattern>/home.jsp</url-pattern>
+			<url-pattern>/layout.jsp</url-pattern>
+			<http-method>GET</http-method>
+			<http-method>POST</http-method>
+		</web-resource-collection>
+		<auth-constraint>
+			<role-name>firstaccess</role-name>
+			<role-name>resetpassword</role-name>
+			<role-name>systemaccess</role-name>
+			<role-name>administrator</role-name>
+		</auth-constraint>
+		<user-data-constraint>
+			<transport-guarantee>NONE</transport-guarantee>
+		</user-data-constraint>
+	</security-constraint>
+	
+	<security-constraint>
+		<!-- <display-name>Ver Usuarios  Datacenter</display-name> -->
+		<web-resource-collection>
+			<web-resource-name>Administracion Datacenter</web-resource-name>
+			<description>Ver usuarios</description>
+			<url-pattern>/user/UserNEDList.jsp</url-pattern>
+			<http-method>GET</http-method>
+			<http-method>POST</http-method>
+		</web-resource-collection>
+		<auth-constraint>
+			<role-name>userview</role-name>
+			<role-name>administrator</role-name>
+		</auth-constraint>
+		<user-data-constraint>
+			<transport-guarantee>NONE</transport-guarantee>
+		</user-data-constraint>
+	</security-constraint>
+	<security-constraint>
+		<!--  <display-name>Crear Usuarios Datacenter</display-name> -->
+		<web-resource-collection>
+			<web-resource-name>Administracion Datacenter</web-resource-name>
+			<description>Crear usuarios</description>
+			<url-pattern>/user/create.jsp</url-pattern>
+			<http-method>GET</http-method>
+			<http-method>POST</http-method>
+		</web-resource-collection>
+		<auth-constraint>
+			<role-name>usercreate</role-name>
+			<role-name>administrator</role-name>
+		</auth-constraint>
+		<user-data-constraint>
+			<transport-guarantee>NONE</transport-guarantee>
+		</user-data-constraint>
+	</security-constraint>
+	<security-constraint>
+		<!-- <display-name>Ver datos de Usuarios Datacenter</display-name> -->
+		<web-resource-collection>
+			<web-resource-name>Administracion Datacenter</web-resource-name>
+			<description>Editar usuarios</description>
+			<url-pattern>/user/UserView.jsp</url-pattern>
+			<url-pattern>/user/divgeo.jsp</url-pattern>
+			<url-pattern>/user/divorg.jsp</url-pattern>
+			<url-pattern>/user/view.jsp</url-pattern>
+			<http-method>GET</http-method>
+			<http-method>POST</http-method>
+		</web-resource-collection>
+		<auth-constraint>
+			<role-name>useredit</role-name>
+			<role-name>administrator</role-name>
+		</auth-constraint>
+		<user-data-constraint>
+			<transport-guarantee>NONE</transport-guarantee>
+		</user-data-constraint>
+	</security-constraint>
+	<security-constraint>
+		<!-- <display-name>Modificar datos de Usuarios Datacenter</display-name> -->
+		<web-resource-collection>
+			<web-resource-name>Administracion Datacenter</web-resource-name>
+			<description>Modificar usuarios</description>
+			<url-pattern>/user/UserEdit.jsp</url-pattern>
+			<http-method>GET</http-method>
+			<http-method>POST</http-method>
+		</web-resource-collection>
+		<auth-constraint>
+			<role-name>userupdate</role-name>
+			<role-name>administrator</role-name>
+		</auth-constraint>
+		<user-data-constraint>
+			<transport-guarantee>NONE</transport-guarantee>
+		</user-data-constraint>
+	</security-constraint>
+	<security-constraint>
+		<!-- <display-name>Modificar permisos de acceso a datos de Usuarios Datacenter</display-name> -->
+		<web-resource-collection>
+			<web-resource-name>Administracion Datacenter</web-resource-name>
+			<description>Modificar permisos de usuarios</description>
+			<url-pattern>/user/AddDivGeo.jsp</url-pattern>
+			<url-pattern>/user/AddDivOrg.jsp</url-pattern>
+			<http-method>GET</http-method>
+			<http-method>POST</http-method>
+		</web-resource-collection>
+		<auth-constraint>
+			<role-name>userupdateaccess</role-name>
+			<role-name>administrator</role-name>
+		</auth-constraint>
+		<user-data-constraint>
+			<transport-guarantee>NONE</transport-guarantee>
+		</user-data-constraint>
+	</security-constraint>
+	<security-constraint>
+		<!-- <display-name>Crear nueva corporación</display-name> -->
+		<web-resource-collection>
+			<web-resource-name>Administracion Datacenter</web-resource-name>
+			<description>Crear corporación</description>
+			<url-pattern>/corporation/create.jsp</url-pattern>
+			<http-method>GET</http-method>
+			<http-method>POST</http-method>
+		</web-resource-collection>
+		<auth-constraint>
+			<role-name>corporationcreate</role-name>
+			<role-name>administrator</role-name>
+		</auth-constraint>
+		<user-data-constraint>
+			<transport-guarantee>NONE</transport-guarantee>
+		</user-data-constraint>
+	</security-constraint>
+	<security-constraint>
+		<!-- <display-name>Editar corporación</display-name> -->
+		<web-resource-collection>
+			<web-resource-name>Administracion Datacenter</web-resource-name>
+			<description>Editar corporación</description>
+			<url-pattern>/corporation/edit.jsp</url-pattern>
+			<url-pattern>/corporation/divgeo.jsp</url-pattern>
+			<url-pattern>/corporation/divorg.jsp</url-pattern>
+			<http-method>GET</http-method>
+			<http-method>POST</http-method>
+		</web-resource-collection>
+		<auth-constraint>
+			<role-name>corporationedit</role-name>
+			<role-name>administrator</role-name>
+		</auth-constraint>
+		<user-data-constraint>
+			<transport-guarantee>NONE</transport-guarantee>
+		</user-data-constraint>
+	</security-constraint>
+	<security-constraint>
+		<!-- <display-name>Modificar corporación</display-name> -->
+		<web-resource-collection>
+			<web-resource-name>Administracion Datacenter</web-resource-name>
+			<description>Modificar corporación</description>
+			<url-pattern>/corporation/AddCountry.jsp</url-pattern>
+			<url-pattern>/corporation/AddItem.jsp</url-pattern>
+			<url-pattern>/corporation/NewCountry.jsp</url-pattern>
+			<url-pattern>/corporation/NewItem.jsp</url-pattern>
+			<http-method>GET</http-method>
+			<http-method>POST</http-method>
+		</web-resource-collection>
+		<auth-constraint>
+			<role-name>corporationmodify</role-name>
+			<role-name>administrator</role-name>
+		</auth-constraint>
+		<user-data-constraint>
+			<transport-guarantee>NONE</transport-guarantee>
+		</user-data-constraint>
+	</security-constraint>
+	<security-constraint>
+		<!-- <display-name>Borrar corporación</display-name> -->
+		<web-resource-collection>
+			<web-resource-name>Administracion Datacenter</web-resource-name>
+			<description>Borrar corporación</description>
+			<url-pattern>/corporation/delete.jsp</url-pattern>
+			<http-method>GET</http-method>
+			<http-method>POST</http-method>
+		</web-resource-collection>
+		<auth-constraint>
+			<role-name>corporationdelete</role-name>
+			<role-name>administrator</role-name>
+		</auth-constraint>
+		<user-data-constraint>
+			<transport-guarantee>NONE</transport-guarantee>
+		</user-data-constraint>
+	</security-constraint>
+	<security-constraint>
+		<!-- <display-name>Ver lista de conductores</display-name> -->
+		<web-resource-collection>
+			<web-resource-name>Administracion Datacenter</web-resource-name>
+			<description>Listar Drivers</description>
+			<url-pattern>/driver/DriverList.jsp</url-pattern>
+			<url-pattern>/driver/search.jsp</url-pattern>
+			<http-method>GET</http-method>
+			<http-method>POST</http-method>
+		</web-resource-collection>
+		<auth-constraint>
+			<role-name>driverview</role-name>
+			<role-name>administrator</role-name>
+		</auth-constraint>
+		<user-data-constraint>
+			<transport-guarantee>NONE</transport-guarantee>
+		</user-data-constraint>
+	</security-constraint>
+	<security-constraint>
+		<!-- <display-name>Crear conductores</display-name> -->
+		<web-resource-collection>
+			<web-resource-name>Administracion Datacenter</web-resource-name>
+			<description>Crear Drivers</description>
+			<url-pattern>/driver/create.jsp</url-pattern>
+			<url-pattern>/driver/divorg.jsp</url-pattern>
+			<http-method>GET</http-method>
+			<http-method>POST</http-method>
+		</web-resource-collection>
+		<auth-constraint>
+			<role-name>drivercreate</role-name>
+			<role-name>administrator</role-name>
+		</auth-constraint>
+		<user-data-constraint>
+			<transport-guarantee>NONE</transport-guarantee>
+		</user-data-constraint>
+	</security-constraint>
+	<security-constraint>
+		<!-- <display-name>Ver datos de conductores</display-name> -->
+		<web-resource-collection>
+			<web-resource-name>Administracion Datacenter</web-resource-name>
+			<description>Editar Drivers</description>
+			<url-pattern>/driver/DriverView.jsp</url-pattern>
+			<url-pattern>/driver/view.jsp</url-pattern>
+			<http-method>GET</http-method>
+			<http-method>POST</http-method>
+		</web-resource-collection>
+		<auth-constraint>
+			<role-name>driveredit</role-name>
+			<role-name>administrator</role-name>
+		</auth-constraint>
+		<user-data-constraint>
+			<transport-guarantee>NONE</transport-guarantee>
+		</user-data-constraint>
+	</security-constraint>
+	<security-constraint>
+		<!-- <display-name>Ver datos de conductores</display-name> -->
+		<web-resource-collection>
+			<web-resource-name>Administracion Datacenter</web-resource-name>
+			<description>Editar Drivers</description>
+			<url-pattern>/driver/DriverEdit.jsp</url-pattern>
+			<url-pattern>/driver/divorgEdit.jsp</url-pattern>
+			<http-method>GET</http-method>
+			<http-method>POST</http-method>
+		</web-resource-collection>
+		<auth-constraint>
+			<role-name>driverupdate</role-name>
+			<role-name>administrator</role-name>
+		</auth-constraint>
+		<user-data-constraint>
+			<transport-guarantee>NONE</transport-guarantee>
+		</user-data-constraint>
+	</security-constraint>
+	<login-config>
+		<auth-method>FORM</auth-method>
+		<realm-name></realm-name>
+		<form-login-config>
+			<form-login-page>/loginhome.jsp</form-login-page>
+			<form-error-page>/loginError.jsp</form-error-page>
+		</form-login-config>
+	</login-config>
+	<security-role>
+		<role-name>administrator</role-name>
+	</security-role>
+	<security-role>
+		<role-name>systemaccess</role-name>
+	</security-role>
+	<security-role>
+		<role-name>userview</role-name>
+	</security-role>
+	<security-role>
+		<role-name>usercreate</role-name>
+	</security-role>
+	<security-role>
+		<role-name>useredit</role-name>
+	</security-role>
+	<security-role>
+		<role-name>userdelete</role-name>
+	</security-role>
+	<security-role>
+		<role-name>userupdate</role-name>
+	</security-role>
+	<security-role>
+		<role-name>userupdateaccess</role-name>
+	</security-role>
+	<security-role>
+		<role-name>corporationcreate</role-name>
+	</security-role>
+	<security-role>
+		<role-name>corporationedit</role-name>
+	</security-role>
+	<security-role>
+		<role-name>corporationmodify</role-name>
+	</security-role>
+	<security-role>
+		<role-name>corporationdelete</role-name>
+	</security-role>
+	<security-role>
+		<role-name>driverview</role-name>
+	</security-role>
+	<security-role>
+		<role-name>drivercreate</role-name>
+	</security-role>
+	<security-role>
+		<role-name>driveredit</role-name>
+	</security-role>
+	<security-role>
+		<role-name>driverdelete</role-name>
+	</security-role>
+	<security-role>
+		<role-name>driverupdate</role-name>
+	</security-role>
+   	<ejb-ref >
+      		<description><![CDATA[Reference to the fibo EJB]]></description>
+      		<ejb-ref-name>ejb/SystemAccess</ejb-ref-name>
+      		<ejb-ref-type>Session</ejb-ref-type>
+      		<home>business.SystemAccessHome</home>
+      		<remote>business.SystemAccess</remote>
+   	</ejb-ref>
+   
+    	<ejb-ref >
+      		<description><![CDATA[Reference to the fibo EJB]]></description>
+      		<ejb-ref-name>ejb/LangugeReport</ejb-ref-name>
+      		<ejb-ref-type>Session</ejb-ref-type>
+      		<home>persistence.language.LangugeReportHome</home>
+      		<remote>persistence.language.LangugeReport</remote>
+   	</ejb-ref>
+   
+</web-app>

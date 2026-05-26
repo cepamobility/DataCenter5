@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.cenapra.log">
+    <class name="CENAPRAParticipantLog" table="cenapraparticipantslog">
+
+       <composite-id class="CENAPRAParticipantLogPK" name="pk" >
+	        <key-property	name="participant"	type="java.lang.Integer"	column="participant"/>
+	        <key-property	name="userId"		type="java.lang.String"		column="userid"/>
+	        <key-property	name="date"			type="java.util.Date"		column="date"/>
+       </composite-id>
+        
+        <property	name="action"			type="java.lang.Integer"		column="action"		not-null="true" />
+        <property	name="comment"			type="java.lang.String"		column="comment"	not-null="true" />
+        
+        <property	name="firstName"	type="java.lang.String"		column="firstName"		not-null="true" />
+        <property	name="lastName"		type="java.lang.String"		column="lastName"		not-null="true" />
+        <property	name="birthDate"	type="java.util.Date"		column="birthDate"		not-null="true" />
+
+        <property name="population" 	type="java.lang.String"		column="population" />
+        <property name="organization" 	type="java.lang.String"		column="organization" />
+
+        <property	name="state"		type="java.lang.String"		column="state"		/>
+        <property	name="city"			type="java.lang.String"		column="city"		/>
+        <property	name="delegation"	type="java.lang.String"		column="delegation"	/>
+        <property	name="address"		type="java.lang.String"		column="address"	/>
+        <property	name="postalcode"	type="java.lang.String"		column="postalcode"	/>
+        <property	name="phone"		type="java.lang.String"		column="phone"	/>
+        <property	name="movile"		type="java.lang.String"		column="movile"	/>
+        <property	name="email"		type="java.lang.String"		column="email"			/>
+
+        <property name="divOrg1" type="java.lang.Integer" column="divorg1" />
+        <property name="divOrg2" type="java.lang.Integer" column="divorg2" />
+        <property name="divOrg3" type="java.lang.Integer" column="divorg3" />
+
+        <property name="corporation" type="java.lang.Integer" 	column="corporation" />
+        <property name="country" 	type="java.lang.Integer" 	column="country" />
+
+        <property	name="inclusionDate"	type="java.util.Date"	column="inclusionDate"	/>
+        <property	name="exclusionDate"	type="java.util.Date"	column="exclusionDate"	/>
+
+        <property	name="medical" />
+        <property	name="paramedical" />
+        <property	name="nurse" />
+        <property	name="police" />
+        <property	name="vialinspector" />
+        <property	name="teacher" />
+        <property	name="prevent" />
+        <property	name="otherprofession"	type="text"		column="otherprofession"	/>
+
+        <property 	name="education" 		type="java.lang.String"	column="education" />
+        <property	name="othereducation"	type="text"				column="othereducation"	/>
+
+		<property 	name="security" />
+		<property 	name="securitytrainning" />
+        <property	name="securitydesc"		type="text"		column="securitydesc"	/>
+
+		<property 	name="teachexperience" />
+        <property	name="first" />
+        <property	name="second" />
+        <property	name="third" />
+        <property	name="otherteach"		type="text"		column="otherteach"	/>
+
+        <property	name="observations"		type="text"		column="observations"	/>
+			
+    </class>
+</hibernate-mapping>

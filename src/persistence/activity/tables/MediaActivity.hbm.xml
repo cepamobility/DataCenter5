@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.activity.tables" >
+    <class name="MediaActivity" table="mediaactivity">
+		
+		 <id column="id" name="id" >
+            <generator class="sequence">
+            	<param name="sequence">MediaActivity_Sequence</param>
+            </generator>
+        </id>
+        
+        <property	name="activity" type="java.lang.String" column="activity"/>                		        
+        <property	name="corporation" type="java.lang.Integer" column="corporation"/>                		        		                
+        <property	name="country" type="java.lang.Integer" column="country"/>                		        		                
+
+        <property	name="key" type="java.lang.String" column="key"/>
+        
+		<property	name="activities" type="java.lang.Integer" column="activities"/>
+		<property	name="items" type="java.lang.Integer" column="items"/>
+		<property	name="total" type="java.lang.Integer" column="total"/>
+		<property	name="errors" type="java.lang.Integer" column="errors"/>
+		<property	name="media" type="java.lang.Integer" column="media"/>
+        
+	 </class>
+
+</hibernate-mapping>

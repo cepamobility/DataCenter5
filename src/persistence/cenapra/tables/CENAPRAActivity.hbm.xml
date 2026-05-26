@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.cenapra.tables" >
+    <class name="CENAPRAActivity" table="cenapraactivity">
+		
+		 <id column="id" name="id">
+            <generator class="sequence">
+            	<param name="sequence">CENAPRAActivity_Sequence</param>
+            </generator>
+        </id>
+        
+        <property	name="date" type="java.util.Date" column="date"/>    
+
+        <many-to-one name="corpCountry" class="persistence.administration.corporation.tables.CorporationCountry" not-null="true" >
+             <column name="corporation"></column>
+             <column name="country"></column>
+        </many-to-one>
+        
+        <many-to-one name="divOrg1" class="persistence.administration.corporation.tables.DivOrgItemLevel1"></many-to-one>
+        <many-to-one name="divOrg2" class="persistence.administration.corporation.tables.DivOrgItemLevel1"></many-to-one>
+        <many-to-one name="divOrg3" class="persistence.administration.corporation.tables.DivOrgItemLevel1"></many-to-one>
+
+       	<many-to-one name="type" 		class="persistence.datatype.tables.CEPAActivityType"></many-to-one>        
+        <many-to-one name="state" 		class="persistence.datatype.tables.CEPAActivityScheduleState"></many-to-one>
+      
+        <property	name="city" type="java.lang.String" column="city"/>
+        <property	name="instructor" type="java.lang.String" column="instructor"/>
+
+        <property	name="observations" type="text" column="observations"/>
+	
+	 </class>
+
+</hibernate-mapping>

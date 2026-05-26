@@ -1,0 +1,529 @@
+<%@page language="java"
+	errorPage="../exception.jsp"
+	import="business.*"
+	import="java.io.*"
+	import="java.text.*"
+	import="java.util.*"
+	import="business.administration.user.*"
+	import="business.datatype.*"
+	import="communication.language.*"
+	import="communication.vehicle.tables.*"
+	import="communication.datatype.tables.*"
+	import="communication.datatype.*"
+	import="communication.corporation.tables.*"
+	import="communication.geografic.tables.*"
+	import="communication.administration.user.tables.*"
+	import="communication.administration.user.tables.geographicdivisions.*"
+	import="communication.security.*"
+	import="communication.util.*"
+	import="presentation.translator.web.util.*"
+	import="presentation.translator.web.vehicle.*"
+	import="presentation.translator.web.activity.schedule.*"	
+	import="presentation.translator.web.routes.*"
+	import="java.util.*"
+	import="communication.corporation.tables.*"
+ 	import="communication.administration.user.*" 
+ 	import = "communication.administration.corporation.tables.*"	
+	import = "communication.util.Filter"
+ 			
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html" 
+%>
+<%
+	SystemAccess sys = (SystemAccess)session.getAttribute("SystemAccess");
+	Text messages = sys.getText();
+	UserSessionData userSessionData;
+	DataTypeAccess datatypes;
+	GeoItemData item;
+	String check;
+	String addAccInvPermission;
+	boolean canAddAccInv = false;
+	String country;
+	String directory = "", linkDirectory = "";		
+	File dir;
+	File subDir;
+	File file;
+	Collection files;
+	String link = "";
+	String name="";
+	String dirName="";
+	String subDirectory="";
+	String[] fileNames, dirNames;
+	Date date;
+	long fileSize;
+	int fileCounter = 0;
+	int dirCounter = 0;
+	List subdirs = new LinkedList();
+	Format dateFormat;	
+	LinkedList dateSort = new LinkedList();
+	dateFormat = new SimpleDateFormat("dd-MM-yyyy");				    
+ 	NumberFormat nf = NumberFormat.getNumberInstance(Locale.US);
+ 	String contractor = ""; // solo fosa
+	
+ 	// Manejo de Mensajes
+ 	RequestDispatcher dispatcher; 
+ 	String context; 
+ 	String pathMsg;
+ 	String pathLanguage;
+ 	pathLanguage="/util/jsp/language.jsp";	
+	// Carga system access (sys),userSession, id de la corporacion (crpName), lenguaje (lngName) y los textos (messages)
+	dispatcher=request.getRequestDispatcher(pathLanguage);
+	dispatcher.include(request,response);
+	// hace el include de la página que despliega el box que indica el resultado de la operación
+	// el texto que se despliega en el box es el guardado en la variable de sesión bajo la key Msg
+	pathMsg="/util/jsp/message.jsp";
+	dispatcher=request.getRequestDispatcher(pathMsg);
+	dispatcher.include(request,response);
+	// Fin manejo de mensajes
+ 	
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	userSessionData = sys.getUserSessionData();
+	// Si es monsanto me fijo si tengo permiso para ver reportes.
+	check = Util.checkPermission(sys,SecurityConstants.VIEW_ACCIDENT_INVESTIGATION);
+	
+	// Me fijo si tiene permisos para agregar reportes
+	addAccInvPermission = Util.checkPermission(sys,SecurityConstants.ADD_ACCIDENT_INVESTIGATION);
+	
+	if(check != null ) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else{
+		
+		if (addAccInvPermission == null) {
+	// Si tiene permiso para agregar reportes y viene con la opcion de agregar
+	// le dejo agregar reportes
+	String add = (String)request.getParameter("add");
+	canAddAccInv = new Boolean(add.trim()).booleanValue();;
+		}
+		//System.out.println("Report Country.jsp: "+canAddReport);
+		
+		// Country Code:
+		country =(String)request.getParameter("country");	
+		if (Util.empty(country)){
+	country = (String)session.getAttribute("country");
+	session.removeAttribute("country");
+		}
+		Integer corporationId = sys.getUserSessionData().getFilter().getCorporationId();
+		
+		CorporationDirectoryData cdd = sys.getCorporationReportFacade().
+	findCorporationDirectoryByPrimaryKey(corporationId,sys.getUserSessionData());
+
+		String corporation = ""; // Nombre de la carpeta donde estan los Reportes:
+	
+		if (cdd == null || Util.empty(cdd.getDirectory())){
+	corporation = "null";
+		}else{
+	corporation = cdd.getDirectory();
+		}
+		// directory = "/home/datacenter5/" + corporation + "/accinv/" + country ;	
+		directory = SecurityConstants.DATACENTER5_WAR_DIRECTORY + corporation + "/accinv/" + country ;
+		linkDirectory = SecurityConstants.DATACENTER5_LINK_DIRECTORY  + corporation + "/accinv/" + country ;
+		
+		if (corporationId.intValue() == CorporationData.FORESTALORIENTAL){
+	/* Si es FOSA muestro solo las investigaciones de accidentes
+		del contratista seleccionado (pasado por parametro).
+	*/
+	contractor =(String)request.getParameter("contractor");	
+	if (Util.empty(contractor)){
+		contractor = (String)session.getAttribute("contractor");
+		session.removeAttribute("contractor");
+	}
+	directory = directory + "/" + Util.stringToSlug(contractor);
+	linkDirectory = linkDirectory + "/" + Util.stringToSlug(contractor); 
+		}
+		
+		AccidentInvestigationUploadForm aif = new AccidentInvestigationUploadForm();
+%>
+<html:html>
+<head>
+<style>
+a:link{
+	color: black;
+}
+a:visited{
+	color: black;
+}
+a:hover{
+	color: black;
+}
+a:active{
+	color: black;
+}
+</style>
+	<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+<head>
+<body>
+<table width="700"  border="0" align="center" cellpadding="0" cellspacing="0">
+<%if (canAddAccInv){ %>		
+	<tr><td>
+	<html:form action="AccidentInvestigationUpload" method="post" enctype="multipart/form-data" >	
+		<table width="700"  border="0" align="center" cellpadding="0" cellspacing="0">
+	      <tr>
+	        <td width="19"><img src="/datacenter/util/imgs/left.jpg" width="19" height="30"></td>
+	          <td width="672" background="/datacenter/util/imgs/center.jpg" class='guide1'>
+	          	<%=messages.getText("generic.supportmaterial.routes.addaccidentinvestigation") + ": " +
+          ((corporationId.intValue() == CorporationData.FORESTALORIENTAL)?contractor:"")%>
+	          </td>
+	        <td width="19"><img src="/datacenter/util/imgs/right.jpg" width="19" height="30"></td>
+	      </tr>
+	      <tr>
+	          <td width="19" background="/datacenter/util/imgs/left_line.gif">&nbsp;</td>
+		      <td width="672">
+		      	<table width="672" cellpadding="0" cellspacing="0" class="texts">
+			      	<tr>
+			      		<td>&nbsp;
+			      		</td>
+			      	</tr>
+			      	<tr>
+			      		<td align="left"><%=messages.getText("generic.supportmaterial.reports.file")%>:</td>
+			      		<td align="left"><html:file property="file"/></td>			      					      					      		
+			      	</tr>
+			      	<tr>
+			      		<td align="left"><%=messages.getText("generic.supportmaterial.reports.year")%>:</td>
+			      		<td align="left">
+			      		
+			      		<%
+			      			LinkedList col= new LinkedList();
+				      		Calendar cal = Calendar.getInstance();
+				      		for (int i=2000; i<= cal.get(1)+10; i++){
+				      			col.add(new OptionItem(Integer.toString(i),Integer.toString(i)));
+				      		}
+				      		session.setAttribute("years",col);					      		
+			      		%>
+			                <html:select property="year" styleClass="input" style="width:155;"  >
+        			          <html:options collection="years" property="value" labelProperty="label" styleClass="input"/>
+			                </html:select>
+						</td>
+			      	</tr>
+			      	<% if(sys.isCorporation(CorporationData.MONTES_DE_PLATA)){ %>
+			      	<tr>
+			      		<td align="left"><%=messages.getText(sys.getUserSessionData().getFilter().getLevelNames(messages)[0])%></td>
+			      		<td align="left">
+			      		
+							<html:select    property="divOrg1" >
+									<html:option value="0"><%=messages.getText("generic.messages.select")%></html:option>
+							 	<%	
+							 		Iterator iter=sys.getUserSessionData().getFilter().getLevelItems(1, 0, null, null,communication.util.Filter.USER);
+							 		while(iter.hasNext()){
+							 			ItemData itemContractor=(ItemData) iter.next();	
+								%>
+									<html:option value="<%=itemContractor.getId().toString()%>"><%=itemContractor.getName()%></html:option>
+								<%
+							 		}
+							 %>	
+							</html:select>	
+						</td>
+			      	</tr>
+			      	<%} %>
+			      	<tr>
+   				      	<td colspan="2" align="left"><%=messages.getText("generic.supportmaterial.reports.date")%>:</td>
+   				    </tr>
+			      	<tr>
+			      		<td colspan="2" align="left">&nbsp;&nbsp;
+			      			<html:radio property="radioDate" value="actualdate"  />&nbsp;
+			      			<%=messages.getText("generic.supportmaterial.reports.actualdate")%>
+			      		</td>
+			      	</tr>
+			      	<tr>
+			      		<td colspan="1" align="left">&nbsp;&nbsp;
+			      			<html:radio property="radioDate" value="otherdate" />&nbsp;
+			      			<%=messages.getText("generic.supportmaterial.reports.otherdate")%>
+			      		</td>
+			      		<td colspan="1" align="left">
+			      			<html:text property="otherDateDay" maxlength="2" size="2"  />
+			      			<html:text property="otherDateMonth" maxlength="2" size="2" />
+			      			<html:text property="otherDateYear" maxlength="4" size="4" />
+			      		(<%=messages.getText("generic.supportmaterial.reports.format")%>: DD/MM/YYYY)</td>
+			      	</tr>
+			      	<tr>
+			      		<td>&nbsp;</td>
+			      	</tr>
+			      	<tr>
+			      		<td>
+			      			<html:hidden property="directory" value='<%=directory%>' />
+			      			<html:hidden property="country" value='<%=country%>' />
+			      			<html:hidden property="contractor" value='<%=contractor%>' />			      			
+			      			<html:submit value='<%=messages.getText("generic.supportmaterial.routes.upload")%>' />
+			      		</td>
+			      	</tr>
+			      	
+		      	</table>              
+		      </td>
+		      <td width="19" background="/datacenter/util/imgs/right_line.gif">&nbsp;</td>  	
+	      </tr>
+	      <tr>
+	        <td width="19"><img src="/datacenter/util/imgs/left_base.gif" width="19" height="11"></td>
+        	<td width="672" background="/datacenter/util/imgs/center_base.gif"><img src="x" height="1" width="1"></td>
+    	    <td width="19"><img src="/datacenter/util/imgs/right_base.gif" width="19" height="11"></td>
+	      </tr>
+		</table>
+		</html:form>
+		</td></tr>
+<%	} %>
+
+
+
+<%
+		dir = new File(directory);
+		try
+		{
+			if ( dir.isDirectory() )
+			{
+				dirNames = dir.list();	
+				if (dirNames != null && dirNames.length > dirCounter)
+				{
+					Arrays.sort(dirNames, Collections.reverseOrder());
+					dirCounter = 0;
+					while (dirNames.length > dirCounter)
+					{										
+						//link = ".."+directory.substring(5)+"/"+dirNames[dirCounter];
+						subDir = new File(directory+"/"+dirNames[dirCounter]);
+						subDirectory = directory + "/" +dirNames[dirCounter];
+						dirName = subDir.getName();
+						dirCounter++;
+%>
+
+  <tr>
+    <td> 
+      <table width="700"  border="0" align="center" cellpadding="0" cellspacing="0">
+      <tr>
+        <td width="19"><img src="/datacenter/util/imgs/left.jpg" width="19" height="30"></td>
+          <td width="672" background="/datacenter/util/imgs/center.jpg" class='guide1'>
+          <%=messages.getText("generic.supportmaterial.accidentinvestigation") + " - " +          
+          dirName + " " + messages.getText("datatype.country."+country)+ ": " +
+          ((corporationId.intValue() == CorporationData.FORESTALORIENTAL)?contractor:"") %>            
+          </td>
+        <td width="19"><img src="/datacenter/util/imgs/right.jpg" width="19" height="30"></td>
+      </tr>
+      <tr>
+        <td width="19" background="/datacenter/util/imgs/left_line.gif">&nbsp;</td>
+        <td width="672">
+        	<table width="672" cellpadding="0" cellspacing="0" class="texts">
+              <tr> 
+                <td colspan="3">&nbsp;</td>
+              </tr>
+            
+<%
+				//file = new File (directory);
+				if ( subDir.isDirectory() )
+				{
+					fileNames = subDir.list();
+					fileCounter = 0;
+					if (fileNames != null && fileNames.length > fileCounter)
+					{
+
+						System.out.println("Cantidad de Archivos: "+fileNames.length);
+						%>
+	          <!--  Titulos:  -->
+              <tr><td colspan="3">               
+              <table width="672" cellpadding="0" cellspacing="0" class="texts">
+              <tr>
+                <td width="80%" align="left">
+                	<%=messages.getText("generic.supportmaterial.reports.files") %>
+                <td>
+                <td width="10%" align="center">	
+                  	<%=messages.getText("generic.supportmaterial.reports.date") %>
+                </td>  
+                <td width="10%" align="center">	
+                  	<%=messages.getText("generic.supportmaterial.reports.filesize") %>
+                </td>
+              </tr> 
+              </table>
+              </td></tr>
+              <tr> 
+                <td colspan="3">&nbsp;</td>
+              </tr> 
+
+<%						// Ordeno los archivos por fecha
+						dateSort = new LinkedList();
+						while (fileNames.length > fileCounter)
+						{
+							file = new File(subDirectory+"/"+fileNames[fileCounter]);
+							dateSort.add(new LongItem(new Long(file.lastModified()),
+									file.getName()));
+							fileCounter++;
+						}
+						Collections.sort(dateSort,Collections.reverseOrder());
+						Iterator it = dateSort.iterator();
+						while (it.hasNext())
+						{					
+							LongItem oi = (LongItem)it.next();
+							if (oi == null) System.out.println("NULL");
+							System.out.println("File: "+oi.getLabel()+", "+oi.getValue());
+							link = linkDirectory + "/" + dirName + "/" + oi.getValue();
+							System.out.println("File: "+subDirectory+"/"+oi.getValue());
+							file = new File(subDirectory+"/"+oi.getValue());
+							name = oi.getValue().replace("_"," ");
+							date = new Date(oi.getLabel().longValue());
+							fileSize = file.length();
+							
+							if(sys.isCorporation(CorporationData.MONTES_DE_PLATA)){
+						 		if(file.isDirectory()){
+						 			link="#";
+						 			if(sys.getUserSessionData().getFilter().getDivOrgItem(0, 0, Integer.valueOf(name))==null){
+						 				continue;//No tiene permiso en la división
+						 			}else{
+						 				name=sys.getUserSessionData().getFilter().getDivOrgItem(0, 0, Integer.valueOf(name)).getName();
+						 			}
+						 		}
+					 		}
+					 		
+%>
+              <tr> 
+               
+<%				if(!sys.isCorporation(CorporationData.MONTES_DE_PLATA)){ 	%>     
+	 				<td width="80%" align="left">
+	                	<img src="../datacenter/util/imgs/icon1.jpg" width="12" height="12">
+	                	&nbsp;&nbsp;<strong><a href='<%=link%>' ><%=name%></a></strong> 
+	                </td>           
+	                <td width="10%" align="right"> <div align="center"><strong><%=dateFormat.format(date)%></strong> </div></td>
+	                <td width="10%" align="right"> <div align="center"><strong><%=(fileSize >= 1000)? nf.format(fileSize/1000)+"KB":nf.format(fileSize)+"Bytes"%></strong> </div></td>
+<%				}else{ 														%>
+	 				<td width="80%" align="left">
+	                	<strong style="font-size: 20px;"><a href='<%=link%>' ><%=name%></a></strong> 
+	                </td>
+	                <td width="10%" align="right"> &nbsp;</td>
+	                <td width="10%" align="right"> &nbsp;</td>
+<%				} 															%>
+			</tr>
+              <tr> 
+                <td colspan="3">&nbsp;</td>
+              </tr>
+              <%
+	              if(sys.isCorporation(CorporationData.MONTES_DE_PLATA)){
+	              	if(file.isDirectory()){ 
+	              		LinkedList dateSort2 = new LinkedList();
+	              		String[] fileNames2, dirNames2;
+	              		Integer fileCounter2=0;
+	              		fileNames2=file.list();
+	              		while (fileNames2.length > fileCounter2)
+						{
+							File file2 = new File(file.getAbsolutePath()+"/"+fileNames2[fileCounter2]);
+							dateSort2.add(new LongItem(new Long(file2.lastModified()), file2.getName()));
+							fileCounter2++;
+						}
+						Collections.sort(dateSort2,Collections.reverseOrder());
+						Iterator it2 = dateSort2.iterator();
+						while (it2.hasNext())
+						{					
+							LongItem oi2 = (LongItem)it2.next();
+							File file2 = new File(file.getAbsolutePath()+"/"+oi2.getValue());
+							Date date2 = new Date(oi2.getLabel().longValue());
+							Long fileSize2 = file2.length();
+							String link2 = linkDirectory+"/"+dirName+"/"+file.getName() +"/"+oi2.getValue();
+							
+							 
+	              %>
+              		
+		              <tr> 
+		                <td width="80%" align="left">
+		                	<img src="../datacenter/util/imgs/icon1.jpg" width="12" height="12">
+		                	&nbsp;&nbsp;<strong><a href='<%=link2%>' ><%=file2.getName()%></a></strong> 
+		                </td>
+		                <td width="10%" align="right"> <div align="center"><strong><%=dateFormat.format(date2)%></strong> </div></td>
+		                <td width="10%" align="right"> <div align="center"><strong><%=(fileSize2 >= 1000)? nf.format(fileSize2/1000)+"KB":nf.format(fileSize2)+"Bytes"%></strong> </div></td>
+		              </tr>
+	           <%		}
+	           		}
+	              }
+	            %>
+<%
+						}
+					}else{
+%>
+			  <tr> 
+                <td width="100%" colspan="3">
+                	<%=messages.getText("generic.supportmaterial.routes.noaccidentinvestigation")%>
+                </td>
+	          </tr>
+              <tr> 
+                <td width="100%" colspan="3">&nbsp;</td>
+              </tr>
+<%					}
+				}else{
+%>
+			  <tr> 
+                <td width="100%" colspan="3">
+                	<%=messages.getText("generic.supportmaterial.routes.noaccidentinvestigation")%>
+                </td>
+	          </tr>
+              <tr> 
+                <td width="100%" colspan="3">&nbsp;</td>
+              </tr>
+<%					
+				}				
+					%>
+            </table></td>
+        <td width="19" background="/datacenter/util/imgs/right_line.gif">&nbsp;</td>
+      </tr>
+      <tr>
+        <td width="19"><img src="/datacenter/util/imgs/left_base.gif" width="19" height="11"></td>
+        <td width="672" background="/datacenter/util/imgs/center_base.gif"><img src="x" height="1" width="1"></td>
+        <td width="19"><img src="/datacenter/util/imgs/right_base.gif" width="19" height="11"></td>
+      </tr>
+    </table>
+    <br>
+    </td>
+    
+    
+  </tr>
+<%
+				}// Fin while años
+			}// Fin if
+	  	}else{ 
+%>
+
+<tr>
+    <td> 
+      <table width="700"  border="0" align="center" cellpadding="0" cellspacing="0">
+      <tr>
+        <td width="19"><img src="/datacenter/util/imgs/left.jpg" width="19" height="30"></td>
+          <td width="672" background="/datacenter/util/imgs/center.jpg" class='guide1'>
+          <%=messages.getText("generic.supportmaterial.accidentinvestigation") + 
+          " - " + messages.getText("datatype.country."+country) + ": " +
+          ((corporationId.intValue() == CorporationData.FORESTALORIENTAL)?contractor:"")%>
+         </td>
+        <td width="19"><img src="/datacenter/util/imgs/right.jpg" width="19" height="30"></td>
+      </tr>
+      <tr>
+        <td width="19" background="/datacenter/util/imgs/left_line.gif">&nbsp;</td>
+        <td width="672">
+        	<table width="672" cellpadding="0" cellspacing="0" class="texts">
+              <tr> 
+                <td colspan="3">&nbsp;</td>
+              </tr>
+  				<tr> 
+                <td width="100%" colspan="3">
+                	<%=messages.getText("generic.supportmaterial.routes.noaccidentinvestigation")%>
+                </td>
+	          </tr>
+              <tr> 
+                <td width="100%" colspan="3">&nbsp;</td>
+         </tr>
+          </table></td>
+        <td width="19" background="/datacenter/util/imgs/right_line.gif">&nbsp;</td>
+      </tr>
+      <tr>
+        <td width="19"><img src="/datacenter/util/imgs/left_base.gif" width="19" height="11"></td>
+        <td width="672" background="/datacenter/util/imgs/center_base.gif"><img src="x" height="1" width="1"></td>
+        <td width="19"><img src="/datacenter/util/imgs/right_base.gif" width="19" height="11"></td>
+      </tr>
+    </table>
+    <br>
+    </td>
+    
+    
+  </tr>
+         
+<%	  	}
+	}catch(Exception e){
+		System.out.println(e.getMessage());
+		e.printStackTrace();
+	}
+%>
+</table>
+</body>
+</html:html>
+<%	}
+%>

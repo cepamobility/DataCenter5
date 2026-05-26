@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.administration.corporation.tables" >
+
+<class table="contractorplatefosa" name="ContractorPlateFOSA">
+
+	
+	<id name="id" type="java.lang.Integer" column="id">
+		<generator class="sequence">
+			<param name="sequence">ContractorPlateFOSA_Sequence</param>
+		</generator>
+	</id>
+	
+	<property name="plate" type="java.lang.String" column="plate" not-null="true"/>
+	
+	<property name="fosaId" type="java.lang.Integer" column="fosaId" not-null="true"/>
+	
+</class>
+</hibernate-mapping>

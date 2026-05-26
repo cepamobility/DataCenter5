@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.administration.corporation.tables">
+    <class name="MenuOption" table="menuoption">
+
+        <id	column="id"	name="id"	type="java.lang.Integer">
+            <generator class="sequence">
+            	<param name="sequence">MenuOption_Sequence</param>
+            </generator>
+        </id>
+        
+        <property	name="parentId"	type="java.lang.Integer"		column="parentId"		not-null="true" />
+        <property	name="labelKey"		type="java.lang.String"		column="labelKey"		not-null="true" />
+        <property	name="urlOption"	type="java.lang.String"		column="urlOption"		not-null="true" />
+        <property	name="role"	type="java.lang.String"		column="role"  />
+        <property	name="securityConstant"	type="java.lang.String"		column="securityconstant" />
+        <property	name="country"	type="java.lang.String"		column="country"  />
+        <property	name="language"	type="java.lang.String"		column="language" />
+        <property	name="order"	type="java.lang.Integer"	column="ordermenu"	not-null="true" />
+	
+    </class>
+</hibernate-mapping>

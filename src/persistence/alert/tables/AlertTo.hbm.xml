@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.alert.tables" >
+    <class name="AlertTo" table="alertto">
+		
+		 <id
+            column="id"
+            name="id"
+        >
+            <generator class="sequence">
+            	<param name="sequence">AlertTo_Sequence</param>
+            </generator>
+        </id>
+
+        <property column="corporation" name="corporation" type="integer" />                          
+        <property column="email" name="email" type="java.lang.String" />         
+
+ 
+	 </class>
+
+</hibernate-mapping>

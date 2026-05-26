@@ -1,0 +1,71 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.cenapra.tables">
+    <class name="CENAPRAParticipant" table="cenapraparticipants">
+
+        <id	column="id"	name="id"	type="java.lang.Integer">
+            <generator class="sequence">
+            	<param name="sequence">CENAPRAParticipant_Sequence</param>
+            </generator>
+        </id>
+        
+        <property	name="firstName"	type="java.lang.String"		column="firstName"		not-null="true" />
+        <property	name="lastName"		type="java.lang.String"		column="lastName"		not-null="true" />
+        <property	name="birthDate"	type="java.util.Date"		column="birthDate"		not-null="true" />
+        
+        <many-to-one name="population" 			class="persistence.datatype.tables.PopulationGroup"		column="population" />
+        <property	name="otherpopulation"	type="text"		column="otherpopulation"	/>
+        <many-to-one name="organization" 	class="persistence.datatype.tables.ActionOrganization"	column="organization" />
+        <property	name="otherorganization"	type="text"		column="otherorganization"	/>
+
+        <property	name="state"		type="java.lang.String"		column="state"		/>
+        <property	name="city"			type="java.lang.String"		column="city"		/>
+        <property	name="delegation"	type="java.lang.String"		column="delegation"	/>
+        <property	name="address"		type="java.lang.String"		column="address"	/>
+        <property	name="postalcode"	type="java.lang.String"		column="postalcode"	/>
+        <property	name="phone"		type="java.lang.String"		column="phone"	/>
+        <property	name="movile"		type="java.lang.String"		column="movile"	/>
+        <property	name="email"		type="java.lang.String"		column="email"			/>
+
+        <many-to-one name="divOrg1" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="divorg1" />
+        <many-to-one name="divOrg2" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="divorg2" />
+        <many-to-one name="divOrg3" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="divorg3" />
+
+        <many-to-one name="corpCountry" class="persistence.administration.corporation.tables.CorporationCountry" not-null="true">
+	        <column name="corporation"></column>
+	        <column name="country"></column>
+	    </many-to-one>
+
+        <property	name="inclusionDate"	type="java.util.Date"	column="inclusionDate"	/>
+        <property	name="exclusionDate"	type="java.util.Date"	column="exclusionDate"	/>
+
+        <property	name="medical" />
+        <property	name="paramedical" />
+        <property	name="nurse" />
+        <property	name="police" />
+        <property	name="vialinspector" />
+        <property	name="teacher" />
+        <property	name="prevent" />
+        <property	name="otherprofession"	type="text"		column="otherprofession"	/>
+
+        <many-to-one name="education" 		class="persistence.datatype.tables.Education"	column="education" />
+        <property	name="othereducation"	type="text"		column="othereducation"	/>
+
+		<property 	name="security" />
+		<property 	name="securitytrainning" />
+        <property	name="securitydesc"	type="text"		column="securitydesc"	/>
+
+		<property 	name="teachexperience" />
+        <property	name="first" />
+        <property	name="second" />
+        <property	name="third" />
+        <property	name="otherteach"	type="text"					column="otherteach"	/>
+
+        <property	name="observations"	type="text"					column="observations"	/>
+        <property	name="activity" />
+			
+    </class>
+</hibernate-mapping>

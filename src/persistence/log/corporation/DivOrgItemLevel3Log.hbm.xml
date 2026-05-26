@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.log.corporation" default-cascade="all">
+    <class name="DivOrgItemLevel3Log" table="divorgitemlevel3log" >
+
+       	<composite-id class="persistence.log.IdLogPK" name="pk" >
+	        <key-property	name="id"	type="java.lang.Integer"	column="id"/>
+	        <key-property	name="loginUser"	type="java.lang.String"	column="loginuser"/>
+	        <key-property	name="date"	type="java.util.Date"	column="date"/>
+       	</composite-id>
+
+        <property column="resourcekey" name="resourceKey" type="java.lang.String" not-null="true" />
+        <property name="active" not-null="true" />
+        
+    </class>
+</hibernate-mapping>

@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.log.vehicle" >
+    <class name="VehicleCheckLog" table="vehiclechecklog">
+		
+       <composite-id class="VehicleCheckLogPK" name="pk" >
+	        <key-property	name="vehicleCheckId"	type="java.lang.Integer"	column="vehiclecheckid"/>
+	        <key-property	name="userId"	type="java.lang.String"	column="userid"/>
+	        <key-property	name="date"	type="java.util.Date"	column="date"/>
+       </composite-id>        
+        
+        <property	name="action"	type="java.lang.Integer"		column="action"		not-null="true" />
+        <property	name="checkDate" type="java.util.Date" column="checkdate"/>              
+        <property	name="name" type="java.lang.String" column="name"/>        
+        <property	name="licenseNumber" type="java.lang.String" column="licenseNumber"/>                
+        <property	name="dateLicenseExpiry" type="java.util.Date" column="dateLicenseExpiry"/>        
+        
+        <property	name="obs" type="java.lang.String" column="obs"/>
+        
+        <property	name="serie" type="java.lang.String" column="serie"/>                
+        
+        <property	name="vehicleKm" type="java.lang.Integer" column="vehicleKm"/>
+        
+        <property	name="result" type="java.lang.Integer" column="result"/>
+        <property	name="vehicle" type="java.lang.Integer" column="vehicle"/>
+        
+        <property	name="values" type="text" column="values"/>                
+       
+       <!-- Para Nalco -->
+        <property	name="inspectedby" type="java.lang.String" column="inspectedby"/>
+        <property	name="distrito" type="java.lang.String" column="distrito"/>
+        <property	name="grupo" type="java.lang.String" column="grupo"/>                         
+
+       	
+	 </class>
+
+</hibernate-mapping>

@@ -1,0 +1,248 @@
+<%@page language="java" 
+	errorPage="../exception.jsp"
+	import="business.*"
+	import="business.datatype.*"
+	import="java.util.*"
+	import="presentation.translator.web.util.*"
+	import="presentation.translator.web.event.*"
+	import="communication.driver.tables.*"
+	import="communication.language.*"
+	import="communication.datatype.*"
+	import="communication.event.tables.*"
+	import="communication.datatype.tables.*"
+	import="communication.driver.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.security.*"
+	import="communication.util.*"
+	import="presentation.translator.web.util.*"
+	import="communication.administration.corporation.tables.*"
+%>
+<%
+	Text messages; 
+	SystemAccess sys;
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	Integer eventId = null;
+	if(Util.empty(request.getParameter("eventId"))) {
+		eventId = (Integer)session.getAttribute("eventId");
+	}else {
+		eventId = new Integer(request.getParameter("eventId"));
+	}
+	messages=sys.getText();
+	EventDataType eventDataType = sys.getEventReportFacade().findEventByPrimaryKey(eventId,sys.getUserSessionData());
+
+	boolean isPost2016=false;
+	Calendar cal=Calendar.getInstance();
+	cal.set(Calendar.DATE, 31);
+	cal.set(Calendar.MONTH, 11);
+	cal.set(Calendar.YEAR, 2015);
+	Calendar calEvent=Calendar.getInstance();
+	calEvent.setTime(eventDataType.getDate());
+	if(calEvent.compareTo(cal)>0){
+		isPost2016=true;
+	}
+%>
+
+			<!-- EventViewOptions -->
+			<td colspan="3">
+				<jsp:include  page='<%="../component/utilitybox3top.jsp?title="+messages.getText("generic.messages.options")%>' />
+				<table width="100%" class="texts1" border="0" cellpadding="0" cellspacing="0">
+<%				String modify = SecurityConstants.MODIFY_FINE;	
+				boolean par = false;	
+				if(eventDataType.getStatus().intValue() != EventDataType.SUPERVISED) {	
+				    modify = SecurityConstants.SUPERVISE_EVENT;
+				}
+				
+				if (!par){					%>
+				<tr valign="bottom">
+<%					}
+%>	
+					<td width="50%">
+						<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+						<a href="" id="linkpdfscreen"class="texts"/> 
+		            	PDF </a> 
+					</td>
+<%				
+				if (par) { %>
+				</tr>
+<%				}
+				par = !par;
+				if(sys.getUserSessionData().checkPermission(modify)) {	
+					if (!par){					%>
+					<tr valign="bottom">
+<%					}
+%>					
+						<td width="50%">
+							<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+<%							if(sys.isCorporation(new int[]{CorporationData.SYNGENTA_BR})){
+							
+							%>								
+								<a href="javascript:document.forms['editnewsyn'].submit()" class="texts">
+									<%=messages.getText("generic.messages.edit")%>
+								</a>
+<%							}else							
+							if(sys.isCorporation(new int[]{CorporationData.BAYER_MX,CorporationData.WEYERHAEUSER})
+								|| (sys.isCorporation(CorporationData.MONSANTO) && eventDataType.isMercosur())){
+%>								<a href="javascript:document.forms['edit2'].submit()" class="texts">
+									<%=messages.getText("generic.messages.edit")%>
+								</a>
+<%							}else {
+								if(isPost2016){
+									if(sys.isCorporation(CorporationData.JJ)){
+%>									<a href="javascript:document.forms['edit3'].submit()" class="texts">
+					         			<%=messages.getText("generic.messages.edit")%>
+					         		</a>
+<%									}else{
+%>									<a href="javascript:document.forms['editnew'].submit()" class="texts">
+				         				<%=messages.getText("generic.messages.edit")%>
+				         			</a>
+<%									}
+								}else{
+%>									<a href="javascript:document.forms['edit2'].submit()" class="texts">
+			    	     				<%=messages.getText("generic.messages.edit")%>
+				    	     		</a>
+<%								}
+							}
+%>						</td>
+<%					if (par) { %>
+					</tr>
+<%					}
+					par = !par;
+				}
+				if(sys.getUserSessionData().checkPermission(SecurityConstants.DELETE_EVENT)) {
+					String linkDelete = "javascript:confirmDelete(document.forms['EventDeleteForm'],'"+messages.getText("generic.event.confirmdelete")+"')";
+					if (!par){					%>
+					<tr valign="bottom">
+<%					}
+%>	
+						<td width="50%">
+							<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+							<a href="<%=linkDelete%>" class="texts">
+								<%=messages.getText("generic.messages.delete")%>
+							</a>
+						</td>
+<%				
+					if (par) { %>
+					</tr>
+<%					}
+					par = !par;
+				}
+
+				if(sys.getUserSessionData().checkPermission(SecurityConstants.SUPERVISE_EVENT)
+				     && eventDataType.getStatus().intValue() == EventMainAttributes.PENDING_SUPERVISION) {	
+					if (!par){					%>
+					<tr valign="bottom">
+<%					}
+%>	
+						<td width="50%">
+							<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+<%							if(sys.isCorporation(new int[]{CorporationData.SYNGENTA_BR})){
+							
+							%>								
+								<a href="javascript:document.forms['supervisenewsyn'].submit()" class="texts">
+										<%=messages.getText("generic.event.supervise")%>
+									</a>
+<%							}else							
+							if(sys.isCorporation(new int[]{CorporationData.BAYER_MX,CorporationData.WEYERHAEUSER})
+								|| (sys.isCorporation(CorporationData.MONSANTO) && eventDataType.isMercosur())){
+%>								<a href="javascript:document.forms['supervise2'].submit()" class="texts">
+									<%=messages.getText("generic.event.supervise")%>
+								</a>
+<%							} else {
+								if(isPost2016){
+									if(sys.isCorporation(CorporationData.JJ)){
+%>									<a href="javascript:document.forms['supervise3'].submit()" class="texts">
+										<%=messages.getText("generic.event.supervise")%>
+									</a>
+<%									}else{
+%>									<a href="javascript:document.forms['supervisenew'].submit()" class="texts">
+										<%=messages.getText("generic.event.supervise")%>
+									</a>
+<%									}
+								}else{
+%>									<a href="javascript:document.forms['supervise2'].submit()" class="texts">
+										<%=messages.getText("generic.event.supervise")%>
+									</a>
+<%								}
+							}
+%>						</td>
+<%				
+					if (par) { %>
+					</tr>
+<%					}
+					par = !par;
+				}
+				if(sys.getUserSessionData().checkPermission(SecurityConstants.SEND_RECOMENDATION)
+				     && (eventDataType.getStatus().intValue() == EventMainAttributes.PENDING_RECOMENDATION 
+				     || (eventDataType.getStatus().intValue() == EventMainAttributes.SUPERVISED && Util.empty(eventDataType.getRecomendation())))) {	
+					if (!par){					%>
+					<tr valign="bottom">
+<%					}
+%>	
+						<td width="50%">
+							<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+							<a href="javascript:document.forms['recomendation'].submit()" class="texts">
+								<%=messages.getText("generic.event.sendrecomendation")%>
+							</a>
+						</td>
+<%				
+					if (par) { %>
+					</tr>
+<%					}
+					par = !par;
+				}
+				if(sys.getUserSessionData().isDriver() && sys.getCorporationId() != CorporationData.BAYER) {
+					if(false) {
+//					if((eventDataType.getStatus().intValue() == EventDataType.PENDING_SUPERVISION) &&
+//				        sys.getUserSessionData().checkPermission(SecurityConstants.DRIVER_MODIFY_EVENT)) {	
+					if (!par){					%>
+					<tr valign="bottom">
+<%					}
+%>	
+				    	<td width="50%">
+				    		<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+				        	<a href="javascript:document.forms['edit'].submit()" class="texts">
+				        		<%=messages.getText("generic.messages.edit")%>
+				        	</a>
+				        </td>
+<%				
+					if (par) { %>
+					</tr>
+<%					}
+					par = !par;
+					}
+				}
+				if(sys.isCorporation(CorporationData.BAYER_MX)) {
+					if (!par){					
+%>					<tr valign="bottom">
+<%					}
+%>
+				    	<td width="50%">
+				    		<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+				        	<a href="javascript:document.forms['files'].submit()" class="texts">
+				        		<%=messages.getText("generic.event.files")%>
+				        	</a>
+				        </td>
+<%					if (par) { %>
+					</tr>
+<%					}
+					par = !par;
+				}
+				if (!par){					
+%>					<tr valign="bottom">
+<%				}
+%>	
+						<td width="50%">
+							<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+							<a href="javascript:document.forms['back'].submit()" class="texts">
+								<%=messages.getText("generic.messages.cancel")%>
+							</a>
+						</td>
+<%				
+					if (par) { %>
+					</tr>
+<%					}
+					par = !par;	%>
+						</table>
+						<jsp:include page="../component/utilitybox3bottom.jsp"/>
+					</td>
+			

@@ -1,0 +1,156 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.activity.tables" >
+    <class name="CEPAScheduleActivityRegistry" table="activityregistry">
+		
+	 	<id column="activityRegistryId" name="activityRegistryId" >
+            <generator class="sequence">
+            	<param name="sequence">ActivityRegistry_Sequence</param>
+            </generator>
+        </id>
+
+        <many-to-one name="driver" class="persistence.driver.tables.Driver" not-null="true" >
+             <column name="driver"></column>
+        </many-to-one>
+        
+        <many-to-one name="activity" class="persistence.activity.tables.CEPAScheduleActivity" not-null="true" >
+             <column name="activity"></column>
+        </many-to-one>        
+  
+       <property name="obs" type="java.lang.String" column="obs"  />
+       
+        
+       <property name="note"></property>
+       <property name="clasification" type="java.lang.Integer">
+		    <column name="clasification" default="-1"/>
+	   </property>
+       
+       <property name="instructor"></property> 
+       
+       <set name="itemSet" table="activityregistryitems" cascade="all">
+          <key column="activityregistry"></key>
+          <many-to-many class="persistence.activity.tables.Item" column="item"/>            
+       </set>      
+       
+       <!-- Commentary Drive J&J: ItemValueSet -->  	    
+       <set name="itemValueSet" table="activityregistryitemsvalues" cascade="all">
+       		<key column="activityregistry"></key>
+       		<composite-element class="persistence.activity.tables.ItemValue">
+       			<property name="itemValue" type="java.lang.Integer">
+       				<column  name="itemValue" default="0"></column>
+       			</property>
+       			<many-to-one class="persistence.activity.tables.Item" name="item" fetch="join" />       		
+       		</composite-element>
+       </set>
+       <!-- Fin Commentary Drive J&J -->
+       
+       <set name="pointCommentSet" table="activityregistrypointscomment" cascade="all">
+       		<key column="activityregistry"></key>       		
+       		<composite-element class="persistence.activity.tables.PointComment" >
+        		<property name="comment" column="comment" ></property>
+        		<many-to-one class="persistence.activity.tables.Point" name="point" fetch="join" />
+		    </composite-element>
+       	</set>
+       	
+       	<!-- PointObservationRegistry -->
+       	<set name="pointObservationSelectedSet" table="activityregistrypointsobservations" cascade="all">
+       		<key>
+       			<column name="activityregistry"  />       			
+       		</key>       		       		
+       		<composite-element class="persistence.activity.tables.PointObservationSelected" >
+        		<many-to-one class="persistence.activity.tables.Point" name="point" 
+        			fetch="join" column="idpoint" />
+        		<many-to-one class="persistence.activity.tables.PointObservation" 
+        			name="observation" fetch="join"  column="idobs" />
+		    </composite-element>
+       	</set>
+       	
+       	<!-- CEPAScheduleActivityRegistryObservation -->
+       	<set name="observationsSelected" table="activityregistryobservations" cascade="all">
+       		<key>
+       			<column name="activityregistry"  />       			
+       		</key>       		       		
+       		<composite-element class="persistence.activity.tables.CEPAScheduleActivityRegistryObservationSelected" >
+        		<many-to-one class="persistence.activity.tables.CEPAScheduleActivityRegistryObservation" 
+        			name="observation" fetch="join"  column="idobs" />
+		    </composite-element>
+       	</set>
+       
+       <!--  Para Commentary Drive: -->
+       <property name="cepaCourse" type="java.lang.Boolean">
+		    <column name="cepaCourse" default="true"/>
+	   </property>
+	   <!--  Fin Commentary Drive -->
+	   
+       <property name="novato" type="java.lang.Boolean">
+		    <column name="novato" default="false"/>
+	   </property>
+	   
+       <property name="hasResult" type="java.lang.Boolean">
+		    <column name="hasresult" default="false"/>
+	   </property>	   
+	   
+       <property name="teoricoAsistence" type="java.lang.Boolean">
+		    <column name="teoricoasistence" default="true"/>
+	   </property>
+	   
+       <property name="practicoAsistence" type="java.lang.Boolean">
+		    <column name="practicoasistence" default="true"/>
+	   </property>	   	   
+	   
+       <property name="partner" type="java.lang.String" column="partner" />
+       <property name="conductionType" type="java.lang.String" column="conductionType" />
+       <property name="plate"	type="java.lang.String" column="plate" />
+       
+       <property name="trade"	type="java.lang.String" column="trade" />
+       <property name="initialKm"	type="java.lang.Integer" column="initialKm" />
+       <property name="finalKm"	type="java.lang.Integer" column="finalKm" />
+       <property name="initialHr"	type="java.sql.Time" column="initialHr" />
+       <property name="finalHr"	type="java.sql.Time" column="finalHr" />
+       <property name="vehicleType"	type="java.lang.String" column="vehicleType" />
+       <property name="circulationArea"	type="java.lang.String" column="circulationArea" />
+       
+       <property name="circulationAreaHighWay" type="java.lang.Boolean">
+		    <column name="circulationareahighway" default="false"/>
+	   </property>	 
+       <property name="circulationAreaRoad" type="java.lang.Boolean">
+		    <column name="circulationarearoad" default="false"/>
+	   </property>	 
+	   <property name="circulationAreaSubUrban" type="java.lang.Boolean">
+		    <column name="circulationareasuburban" default="false"/>
+	   </property>	 
+	   <property name="circulationAreaUrban" type="java.lang.Boolean">
+		    <column name="circulationareaurban" default="false"/>
+	   </property>	 
+       <property name="velocityBox"	type="java.lang.String" column="velocityBox" />
+       <property name="light"	type="java.lang.String" column="light" />
+       
+       <property name="drivingExperience" type="java.lang.Integer">
+		    <column name="drivingExperience" default="0"/>
+	   </property>
+	   
+       <property name="classNumber" type="java.lang.Integer">
+		    <column name="classNumber" default="0"/>
+	   </property>
+		
+       <property name="phrd" type="java.lang.Boolean">
+		    <column name="phrd" default="false"/>
+	   </property>
+       
+       <property name="fia" type="java.lang.Boolean">
+		    <column name="fia" default="false"/>
+	   </property>
+       <property name="file" type="java.lang.Boolean">
+		    <column name="file" default="false"/>
+	   </property>
+<!--        <many-to-one name="note" class="persistence.datatype.tables.CEPAActivityNote" >
+             <column name="note"></column>
+        </many-to-one>
+-->  
+	 </class>
+
+</hibernate-mapping>

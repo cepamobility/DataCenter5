@@ -1,0 +1,221 @@
+<%@page language="java" 
+	errorPage="../exception.jsp"
+	import="java.util.*"
+	import="business.*"
+	import="business.driver.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.driver.tables.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.driver.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.driver.*"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+<html:html>
+<%!
+	RequestDispatcher dispatcher; String context;
+	Text messages; SystemAccess sys;
+%> 
+<%
+ 	sys = (SystemAccess)session.getAttribute("SystemAccess");
+  	String check = Util.checkPermission(sys,SecurityConstants.CSV_UPDATE_DRIVERS_BATCH);
+  	
+  	if(check != null) {
+  		response.sendRedirect(request.getContextPath()+check);
+  	}else {
+  	
+  		String url = "driver/csvDriver.jsp";
+
+  		context=request.getContextPath();
+  		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+  		dispatcher.include(request,response);
+  	
+  		messages=sys.getText();
+  		session.setAttribute("target","csvDriver");
+  		
+  		// Filtros:
+  		DriverUtil util = new DriverUtil();
+  		Hashtable parameters = util.getParameters(session,request);	
+  		session.setAttribute("url",url);
+  		DriverReportFacade driverReportFacade = sys.getDriverReportFacade();
+  		String link = "/driver/csvDriver.jsp";
+  		
+  		
+  		CsvUpdateDriversForm form = new CsvUpdateDriversForm();
+ %>
+
+<script language="JavaScript" src="../util/js/select_component.js" type="text/javascript"></script>
+<script language="javascript" src='./menu/js/driverFunctions.js' type='text/javascript' ></script>
+	
+<script>
+	function onSelectDriver(calendar, date) {
+		var date2 = calendar.date;
+		var time = date2.getTime();
+  		var input_day = document.getElementById("dayIdDriver");
+  		var input_month = document.getElementById("monthIdDriver");
+  		var input_year = document.getElementById("yearIdDriver");
+  		var date3 = new Date(time);
+  		input_day.value = date3.print("%d");
+  		input_month.value = date3.print("%m");
+  		input_year.value= parseInt(date3.print("%Y"),10);
+  	}
+  	
+  	function accept(id,name) {
+		self.opener.document.forms['<%=form.getForm()%>'].elements['<%=form.getDriverId()%>'].value = id;
+		self.opener.document.forms['<%=form.getForm()%>'].elements['<%=form.getName()%>'].value = name;
+		window.close();
+	}
+	
+	function doSubmit(all,page) {
+		document.forms['DriverAdvancedSearchForm'].all.value = all;
+		document.forms['DriverAdvancedSearchForm'].first.value = 1;		
+		document.forms['DriverAdvancedSearchForm'].submit();
+	}
+	</script>
+	
+	<body>
+	
+	<form action="/CvsUpdateDrivers" id="cvsUpdateDriversForm" name="cvsUpdateDriversForm" >
+		<input type="hidden" id="all" name="all" value="" />
+		<input type="hidden" id="pageNum" name="pageNum" value="" />
+		<input type="hidden" id="form" value="" />
+		<input type="hidden" id="driverId" value=""  />
+		<input type="hidden" id="name" value =""/>
+	  
+			<table width="100%" border="0" cellspacing="0" cellpadding="0" align="center">
+	  			<tr>
+	    			<td width="49%" valign="top">
+						<table width="100%" border="0" cellpadding="0" cellspacing="0">
+							<tr class="guideSearch">
+								<td width="19" >
+								<img src="../util/imgs/left_top_search.jpg" width="19" height="30" align="bottom"></td>
+								<td width="180" align="left" class="guideSearch">
+									<%=messages.getText("generic.driver.personaldata")%></td>
+								<td width="19" >
+									<img src="../util/imgs/right_top_search.jpg" width="19" height="30" align="bottom"></td>
+							</tr>
+	  						<tr>
+	    						<td class="leftLineSearch">&nbsp;</td>
+	    						<td>
+									<table class="SearchBack"  width="100%" border="0" cellpadding="0" cellspacing="0">
+										<tr  >
+											<th align="left"> <%=messages.getText("generic.driver.driverdata.id")%> </th>
+				         					<td align="right"><input type="text" id="id" size="25" class="input"/></td>
+										</tr>
+				          				<tr>
+						        			<td  colspan="2">&nbsp;</td>
+						        		</tr>
+										<tr  >
+				        					<th align="left"> <%=messages.getText("generic.driver.driverdata.firstname")%> </th>
+				         					<td align="right"><input type="text" id="firstName" size="25" class="input"/></td>
+										</tr>
+				          				<tr>
+						        			<td  colspan="2">&nbsp;</td>
+						        		</tr>
+										<tr >
+											<th align="left"> <%=messages.getText("generic.driver.driverdata.lastname")%> </th>
+				         					<td align="right"><input type="text" id="lastName" size="25" class="input"/></td>
+										</tr>
+				          				<tr>
+						        			<td  colspan="2">&nbsp;</td>
+						        		</tr>
+										<tr  >
+				        					<th align="left"> <%=messages.getText("generic.driver.driverdata.birthdate")%> </th>
+				         					<td align="right" valign="middle">
+								            	<input type="text" id="birthDate" style="width:18;" class="input" styleId="dayIdDriver"/>&nbsp;/&nbsp;
+									            <input type="text" id="birthMonth" style="width:18;" class="input" styleId="monthIdDriver"/>&nbsp;/&nbsp;
+									            <input type="text" id="birthYear" style="width:35;" class="input" styleId="yearIdDriver"/>													
+				         						<img src="../component/jscalendar-1.0/img.gif" styleId="calendar_buttonDriver" style="cursor: pointer; border: 1px solid red;"
+	     										onmouseover="this.style.background='red';" style="width:20;" onmouseout="this.style.background=''"/>
+				         					
+											<script type="text/javascript">
+													Calendar.setup({
+	        											inputArea     :    "yearIdDriver",
+	        											ifFormat       :    "%d/%m/%Y",
+	        											showsTime      :    true,
+	        											timeFormat     :    "24",
+	        											button         :    "calendar_buttonDriver",
+	        											step           :    1,
+	        											onSelect       :    onSelectDriver,
+	        											singleClick    :    true
+	    											});
+												</script>
+				          				</tr>
+				          				<tr>
+						        			<td align="left" colspan="2" >
+						        				<%="( "+messages.getText("generic.supportmaterial.reports.format")+": "+messages.getText("generic.messages.dateformat")+" )"%>
+					            			</td>
+						      			</tr>
+				          				<tr>
+						        			<td colspan="2">&nbsp;</td>
+						        		</tr>
+										<tr >
+				        					<th align="left"> <%=messages.getText("generic.driver.driverdata.status")%> </th>
+				         					<td align="right">
+				         					
+				         					<select id="status" class="input">
+				         						<option value="<%=String.valueOf(DriverData.ACTIVE)%>" selected="selected"><%=messages.getText("generic.messages.active")%></option>
+				         						<option value="<%=String.valueOf(DriverData.EXCLUDED)%>"><%=messages.getText("generic.messages.excluded")%></option> 
+				         						<option value="<%=String.valueOf(DriverData.ALL)%>"><%=messages.getText("generic.messages.all.pl")%></option>
+				         					</select>
+											</td>
+				    					</tr>
+				    					<tr>
+						        			<td  colspan="2">&nbsp;</td>
+						        		</tr>				    					
+									</table>
+								</td>
+				  				<td class="rightLineSearch">&nbsp;</td>
+							</tr>	
+			  				<tr>
+		            	      	<td height="11" valign="top"><img src="../util/imgs/left_base_search.jpg" width="19" height="11"></td>
+		  					  	<td class="centerBaseSearch"></td>
+		  				  		<td valign="top" height="11"><img src="../util/imgs/right_base_search.jpg" width="19" height="11"></td>
+						 	</tr>
+				  			<tr>
+						       	<td height="10" colspan="3"><img src="x" width="1" height="1"></td>
+						 	</tr>
+			  				<tr>
+			    				<td colspan="3" valign="top">
+									<table width="100%" border="0" cellpadding="0" cellspacing="0">
+										<jsp:include page='<%="/util/divgeo2.jsp?form=DriverAdvancedSearchForm&format=search" %>'/>
+									</table>									
+								</td>	
+							</tr>
+						</table>
+					</td>
+    				<td width="2%">&nbsp;</td>
+    				<td width="49%" valign="top">
+						<table width="100%" border="0" cellpadding="0" cellspacing="0">
+							<jsp:include page='<%="/util/divorg.jsp?form=DriverAdvancedSearchForm&format=search" %>'/>
+						</table>
+					</td>
+  				</tr>
+  				<tr>
+    				<td colspan="2">&nbsp;</td>
+	  			</tr>
+	  			
+	  			
+	  			
+	  			<!-- Listado de Drivers: -->
+  				<tr>
+					<td colspan="3" align="right">
+						<input type="submit" value='<%=messages.getText("generic.messages.search")%>' class='input' />
+					</td>
+  				</tr>
+			</table>
+		
+	  
+	</form>
+</body>
+<%
+	}
+%>
+</html:html>

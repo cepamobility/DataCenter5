@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.activity.tables" >
+    <class name="ElectronicActivity" table="electronicactivity">
+		 <id column="id" name="id" >
+            <generator class="sequence">
+            	<param name="sequence">ElectronicActivity_Sequence</param>
+            </generator>
+        </id>
+        <property	name="activityType" type="java.lang.String" column="activitytype"/>
+        <property	name="date" type="java.util.Date" column="date"/>    
+        <property	name="driver" type="java.lang.Integer" column="driver"/>
+        <property	name="note" type="java.lang.String" column="note"/>
+        <property name="proccessed" type="java.lang.Boolean" not-null="true" >
+			<column name="proccessed" default="false" />
+		</property>
+  	</class>
+</hibernate-mapping>

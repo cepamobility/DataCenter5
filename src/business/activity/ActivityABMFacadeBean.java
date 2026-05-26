@@ -1,0 +1,877 @@
+package business.activity;
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.StringTokenizer;
+
+import javax.ejb.CreateException;
+import javax.ejb.SessionBean;
+
+import persistence.activity.ActivityABM;
+import persistence.activity.ActivityABMUtil;
+import persistence.activity.ActivityReport;
+import persistence.activity.ActivityReportUtil;
+import persistence.administration.corporation.CorporationReportUtil;
+import persistence.administration.tables.TransporterLink;
+import persistence.driver.DriverReport;
+import persistence.driver.DriverReportUtil;
+import business.administration.corporation.CorporationABMFacade;
+import business.administration.corporation.CorporationABMFacadeUtil;
+import business.driver.DriverABMFacade;
+import business.driver.DriverABMFacadeBean;
+import business.driver.DriverABMFacadeUtil;
+import business.driver.DriverReportFacade;
+import business.driver.DriverReportFacadeUtil;
+import business.util.ExceptionHandler;
+import business.util.MemoryLog;
+
+import communication.activity.tables.CEPAActivityConstants;
+import communication.activity.tables.CEPAActivityData;
+import communication.activity.tables.CEPAActivityDefinitionData;
+import communication.activity.tables.CEPAActivityScheduleData;
+import communication.activity.tables.CEPAActivityScheduleRegistryData;
+import communication.activity.tables.CEPAScheduleActivityInstructorData;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.util.Util;
+import communication.administration.user.UserSessionData;
+import communication.datatype.tables.ActivityStateDataType;
+import communication.driver.tables.DriverData;
+import communication.exception.CreateBeanException;
+import communication.exception.DeslogedException;
+import communication.exception.InvalidDataException;
+import communication.util.ListResult;
+
+/**
+ * @ejb.bean name="ActivityABMFacade"
+ *           display-name="Name for ActivityABMFacade"
+ *           description="Description for ActivityABMFacade" 
+ *           jndi-name="ejb/ActivityABMFacade"
+ *           type="Stateless"
+ *           view-type="remote"
+ * 			 transaction-type = "Container"
+ * 
+ * @ejb.ejb-ref ejb-name = "ActivityABM" ref-name = "ejb/ActivityABM" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/ActivityABM" ref-name = "ActivityABM"
+ * 
+ * @ejb.ejb-ref ejb-name = "ActivityReport" ref-name = "ejb/ActivityReport" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/ActivityReport" ref-name = "ActivityReport"
+ * 
+ * @ejb.ejb-ref ejb-name = "CorporationReport" ref-name = "ejb/CorporationReport" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/CorporationReport" ref-name = "CorporationReport"
+ * 
+ * @ejb.ejb-ref ejb-name = "DriverReport" ref-name = "ejb/DriverReport" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/DriverReport" ref-name = "DriverReport"
+ * 
+ * @ejb.util generate="physical"
+ */
+
+public abstract class ActivityABMFacadeBean implements SessionBean {
+
+    private ExceptionHandler handler = new ExceptionHandler(DriverABMFacadeBean.class);
+
+	
+	/**
+	 * @ejb.permission role-name = "administrator,cepascheduleactivitycreate,cepascheduleactivityupdate,cepascheduleactivitydelete,cepascheduleactivityregistrycreate,cepascheduleactivityregistryupdate,cdactivitycreate,cdactivitymodify,cdactivitydelete,jjreporter"
+	 * Default create method
+	 * 
+	 * @throws CreateException
+	 * @ejb.create-method
+	 */
+	public void ejbCreate()
+			throws CreateBeanException {
+	}
+	
+	
+	/**
+	 * @ejb.interface-method view-type = "remote"
+	 * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,cepascheduleactivitycreate,cdactivitycreate,jjreporter"
+	 * @param data
+	 * @throws InvalidDataException
+	 * @throws DeslogedException
+	 */
+	public Integer createCEPAScheduleActivity(CEPAActivityScheduleData data,String comment,
+			UserSessionData userSessionData) throws Exception {
+		try{
+			ActivityABM activityABM=ActivityABMUtil.getHome().create();
+			Integer activityId = activityABM.createCEPAScheduleActivity(data,comment,userSessionData);
+			return activityId;
+			
+		} catch (Exception exception) {
+			Object [] parameters = new Object[2];
+			parameters[0] = data;
+			parameters[1] = comment;
+			handler.handleException("createCEPAScheduleActivity", exception, userSessionData, parameters);
+		}
+		return null;
+	}
+
+	/**
+	 * @ejb.interface-method view-type = "remote"
+	 * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,cepascheduleactivitycreate,cdactivitycreate,jjreporter"
+	 * @param data
+	 * @throws InvalidDataException
+	 * @throws DeslogedException
+	 */
+	public Integer createActivity(CEPAActivityScheduleData data, Collection<DriverData> drivers, String comment, UserSessionData userSessionData) throws Exception {
+		try{
+			ActivityABM activityABM=ActivityABMUtil.getHome().create();
+			Integer activityId = activityABM.createCEPAScheduleActivity(data,comment,userSessionData);
+			data.setActivityId(activityId);
+
+			Iterator<DriverData> driverIt = drivers.iterator();
+			while(driverIt.hasNext()) {
+				
+				activityABM.createCEPAScheduleActivityRegistry(new CEPAActivityScheduleRegistryData(data,driverIt.next()),userSessionData,false);
+			}
+
+			return activityId;
+			
+		} catch (Exception exception) {
+			Object [] parameters ={data, drivers, comment};
+			handler.handleException("createActivity", exception, userSessionData, parameters);
+		}
+		return null;
+	}
+
+	/**
+	 * @ejb.interface-method view-type = "remote"
+	 * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,cepascheduleactivityupdate,cdactivitymodify"
+	 * @throws InvalidDataException
+	 */
+	public void dictateActivities(Collection<String> ids, String comment, UserSessionData userSessionData) throws Exception {
+		try {
+			if (userSessionData == null) {
+				throw new DeslogedException("session data is empty", "generic.error.deslogued");
+			}
+		} catch (Exception e) {
+			
+		}
+	}
+	
+	/**
+	 * @ejb.interface-method view-type = "remote"
+	 * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,cepascheduleactivityupdate,cdactivitymodify,jjreporter"
+	 * @param data
+	 * @throws InvalidDataException
+	 * @throws DeslogedException
+	 */
+	public void updateCEPAScheduleActivity(CEPAActivityScheduleData data,String comment,UserSessionData userSessionData) throws Exception {
+		try{	
+			if (userSessionData == null) {
+				throw new DeslogedException("Class business.activity.ActivityABMFacade(updateCEPAScheduleActivity(CEPAScheduleActivityData)), " +
+						"session data is empty", "generic.error.deslogued");
+			}
+			if (data == null) {
+				throw new InvalidDataException("Class business.activity.ActivityABMFacade(updateCEPAScheduleActivity(CEPAScheduleActivityData)), " +
+						"driver data is empty","generic.activity.activitydata.isempty");
+			}
+			
+			Collection<DriverData> drivers = null;
+			Collection links = null;
+			boolean replicate = userSessionData.getCorporationId() == CorporationData.FORESTALES;
+			if(replicate) {
+				links = ActivityReportUtil.getHome().create().getActivityLink(data.getActivityId(),userSessionData);
+				replicate = (links == null || links.size() == 0) && data.getState().getResourceBundleId().equals(CEPAActivityScheduleData.DICTADA);
+				if(replicate) {
+					drivers = ActivityReportUtil.getHome().create().getParticipants(data.getActivityId(), userSessionData);
+				}
+			}
+
+    		ActivityABM activityABM=ActivityABMUtil.getHome().create();
+			activityABM.updateCEPAScheduleActivity(data,comment,userSessionData);
+			if(userSessionData.isPointCorporation()) {
+				if(data.getState().getResourceBundleId().equals(CEPAActivityScheduleData.DICTADA)) {
+					CorporationABMFacadeUtil.getHome().create().addActivity(data, userSessionData);
+				}else {
+					CorporationABMFacadeUtil.getHome().create().removeActivity(data, userSessionData);
+				}
+			}
+			if(userSessionData.getCorporationId() == CorporationData.FORESTALES) {
+				if(replicate) {
+					if(drivers != null && drivers.size() > 0) {
+						DriverABMFacade driverABM = DriverABMFacadeUtil.getHome().create();
+						DriverReportFacade driverReport = DriverReportFacadeUtil.getHome().create();
+						Iterator<DriverData> it = drivers.iterator();
+						boolean[] corporations = {true,true,true};
+						while(it.hasNext()) {
+							DriverData driver = it.next();
+							Integer[] dlinks = driverReport.getDriverLink(driver.getId(), userSessionData); 
+							if(dlinks == null || (dlinks[0] == null && dlinks[1] == null && dlinks[2] == null))
+								driverABM.replicateDrivers(driver, "Replicated From Tablet", corporations, userSessionData);
+						}
+						replicateActivity(data, drivers, comment, userSessionData);
+					}
+				}else {
+					Iterator it = links.iterator();
+					while(it.hasNext()) {
+						Integer activityId = (Integer)it.next();
+						activityABM.updateForestalActivity(activityId, data, comment, userSessionData);
+						if(data.getState().getResourceBundleId().equals(CEPAActivityScheduleData.DICTADA)) {
+							CorporationABMFacadeUtil.getHome().create().addActivity(data, userSessionData);
+						}else {
+							CorporationABMFacadeUtil.getHome().create().removeActivity(data, userSessionData);
+						}
+					}
+				}
+			}
+		} catch (Exception exception) {
+			exception.printStackTrace();
+			Object [] parameters = new Object[2];
+			parameters[0] = data;
+			parameters[1] = comment;
+			handler.handleException("updateCEPAScheduleActivity", exception, userSessionData, parameters);
+		}
+	}
+	
+	
+	/**
+	 * @ejb.interface-method view-type = "remote"
+	 * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,cepascheduleactivitydelete,cdactivitydelete"
+	 * @param data
+	 * @throws InvalidDataException
+	 * @throws DeslogedException
+	 */
+	public void deleteCEPAScheduleActivity(CEPAActivityScheduleData data, String comment,
+			UserSessionData userSessionData) throws Exception {
+		try{	
+			if (userSessionData == null) {
+				throw new DeslogedException("Class business.activity.ActivityABMFacade(deleteCEPAScheduleActivity(CEPAScheduleActivityData)), session data is empty","generic.error.deslogued");
+			}
+			if (data == null) {
+				throw new InvalidDataException("Class business.activity.ActivityABMFacade(deleteCEPAScheduleActivity(CEPAScheduleActivityData)), driver data is empty","generic.activity.activitydata.isempty");
+			}
+			
+			ActivityABM activityABM=ActivityABMUtil.getHome().create();
+			activityABM .deleteCEPAScheduleActivity(data,comment,userSessionData);
+			
+			if(userSessionData.getCorporationId() == CorporationData.FORESTALES) {
+				Collection<Integer> links = ActivityReportUtil.getHome().create().getActivityLink(data.getActivityId(),userSessionData);
+				if(links != null || links.size() > 0) {
+					Iterator<Integer> it = links.iterator();
+					while(it.hasNext()) {
+						data.setActivityId(it.next());
+						activityABM .deleteCEPAScheduleActivity(data,comment,userSessionData);
+					}
+				}
+			}
+			
+		} catch (Exception exception) {
+			Object [] parameters = new Object[2];
+			parameters[0] = data;
+			parameters[1] = comment;
+			handler.handleException("deleteCEPAScheduleActivity", exception, userSessionData, parameters);
+		}
+	}
+	
+	/**
+	 * @ejb.interface-method view-type = "remote"
+	 * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,cepascheduleactivityregistrycreate,cepascheduleactivityregistryupdate,cdactivitycreate,jjreporter"
+	 * @param data
+	 * @throws InvalidDataException
+	 * @throws DeslogedException
+	 */
+	public void createCEPAScheduleActivityRegistry(CEPAActivityScheduleRegistryData data, 
+			UserSessionData userSessionData,boolean pasarADictada) throws Exception {
+		try{
+			ActivityABM activityABM=ActivityABMUtil.getHome().create();
+			activityABM.createCEPAScheduleActivityRegistry(data,userSessionData,pasarADictada);
+			if(userSessionData.getCorporationId() == CorporationData.FORESTALES) {
+				Integer[] driverLinks = DriverReportUtil.getHome().create().getDriverLink(data.getDriver().getId(), userSessionData);
+				Integer[] activityLinks = ActivityReportUtil.getHome().create().getActivityLink(data.getActivity().getActivityId(), data.getDriver().getId(), userSessionData);
+				if(activityLinks != null) {
+					for(int i = 0; i < activityLinks.length; i++) {
+						if(activityLinks[i] != null) {
+							data.setActivity(new CEPAActivityScheduleData(activityLinks[i]));
+							data.setDriver(new DriverData(driverLinks[i]));
+							activityABM.createCEPAScheduleActivityRegistry(data,userSessionData,pasarADictada);
+						}
+					}
+				}else if(((CEPAActivityScheduleData)data.getActivity()).getState().equals(CEPAActivityScheduleData.DICTADA)){
+					replicateActivity(data, driverLinks, userSessionData);
+				}
+			}
+		} catch (Exception exception) {
+			Object [] parameters = new Object[2];
+			parameters[0] = data;
+			parameters[1] = pasarADictada;
+			handler.handleException("createCEPAScheduleActivityRegistry", exception, userSessionData, parameters);
+		}
+	}	
+	
+
+
+	/**
+	 * @ejb.interface-method view-type = "remote"
+	 * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,cepascheduleactivitydelete,cepascheduleactivityregistrydelete,cdactivitydelete"
+	 * @param data
+	 * @throws InvalidDataException
+	 * @throws DeslogedException
+	 */
+	public void deleteCEPAScheduleActivityRegistry(CEPAActivityScheduleRegistryData data, String comment,
+			UserSessionData userSessionData) throws Exception {
+		try{	
+			if (userSessionData == null) {
+				throw new DeslogedException("Class business.activity.ActivityABMFacade(deleteCEPAScheduleActivity(CEPAScheduleActivityData)), session data is empty","generic.error.deslogued");
+			}
+			if (data == null) {
+				throw new InvalidDataException("Class business.activity.ActivityABMFacade(deleteCEPAScheduleActivity(CEPAScheduleActivityData)), driver data is empty","generic.activity.activitydata.isempty");
+			}
+			
+			ActivityABM activityABM=ActivityABMUtil.getHome().create();
+			activityABM.deleteCEPAScheduleActivityRegistry(data,comment,userSessionData);
+			
+			if(userSessionData.getCorporationId() == CorporationData.FORESTALES) {
+				Integer[] driverLinks = DriverReportUtil.getHome().create().getDriverLink(data.getDriver().getId(), userSessionData);
+				Integer[] activityLinks = ActivityReportUtil.getHome().create().getActivityLink(data.getActivity().getActivityId(), data.getDriver().getId(), userSessionData);
+				if(activityLinks != null) {
+					for(int i = 0; i < activityLinks.length; i++) {
+						if(activityLinks[i] != null) {
+							data.setActivity(new CEPAActivityScheduleData(activityLinks[i]));
+							data.setDriver(new DriverData(driverLinks[i]));
+							activityABM.deleteCEPAScheduleActivityRegistry(data,comment,userSessionData);
+						}
+					}
+				}
+			}
+			
+		} catch (Exception exception) {
+			Object [] parameters = new Object[2];
+			parameters[0] = data;
+			parameters[1] = comment;
+			handler.handleException("deleteCEPAScheduleActivityRegistry", exception, userSessionData, parameters);
+		}
+	}
+		
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,cepascheduleactivitydelete,cepascheduleactivityregistrydelete,cdactivitydelete"
+     * @param data
+     * @throws InvalidDataException
+     * @throws DeslogedException
+     */
+    public void deleteRegistries(Integer activity, Collection collection, String comment, 
+    		UserSessionData userSessionData) throws Exception {
+        try{    
+            Iterator it = collection.iterator();
+            while(it.hasNext()){
+                String driver = (String)it.next();
+                
+                ActivityABM activityABM=ActivityABMUtil.getHome().create();
+                activityABM.deleteActivityRegistry(activity,new Integer(driver),comment,userSessionData);
+
+                if(userSessionData.getCorporationId() == CorporationData.FORESTALES) {
+	    			Integer[] driverLinks = DriverReportUtil.getHome().create().getDriverLink(new Integer(driver), userSessionData);
+	    			Integer[] activityLinks = ActivityReportUtil.getHome().create().getActivityLink(activity, new Integer(driver), userSessionData);
+	    			if(activityLinks != null) {
+	    				for(int i = 0; i < activityLinks.length; i++) {
+	    					if(activityLinks[i] != null) {
+	    		                activityABM.deleteActivityRegistry(activityLinks[i],driverLinks[i],comment,userSessionData);
+	    					}
+	    				}
+	    			}
+                }
+            }
+        } catch (Exception exception) {
+        	Object [] parameters = new Object[3];
+        	parameters[0] = activity;
+        	parameters[1] = collection;
+        	parameters[2] = comment;
+            handler.handleException("deleteRegistries", exception, userSessionData, parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,cepascheduleactivitydelete,cepascheduleactivityregistrydelete,cdactivitydelete"
+     * @param data
+     * @throws InvalidDataException
+     * @throws DeslogedException
+     */
+    public void deleteRegistryLink(Integer activity, Collection collection, UserSessionData userSessionData) throws Exception {
+        try{    
+            Iterator it = collection.iterator();
+            while(it.hasNext()){
+                String driver = (String)it.next();
+                
+                ActivityABM activityABM=ActivityABMUtil.getHome().create();
+    			activityABM.deleteActivityLink(activity, new Integer(driver), userSessionData);
+            }
+        } catch (Exception exception) {
+        	Object [] parameters = new Object[3];
+        	parameters[0] = activity;
+        	parameters[1] = collection;
+            handler.handleException("deleteRegistries", exception, userSessionData, parameters);
+        }
+    }
+   
+
+    
+
+    
+    
+    
+   
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator"
+     */
+    public Integer createCepaSystemActivity(communication.cepasystem.tables.ActivityData data, UserSessionData userSessionData) throws Exception {
+        try{
+            ActivityABM activityABM=ActivityABMUtil.getHome().create();
+            return activityABM.createCepaSystemActivity(data,userSessionData);
+        } catch (Exception e) {
+        	Object[] p = new Object[1];
+        	p[0] = data;
+            handler.handleException("createCepaSystemActivity", e,userSessionData,p);
+        }
+        return null;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator"
+     */
+    public void updateCepaSystemActivity(communication.cepasystem.tables.ActivityData data, UserSessionData userSessionData) throws Exception {
+        try{
+            ActivityABM activityABM=ActivityABMUtil.getHome().create();
+            activityABM.updateCepaSystemActivity(data, userSessionData);
+        } catch (Exception e) {
+        	Object[] p = new Object[1];
+        	p[0] = data;
+            handler.handleException("createCepaSystemActivity", e, userSessionData,p);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,imeseviparticipantupdate,imeseviactivityupdate"
+     */
+    public void addCepaSystemActivityDrivers(Collection list, Integer activityId, UserSessionData userSessionData) throws Exception {
+        MemoryLog.getInstance().log(MemoryLog.START,"addCepaSystemActivityDrivers",getClass());
+        try{    
+            if (userSessionData == null) {
+                throw new DeslogedException("addCepaSystemActivityDrivers","session = null");
+            }
+            ActivityABM activity = ActivityABMUtil.getHome().create();
+            Iterator it = list.iterator();
+            while(it.hasNext()) {
+                activity.createCepaSystemActivityRegistry(activityId,new Integer((String)it.next()),"",userSessionData);
+            }
+        } catch (Exception exception) {
+        	Object[] p = new Object[2];
+        	p[0] = list;
+        	p[1] = activityId;
+            handler.handleException("addCepaSystemActivityDrivers",exception,userSessionData,p);
+        } 
+        MemoryLog.getInstance().log(MemoryLog.END,"addCepaSystemActivityDrivers",getClass());
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator"
+     */
+    public void deleteCepaSystemActivities(String list, String comment,UserSessionData userSessionData) throws Exception {
+        MemoryLog.getInstance().log(MemoryLog.START,"deleteCepaSystemActivities",getClass());
+        try{    
+            if (userSessionData == null) {
+                throw new DeslogedException("deleteCepaSystemActivities","session = null");
+            }
+            ActivityABM activity = ActivityABMUtil.getHome().create();
+            StringTokenizer tokenizer = new StringTokenizer(list,",");
+            while(tokenizer.hasMoreTokens()) {
+                Integer activityId = new Integer(tokenizer.nextToken());
+                activity.deleteCepaSystemActivityDrivers(activityId,userSessionData);
+                activity.deleteCepaSystemActivity(activityId,comment,userSessionData);
+            }
+        } catch (Exception exception) {
+        	Object[] p = new Object[2];
+        	p[0] = list;
+        	p[1] = comment;        	
+            handler.handleException("deleteCepaSystemActivities",exception,userSessionData,p);
+        } 
+        MemoryLog.getInstance().log(MemoryLog.END,"deleteCepaSystemActivities",getClass());
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator"
+     */
+    public void deleteCepaSystemActivityDrivers(String list, UserSessionData userSessionData) throws Exception {
+        MemoryLog.getInstance().log(MemoryLog.START,"deleteCepaSystemActivityDrivers",getClass());
+        try{    
+            if (userSessionData == null) {
+                throw new DeslogedException("deleteCepaSystemActivityDrivers","session = null");
+            }
+            ActivityABM activity = ActivityABMUtil.getHome().create();
+            activity.deleteCepaSystemActivityDrivers(list,userSessionData);
+        } catch (Exception exception) {
+        	Object[]p = new Object[1];
+        	p[0] = list;
+        	
+            handler.handleException("deleteCepaSystemActivityDrivers",exception,userSessionData,p);
+        } 
+        MemoryLog.getInstance().log(MemoryLog.END,"deleteCepaSystemActivityDrivers",getClass());
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator"
+     */
+    public void superviseCepaSystemActivity(Integer activityId, String comment, UserSessionData userSessionData) throws Exception {
+        try{
+            ActivityABM activityABM=ActivityABMUtil.getHome().create();
+            activityABM.superviseCepaSystemActivity(activityId, comment, userSessionData);
+        } catch (Exception e) {
+        	Object[] p = new Object[2];
+        	p[0] = activityId;
+        	p[1] = comment;
+            handler.handleException("superviseCepaSystemActivity", e,userSessionData,p);
+        }
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,uploadcdcimsa"
+     * @return Object[]
+     * [0]: ListResult 
+     * 			LinkedList de String con los nombres de conductores no insertados
+     * 			Total de condcutores no insertados
+     * [1]: Integer total de conductores insertados.
+     */
+    public Object[] addCimsaCommentaryDrives(Collection<CEPAActivityScheduleRegistryData> list, 
+    		UserSessionData userSessionData){
+    	try{
+    		
+    		ActivityReport activityReport = ActivityReportUtil.getHome().create();
+	      	    
+    		LinkedList notInserted = new LinkedList();
+    		int totalInserted = 0;
+    	    boolean find = false;
+    	
+	    	if (list != null && list.size() > 0){
+	      	  
+	    		Iterator it = list.iterator();
+	      	  
+	      	  	ActivityStateDataType state = new ActivityStateDataType(CEPAActivityConstants.DICTADA);
+	      	  	CEPAActivityDefinitionData definition = new CEPAActivityDefinitionData(CEPAActivityConstants.COMMENTARYDRIVECAYACO);
+	      	
+	      	  	while (it.hasNext()){
+	      	  	
+	      	  		find = false;
+	      	  		
+	      	  		CEPAActivityScheduleRegistryData registry = (CEPAActivityScheduleRegistryData) it.next();
+	      		  
+	      	  		DriverData driver = registry.getDriver();
+	      	  		Collection divOrgSet = driver.getDivOrgs();
+	      	      
+	      	  		CEPAActivityData activityData = registry.getActivity();
+	      	  		activityData.setDefinition(definition);
+	      	  		CEPAActivityScheduleData activityScheduleData = new CEPAActivityScheduleData(activityData);
+	      	  		activityScheduleData.setState(state);
+	      	  		activityScheduleData.setDivOrgSet(divOrgSet);
+	      	  		
+	      	  		Collection driverActivities = activityReport.findActivityByDriver(userSessionData, driver.getId(), false);
+	      	  		if (driverActivities != null && driverActivities.size() > 0){
+	      	  			Iterator itDA = driverActivities.iterator();
+	      	    	  
+	      	  			while (itDA.hasNext()){
+	      	  				CEPAActivityScheduleRegistryData driverRegistry = (CEPAActivityScheduleRegistryData)itDA.next();
+	      	  				CEPAActivityData driverActivity = driverRegistry.getActivity();
+	      	  				if (Util.formatDate(driverActivity.getDate()).
+	      	  						equalsIgnoreCase(Util.formatDate(activityData.getDate())) 
+	      	  						&&
+	      	  						driverActivity.getType().getResourceBundleId().equalsIgnoreCase(
+	      	  						activityData.getType().getResourceBundleId())){
+	      	  					
+	      	  					// 	Ya existe para ese conductor una actividad en la misma 
+	      	  					//  fecha y del mismo tipo
+	      	  					// 	NOT INSERTED
+	      	  					find = true;
+	      	    				notInserted.add(driver.getFirstName()+" "+driver.getLastName()+" - "
+	      	    						+Util.formatDate(activityData.getDate()));
+	      	    				break;
+	      	  				}	      	    		
+	      	  			}	      
+	      	  		}
+	      	      
+	      	  		// 	Si la actividad no existe para ese driver la guardo en la BD:
+	      	  		if (!find){
+	      	  			Integer activityId = createCEPAScheduleActivity(activityScheduleData, "Subido por archivo.", userSessionData);
+	      	  			registry.getActivity().setActivityId(activityId);
+	      	  			createCEPAScheduleActivityRegistry(registry, userSessionData, true);
+	      	  			totalInserted++;
+	      	  		}
+	      	  	}
+	        }
+	    	
+	    	Object[] result = new Object[2];
+	    	result[0] = new ListResult(notInserted,notInserted.size());
+	    	result[1] = totalInserted;
+	    	
+	    	return result;
+    	}catch(Exception e){
+    		e.printStackTrace();
+    	}
+    	return null;
+    }
+    
+	/**
+	 * @ejb.permission role-name = "administrator,cepascheduleactivityupdate,cdactivitymodify" 
+	 * @ejb.interface-method view-type = "both"
+	 * @param data
+	 * @param userRequest
+	 */
+    public Collection separateActivities(Integer activity, UserSessionData userSessionData) throws Exception {
+    	Collection ids = new LinkedList();
+    	Collection<Integer[]> links = new LinkedList<Integer[]>();
+    	try {
+    		ActivityABM activityABM = ActivityABMUtil.getHome().create();
+
+    		ActivityReport activityReport = ActivityReportUtil.getHome().create();
+    		CEPAActivityScheduleData originalActivity = activityReport.findCEPAActivityScheduleByPrimaryKey(activity,true,userSessionData);
+    		LinkedList<CEPAScheduleActivityInstructorData> instructors = originalActivity.getInstructors();
+    		Collection<DriverData> drivers = activityReport.getParticipants(activity, userSessionData);
+    		HashMap<String, CEPAActivityScheduleData> newActivities = originalActivity.divide(drivers); 
+    		Iterator<CEPAActivityScheduleData> activities = newActivities.values().iterator();
+    		boolean delete = true;
+    		while(activities.hasNext()) {
+    			CEPAActivityScheduleData newActivity = activities.next();
+    			if(newActivity.getActivityId() != null) {
+    				delete = false;
+    			}else {
+        			newActivity.setInstructors(instructors);
+					Integer activityId = activityABM.createCEPAScheduleActivity(newActivity, "Separated from activity "+originalActivity.getActivityId(), userSessionData);
+					newActivity.setActivityId(activityId);
+					ids.add(newActivity);
+					Iterator driverIt = newActivity.getDrivers().iterator();
+					while(driverIt.hasNext()) {		
+						Integer driverId = ((DriverData)driverIt.next()).getId();
+						activityABM.updateActivityRegistry(activity,driverId,activityId,userSessionData);
+						if(userSessionData.isCorporation(CorporationData.FORESTALES)) {
+							links.add(new Integer[]{activity, driverId, activityId});
+						}
+						if(userSessionData.isCorporation(CorporationData.BAYER_MX)) {
+							CorporationABMFacadeUtil.getHome().create().updateActivityPoints(activity,driverId,activityId,userSessionData);
+						}
+					}
+    			}
+    			
+    		}
+    		if(delete) {
+    			activityABM.deleteCEPAScheduleActivity(originalActivity, "From separated activity", userSessionData);
+    		}else {
+    			ids.add(originalActivity);
+    		}
+			if(userSessionData.isCorporation(CorporationData.FORESTALES)) {
+				Iterator<Integer[]> linksIt = links.iterator();
+				while(linksIt.hasNext()) {
+					Integer[] data = linksIt.next();
+					activityABM.updateActivityLink(data[0], data[1], data[2], userSessionData);
+				}
+			}
+    	}catch (Exception e) {
+    		e.printStackTrace();
+    	}
+    	return ids;
+    }
+
+	/**
+	 * @ejb.permission role-name = "administrator,cepascheduleactivitycreate,cdactivitycreate,jjreporter" 
+	 * @ejb.interface-method view-type = "both"
+	 * @param data
+	 * @param userRequest
+	 */
+    public void replicateActivity(CEPAActivityScheduleData data,Collection<DriverData> driverResults, String comment, UserSessionData userSessionData) throws Exception {
+    	try {
+    		ActivityABM activityABM = ActivityABMUtil.getHome().create();
+            Integer activityId = data.getActivityId();
+    		DriverReport driverReport = DriverReportUtil.getHome().create();
+    		HashMap<String, Collection<DriverData>> keys = new HashMap<String, Collection<DriverData>>();
+    		Iterator<DriverData> drivers = driverResults.iterator();
+    		while(drivers.hasNext()) {
+    			DriverData driver = drivers.next();
+    			String key = driverReport.getDriverTransporterKey(driver.getId(),userSessionData);
+    			if(keys.containsKey(key)) {
+    				keys.get(key).add(driver);
+    			}else {
+    				Collection<DriverData> collection = new LinkedList<DriverData>();
+    				collection.add(driver);
+    				keys.put(key,collection);
+    			}
+    		}
+    		ActivityReport activityReport = ActivityReportUtil.getHome().create();
+
+    		Iterator<String> it = keys.keySet().iterator();
+    		while(it.hasNext()) {
+    			
+    			String key = (String)it.next();
+    			Integer[] links = getLinks(key);
+
+    			Integer[] activityLinks = new Integer[5];
+                activityLinks[0] = activityId;
+
+                data.setActivityId(null);
+                if(links[0] != null) {
+                	data.replaceDivOrg(1,links[0],null,null);
+                	data.removeDivOrg(2);
+                	data.replaceDivGeo(null,TransporterLink.FOSA_REGION,TransporterLink.FOSA_COUNTRY);
+                	data.setCorpooration(new CorporationData(CorporationData.FORESTALORIENTAL,"",null,null,null,null));
+                	Integer id = activityABM.createCEPAScheduleActivity(data,comment,userSessionData);
+                	activityLinks[2] = id;
+                }
+
+                
+                if(links[2] != null) {
+                	data.replaceDivOrg(1,links[2],null,null);
+                	data.removeDivOrg(2);
+                	data.replaceDivGeo(null,TransporterLink.MDP_REGION,TransporterLink.MDP_COUNTRY);
+                	data.setCorpooration(new CorporationData(CorporationData.MONTES_DE_PLATA,"",null,null,null,null));
+                	Integer id = activityABM.createCEPAScheduleActivity(data,comment,userSessionData);
+                	
+                	activityLinks[4] = id;
+                }
+                
+                if(links[1] != null) {
+                	data.replaceDivOrg(1,TransporterLink.WEYERHAEUSER_DESTINY,null,null);
+                	data.addDivOrg(TransporterLink.WEYERHAEUSER_PRODUCT_ID,TransporterLink.WEYERHAEUSER_PRODUCT_NAME,TransporterLink.WEYERHAEUSER_PRODUCT,null,null);
+                	data.addDivOrg(TransporterLink.WEYERHAEUSER_TRANSPORTER_ID,TransporterLink.WEYERHAEUSER_TRANSPORTER_NAME,links[1],null,null);
+                	data.replaceDivGeo(null,TransporterLink.WEYERHAEUSER_REGION,TransporterLink.WEYERHAEUSER_COUNTRY);
+                	data.setCorpooration(new CorporationData(CorporationData.WEYERHAEUSER,"",null,null,null,null));
+                	Integer id = activityABM.createCEPAScheduleActivity(data,comment,userSessionData);
+                	activityLinks[3] = id;
+                }
+                
+            	drivers = keys.get(key).iterator();
+            	CorporationABMFacade corporationABM = CorporationABMFacadeUtil.getHome().create();
+            	while(drivers.hasNext()) {
+            		Integer driverId = drivers.next().getId();
+            		Integer[] driverLinks = driverReport.getDriverLink(driverId, userSessionData);
+            		
+            		for(int i = 0; i < 3; i++) {
+	            		if(driverLinks[i] != null) {
+	            			activityABM.replicateActivityResult(activityId,driverId,activityLinks[i+2],driverLinks[i],userSessionData);
+	            			if(i == 2) {
+	                    		String note = activityReport.getActivityNote(activityId, driverId, userSessionData);
+	            				corporationABM.addActivity(data, activityLinks[i+2], driverLinks[i], note, new Integer(CorporationData.MONTES_DE_PLATA),userSessionData); 
+	            			}
+	            		}
+            		}
+                	activityLinks[1] = driverId;
+                	activityABM.saveActivityLinks(activityLinks,userSessionData);
+            	}
+
+       		}
+    	} catch (Exception e) {
+			Object[] parameters = {data,comment};
+			handler.handleException("replicateActivity", e,userSessionData,parameters);
+        }
+    }
+
+	private Integer[] getLinks(String key) {
+		Integer[] links = new Integer[3];     			
+		StringTokenizer keyTokenizer = new StringTokenizer(key,";");
+		for(int i = 0; i < 3; i++) {
+			String transporter = keyTokenizer.nextToken();
+			if(!transporter.equals("-"))
+				links[i] = new Integer(transporter);
+		}
+		return links;
+	}
+
+
+	private void replicateActivity(CEPAActivityScheduleRegistryData registryData, Integer[] driverLinks, UserSessionData userSessionData) throws Exception {
+		Integer activityId = registryData.getActivity().getActivityId();
+		Integer driverId = registryData.getDriver().getId();
+    	try {
+    		ActivityReport activityReport = ActivityReportUtil.getHome().create();
+    		ActivityABM activityABM = ActivityABMUtil.getHome().create();
+    		Integer[] activityLinks = activityReport.getRelatedActivityLink(activityId, driverId, driverLinks, userSessionData);
+			Integer[] newActivityLinks = new Integer[5];
+			newActivityLinks[0] = activityId;
+			newActivityLinks[1] = driverId;
+
+        	CorporationABMFacade corporationABM = CorporationABMFacadeUtil.getHome().create();
+    		if(activityLinks == null) {
+    			CEPAActivityScheduleData data = activityReport.findCEPAActivityScheduleByPrimaryKey(activityId, true, userSessionData);
+    			Integer[] links = CorporationReportUtil.getHome().create().getTransporterLinkDriver(driverId, userSessionData);
+
+                data.setActivityId(null);
+                if(links[0] != null) {
+                	data.replaceDivOrg(1,links[0],null,null);
+                	data.replaceDivGeo(null,TransporterLink.FOSA_REGION,TransporterLink.FOSA_COUNTRY);
+                	data.setCorpooration(new CorporationData(CorporationData.FORESTALORIENTAL,"",null,null,null,null));
+                	Integer id = activityABM.createCEPAScheduleActivity(data,"",userSessionData);
+                	newActivityLinks[2] = id;
+                }
+
+                
+                if(links[2] != null) {
+                	data.replaceDivOrg(1,links[2],null,null);
+                	data.replaceDivGeo(null,TransporterLink.MDP_REGION,TransporterLink.MDP_COUNTRY);
+                	data.setCorpooration(new CorporationData(CorporationData.MONTES_DE_PLATA,"",null,null,null,null));
+                	Integer id = activityABM.createCEPAScheduleActivity(data,"",userSessionData);
+                	newActivityLinks[4] = id;
+                }
+                
+                if(links[1] != null) {
+                	data.replaceDivOrg(1,TransporterLink.WEYERHAEUSER_DESTINY,null,null);
+                	data.addDivOrg(TransporterLink.WEYERHAEUSER_PRODUCT_ID,TransporterLink.WEYERHAEUSER_PRODUCT_NAME,TransporterLink.WEYERHAEUSER_PRODUCT,null,null);
+                	data.addDivOrg(TransporterLink.WEYERHAEUSER_TRANSPORTER_ID,TransporterLink.WEYERHAEUSER_TRANSPORTER_NAME,links[1],null,null);
+                	data.replaceDivGeo(null,TransporterLink.WEYERHAEUSER_REGION,TransporterLink.WEYERHAEUSER_COUNTRY);
+                	data.setCorpooration(new CorporationData(CorporationData.WEYERHAEUSER,"",null,null,null,null));
+                	Integer id = activityABM.createCEPAScheduleActivity(data,"",userSessionData);
+                	newActivityLinks[3] = id;
+                }
+
+                for(int i = 0; i < 3; i++) {
+            		if(driverLinks[i] != null) {
+            			activityABM.replicateActivityResult(activityId,driverId,newActivityLinks[i+2],driverLinks[i],userSessionData);
+            			if(i == 2) {
+            				corporationABM.addActivity(data, newActivityLinks[i+2], driverLinks[i], registryData.getNote(), new Integer(CorporationData.MONTES_DE_PLATA), userSessionData);
+            			}
+            		}
+        		}
+    		}else {
+        		for(int i = 0; i < 3; i++) {
+            		if(driverLinks[i] != null) {
+            			activityABM.replicateActivityResult(activityId,driverId,activityLinks[i],driverLinks[i],userSessionData);
+            			if(i == 2) {
+            				corporationABM.addActivity(registryData.getActivity(), activityLinks[i], driverLinks[i], registryData.getNote(), new Integer(CorporationData.MONTES_DE_PLATA), userSessionData);
+            			}
+            			newActivityLinks[i+2] = activityLinks[i];
+            		}
+        		}
+        		
+    		}
+        	activityABM.saveActivityLinks(newActivityLinks,userSessionData);
+    	} catch (Exception e) {
+			Object[] parameters = {activityId,driverLinks};
+			handler.handleException("replicateActivity", e,userSessionData,parameters);
+        }
+	}
+}
+
+
+

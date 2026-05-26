@@ -1,0 +1,156 @@
+/**
+ * Created on 28-sep-2006
+ * CEPA
+ * DataCenter 5
+ */
+package communication.driver.report;
+
+import java.io.Serializable;
+import java.util.Calendar;
+import java.util.Date;
+
+import communication.activity.tables.CEPAActivityConstants;
+
+import persistence.driver.tables.Driver;
+
+public class FOSADriverReportDataType extends DriverReportDataType 
+implements FOSADriver, Serializable {
+
+    /**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	private Integer count;
+    private Date last;
+    private Date lastEC;
+	private Date lastExpiry;
+	private Date lastInduction;
+	private Date lastRadar;
+	private String radarNote;
+    
+    public FOSADriverReportDataType() {
+        super();
+    }
+
+    /**
+     * 
+     * @param id
+     * @param firstname
+     * @param lastname
+     * @param country
+     * @param birthdate
+     * @param exclusiondate
+     * @param contract
+     * @param divorg11
+     * @param divorg12
+     * @param divorg13
+     * @param divorg21
+     * @param divorg22
+     * @param divorg23
+     * @param divorg31
+     * @param divorg32
+     * @param divorg33
+     * @param divgeo2
+     * @param divgeo3
+     * @param driver
+     */
+    public FOSADriverReportDataType(Integer id, String firstname, String lastname, String country, Date birthdate, Date exclusiondate, String contract, String divorg11, 
+    		String divorg12, String divorg13, String divorg21, String divorg22, 
+    		String divorg23, String divorg31, String divorg32, String divorg33, 
+    		String divgeo2, String divgeo3, Driver driver) {
+        super(id,firstname,lastname,country,birthdate,exclusiondate,contract,divorg11,
+        		divorg12,divorg13,divorg21,divorg22,divorg23,divorg31,divorg32,
+        		divorg33,divgeo2,divgeo3,driver);
+        count = new Integer(0);
+    }
+
+    public Integer getCount() {
+        return count;
+    }
+
+    public Date getLast() {
+        return last;
+    }
+
+    public void setCount(Integer count) {
+        this.count = count;
+    }
+
+    public void setLast(Date date) {
+        this.last = date;
+    }
+    public Date getLastEC() {
+        return lastEC;
+    }
+
+    public void setLastEC(Date date) {
+        this.lastEC = date;
+    }
+
+    public void addCount(Integer count) {
+        this.count += count; 
+    }
+
+	public void setLastExpiry(Date lastExpiry) {
+		this.lastExpiry = lastExpiry;
+	}
+
+	public Date getLastInduction() {
+		return lastInduction;
+	}
+
+	public Date getLastRadar() {
+		return lastRadar;
+	}
+
+	public void setLastInduction(Date lastInduction) {
+		this.lastInduction = lastInduction;
+		
+	}
+
+	public void setLastRadar(Date lastRadar) {
+		this.lastRadar = lastRadar;
+	}
+
+	public void setRadarNote(String radarNote) {
+		this.radarNote = radarNote;
+	}
+
+	public String getRadarNote() {
+		return radarNote;
+	}
+
+	public Date getLastExpiry() {
+		return lastExpiry;
+	}
+
+	public void addLast(Date date,Object[] data) {
+		if(last == null) {
+			last = date;
+			if (data[5].equals(CEPAActivityConstants.APRUVED)
+					|| data[5].equals(CEPAActivityConstants.APRUVEDWITHOBSERVATIONS)
+					|| data[1].equals(CEPAActivityConstants.BTW3CUARTARENOVACION)) {
+				setLastExpiry((Date) data[4]);
+			} else {
+				setLastExpiry(null);
+			}
+		}else {
+			Calendar c1 = Calendar.getInstance();
+			c1.setTime(last);
+			
+			Calendar c2 = Calendar.getInstance();
+			c2.setTime(date);
+			
+			if(c1.before(c2)) {
+				last = date;
+				if (data[5].equals(CEPAActivityConstants.APRUVED)
+						|| data[5].equals(CEPAActivityConstants.APRUVEDWITHOBSERVATIONS)) {
+					setLastExpiry((Date) data[4]);
+				} else {
+					setLastExpiry(null);
+				}
+			}
+		}
+		
+	}
+}

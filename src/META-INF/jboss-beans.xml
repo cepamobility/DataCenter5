@@ -1,0 +1,5 @@
+
+<message-driven>
+         <ejb-name>AlertsMDB</ejb-name>                       
+         <destination-jndi-name>topic/DayAlertTopic</destination-jndi-name>
+</message-driven>

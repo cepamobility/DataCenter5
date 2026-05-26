@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+	  "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+	  "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.log.fleet" >
+	<class name="FleetDivisionLog" table="fleetdivisionslog">       
+
+		<composite-id>
+			<key-many-to-one name="fleetLog" class="persistence.log.fleet.AbstractFleetLog" >
+				<column name="fleet"></column>
+	       		<column name="userId"></column>
+	       		<column name="date"></column>
+	       	</key-many-to-one>
+       	</composite-id>
+       				
+		<property type="java.lang.String"	name="vehicleType" column="vehicletype"/>
+		<property type="java.lang.String"	name="odometer" column="odometer"/>
+		
+		<property name="geoLevel2" type="java.lang.Integer" column="geolevel2" />
+		<property name="geoLevel1" type="java.lang.Integer" column="geolevel1" />
+		<property name="country" type="java.lang.Integer" column="country" />
+		
+		<property name="divOrg11" type="java.lang.Integer" column="divorg11" />
+		<property name="divOrg12" type="java.lang.Integer" column="divorg12" />
+		<property name="divOrg13" type="java.lang.Integer" column="divorg13" />
+		
+		<property name="divOrg21" type="java.lang.Integer" column="divorg21" />
+		<property name="divOrg22" type="java.lang.Integer" column="divorg22" />
+		<property name="divOrg23" type="java.lang.Integer" column="divorg23" />
+		
+		<property name="divOrg31" type="java.lang.Integer" column="divorg31" />
+		<property name="divOrg32" type="java.lang.Integer" column="divorg32" />
+		<property name="divOrg33" type="java.lang.Integer" column="divorg33" />
+		
+		<property	name="exclusionDate" type="java.util.Date"	column="exclusionDate"/>
+	
+	</class>
+</hibernate-mapping>
+ 

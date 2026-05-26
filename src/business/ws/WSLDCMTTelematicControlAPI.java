@@ -1,0 +1,227 @@
+package business.ws;
+
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+
+import javax.ejb.Stateless;
+import javax.jws.WebMethod;
+import javax.jws.WebParam;
+import javax.jws.WebService;
+import javax.servlet.http.HttpServletRequest;
+import javax.ws.rs.core.Context;
+
+import com.sun.jersey.api.core.HttpRequestContext;
+
+import business.SystemAccessRemote;
+import business.ws.cache.CacheManager;
+import business.ws.client.security.User;
+import communication.administration.corporation.tables.EasyTrackEventData;
+import communication.administration.corporation.tables.MobilTrackEventData;
+
+@Stateless(mappedName = "WSLDCMTTelematicControlAPI")
+@WebService(name="WSLDCMTTelematicControlAPI")
+public class WSLDCMTTelematicControlAPI{
+	@Context
+	private HttpServletRequest request;
+	
+	//Mutua exclusion
+	private static Object o=new Object();
+	private static Calendar lastCall=Calendar.getInstance();
+	
+	private static Long cKeyUPM;
+	private static Long cKeyMDP;
+	private static Long cKeyLumin;
+	
+	private class RunSaveTelematicEvent implements Runnable{
+
+		public MobilTrackEventData data;
+		public SystemAccessRemote sys;
+		
+		
+		@Override
+		public void run() {
+			try{
+				synchronized (o) {
+					System.out.println("RunSaveTelematicEvent "+data.getMatricula()+"  "+data.getFechaHora());
+					sys.getCorporationABMFacade().saveMobilTrackEvent(data, sys.getUserSessionData());	
+				}		
+			}catch(Throwable th){
+				String text="";
+				text="MobilTrack";	
+				System.out.println("WSLDCMTTelematicControlAPI: Error al salva un evento de "+text+"  "+th.getMessage());
+				th.printStackTrace();
+			}
+		}
+	}
+
+	private class RunDeleteTelematicEvent implements Runnable{
+
+		public MobilTrackEventData data;
+		public SystemAccessRemote sys;
+		
+		
+		@Override
+		public void run() {
+			try{
+				synchronized (o) {
+					sys.getCorporationABMFacade().deleteMobilTrackEvent(data, sys.getUserSessionData());	
+				}		
+			}catch(Throwable th){
+				String text="";
+				text="MobilTrack";	
+				System.out.println("WSLDCMTTelematicControlAPI: Error al borrar un evento de "+text+"  "+th.getMessage());
+				th.printStackTrace();
+			}
+		}
+	}
+
+	@WebMethod(operationName="saveTelematicEvent")
+	public void saveTelematicEvent(@WebParam(name = "u") String u, @WebParam(name = "p")String p,
+			@WebParam(name = "fechaHora") String fechaHora,@WebParam(name = "matricula") String matricula,
+			@WebParam(name = "empresa") String empresa, @WebParam(name = "dEvento") String dEvento,
+			@WebParam(name = "velDef") String velDef, @WebParam(name = "velGps") String velGps,
+			@WebParam(name = "velVehiculo") String velVehiculo,@WebParam(name = "viaje") String viaje,
+			@WebParam(name = "idReporte") String idReporte) throws Exception{
+		
+		System.out.println("Llega evento usuario:"+u+" , matricula: "+matricula);
+		if(!((u.equalsIgnoreCase("mtwsus") || u.equalsIgnoreCase("mtwsl")  || u.equalsIgnoreCase("mtwsm"))&& p.equalsIgnoreCase("1325689ZP!"))){
+			throw new Exception("User Invalid");
+		}
+		
+		boolean next=false;
+   		synchronized (o) {
+			Calendar calNow=Calendar.getInstance();
+			calNow.add(Calendar.SECOND, -10);
+			if(calNow.compareTo(lastCall)<0){
+				next=true;
+				Thread.sleep(1000);
+			}
+		}
+   		
+		//Validado el usuario y contrasena, se usa uno espelcifico de la corporacion para no darle al
+		//proveedor de telematica un usuario de dc.
+		User user = null;
+		if(u.equalsIgnoreCase("mtwsus")) {
+			user = new User("wstelematicmdp","132543");
+			user.setcKey(cKeyUPM);
+		}else if(u.equalsIgnoreCase("mtwsm")) {
+			user = new User("wstelematicmdelp","132543");
+			user.setcKey(cKeyMDP);
+		}else {
+			user = new User("wstelematiclumin","132543");
+			user.setcKey(cKeyLumin);
+		}
+		//
+		if(!next){
+			try { 
+				lastCall=Calendar.getInstance();
+				
+				SystemAccessRemote sys= CacheManager.getInstance().getSys(user);
+				if(u.equalsIgnoreCase("mtwsus")) {
+					cKeyUPM=user.getcKey();
+				}else if(u.equalsIgnoreCase("mtwsm")) {
+					cKeyMDP=user.getcKey();
+				}else {
+					cKeyLumin=user.getcKey();
+				}
+				MobilTrackEventData data=new MobilTrackEventData();
+				data.setdEvento(dEvento);
+				data.setEmpresa(empresa);
+				SimpleDateFormat format=new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+				if(fechaHora.contains("\""))
+					fechaHora = fechaHora.replaceAll("\"", "");
+				data.setFechaHora(format.parse(fechaHora));
+				System.out.println("MT: "+user.getUserlogin()+" matricula "+matricula+" Evento:'"+ dEvento+"' Hora que manda "+fechaHora+", hora que guardo "+format.format(data.getFechaHora()));
+				data.setIdReporte(idReporte!=null?Long.valueOf(idReporte):0);
+				data.setMatricula(matricula);
+				data.setVelDef(velDef!=null?Integer.valueOf(velDef):0);
+				data.setVelGps(velGps!=null?Integer.valueOf(velGps):0);
+				data.setVelVehiculo(velVehiculo!=null?Integer.valueOf(velVehiculo):0);
+				data.setViaje(viaje!=null?Long.valueOf(viaje):0);
+				
+				RunSaveTelematicEvent runSave=new RunSaveTelematicEvent();
+				runSave.data=data;
+				runSave.sys=sys;
+				
+				new Thread(runSave).start();
+				
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw e;
+			}
+		}else{
+			saveTelematicEvent(u, p, fechaHora, matricula, empresa, dEvento, velDef, velGps, velVehiculo, viaje, idReporte);
+		}
+		 
+	}
+	
+	@WebMethod(operationName="deleteTelematicEvent")
+	public void deleteTelematicEvent(@WebParam(name = "u") String u, @WebParam(name = "p")String p,
+			@WebParam(name = "fechaHora") String fechaHora,@WebParam(name = "matricula") String matricula,
+			@WebParam(name = "empresa") String empresa, @WebParam(name = "dEvento") String dEvento) throws Exception{
+		
+		System.out.println("Llega evento de borrado, usuario:"+u+" , matricula: "+matricula);
+		if(!((u.equalsIgnoreCase("mtwsus") || u.equalsIgnoreCase("mtwsl"))&& p.equalsIgnoreCase("1325689ZP!"))){
+			throw new Exception("User Invalid");
+		}
+		
+		boolean next=false;
+   		synchronized (o) {
+			Calendar calNow=Calendar.getInstance();
+			calNow.add(Calendar.SECOND, -10);
+			if(calNow.compareTo(lastCall)<0){
+				next=true;
+				Thread.sleep(1000);
+			}
+		}
+   		
+		//Validado el usuario y contrasena, se usa uno espelcifico de la corporacion para no darle al
+		//proveedor de telematica un usuario de dc.
+		User user = null;
+		if(u.equalsIgnoreCase("mtwsus")) {
+			user = new User("wstelematicmdp","132543");
+			user.setcKey(cKeyUPM);
+		}else if(u.equalsIgnoreCase("mtwsm")) {
+			user = new User("wstelematicmdelp","132543");
+			user.setcKey(cKeyMDP);
+		}else {
+			user = new User("wstelematiclumin","132543");
+			user.setcKey(cKeyLumin);
+		}
+		//
+		if(!next){
+			try { 
+				lastCall=Calendar.getInstance();
+				
+				SystemAccessRemote sys= CacheManager.getInstance().getSys(user);
+				if(u.equalsIgnoreCase("mtwsus")) {
+					cKeyUPM=user.getcKey();
+				}else if(u.equalsIgnoreCase("mtwsm")) {
+					cKeyMDP=user.getcKey();
+				}else {
+					cKeyLumin=user.getcKey();
+				}
+				MobilTrackEventData data=new MobilTrackEventData();
+				data.setdEvento(dEvento);
+				data.setEmpresa(empresa);
+				SimpleDateFormat format=new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+				data.setFechaHora(format.parse(fechaHora));
+				System.out.println("MT Borrado: matricula "+matricula+" Evento:'"+ dEvento+"' Hora que manda "+fechaHora+", hora que borro "+format.format(data.getFechaHora()));
+				data.setMatricula(matricula);
+				
+				RunDeleteTelematicEvent runSave=new RunDeleteTelematicEvent();
+				runSave.data=data;
+				runSave.sys=sys;
+				
+				new Thread(runSave).start();
+				
+			} catch (Exception e) {
+				e.printStackTrace();
+				throw e;
+			}
+		}else{
+			deleteTelematicEvent(u, p, fechaHora, matricula, empresa, dEvento);
+		}
+		 
+	}
+}

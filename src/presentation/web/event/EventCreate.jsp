@@ -1,0 +1,2707 @@
+
+<%@page language="java" 
+    errorPage="../exception.jsp"
+	import="business.*"
+	import="business.datatype.*"
+	import="business.vehicle.*"
+	import="java.util.*"
+	import="presentation.translator.web.util.*"
+	import="presentation.translator.web.event.*"
+	import="communication.event.tables.*"
+	import="communication.driver.tables.*"
+	import="communication.language.*"
+	import="communication.datatype.*"
+	import="communication.datatype.tables.*"
+	import="communication.driver.tables.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.administration.user.*"
+	import="communication.vehicle.tables.*"
+	import="communication.security.*"
+	import="communication.activity.tables.CEPAActivityScheduleRegistryData"
+	import="communication.activity.tables.CEPAActivityConstants"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<%!
+	RequestDispatcher dispatcher; SystemAccess sys;	String context;
+	String pathLanguage; Text messages; Integer driverId; String driverName; String driverLastName;
+	EventForm eventForm;EventDataType eventDataType;
+	UserSessionData userSessionData;
+	String action;
+	String formName;
+	Integer eventId;
+	int corporationId;
+	VehicleData vehicle = null;
+%>
+<%
+
+	
+
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	if(sys == null){
+		response.sendRedirect("/exception.jsp");
+	}
+
+
+	userSessionData = sys.getUserSessionData();
+	messages = sys.getText();
+	corporationId = sys.getUserSessionData().getFilter().getCorporationId().intValue();
+	String check = null;
+	String type = request.getParameter("type");
+	
+	if(sys.getUserSessionData().isDriver()) {
+		if(type.equals("supervise")) {
+			check = "/error.jsp";
+		}else if(type.equals("edit")) {
+		    check = Util.checkPermission(sys,SecurityConstants.DRIVER_MODIFY_EVENT);
+		}else {
+		    check = Util.checkPermission(sys,SecurityConstants.DRIVER_CREATE_EVENT);
+		}
+	}else {
+		if(type.equals("supervise")) {
+			check = Util.checkPermission(sys,SecurityConstants.SUPERVISE_EVENT);
+		}else if(type.equals("edit")) {
+			check = Util.checkPermission(sys,SecurityConstants.MODIFY_EVENT);
+		}else {
+		    check = Util.checkPermission(sys,SecurityConstants.CREATE_EVENT);
+		}
+	}
+	
+	
+	if(check != null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		
+		String accidentCollision="";
+		context = request.getContextPath();
+		dispatcher = request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+	
+		messages = sys.getText();
+	
+		OptionItem emptyObject = new OptionItem(messages.getText("generic.messages.select"),"");
+		OptionItem noDataObject = new OptionItem(messages.getText("generic.messages.nodata"),"generic.messages.nodata");
+		OptionItem noApplyObject = new OptionItem(messages.getText("generic.messages.notapply"),"generic.messages.notapply");
+		DriverData driver = null;
+		
+		if(type.equals("edit") || type.equals("supervise")) {
+			
+		    if(Util.empty(request.getParameter("eventId"))) {
+			    eventId = (Integer)session.getAttribute("eventId");
+		    }else {
+			    eventId = new Integer(request.getParameter("eventId"));
+		    }
+			eventDataType = sys.getEventReportFacade().findEventByPrimaryKey(eventId,sys.getUserSessionData());
+			if(type.equals("edit")) {
+				eventForm = new EventForm(eventDataType,userSessionData);				
+			    formName = "EventForm";
+				session.setAttribute(formName,eventForm);
+			    action = "/Eventupdate";
+			    if(eventForm.getCollision().equals("datatype.collisionclasification.incident")){
+			    	if(eventForm.getClasification()==null)
+			    		accidentCollision="disabled"; 	
+			    }
+			    	
+			}else {
+			    formName = "EventSuperviseForm";
+				eventForm = new EventSuperviseForm(eventDataType,sys.getUserSessionData());
+				session.setAttribute(formName,eventForm);
+			    action = "/Eventsupervise";
+			    if(eventForm.getCollision().equals("datatype.collisionclasification.incident")){
+			    	if(eventForm.getClasification()==null)
+			    		accidentCollision="disabled"; 	
+			    }
+			}
+			if(sys.getUserSessionData().isDriver()) {
+			    driver = sys.getUserSessionData().getDriverData();
+			    driverId = driver.getId();
+			}else {
+			    driverId = new Integer(eventForm.getDriverid());
+			    driver = sys.getDriverReportFacade().findDriverByPrimaryKey(driverId,sys.getUserSessionData());
+			}
+		}else {
+			
+			// Event Create
+			
+			formName = "EventForm";
+		    action = "/Eventcreate";
+		    if((session.getAttribute("EventForm") != null)&&
+		    	((request.getParameter("vehicle")==null) || (!request.getParameter("vehicle").equals("-1")))) {
+		    	
+			    eventForm = (EventForm)session.getAttribute("EventForm");
+				
+			    if(sys.getUserSessionData().isDriver()) {
+				    driver = sys.getUserSessionData().getDriverData();
+				    driverId = driver.getId();
+				}else {
+					
+				    driverId = new Integer(eventForm.getDriverid());
+				    driver = sys.getDriverReportFacade().findDriverByPrimaryKey(driverId,sys.getUserSessionData());
+				}
+			}else {
+				if(sys.getUserSessionData().isDriver()) {
+				    driver = sys.getUserSessionData().getDriverData();
+				    driverId = driver.getId();
+				}else {
+				    driverId = new Integer(request.getParameter("id"));
+				    driver = sys.getDriverReportFacade().findDriverByPrimaryKey(driverId,sys.getUserSessionData());
+				}
+			    eventForm = new EventForm(driver);
+				session.setAttribute("EventForm",eventForm);
+			}	    
+			if((request.getParameter("vehicle") != null)&&(!request.getParameter("vehicle").equals("-1"))) {
+			    eventForm.setVehicleId(request.getParameter("vehicle"));
+			}
+			if(eventForm.getClasification()==null){
+		    	accidentCollision="disabled";
+			}
+		}
+		if(!Util.empty(eventForm.getDriverid())) {
+			if(sys.getUserSessionData().isDriver()) {
+				session.setAttribute("url","/event/EventCreate.jsp?type="+type+"&vehicle="+String.valueOf(eventForm.getVehicleId()));
+			}else {
+				session.setAttribute("url","/event/EventCreate.jsp?type="+type+"&id="+String.valueOf(driverId)+"&vehicle="+String.valueOf(eventForm.getVehicleId()));
+			}
+	
+			session.setAttribute("url","/event/EventCreate.jsp?type="+type+"id="+String.valueOf(driverId)+"&vehicle="+String.valueOf(eventForm.getVehicleId()));
+	
+			DataTypeUtil dataTypeUtil = new DataTypeUtil(sys);
+
+			session.setAttribute("years",dataTypeUtil.getYears(1990,Calendar.getInstance().get(Calendar.YEAR)+1));
+			session.setAttribute("generic",dataTypeUtil.getYesNo(true,true));
+			session.setAttribute("genericDriver",dataTypeUtil.getYesNo(true,false));
+			session.setAttribute("noandnodata",dataTypeUtil.getNoAndNoData());
+			session.setAttribute("vehicleType",dataTypeUtil.getVehicleType(false,false,false));
+			session.setAttribute("zones",dataTypeUtil.getDataType(DataTypeConstants.ZONE,true,false,false));
+			session.setAttribute("factorType",dataTypeUtil.getDataType(DataTypeConstants.ACCIDENT_FACTORS,true,false,false));
+			session.setAttribute("behaviourType",dataTypeUtil.getDataType(DataTypeConstants.VEHICLE_BEHAVIOUR,true,false,false));
+			session.setAttribute("climates",dataTypeUtil.getDataType(DataTypeConstants.CLIMATE,true,true,true));
+			session.setAttribute("lightings",dataTypeUtil.getDataType(DataTypeConstants.LIGHTING,true,true,true));
+			session.setAttribute("ways",dataTypeUtil.getDataType(DataTypeConstants.WAY,true,true,true));
+			session.setAttribute("directions",dataTypeUtil.getDataType(DataTypeConstants.CIRCULATIONDIRECTION,true,true,true));
+			
+			session.setAttribute("controls",dataTypeUtil.getDataType(DataTypeConstants.TRAFFIC_CONTROLS,true,true,true));
+			
+			session.setAttribute("pavements",dataTypeUtil.getDataType(DataTypeConstants.PAVEMENT,true,true,true));
+			session.setAttribute("conditions",dataTypeUtil.getDataType(DataTypeConstants.CONDITIONROUT,true,true,true));
+			session.setAttribute("trades",dataTypeUtil.getTradeDataType(true));
+		
+			Collection pedestrianActions = new LinkedList();
+			pedestrianActions.add(emptyObject);				
+			pedestrianActions.add(new OptionItem(messages.getText("driver.pedestrian.cross.intersection"),"driver.pedestrian.cross.intersection"));				
+			pedestrianActions.add(new OptionItem(messages.getText("driver.pedestrian.cross.otherplace"),"driver.pedestrian.cross.otherplace"));				
+			pedestrianActions.add(new OptionItem(messages.getText("driver.pedestrian.cross.out"),"driver.pedestrian.out"));				
+			pedestrianActions.add(new OptionItem(messages.getText("driver.pedestrian.cross.other"),"driver.pedestrian.other"));				
+			if (sys.getCorporationId() == CorporationData.PEPSICO){
+				pedestrianActions.add(new OptionItem(messages.getText("driver.pedestrian.cross.stayon"),"driver.pedestrian.cross.stayon"));
+			}
+			session.setAttribute("pedestrianActions",pedestrianActions);
+				
+			Collection hitrunOthers = new LinkedList();
+			hitrunOthers.add(emptyObject);                
+			hitrunOthers.add(noDataObject);                
+			hitrunOthers.add(new OptionItem(messages.getText("driver.hitrun.no"),"driver.hitrun.no"));
+			hitrunOthers.add(new OptionItem(messages.getText("driver.hitrun.yes.known"),"driver.hitrun.yes.known"));
+			hitrunOthers.add(new OptionItem(messages.getText("driver.hitrun.yes.unknown"),"driver.hitrun.yes.unknown"));
+			session.setAttribute("hitrunOther",hitrunOthers);
+		
+			/* 	if (sys.getCorporationId() == CorporationData.PEPSICO){
+				LinkedList distractorsOptions = new LinkedList();
+				distractorsOptions.add(emptyObject);
+				distractorsOptions.add(noDataObject);
+				distractorsOptions.add(new OptionItem(messages.getText("driver.distractors.handhelp"),"driver.distractors.handhelp"));
+				distractorsOptions.add(new OptionItem(messages.getText("driver.distractors.eating"),"driver.distractors.eating"));
+				distractorsOptions.add(new OptionItem(messages.getText("driver.distractors.drinking"),"driver.distractors.drinking"));
+				distractorsOptions.add(new OptionItem(messages.getText("driver.distractors.smoking"),"driver.distractors.smoking"));
+				distractorsOptions.add(new OptionItem(messages.getText("driver.distractors.radio"),"driver.distractors.radio"));
+				distractorsOptions.add(new OptionItem(messages.getText("driver.distractors.others"),"driver.distractors.others"));
+				Collections.sort(distractorsOptions);
+				session.setAttribute("distractorsOptions",distractorsOptions);
+			}		*/
+			
+			Collection cellular = new LinkedList();
+			if(!sys.isCorporation(CorporationData.BAYER_MX)) {
+				cellular.add(emptyObject);				
+				cellular.add(noDataObject);
+				cellular.add(noApplyObject);
+				cellular.add(new OptionItem(messages.getText("driver.cellular.no"),"driver.cellular.no"));
+				cellular.add(new OptionItem(messages.getText("driver.cellular.yes.freehand"),"driver.cellular.yes.freehand"));
+				cellular.add(new OptionItem(messages.getText("driver.cellular.yes.normal"),"driver.cellular.yes.normal"));
+			}else {
+				cellular.add(noDataObject);
+				cellular.add(new OptionItem(messages.getText("event.gravity.fatality"),"event.gravity.fatality"));
+				cellular.add(new OptionItem(messages.getText("event.gravity.permanent.incapacity"),"event.gravity.permanent.incapacity"));
+				cellular.add(new OptionItem(messages.getText("event.gravity.parcial.incapacity"),"event.gravity.parcial.incapacity"));
+				cellular.add(new OptionItem(messages.getText("event.gravity.noincapacity"),"event.gravity.noincapacity"));
+			}
+			session.setAttribute("cellulars",cellular);
+			
+			Collection selfbelt = new LinkedList();
+			selfbelt.add(emptyObject);
+			selfbelt.add(noDataObject);
+			selfbelt.add(noApplyObject);
+			selfbelt.add(new OptionItem(messages.getText("generic.messages.yes"),"generic.messages.yes"));
+			selfbelt.add(new OptionItem(messages.getText("generic.messages.no"),"generic.messages.no"));
+			if(sys.getCorporationId() == CorporationData.CIMSA) {
+				selfbelt.add(new OptionItem(messages.getText("generic.messages.missing"),"generic.messages.missing"));
+			}
+			session.setAttribute("selfbelt",selfbelt);
+			
+			Collection speedunits = new LinkedList();
+			speedunits.add(emptyObject);				
+			speedunits.add(new OptionItem(messages.getText("driver.speedunits.metres"),"1"));
+			speedunits.add(new OptionItem(messages.getText("driver.speedunits.milles"),"2"));
+			session.setAttribute("speedunits",speedunits);
+
+			Collection drives = new LinkedList();
+			drives.add(emptyObject);				
+			drives.add(new OptionItem(messages.getText("event.whodrives.driver"),"event.whodrives.driver"));
+			drives.add(new OptionItem(messages.getText("event.whodrives.auxiliar"),"event.whodrives.auxiliar"));
+			session.setAttribute("drives",drives);
+	
+%>
+
+<!-- Para deshabilitar y habilitar todos los checks en CIMSA. Librería JQuery -->
+<script type="text/javascript" src="./menu/js/jquery-latest.js">
+</script>
+   
+<script language="javascript" src='./menu/js/driverFunctions.js' type='text/javascript' >
+</script>
+
+<script language="javascript" src='./menu/js/refactors.js' type='text/javascript' >
+</script>
+
+<script language="javascript" src='./menu/js/eventFunctions.js' type='text/javascript' >
+</script>
+
+	<script type='text/javascript' >
+		function existEvent() {
+			var form = document.forms['<%=formName%>'];
+			var id = '<%=(type.equals("edit") || type.equals("supervise")) ? String.valueOf(eventId) : "0"%>';
+			var driver = '<%=String.valueOf(driverId)%>';
+			var vehicleId = '<%=(Util.empty(eventForm.getVehicleId())) ? "0" : eventForm.getVehicleId()%>';
+			var vehicleplate = '';
+			if(vehicleId == '0') {
+				vehicleplate = form.vehicleplate.value;
+			}
+			if(vehicleId == '0' && vehicleplate == '') {
+				alert('generic.event.eventdata.vehicle.plateEmpty');
+			} else if(form.date.value == '' || isNaN(form.date.value)
+					|| form.month.value == '' || isNaN(form.month.value)
+					|| form.year.value == '' || isNaN(form.year.value)) {
+				alert('generic.event.eventdata.dateinvalid');
+			} else if(form.clasificationType.value == '' || form.clasification.value == '') {
+				alert('generic.event.eventdata.clasificationSelect');
+			}else {
+				$.getJSON("event/existEvent.jsp?id="+id+"&driver="+driver+"&vehicle="+vehicleId+"&plate="+vehicleplate+"&date="+form.date.value+"&month="+form.month.value+"&year="+form.year.value+"&eventtype="+form.clasificationType.value+"&type="+form.clasification.value,
+						function(data) {
+							if(data.result) {
+								var r = confirm('event.error.alreadyexists');
+								if(r) {
+									form.submit();
+								}
+							}else {
+								form.submit();
+							}
+						}
+				);
+			}
+		}
+	</script>
+		
+	<html:form action='<%=action%>' >
+		<html:hidden property="corpId" value='<%=String.valueOf(corporationId)%>' />
+<%		if(!sys.isCorporation(new int[]{CorporationData.MONSANTO,CorporationData.WEYERHAEUSER,CorporationData.SYNGENTA})) {	
+%>		<html:hidden property="clasificationType" />
+<%		}
+		if(type.equals("edit") || type.equals("supervise")) {
+%>		<html:hidden property="id" value='<%=String.valueOf(eventId)%>' />
+		<html:hidden property="status" value='<%=String.valueOf(eventDataType.getStatus())%>' />
+<%			}
+%>			<table width="600" border="0" align="center" cellpadding="0" cellspacing="0">
+<%      	if(type.equals("edit") || type.equals("supervise")) { 
+%> 				<tr class="guide1">
+  					<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText("generic.data.event")%>' />
+			  	</tr>
+<%      	}else{
+%>				<tr class="guide1">
+  					<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText("generic.messages.addevent")%>' />
+			  	</tr>
+<%			} 
+%>				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+				<tr>
+					<td width="292" valign="top">
+                    	<table width="100%">
+                    		<tr>
+                     			<td>
+									<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.driverdata")%>' />
+		        					<table width='100%' border="0" cellpadding="0" cellspacing="0">
+		            					<tr class="linetwo">
+	              							<th align="left" valign="middle"><%=messages.getText("generic.event.driver.name")%></th>
+	    									<td align="right" valign="middle" >			
+                       							<html:hidden property="driverid"/>
+                       							<%=driver.getFirstName()+" "+driver.getLastName()%>
+											</td>
+										</tr>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+		            					<tr class="linetwo">
+	              							<th align="left" valign="middle"><%=messages.getText("generic.event.driver.birthdate")%></th>
+	                            			<td align="right">
+                       							<%=(driver.getBirthDate() == null) ? "---" : Util.formatDate(driver.getBirthDate())+" ( "+messages.getText("generic.messages.dateformat")+" )"%>
+							    			</td>
+	                         			</tr>
+
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+		            					<tr class="linetwo">
+	              							<th align="left" valign="middle"><%=messages.getText("generic.event.driver.startdate")%></th>
+	                            			<td align="right">
+                       							<%=(driver.getInclusionDate() == null) ? "---" : Util.formatDate(driver.getInclusionDate())+" ( "+messages.getText("generic.messages.dateformat")+" )"%>
+							    			</td>
+	                         			</tr>
+<%		if(sys.getCorporationId() != CorporationData.CIMSA) {
+%>		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+		            					<tr class="linetwo">
+	              							<th align="left" valign="middle"><%=messages.getText("generic.event.driver.licensecategory")%></th>
+	                            			<td align="right">
+                       							<%=(driver.getLicenseCategory() == null) ? "---" : driver.getLicenseCategory()%>
+							    			</td>
+	                         			</tr>
+<%		}
+%>		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+		            					<tr class="linetwo">
+	              							<th align="left" valign="middle"><%=messages.getText("generic.event.driver.licenseexpiry")%></th>
+	                            			<td align="right">
+                       							<%=(driver.getLicenseExpiry() == null) ? "---" : Util.formatDate(driver.getLicenseExpiry())+" ( "+messages.getText("generic.messages.dateformat")+" )"%>
+							    			</td>
+	                         			</tr>
+<%		if(sys.getCorporationId() == CorporationData.CIMSA) {
+%>		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+		            					<tr class="linetwo">
+											<th align="left"> <%=messages.getText("generic.driver.driverdata.contact")%></th>
+											<td align="right">
+												<div align="right"><%=(driver.getContract() == null) ? "" : messages.getText(driver.getContract().getResourceBundleId())%></div>
+											</td>
+	                         			</tr>
+	                         			<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+	      								<tr class="linetwo">
+	        								<th align="left" > <%=messages.getText("generic.driver.driverdata.points")%></th>
+	        								<td align="right">
+	        									<%=(driver.getPoints() == null) ? "--" : String.valueOf(driver.getPoints().intValue() - sys.getEventReportFacade().getEventsPoints(driver.getId(),sys.getUserSessionData()).intValue())%>
+	        								</td>
+	      								</tr>
+<%		}
+%>	                     			</table>
+									<jsp:include  page="../component/utilityboxbottom.jsp" />
+								</td>
+							</tr>
+				  			<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+				  			</tr>
+							<tr>
+								<td>
+									<table width="100%" border="0" cellspacing="0" cellpadding="0">
+                       					<tr>
+                         					<td valign="top"> 
+<%			String divgeo = "../util/divgeo"+sys.getUserSessionData().getFilter().getGeoLevelCount()+".jsp?form="+formName+"&consult=false";
+			divgeo += "&city=both";
+			//switch(corporationId) {
+			 //   case CorporationData.MONSANTO:
+			 //   	divgeo += "&city=both";
+		//	}	
+%> 			             					<jsp:include page='<%=divgeo%>' /></td>
+                       					</tr>
+	                     			</table>					  
+								</td>
+							</tr>		
+						</table>
+					</td>
+	                <td width="16">&nbsp;</td>
+                	<td width="292" valign="top">
+						<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="default">
+						
+							<!--  DivOrgs -->
+                    		<jsp:include page='<%="/util/divorg.jsp?form="+formName+"&consult=false" %>'/>
+                    		
+<%		if(sys.isCorporation(CorporationData.CIMSA)) { 
+
+							// Muestro Numero de Folio y Numero de SAP
+%>
+                    		<tr  class="linetwo">
+        						<td align="left" colspan="3">
+    								<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="default">
+    								  	<tr class="guide1">
+											<td width="19" height="30" ><img src="/datacenter/util/imgs/left.jpg" width="19" height="30"></td>
+   		  		  							<td height="30" class="guide1"><div align="left">&nbsp;</div></td>
+											<td width="19" height="30" ><img src="/datacenter/util/imgs/right.jpg" width="19" height="30"></td>
+  										</tr>  					
+  										<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+  										<tr>
+    										<td class="leftLine">&nbsp;</td>
+				       						<td height="10" colspan="1"><img src="x" width="1" height="1"></td>
+    										<td class="rightLine">&nbsp;</td>
+  										</tr>  					  					
+	 									<tr>
+    										<td class="leftLine">&nbsp;</td>
+    										<td>
+												<table width="100%" cellpadding="0" cellspacing="0">
+													<tr class="linetwo">
+			    										<th align="left"><%=messages.getText("generic.events.folioNumber")%></th>
+														<td align="right"><html:text property="folioNumber" size="25" styleClass="input"/></td>
+													</tr>
+													<tr class="linetwo">
+			    										<th align="left"><%=messages.getText("generic.events.sapNumber")%></th>
+														<td align="right"><html:text property="sapNumber" size="25" styleClass="input"/></td>
+													</tr>
+												</table>
+											</td>
+											<td class="rightLine">&nbsp;</td>
+										</tr>
+					  					<tr>
+					            	      	<td height="11" valign="top"><img src="/datacenter/util/imgs/left_base.gif" width="19" height="11"></td>
+					  					  	<td class="centerBase"></td>
+					  				  		<td valign="top"><img src="/datacenter/util/imgs/right_base.gif" width="19" height="11"></td>
+									 	</tr> 
+									</table>
+								</td>
+							</tr>
+<% 		} %>
+							                    		
+	                     </table>
+    	             </td>
+				</tr>
+<%		if(sys.getCorporationId() == CorporationData.CIMSA) {
+%>				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+				<tr>
+					<td width="100%" colspan="5">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.activityhistory")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+				                <td width='20%' class="guide2" align="center"><%=messages.getText("generic.event.eventdata.date")%></td>
+				                <td width='30%'	class="guide2" align="center"><%=messages.getText("generic.event.eventdata.type")%></td>
+								<td width='50%'	class="guide2" align="center"><%=messages.getText("driver.history.result")%></td>
+							</tr>
+<%			
+			Collection total = sys.getActivityReportFacade().findActivityByDriver(driverId,sys.getUserSessionData(),true);			
+			Collections.sort((List)total);		
+			if(total.size() == 0){
+%>							<tr>
+								<td colspan="3">
+									<span class="linetwo"><%=messages.getText("generic.event.noactivityhistory")%></span>
+								</td>								
+							</tr>
+<%			}else {    					
+				Iterator itTotal = total.iterator();
+    			boolean lineone = false;
+    			while(itTotal.hasNext()) {
+    				Object next =itTotal.next();
+    				CEPAActivityScheduleRegistryData  activity = (CEPAActivityScheduleRegistryData)next;
+%>							<tr  class='<%=(lineone) ? "lineone" : "linetwo"%>'>
+						       	<td width='12%' align="center">
+<% 					if(activity.getActivity().getIsOld() && 
+						!activity.getActivity().getType().getResourceBundleId().equals("datatype.scheduledactivitytype.commentarydriveother")){
+%>       							<a href='ActivityReportOld.do?idDriver=<%=String.valueOf(driverId)%>&output=HTML&idActivity=<%=activity.getActivity().getActivityId()%>' >
+										<%=Util.formatDate(activity.getActivity().getDate())%>
+									</a> 
+<%					}else if (!activity.getActivity().getIsOld() &&
+							(activity.getActivity().getType().getResourceBundleId().equals("datatype.scheduledactivitytype.commentarydriveother") ||
+							!activity.getActivity().getDefinition().isHaveIndividualReport())){
+								
+									String href1 = "layout.jsp?refer=/activity/schedule/AddCEPAActivityScheduleRegistry.jsp?idDriver="+String.valueOf(driverId)+"&idActivity="+activity.getActivity().getActivityId()+"&enabled=false&page=/driver/DriverView.jsp";
+%>									<a href='<%=href1 %>' >
+										<%=Util.formatDate(activity.getActivity().getDate())%>
+									</a>
+<%    				}else if(activity.getActivity().getType().getResourceBundleId().equals(CEPAActivityConstants.COMMENTARYDRIVEARGENTINA)) {
+									String href2 = "layout.jsp?refer=/activity/schedule/CommentaryDriveArgentinaView.jsp?idDriver="+String.valueOf(driverId)+"&idActivity="+activity.getActivity().getActivityId()+"&enabled=false";
+%>									<a href='<%=href2 %>' >
+	 									<%=Util.formatDate(activity.getActivity().getDate())%>
+									</a> 
+<%    				}else{ 
+%>									<a href='ActivityReportNew.do?idDriver=<%=String.valueOf(driverId)%>&output=HTML&idActivity=<%=activity.getActivity().getActivityId()%>' >
+										 <%=Util.formatDate(activity.getActivity().getDate())%>
+									</a> 
+<%					} 
+%>								</td>
+<%					if (!activity.getActivity().getType().getResourceBundleId().equals("datatype.scheduledactivitytype.commentarydrive")){		
+%>								<td width='18%' align="center"><%=messages.getText("web.activity.view")%> </td>
+          						<td width='25%' align="center">
+              						 <%=messages.getText(activity.getActivity().getType().getResourceBundleId())%> 
+					           	</td>
+					            <td width='40%' align="left">
+					            	<%=messages.getText(activity.getNote())%>
+					            </td>		            
+<% 					}else{ 
+%>								<td width='18%' align="center"><%=messages.getText("driver.history.commentarydrive")%> </td>
+        						<td width='25%' align="center">
+              						<%=messages.getText(activity.getConductionType())%> 
+					            </td>
+					            <td width='40%' align="left">
+					            	<%=messages.getText("generic.messages.notapply")%>
+					          	</td>
+<%					}
+					lineone = !lineone;
+%>							</tr>
+<%    			}
+			}
+%>
+    					</table>
+						<jsp:include page="../component/utilityboxbottom.jsp"/>	
+					</td>
+				</tr>			
+<%		}
+%>				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+				<tr>
+					<td colspan="3" width="600">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.vehicledata")%>' />
+<%			if(Util.empty(eventForm.getVehicleId())) { 
+%>						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+								<td width="270" class="linetwo">
+									<table width="100%">
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.plate")%> <span class="required">*</span></th>
+				         					<td align="right"><html:text property="vehicleplate" size="25" styleClass="input"/></td>
+			         					</tr>
+		      							<tr  class="space">
+		      								<th align="right">&nbsp;</th>
+		      								<td align="right">&nbsp;</td>
+		      							</tr>
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.vehicle.vehicledata.trade")%><span class="required">*</span> </th>
+				         					<td align="right">
+                								<html:select property="vehicletrade" styleClass="input" style="width:155;">
+                  									<html:options collection="trades" property="value" labelProperty="label" styleClass="input"/>
+                								</html:select>
+				         					</td>
+										</tr>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+											<th width="100%" class="linetwo" colspan="2" align="left">
+												<html:checkbox property="vehiclecompanycar"><%=messages.getText("generic.event.vehicle.companycar")%></html:checkbox>
+											</th>
+										</tr>
+<%				if(sys.isCorporation(CorporationData.MONSANTO)) {
+%>										<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.vehicle.vehicledata.active")%></th>
+											<td align="right"><html:text property="vehicleeconomicnumber" size="25" styleClass="input"/></td>
+			         					</tr>
+<%				}
+%>										
+									</table>
+								</td>
+								<td width="16"></td>
+								<td width="270">
+									<table width="100%">
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.model")%> <span class="required">*</span></th>
+				         					<td align="right"><html:text property="vehiclemodel" size="25" styleClass="input"/></td>
+										</tr>
+		      							<tr  class="space">
+		        							<th align="right">&nbsp;</th>
+		        							<td align="right">&nbsp;</td>
+		      							</tr>
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.vehicle.vehicledata.year")%> <span class="required">*</span></th>
+				         					<td align="right">
+                								<html:select property="vehicleyear" styleClass="input" >
+                  									<html:options collection="years" property="value" labelProperty="label" styleClass="input"/>
+                								</html:select>
+                							</td>
+										</tr>				  
+<%				if(sys.getCorporationId() != CorporationData.CIMSA && 
+						sys.getCorporationId() != CorporationData.PEPSICO) {
+%>		      						<tr  class="space">
+		        							<th align="right">&nbsp;</th>
+		        							<td align="right">&nbsp;</td>
+		      							</tr>
+										<tr>
+							   				<th class="linetwo" width="100%" align="left" valign="top">   
+							   					<%=messages.getText("generic.vehicle.vehicledata.cost")%>
+							   				</th>
+				         					<td align="right">
+				      							<html:text property="carCost" styleClass="input"  style="width:55;"/>
+					  						</td>
+										</tr>
+<%				}
+%>
+<%				 if (sys.getCorporationId() == CorporationData.PEPSICO) { %>
+								<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+								<tr>
+								   	<th align="left" class="linetwo"> 
+								   			<%=messages.getText("generic.event.eventdata.economicnumber")%>
+								   	</th>
+										<td align="right"><html:text property="vehicleeconomicnumber" size="25" styleClass="input"/></td>
+									</tr>
+	<% 				} %>
+
+									</table>
+								</td>
+							</tr>
+ <%    			if(sys.getCorporationId() == CorporationData.TRANSPORTES_AMERICAN) {
+	 
+		                VehicleReportFacade vehicleFacade = sys.getVehicleReportFacade();						
+     					Collection trailers = vehicleFacade.getVehicleTrailers(vehicle.getId(),userSessionData);
+     					if(trailers != null) {
+      						Iterator it = trailers.iterator();
+      						while(it.hasNext())  {
+       							TrailerMainData trailer = (TrailerMainData)it.next(); 
+%>       				<tr>
+        						<td colspan="3">
+         							<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.messages.trailer")%>' />          
+         							<table width="100%">
+          								<tr>
+           									<td>
+            									<table width="100%">
+             										<tr>
+                       									<th align="left" class="linetwo"> 
+                        									<%=messages.getText("generic.vehicle.vehicledata.registrationNumber")%>
+                       									</th>
+              											<td align="right" class="linetwo"><%=trailer.getPlate()%></td>
+             										</tr>
+            									</table>
+           									</td>
+           									<td>&nbsp;</td>
+           									<td>
+            									<table>
+             										<tr>
+                       									<th align="left" class="linetwo"> 
+                        									<%=messages.getText("generic.vehicle.vehicledata.trade")%>
+                       									</th>
+              											<td align="right" class="linetwo"><%=messages.getText(trailer.getTrade().getResourceBundleId())%></td>
+             										</tr>
+            									</table>
+           									</td>
+          								</tr>
+         							</table>
+         							<jsp:include  page="../component/utilitybox2bottom.jsp" />          
+        						</td>
+       						</tr>  
+<%      					}
+     					}
+   					 }  
+%>
+
+      				</table>   
+
+ 
+<%			}else {
+    			vehicle = sys.getVehicleReportFacade().findVehicleById(new Integer(eventForm.getVehicleId()),sys.getUserSessionData());
+%>						<html:hidden property="vehicleId" value='<%=request.getParameter("vehicle")%>' />
+						<table>
+							<tr>
+								<td width="270" class="linetwo">
+									<table width="100%">
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.plate")+":"%> </th>
+				         					<td align="right" class="linetwo"><%=vehicle.getMatricula()%></td>
+			         					</tr>
+		      							<tr  class="space">
+		        							<th align="right">&nbsp;</th>
+		        							<td align="right">&nbsp;</td>
+		      							</tr>
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.vehicle.vehicledata.trade")+":"%> </th>
+				         					<td align="right" class="linetwo"><%=messages.getText(vehicle.getTrade().getResourceBundleId())%></td>
+										</tr>
+<%    			if(type.equals("edit") || type.equals("supervise")) {
+%>		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+											<th width="100%" class="linetwo" colspan="2" align="left">
+												<html:checkbox property="vehiclecompanycar"><%=messages.getText("generic.event.vehicle.companycar")%></html:checkbox>
+											</th>
+										</tr>
+<%				}else {
+%>    									<html:hidden property="vehiclecompanycar" value='<%=(vehicle.getOwnerShip() != null && vehicle.getOwnerShip().getResourceBundleId().equals("datatype.ownership.companycar")) ? "on" : "off"%>' />
+<%				}
+%>							
+<%				if(sys.isCorporation(CorporationData.MONSANTO)) {
+%>										<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.vehicle.vehicledata.active")%></th>
+											<td align="right"><%=vehicle.getOptionalInfo()!=null?vehicle.getOptionalInfo().getPrefix():""%></td>
+			         					</tr>
+<%				}
+%>										
+									</table>
+								</td>
+								<td width="16"></td>
+								<td width="270">
+									<table width="100%">
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.model")+":"%> </th>
+				         					<td align="right" class="linetwo"><%=vehicle.getModel()%></td>
+										</tr>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.vehicle.vehicledata.year")+":"%> </th>
+				         					<td align="right" class="linetwo"><%=vehicle.getYear()%></td>
+										</tr>				  
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+							   				<th class="linetwo" align="left"><%=messages.getText("generic.vehicle.vehicledata.cost")%></th>
+				         					<td align="right" class="linetwo"><%=(vehicle == null || vehicle.getCost() == null) ? "---" : String.valueOf(vehicle.getCost())%></td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+						</table>    
+<%				}
+%>						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+	  			<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+	  			</tr>
+				<tr>
+					<td width="600" colspan="4">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.eventdata")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+						  <tr>
+							 <td width="50%" class="linetwo" colspan="2">
+						  		<table>
+									<tr>
+	       								<th align="left" class="linetwo" width="22%"> <%=messages.getText("generic.event.eventdata.date")%><span class="required">*</span></th>
+	       								
+	       								<td align="right" class="linetwo" width="25%">
+											<html:text property="date" style="width:20;" styleClass="input" styleId="dayIdEvent" maxlength="2" />/
+		            						<html:text property="month" style="width:20;" styleClass="input" styleId="monthIdEvent" maxlength="2"/>/
+		            						<html:text property="year" style="width:40;" styleClass="input" styleId="yearIdEvent"  maxlength="4"/>
+		            						<html:img page="/component/jscalendar-1.0/img.gif" styleId="calendar_buttonEvent" style="cursor: pointer; border: 1px solid red;"
+     										onmouseover="this.style.background='red';" style="width:20;" align="middle" onmouseout="this.style.background=''"/>
+			          					</td>
+			          					<script type="text/javascript">
+												Calendar.setup({
+        											inputArea     :    "yearIdEvent",
+        											ifFormat       :    "%d/%m/%Y",
+        											showsTime      :    true,
+        											timeFormat     :    "24",
+        											button         :    "calendar_buttonEvent",
+        											step           :    1,
+        											onSelect       :    onSelectEvent,
+        											singleClick    :    true
+    											});
+										</script>
+			          					<td align="right" class="linetwo" width="3%"></td>
+			          				</tr>
+		      						<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+									<tr>
+			        					<th align="left" class="linetwo" width="22%"><%=messages.getText("generic.event.eventdata.hour")%><span class="required">*</span></th>
+			        					<td align="right" class="linetwo" width="25%">
+											<html:text property="hour" style="width:23;" styleClass="input" maxlength="2"/>&nbsp;:&nbsp;
+		            						<html:text property="minute" style="width:23;" styleClass="input" maxlength="2"/>
+											&nbsp;&nbsp;
+<%			if(corporationId != CorporationData.MONSANTO) {
+%>											<b><%=messages.getText("generic.messages.nodata")%></b><html:checkbox property="nodatahour" onchange="javascript:nodata(document.forms['EventForm']);"></html:checkbox>		            				
+<%			}else {
+%>											<html:hidden property="nodatahour" value="off"/>			       
+<%			}
+%>					   					</td>
+			        					<td align="right" class="linetwo" width="3%"></td>
+			          				</tr>
+			          				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+			          				<tr>
+			        					<th align="left" class="linetwo" width="22%"> <%=messages.getText("generic.event.eventdata.working")%><span class="required">*</span></th>
+			        					<td align="right" class="linetwo" width="25%">
+											<html:select property="working" styleClass="input" >
+			
+ <%			if(corporationId == CorporationData.MONSANTO && userSessionData.isDriver() && driver.getCountryName().equals(CountryData.BRASIL)) {
+%>												<html:options collection="genericDriver" property="value" labelProperty="label" styleClass="input"/>		            				
+<%			}else {
+%>												<html:options collection="generic" property="value" labelProperty="label" styleClass="input"/>			       
+<%			}
+%>              							</html:select>
+			          					</td>
+			          					<td align="right" class="linetwo" width="3%"></td>
+			          				</tr>
+<% 			if (corporationId == CorporationData.ALLERGAN){ 
+									// ALLERGAN, tiene un campo de uso interno de la compania, llamado LOTE: Mes/Aï¿½o
+									%>
+									<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>			          				
+									<tr>
+										<th align="left" class="linetwo" width="22%"><%=messages.getText("generic.event.eventdata.lote")%>&nbsp;<%=messages.getText("generic.event.eventdata.loteformat")%></th>
+			        					<td align="right" class="linetwo" width="25%" >
+		           							<html:text property="loteMonth" style="width:20;" styleClass="input" styleId="monthIdLote"  maxlength="2"/>/
+		           							<html:text property="loteYear" style="width:40;" styleClass="input" styleId="yearIdLote"  maxlength="4"/>
+		           							<html:img page="/component/jscalendar-1.0/img.gif" styleId="calendar_buttonLote" style="cursor: pointer; border: 1px solid red;"
+		  											onmouseover="this.style.background='red';" style="width:20;" align="middle" onmouseout="this.style.background=''"/>
+		          						</td>
+		          						<script type="text/javascript">
+											Calendar.setup({
+		     											inputArea     :    "yearIdLote",
+		     											ifFormat       :    "%m/%Y",
+		     											showsTime      :    true,
+		     											timeFormat     :    "24",
+		     											button         :    "calendar_buttonLote",
+		     											step           :    1,
+		     											onSelect       :    onSelectLote,
+		     											singleClick    :    true
+		 											});
+										</script>
+										<td align="right" class="linetwo" width="3%"></td>
+									</tr>
+<%			}
+			if (corporationId == CorporationData.FORESTALORIENTAL) {
+%>			          				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+			          				<tr>
+			        					<th align="left" class="linetwo" width="22%"> <%=messages.getText("generic.event.eventdata.workinghours")%></th>
+			        					<td align="right" class="linetwo" width="25%">
+											<html:text property="workingHours" style="width:23;" maxlength="2" styleClass="input"/>                							
+			          					</td>
+			          					<td align="right" class="linetwo" width="3%"></td>
+			          				</tr>
+<% 			} 
+			if (corporationId == CorporationData.CIMSA || corporationId == CorporationData.TRANSPORTES_AMERICAN) {
+%>			          				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+			          				<tr>
+			        					<th align="left" class="linetwo" width="22%"> <%=messages.getText("generic.event.eventdata.charged")%></th>
+			        					<td align="right" class="linetwo" width="25%">
+											<html:select property="charged" styleClass="input" >
+                								<html:options collection="generic" property="value" labelProperty="label" styleClass="input"/>
+              								</html:select>
+			          					</td>
+			          					<td align="right" class="linetwo" width="3%"></td>
+			          				</tr>
+<%				
+ 			}	 
+			if (corporationId == CorporationData.CIMSA){ 
+%>									<tr  class="space"><td colspan="3" width="100%" >&nbsp;</td></tr>
+									<tr  class="space">
+		        						<th align="left" class="linetwo" width="22%"> <%=messages.getText("generic.event.eventdata.whodrives")%><span class="required">*</span></th>
+		        						<td align="right" class="linetwo" width="25%">
+											<html:select property="whoDrives" styleClass="input" >
+		             							<html:options collection="drives" property="value" labelProperty="label" styleClass="input"/>
+		           							</html:select>
+		          						</td>
+		        	  					<td align="right" class="linetwo" width="3%"></td>
+									</tr>
+<% 			} 
+%>				       	   		</table>
+			          	   	</td>
+			          	   	<td width="50%" class="linetwo" colspan="2">
+			          	   		<table> 
+			          	   	  		<tr class="texts" >
+										<td class="linetwo" width="3%"></td>
+										<td class="linetwo" width="22%" align="left"><%=(corporationId==CorporationData.BAYER?messages.getText("datatype.byer.path"):messages.getText("datatype.consequence.damage"))%></td>
+										<td class="linetwo" width="25%" align="left">
+										<%
+											if(corporationId==CorporationData.BAYER){
+										%>
+											<input type="radio" name="sapNumber" value="0" <%=(eventDataType==null || eventDataType.getSapNumber()==null ||(eventDataType.getSapNumber()!=1 && eventDataType.getSapNumber()!=2))?"checked":"" %>><%=messages.getText("generic.messages.nodata")%>  </input>
+											<br>	
+											<input type="radio" name="sapNumber" value="1" <%=(eventDataType!=null && eventDataType.getSapNumber()!=null && eventDataType.getSapNumber()==1)?"checked":"" %>><%=messages.getText("datatype.bayer.homework")%> </input>
+											<br>	
+											<input  type="radio" name="sapNumber"  value="2" <%=(eventDataType!=null && eventDataType.getSapNumber()!=null && eventDataType.getSapNumber()==2)?"checked":"" %>><%=messages.getText("datatype.bayer.workhome")%> </input>
+										<%
+											}else{
+										%>
+											<html:checkbox property="damage" ></html:checkbox>
+											
+										<%  } %>	
+    									</td>
+    								</tr>	      				
+		      						<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+		      						
+<% 
+	
+	if (corporationId == CorporationData.CIMSA){ %>
+
+								<tr  class="texts">
+									<td class="linetwo" width="3%" colspan="1">&nbsp;</td>
+									<td class="linetwo" width="22%" colspan="1" align="left"><%=messages.getText("generic.event.finedata.points")%></td>
+									<td class="linetwo" width="25%" colspan="1" align="center">	
+										<html:text property="points" style="width:40;" styleClass="input" />
+									</td>							
+																
+								</tr>
+								<tr  class="space"><td colspan="3" width="100%" >&nbsp;</td></tr>
+<% } %>      						
+									<tr>
+			        					<td class="linetwo" width="3%"></td>
+			        					<th align="left" class="linetwo" width="22%"><%=messages.getText("generic.event.eventdata.zone")%><span class="required">*</span></th>
+			        					<td align="right" class="linetwo" width="25%">
+				      						<html:select property="zone" styleClass="input" >
+				      							<html:options collection="zones" property="value" labelProperty="label" styleClass="input"/>
+					  						</html:select>   
+			          					</td>
+			          				</tr>
+			          				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+			          				<tr>
+										<td class="linetwo" width="3%"></td>
+										<th align="left" class="linetwo" width="22%"><%=messages.getText("generic.event.eventdata.policereport")%><span></span></th>
+				         				<td class="linetwo" width="25%" align="right">
+											<html:select property="policeReport" styleClass="input" >
+            			    					<html:options collection="generic" property="value" labelProperty="label" styleClass="input"/>
+              								</html:select>
+              							</td>
+			         				</tr>
+<%			if (corporationId == CorporationData.CIMSA) {
+%>			          				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+			          				<tr>
+										<td class="linetwo" width="3%"></td>
+			        					<th align="left" class="linetwo" width="22%"> <%=messages.getText("generic.eventdata.stoppedvehicle")%></th>
+			        					<td align="right" class="linetwo" width="25%">
+											<html:select property="stoppedVehicle" styleClass="input" >
+                								<html:options collection="generic" property="value" labelProperty="label" styleClass="input"/>
+              								</html:select>
+			          					</td>
+			          					<td align="right" class="linetwo" width="3%"></td>
+			          				</tr>
+<% 			} 
+%>			          	   		</table>
+							</td>
+						 </tr>	
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+	  			</tr>
+				<tr>
+					<td width="600" valign="top" colspan="4">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.consequences")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr class="texts"  >
+								<td colspan="1" align="left" width="25%"></td>
+								<td colspan="1" align="left" width="25%"><%=messages.getText("generic.event.eventdata.driver")%></td>
+								<td colspan="1" align="left" width="25%"><%=messages.getText("event.eventdata.functionaries.state")%></td>
+								<td colspan="1" align="left" width="25%"><%=messages.getText("event.eventdata.otherparty.state")%></td>
+							</tr>
+							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							
+							<tr class="texts" colspan="4" width="100%">
+    							<td colspan="1" align="left"><%=messages.getText("datatype.consequence.safe")%></td>
+    							<td colspan="1" align="left"><html:radio property="driverstate" value="datatype.driverstate.safe" /></td>
+    							<td class="linetwo" colspan="1" align="left">
+				         						<html:select property="safefunccount" styleClass="input">
+<%									for(int i = 0; i < 6; i++) {
+%>				         							<html:option value='<%=String.valueOf(i)%>'><%=String.valueOf(i)%></html:option>
+<%									}
+%>			         							</html:select>
+								</td>
+								<td class="linetwo" colspan="1" align="left">
+				         						<html:select property="safeothercount" styleClass="input">
+<%									for(int i = 0; i < 6; i++) {
+%>				         							<html:option value='<%=String.valueOf(i)%>'><%=String.valueOf(i)%></html:option>
+<%									}
+%>			         							</html:select>
+								</td>
+    						</tr>
+							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							
+							<tr class="texts" >
+    							<td colspan="1" align="left"><%=messages.getText("datatype.consequence.injured")%></td>
+    							<td colspan="1" align="left"><html:radio property="driverstate" value="datatype.driverstate.injured"/></td>
+    							<td class="linetwo" colspan="1" align="left">
+				         						<html:select property="injuredfunccount" styleClass="input">
+<%									for(int i = 0; i < 6; i++) {
+%>				         							<html:option value='<%=String.valueOf(i)%>'><%=String.valueOf(i)%></html:option>
+<%									}
+%>			         							</html:select>
+								</td>
+								<td class="linetwo" colspan="1" align="left">
+				         						<html:select property="injuredothercount" styleClass="input">
+<%									for(int i = 0; i < 6; i++) {
+%>				         							<html:option value='<%=String.valueOf(i)%>'><%=String.valueOf(i)%></html:option>
+<%									}
+%>			         							</html:select>
+								</td>
+    						</tr>
+							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr class="texts" >
+    							<td colspan="1" align="left"><%=messages.getText("datatype.consequence.fatalities")%></td>
+    							<td colspan="1" align="left"><html:radio property="driverstate" value="datatype.driverstate.dead"/></td>
+    							<td class="linetwo" colspan="1" align="left">
+				         						<html:select property="fatalitiesfunccount" styleClass="input">
+<%									for(int i = 0; i < 6; i++) {
+%>				         							<html:option value='<%=String.valueOf(i)%>'><%=String.valueOf(i)%></html:option>
+<%									}
+%>			         							</html:select>
+								</td>
+								<td class="linetwo" colspan="1" align="left">
+				         						<html:select property="fatalitiesothercount" styleClass="input">
+<%									for(int i = 0; i < 6; i++) {
+%>				         							<html:option value='<%=String.valueOf(i)%>'><%=String.valueOf(i)%></html:option>
+<%									}
+%>			         							</html:select>
+								</td>
+    						</tr>
+		      				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr class="texts" >
+							   	<th align="left" class="linetwo" colspan="1"> <%=messages.getText("event.eventdata.lostdays")%> </th>
+							   	<td align="left" colspan="1">
+				      				<html:text property="dayslost" styleClass="input" size="5" />
+					  			</td>
+							   	<td align="left" colspan="1">
+				      				<html:text property="otherpartydayslost" styleClass="input" size="5" />
+					  			</td>
+							</tr>
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+				<tr>
+					<td width="600" colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.eventdata.story")+"*"%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+								<td width="85%" align="center">
+									<html:textarea property="description" cols="80" rows="5" />
+								</td>
+							</tr>
+							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+	  			<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+	  			</tr>
+<%		if(sys.isCorporation(new int[]{CorporationData.MONSANTO,CorporationData.WEYERHAEUSER,CorporationData.SYNGENTA})) {
+%>
+				<tr>
+					<td width="100%" valign="top" colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.eventdata.clasification")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+								<td width="292">
+									<table>
+<%				Collection accidents = dataTypeUtil.getDataTypeReport().findAll(DataTypeConstants.ACCIDENT_CLASIFICATION,sys.getUserSessionData());
+				Collections.sort((List)accidents);
+				if(accidents != null && accidents.size() > 0) {
+				    Iterator it = accidents.iterator();
+				    while(it.hasNext()) {
+				    	AccidentClasificationDataType accident = (AccidentClasificationDataType)it.next();
+				    	boolean showClasification = true;
+				    	switch(corporationId) {
+				    	    case CorporationData.MSD:
+					    	    if(type.equals("edit") || type.equals("supervise")) { 				    	        
+					    	        showClasification = (Util.before(eventDataType.getDate(),1,2008)) ? !accident.isActive() : accident.isActive();
+					    	    }else {
+					    	        showClasification = accident.isActive();
+					    	    }
+					    	    break;
+				    	}
+				    	if(showClasification) {
+%>										<tr>
+											<td width="100%" class="linetwo">
+<%							if(!type.equals("supervise")){
+%>												<html:radio property="clasification" value='<%=accident.getResourceBundleId()%>' onclick="changeClasification(document.forms['EventForm'],1,'collision');" ><%=messages.getText(accident.getResourceBundleId())%></html:radio>
+<%							}else{
+%>												<html:radio property="clasification" value='<%=accident.getResourceBundleId()%>' onclick="changeClasification(document.forms['EventSuperviseForm'],1,'collision');"><%=messages.getText(accident.getResourceBundleId())%></html:radio>
+<%							} 
+%>											</td>
+										</tr>
+<%						}	
+					}
+				}
+%>									</table>
+								</td>
+								<td width="16"></td>
+								<td width="292" valign="top">
+									<table width="100%" cellpadding="0" cellspacing="0">
+<%				Collection incidents = dataTypeUtil.getDataTypeReport().findAll(DataTypeConstants.INCIDENT_CLASIFICATION,sys.getUserSessionData());
+				Collections.sort((List)incidents);
+				if(incidents != null && incidents.size() > 0) {
+				    Iterator it = incidents.iterator();
+				    while(it.hasNext()) {
+				        IncidentClasificationDataType incident = (IncidentClasificationDataType)it.next();
+				        if(!incident.getResourceBundleId().equals("datatype.incidentclasification.nonrecordable")) {
+%>										<tr>
+											<td width="100%" class="linetwo">
+<%							if(!type.equals("supervise")){ 
+%>												<html:radio property="clasification" value='<%=incident.getResourceBundleId()%>' onclick="changeClasification(document.forms['EventForm'],2,'collision');"><%=messages.getText(incident.getResourceBundleId())%></html:radio>
+<%							}else{ 
+%>												<html:radio property="clasification" value='<%=incident.getResourceBundleId()%>' onclick="changeClasification(document.forms['EventSuperviseForm'],2,'collision');"><%=messages.getText(incident.getResourceBundleId())%></html:radio>
+<%							} 
+%>											</td>
+										</tr>
+<%					  	}
+				    }
+				}
+%>									</table>
+								</td>
+							</tr>
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+	  			<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+	  			</tr>
+				<tr>
+					<td width="100%" colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.eventdata.clasification")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr class="linetwo">
+								<td width="33%" align="center">
+									<html:radio value="0" property="clasificationType"  ><%=messages.getText("generic.event.accident")%></html:radio>
+								</td>
+								<td width="33%" align="center">
+									<html:radio value="1" property="clasificationType" ><%=messages.getText("generic.event.incident")%></html:radio>
+								</td>
+<%			if(!sys.isCorporation(CorporationData.SYNGENTA)) {
+%>								<td width="33%" align="center">
+									<html:radio value="2" property="clasificationType" ><%=messages.getText("generic.event.nearmiss")%></html:radio>
+								</td>
+<%			}
+%>							</tr>
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+
+<%	
+		}else if(sys.isCorporation(new int[]{CorporationData.DOW})) {
+%>				<tr>
+					<td width="100%" valign="top" colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.eventdata.clasification")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+<%				Collection accidents = dataTypeUtil.getDataTypeReport().findAll(DataTypeConstants.ACCIDENT_CLASIFICATION,sys.getUserSessionData());
+				Collections.sort((List)accidents);
+				if(accidents != null && accidents.size() > 0) {
+				    Iterator it = accidents.iterator();
+				    while(it.hasNext()) {
+				    	AccidentClasificationDataType accident = (AccidentClasificationDataType)it.next();
+%>							<tr>
+								<td width="49%" class="linetwo">
+<%						if(!type.equals("supervise")){
+%>									<html:radio property="clasification" value='<%=accident.getResourceBundleId()%>' onclick="changeEventClasificationType(document.forms['EventForm'],0);" ><%=messages.getText(accident.getResourceBundleId())%></html:radio>
+<%						}else{
+%>									<html:radio property="clasification" value='<%=accident.getResourceBundleId()%>' onclick="changeEventClasificationType(document.forms['EventSuperviseForm'],0);"><%=messages.getText(accident.getResourceBundleId())%></html:radio>
+<%						} 
+%>								</td>
+<%						if(it.hasNext()) {	
+							accident = (AccidentClasificationDataType)it.next();
+%>								<td width="2%" class="linetwo"></td>
+								<td width="49%" class="linetwo">
+<%							if(!type.equals("supervise")){
+%>									<html:radio property="clasification" value='<%=accident.getResourceBundleId()%>' onclick="changeEventClasificationType(document.forms['EventForm'],0);" ><%=messages.getText(accident.getResourceBundleId())%></html:radio>
+<%							}else{
+%>									<html:radio property="clasification" value='<%=accident.getResourceBundleId()%>' onclick="changeEventClasificationType(document.forms['EventSuperviseForm'],0);"><%=messages.getText(accident.getResourceBundleId())%></html:radio>
+<%							} 
+%>								</td>
+<%						}
+%>						
+							</tr>
+<%					}
+				}
+%>						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+<%		}else {
+			String title1 = (sys.isCorporation(CorporationData.SYNGENTA)) ? "generic.event.accident" : "generic.event.eventdata.clasification";
+%>	  			
+				<tr>
+					<td width="292" valign="top">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText(title1)%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+<%				Collection accidents = dataTypeUtil.getDataTypeReport().findAll(DataTypeConstants.ACCIDENT_CLASIFICATION,sys.getUserSessionData());
+				Collections.sort((List)accidents);
+				if(accidents != null && accidents.size() > 0) {
+				    Iterator it = accidents.iterator();
+				    while(it.hasNext()) {
+				    	AccidentClasificationDataType accident = (AccidentClasificationDataType)it.next();
+				    	boolean showClasification = true;
+				    	switch(corporationId) {
+				    	    case CorporationData.MSD:
+					    	    if(type.equals("edit") || type.equals("supervise")) { 				    	        
+					    	        showClasification = (Util.before(eventDataType.getDate(),1,2008)) ? !accident.isActive() : accident.isActive();
+					    	    }else {
+					    	        showClasification = accident.isActive();
+					    	    }
+					    	    break;
+				    	}
+				    	if(showClasification) {
+%>							<tr>
+								<td width="100%" class="linetwo">
+<%							if(!type.equals("supervise")){
+								switch(corporationId){
+									case CorporationData.JJ: case CorporationData.DPA: case CorporationData.SYNGENTA:
+%>									<html:radio property="clasification" value='<%=accident.getResourceBundleId()%>' onclick="changeEventClasificationType(document.forms['EventForm'],0);"><%=messages.getText(accident.getResourceBundleId())%></html:radio>
+<%										break;
+									default:
+%>									<html:radio property="clasification" value='<%=accident.getResourceBundleId()%>' onclick="changeClasification(document.forms['EventForm'],1,'collision');changeEventClasificationType(document.forms['EventForm'],0);" ><%=messages.getText(accident.getResourceBundleId())%></html:radio>
+<%								}
+							}else{
+								switch(corporationId){
+									case CorporationData.JJ:case CorporationData.DPA:  case CorporationData.SYNGENTA:
+%>									<html:radio property="clasification" value='<%=accident.getResourceBundleId()%>' onclick="changeEventClasificationType(document.forms['EventSuperviseForm'],0);"><%=messages.getText(accident.getResourceBundleId())%></html:radio>
+<%										break;
+									default:
+%>									<html:radio property="clasification" value='<%=accident.getResourceBundleId()%>' onclick="changeClasification(document.forms['EventSuperviseForm'],1,'collision');changeEventClasificationType(document.forms['EventSuperviseForm'],0);"><%=messages.getText(accident.getResourceBundleId())%></html:radio>
+<%								}
+							} 
+%>								</td>
+							</tr>
+<%						}	
+					}
+				}
+%>						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				<!-- Incidents  -->	
+					<td width="16"></td>
+					<td width="292" valign="top">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.eventdata.incidents")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+<%				Collection incidents = dataTypeUtil.getDataTypeReport().findAll(DataTypeConstants.INCIDENT_CLASIFICATION,sys.getUserSessionData());
+				Collections.sort((List)incidents);
+				if(incidents != null && incidents.size() > 0) {
+				    Iterator it = incidents.iterator();
+				    while(it.hasNext()) {
+				        IncidentClasificationDataType incident = (IncidentClasificationDataType)it.next();
+				        if(!incident.getResourceBundleId().equals("datatype.incidentclasification.nonrecordable")) {
+%>							<tr>
+								<td width="100%" class="linetwo">
+<%							if(!type.equals("supervise")){ 
+								switch(corporationId){
+									case CorporationData.JJ:case CorporationData.DPA:  case CorporationData.SYNGENTA:
+%>									<html:radio property="clasification" value='<%=incident.getResourceBundleId()%>' onclick="changeEventClasificationType(document.forms['EventForm'],1);"><%=messages.getText(incident.getResourceBundleId())%></html:radio>
+<%										break;
+									default:
+%>									<html:radio property="clasification" value='<%=incident.getResourceBundleId()%>' onclick="changeClasification(document.forms['EventForm'],2,'collision');changeEventClasificationType(document.forms['EventForm'],1);"><%=messages.getText(incident.getResourceBundleId())%></html:radio>
+<%														
+								}
+							}else{ 
+								switch(corporationId){
+									case CorporationData.JJ:case CorporationData.DPA:  case CorporationData.SYNGENTA:
+%>									<html:radio property="clasification" value='<%=incident.getResourceBundleId()%>'  onclick="changeEventClasificationType(document.forms['EventSuperviseForm'],1);"><%=messages.getText(incident.getResourceBundleId())%></html:radio>
+<%										break;
+									default:
+%>									<html:radio property="clasification" value='<%=incident.getResourceBundleId()%>' onclick="changeClasification(document.forms['EventSuperviseForm'],2,'collision');changeEventClasificationType(document.forms['EventSuperviseForm'],1);"><%=messages.getText(incident.getResourceBundleId())%></html:radio>
+<%								} 
+%>								</td>
+							</tr>
+<%					  	}
+				    }
+				}
+			}
+%>						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+<%		}
+%>				
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+<%			boolean showCollision = true;	
+			switch(corporationId) {
+			    case CorporationData.MSD:
+		    	    if(type.equals("edit") || type.equals("supervise")) { 				    	        
+				        showCollision = Util.before(eventDataType.getDate(),1,2008);
+		    	    }else {
+		    	        showCollision = false;
+		    	    }
+			        break;
+			}
+			if(showCollision){
+%>			  	<!-- Clasificacion de Colisiones: -->
+				<tr>
+					<td valign="top" colspan="3" width="600">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.eventdata.colisionclasification")+"*"%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+<%				Collection collisions = dataTypeUtil.getDataTypeReport().findAll(DataTypeConstants.COLLISION_CLASIFICATION,sys.getUserSessionData());
+				if(collisions != null && collisions.size() > 0) {
+				    Iterator it = collisions.iterator();
+				    for(int i = 0; i < ((int)Math.floor(collisions.size()/2)); i++) {
+%>							<tr>
+<%						for(int j = 0; j < 2; j++) {
+							
+							if (it.hasNext()){	
+								CollisionClasificationDataType accident = (CollisionClasificationDataType)it.next();
+%>								<td width="50%" class="linetwo">
+<%								if  (accidentCollision.equals("disabled") && !sys.isCorporation(new int[]{CorporationData.JJ,CorporationData.DPA,CorporationData.SYNGENTA,CorporationData.DOW})){
+%>									<html:radio property="collision"  value='<%=accident.getResourceBundleId()%>' disabled="true"><%=messages.getText(accident.getResourceBundleId())%></html:radio>
+<%								}else { 
+%>									<html:radio property="collision"  value='<%=accident.getResourceBundleId()%>'><%=messages.getText(accident.getResourceBundleId())%></html:radio>
+<%								}
+%>
+	
+								</td>
+<%						}
+					}
+%>							</tr>
+<%				}
+				    if(it.hasNext() && corporationId != CorporationData.JJ){
+				    	CollisionClasificationDataType accident = (CollisionClasificationDataType)it.next();
+%>							<tr>
+								<td width="50%" class="linetwo">&nbsp;</td>	
+								<td width="50%" class="linetwo">
+<%						if(!sys.isCorporation(new int[]{CorporationData.DPA,CorporationData.SYNGENTA})) {
+%>									<html:radio property="collision" value='<%=accident.getResourceBundleId()%>' disabled="true"><%=messages.getText(accident.getResourceBundleId())%></html:radio>
+<%						} else {
+%>									<html:radio property="collision" value='<%=accident.getResourceBundleId()%>'><%=messages.getText(accident.getResourceBundleId())%></html:radio>
+<%						}
+%>								</td> 
+							</tr>
+<%					}
+				}
+%>						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>	
+	  			<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+	  			</tr>
+<%			}else{
+%>				<html:hidden property="collision" value='<%=(type.equals("edit") || type.equals("supervise")) ? eventDataType.getCollision().getResourceBundleId() : "datatype.collisionclasification.companyvehicles"%>' />
+<%			}
+			if(sys.isCorporation(new int[]{CorporationData.DOW})) {
+%>         		<tr>
+           			<td colspan="3" width="600">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.eventdata.clasification")%>' />
+						<table width="100%">
+							<tr  class="linetwo">
+								<th align="left"> <%=messages.getText("generic.event.eventdata.type")%></th>
+								<td align="right">
+ 									<html:select property="extracost1" styleClass="input" style="width:180;" >
+<%				for(int i = 1; i < 5; i++) {			
+%>										<html:option value="<%=String.valueOf(i)%>" styleClass="input"><%=String.valueOf(i)%></html:option>
+<%				} 
+%>									</html:select>   
+								</td>
+							</tr>
+				  			<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+				  			</tr>
+							<tr  class="linetwo">
+								<th align="left"> <%=messages.getText("generic.event.eventdata.gravity")%></th>
+								<td align="right">
+ 									<html:select property="extracost2" styleClass="input" style="width:180;" >
+<%				for(int i = 1; i < 6; i++) {			
+%>										<html:option value="<%=String.valueOf(i)%>" styleClass="input"><%=String.valueOf(i)%></html:option>
+<%				} 
+%>									</html:select>   
+								</td>
+							</tr>
+				  			<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+				  			</tr>
+							<tr  class="linetwo">
+								<th align="left"> <%=messages.getText("generic.event.eventdata.quarter")%></th>
+								<td align="right">
+ 									<html:select property="extracost3" styleClass="input" style="width:180;" >
+<%				for(int i = 1; i < 5; i++) {			
+%>										<html:option value="<%=String.valueOf(i)%>" styleClass="input"><%=String.valueOf(i)%></html:option>
+<%				} 
+%>									</html:select>   
+								</td>
+							</tr>
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>	
+	  			<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+	  			</tr>
+<% 			}
+%>         		<tr>
+           			<td colspan="3" width="600">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.companycar")%>' />
+						<table width="100%">
+							<tr  class="linetwo">
+								<th align="left"> <%=messages.getText("generic.event.eventdata.handle")%><span class="required">*</span></th>
+								<td align="right">
+ 									<html:select property="handle" styleClass="input" style="width:180;" >
+										<html:options collection="behaviourType" property="value" labelProperty="label" styleClass="input"/>
+									</html:select>   
+								</td>
+								<td width="16"></td>
+								<th align="left"> <%=messages.getText("generic.event.eventdata.hitrun")%></th>
+        						<td align="right">
+									<html:select property="hitrun" styleClass="input" >
+                						<html:options collection="generic" property="value" labelProperty="label" styleClass="input"/>
+              						</html:select>
+								</td>
+							</tr>
+							<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr  class="linetwo">
+								<th align="left"> <%=messages.getText("generic.event.eventdata.principalfactor")%><span class="required">*</span></th>
+								<td align="right">
+ 									<html:select property="principalFactor" styleClass="input" style="width:180;" >
+										<html:options collection="factorType" property="value" labelProperty="label" styleClass="input"/>
+									</html:select>   
+								</td>
+<% 								if (sys.isCorporation(CorporationData.BAYER_MX)){  
+%>								<td width="16"></td>
+								<th align="left" class="linetwo"><%=messages.getText("generic.event.eventdata.cellular")%></th>
+				         		<td align="right">
+                					<html:select property="cellular" styleClass="input" >
+             				  			<html:options collection="cellulars" property="value" labelProperty="label" styleClass="input"/>
+                					</html:select>
+							   	</td>
+<%								}
+%>							</tr>
+							<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr>
+								<td colspan="5" width="100%">
+									<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.event.eventdata.factors")%>' />
+									<table width="100%"  cellpadding="0" cellspacing="0">
+										<tr>
+											<td width="49%" class="lineone">
+												<html:checkbox property="factorovertaking"><%=messages.getText("datatype.accidentfactors.overtaking")%></html:checkbox>
+											</td>
+											<td width="2%" class="lineone">&nbsp;</td>
+											<td width="49%" class="lineone">
+												<html:checkbox property="factoralcohol"><%=messages.getText("datatype.accidentfactors.drugs")%></html:checkbox>
+											</td>
+										</tr>
+										<tr>
+											<td width="49%" class="lineone">
+												<html:checkbox property="factorchangelane"><%=messages.getText("datatype.accidentfactors.changelane")%></html:checkbox>
+											</td>
+											<td width="2%" class="lineone">&nbsp;</td>
+											<td width="49%" class="lineone">
+												<html:checkbox property="factorsleep"><%=messages.getText("datatype.accidentfactors.sleep")%></html:checkbox>
+											</td>
+										</tr>
+										<tr>
+											<td width="49%" class="lineone">
+												<html:checkbox property="factorturn"><%=messages.getText("datatype.accidentfactors.turn")%></html:checkbox>
+											</td>
+											<td width="2%" class="lineone">&nbsp;</td>
+											<td width="49%" class="lineone">
+												<html:checkbox property="factortooclose"><%=messages.getText("datatype.accidentfactors.tooclose")%></html:checkbox>
+											</td>
+										</tr>
+										<tr>
+											<td width="49%" class="lineone">
+												<html:checkbox property="factorother"><%=messages.getText("datatype.accidentfactors.others")%></html:checkbox>
+											</td>
+											<td width="2%" class="lineone">&nbsp;</td>
+											<td width="49%" class="lineone">
+												<html:checkbox property="factorlight"><%=messages.getText("datatype.accidentfactors.lights")%></html:checkbox>
+											</td>
+										</tr>
+										<tr>
+											<td width="49%" class="lineone">
+												<html:checkbox property="factorhighspeed"><%=messages.getText("datatype.accidentfactors.speed")%></html:checkbox>
+											</td>
+											<td width="2%" class="lineone">&nbsp;</td>
+											<td width="49%" class="lineone">
+												<html:checkbox property="factorsigns"><%=messages.getText("datatype.accidentfactors.ignoresigns")%></html:checkbox>
+											</td>
+										</tr>
+										<tr>
+											<td width="49%" class="lineone">
+												<html:checkbox property="factorstop"><%=messages.getText("datatype.accidentfactors.stop")%></html:checkbox>
+											</td>
+											<td width="2%" class="lineone">&nbsp;</td>
+											<td width="49%" class="lineone">
+												<html:checkbox property="factordistraction"><%=messages.getText("datatype.accidentfactors.distraction")%></html:checkbox>
+											</td>
+										</tr>
+										<tr>
+											<td width="49%" class="lineone">
+												<html:checkbox property="factorConcience"><%=messages.getText("datatype.accidentfactors.conscience")%></html:checkbox>
+											</td>
+											<td width="2%" class="lineone">&nbsp;</td>
+											<td width="49%" class="lineone">
+												<html:checkbox property="factorOtherParking"><%=messages.getText("datatype.accident.factors.other.parking.baking")%></html:checkbox>
+											</td>
+										</tr>
+										<tr>
+											<td width="49%" class="lineone">
+												<html:checkbox property="factorOtherCrossing"><%=messages.getText("datatype.accident.factors.other.crossing")%></html:checkbox>
+											</td>
+											<td width="2%" class="lineone">&nbsp;</td>
+											<td width="49%" class="lineone">
+   												<html:checkbox property="factorOtherStanding"><%=messages.getText("datatype.accident.factors.other.parking.standing")%></html:checkbox>
+											</td>
+										</tr>
+										<tr>
+											<td width="49%" class="lineone">
+												<html:checkbox property="factorMecanicFail"><%=messages.getText("datatype.accident.factors.mecanicfail")%></html:checkbox>
+											</td>
+											<td width="2%" class="lineone">&nbsp;</td>
+											<td width="49%" class="lineone">&nbsp;</td>
+										</tr>										
+									</table>
+									<jsp:include  page='<%= "../component/utilitybox2bottom.jsp?" %>'/>
+								</td>
+							</tr>	
+							<tr  class="linetwo">
+								<td colspan="5" width="100%">
+									<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.event.eventdata.collisionangle")%>' />
+									<table width="100%"  cellpadding="0" cellspacing="0">
+										<tr>
+											<td width="49%" class="lineone">
+												<html:radio property="collisionangle" value="datatype.collisionangle.hitrear"><%=messages.getText("datatype.collisionangle.hitrear")%></html:radio>
+											</td>
+											<td width="2%" class="lineone">&nbsp;</td>
+											<td width="49%" class="lineone">
+												<html:radio property="collisionangle" value="datatype.collisionangle.otherpartyhitrear"><%=messages.getText("datatype.collisionangle.otherpartyhitrear")%></html:radio>
+											</td>
+										</tr>
+										<tr>
+											<td width="49%" class="lineone">
+												<html:radio property="collisionangle" value="datatype.collisionangle.rectangle"><%=messages.getText("datatype.collisionangle.rectangle")%></html:radio>
+											</td>
+											<td width="2%" class="lineone">&nbsp;</td>
+											<td width="49%" class="lineone">
+												<html:radio property="collisionangle" value="datatype.collisionangle.leftturn"><%=messages.getText("datatype.collisionangle.leftturn")%></html:radio>
+											</td>
+										</tr>
+										<tr>
+											<td width="49%" class="lineone">
+												<html:radio property="collisionangle" value="datatype.collisionangle.front"><%=messages.getText("datatype.collisionangle.front")%></html:radio>
+											</td>
+											<td width="2%" class="lineone">&nbsp;</td>
+											<td width="49%" class="lineone">
+												<html:radio property="collisionangle" value="datatype.collisionangle.lateral"><%=messages.getText("datatype.collisionangle.lateral")%></html:radio>
+											</td>
+										</tr>
+										<tr>
+											<td width="49%" class="lineone">
+												<html:radio property="collisionangle" value="datatype.collisionangle.rightturn"><%=messages.getText("datatype.collisionangle.rightturn")%></html:radio>
+											</td>
+											<td width="2%" class="lineone">&nbsp;</td>
+											<td width="49%" class="lineone">
+												<html:radio property="collisionangle" value="datatype.collisionangle.other"><%=messages.getText("datatype.collisionangle.other")%></html:radio>
+											</td>
+										</tr>
+									</table>
+									<jsp:include  page='<%= "../component/utilitybox2bottom.jsp?" %>'/>
+								</td>
+							</tr>
+							<tr>
+							   	<td width="270" colspan="2">
+									<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.event.eventdata.speed")%>' />
+										<table  width="100%"  cellpadding="0" cellspacing="0">
+											<tr>
+											   	<th align="left" class="lineone"> 
+											   		<%=messages.getText("generic.event.eventdata.maxspeed")%>
+					         					</th>
+					         					<td align="right" class="lineone">
+					         						<html:text property="maxspeed" size="10" styleClass="input"/>
+				         						</td>
+											</tr>
+			      							<tr  class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+											<tr>
+											   	<th align="left" class="lineone"> 
+											   		<%=messages.getText("generic.event.eventdata.collisionspeed")%>
+					         					</th>
+					         					<td align="right" class="lineone">
+													<html:text property="collisionspeed" size="10" styleClass="input"/>
+				         						</td>
+											</tr>
+			      							<tr  class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+											<tr>
+											   	<th align="left" class="lineone"> 
+											   		<%=messages.getText("generic.event.eventdata.vehiclespeed")%>
+					         					</th>
+					         					<td align="right" class="lineone">
+					         						<html:text property="vehiclespeed" size="10" styleClass="input"/>
+				         						</td>
+											</tr>
+			      							<tr  class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+											<tr>
+											   	<th align="left" class="lineone"> 
+											   		<%=messages.getText("generic.event.eventdata.reportedspeed")%>
+					         					</th>
+					         					<td align="right" class="lineone">
+					         						<html:text property="reportedspeed" size="10" styleClass="input"/>
+				         						</td>
+											</tr>
+			      							<tr  class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+											<tr>
+											   	<th align="left" class="lineone"> 
+											   		<%=messages.getText("generic.event.eventdata.speedunit")%>
+											   	</th>
+					         					<td align="right" class="lineone">
+<%						if(sys.getCorporationId() == CorporationData.CIMSA ||
+								sys.getCorporationId() == CorporationData.PEPSICO) {
+%>					    							<html:hidden property="speedunit" value="1" />
+													<%=messages.getText("driver.speedunits.metres")%>	     					
+<%						}else {
+%>	                								<html:select property="speedunit" styleClass="input" >
+       				  									<html:options collection="speedunits" property="value" labelProperty="label" styleClass="input"/>
+       												</html:select>
+<%						}
+%>				         						</td>
+				         					</tr>
+										</table>
+									<jsp:include  page="../component/utilitybox2bottom.jsp" />
+								</td>
+							   	<td width="16">&nbsp;</td>
+								<td width="270" colspan="2">
+									<table>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo" ><%=messages.getText("generic.event.eventdata.selfbelt")%></th>
+				         					<td class="linetwo">
+												<html:select property="selfbelt" styleClass="input" >
+            			    						<html:options collection="selfbelt" property="value" labelProperty="label" styleClass="input"/>
+              									</html:select>
+              								</td>
+			         					</tr>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo"> 
+										   		<%=messages.getText("generic.event.eventdata.alcohollevel")%>
+										   	</th>
+				         					<td class="linetwo">
+				         						<html:text property="alcohol" size="10" styleClass="input" value="0" />
+							         		</td>
+										</tr>
+<%			if(sys.getCorporationId() == CorporationData.CIMSA) { 		
+%>		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo"> 
+										   		<%=messages.getText("generic.event.eventdata.alcoholbreath")%>
+										   	</th>
+				         					<td class="linetwo">
+				         						<html:select property="alcoholBreath" styleClass="input" >
+            			    						<html:options collection="generic" property="value" labelProperty="label" styleClass="input"/>
+				         						</html:select>
+							         		</td>
+										</tr>
+<%			} 		
+%>		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo" ><%=messages.getText("generic.event.eventdata.othervehicles")%></th>
+				         					<td class="linetwo">
+												<html:select property="othervehicles" styleClass="input" >
+            			    						<html:options collection="generic" property="value" labelProperty="label" styleClass="input"/>
+              									</html:select>
+              								</td>
+										</tr>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td>
+		      							</tr>
+<% 								if (!sys.isCorporation(CorporationData.BAYER_MX)){  
+%>		      							<tr>
+											<th align="left" class="linetwo"> 
+												<%=messages.getText("generic.event.eventdata.cellular")%>
+										   	</th>
+				         					<td class="linetwo">
+                								<html:select property="cellular" styleClass="input" >
+             				  						<html:options collection="cellulars" property="value" labelProperty="label" styleClass="input"/>
+                								</html:select>
+							         		</td>
+							         	</tr>
+							         	<tr  class="space">
+						         				<th align="right">&nbsp;</th><td align="right">&nbsp;</td>
+							         	</tr>
+<%								}
+								if (sys.getCorporationId() == CorporationData.PEPSICO){  %>
+											<!--  Distractores -->
+										<tr>
+											<th align="left" class="linetwo" valign="top"> 
+												<%=messages.getText("generic.event.eventdata.distractors")%>
+										   	</th>
+				         					<td class="linetwo">
+				         						<!-- TODO: Elegir una o varias opciones -->
+												<table width="100%">
+<%												String checks = eventForm.getDistractor();
+													if (Util.empty(checks)) { 
+														checks = "000000"; 
+													}
+													for(int j = 1; j <= 6; j++) {				
+%>													<tr>
+														<td>
+															<input type="checkbox" name='<%="distractorOption"+j%>' <%=(checks.charAt(j-1) == '1') ? "checked" : "" %> />
+															<span class="input"><%=messages.getText("driver.distractors.option"+j) %></span>
+														</td>		
+													</tr>
+<%												}
+%>												</table>
+											</td>
+								      	</tr>
+											<tr  class="space">
+												<th align="right">&nbsp;</th><td align="right">&nbsp;</td>
+											</tr>
+<% 									} 
+%>									</table>
+								</td>
+							</tr>
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+				<tr>
+                     <td width="600" colspan="3">
+									<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.othervehicles")%>' />
+		        					<table width='100%' border="0" cellpadding="0" cellspacing="0">
+		            					<tr class="linetwo">
+	              							<td align="left" valign="middle"><strong><%=messages.getText("generic.event.vehicle.count")%></strong></td>
+				         					<td align="left">
+<%								String link = "javascript:changeVehicleCount('"+formName+"')";
+%>				         						<html:select property="vehiclecount" styleClass="input" onchange="<%=link%>">
+<%									for(int i = 0; i < 6; i++) {
+%>				         							<html:option value='<%=String.valueOf(i)%>'><%=String.valueOf(i)%></html:option>
+<%									}
+%>			         							</html:select>
+											</td>
+										</tr>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+<%									for(int i = 1; i < 6; i++) {
+%>										
+										<tr>
+											<td colspan="2" >
+											<div id=<%="vehicle"+String.valueOf(i)%> style='<%= (i <= Integer.parseInt(eventForm.getVehiclecount())) ? "display:block" : "display:none" %>' >
+												<table width="100%">
+													<tr>
+														<td width="100%">
+															<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.event.vehicle")+" "+i%>' />
+															<table width="100%" border="0" cellpadding="0" cellspacing="0">
+																<tr  class="lineone">
+			      													<th align="left"> <%=messages.getText("generic.event.eventdata.vehicletype")%><span class="required">*</span></th>
+			      													<td align="right" colspan="2">
+			 	     													<html:select property='<%="vehicleType"+i%>' styleClass="input" style="width:180;" >
+			      															<html:options collection="vehicleType" property="value" labelProperty="label" styleClass="input"/>
+				  														</html:select>   
+				  													</td>
+																</tr>
+			      												<tr class="lineone"><th align="right">&nbsp;</th><td align="right" colspan="2">&nbsp;</td></tr>
+																<tr  class="lineone">
+			      													<th align="left"> <%=messages.getText("generic.event.eventdata.previous")%><span class="required">*</span></th>
+			      													<td align="right" colspan="2">
+			 	     													<html:select property='<%="behaviourType"+i%>' styleClass="input" style="width:180;" >
+			      															<html:options collection="behaviourType" property="value" labelProperty="label" styleClass="input"/>
+				  														</html:select>   
+				  													</td>
+																</tr>
+																<tr class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+																<tr  class="lineone">
+																	<th align="left"> <%=messages.getText("generic.event.eventdata.principalfactor")%><span class="required">*</span></th>
+																	<td align="right">
+									 									<html:select property='<%="principalFactor"+i%>' styleClass="input" style="width:180;" >
+																			<html:options collection="factorType" property="value" labelProperty="label" styleClass="input"/>
+																		</html:select>   
+																	</td>
+																</tr>
+			      												<tr class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+																<tr  class="lineone">
+																	<td colspan="3" >
+																		<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.event.eventdata.factors")%>' />
+																		<table width="100%" border="0" cellpadding="0" cellspacing="0">
+																			<tr>
+																				<td width="49%" class="lineone">
+																					<html:checkbox property='<%="factorovertaking"+i%>'><%=messages.getText("datatype.accidentfactors.overtaking")%></html:checkbox>
+																				</td>
+																				<td width="2%" class="lineone">&nbsp;</td>
+																				<td width="49%" class="lineone">
+																					<html:checkbox property='<%="factoralcohol"+i%>'><%=messages.getText("datatype.accidentfactors.drugs")%></html:checkbox>
+																				</td>
+																			</tr>
+																			<tr>
+																				<td width="49%" class="lineone">
+																					<html:checkbox property='<%="factorchangelane"+i%>'><%=messages.getText("datatype.accidentfactors.changelane")%></html:checkbox>
+																				</td>
+																				<td width="2%" class="lineone">&nbsp;</td>
+																				<td width="49%" class="lineone">
+																					<html:checkbox property='<%="factorsleep"+i%>'><%=messages.getText("datatype.accidentfactors.sleep")%></html:checkbox>
+																				</td>
+																			</tr>
+																			<tr>
+																				<td width="49%" class="lineone">
+																					<html:checkbox property='<%="factorturn"+i%>'><%=messages.getText("datatype.accidentfactors.turn")%></html:checkbox>
+																				</td>
+																				<td width="2%" class="lineone">&nbsp;</td>
+																				<td width="49%" class="lineone">
+																					<html:checkbox property='<%="factortooclose"+i%>'><%=messages.getText("datatype.accidentfactors.tooclose")%></html:checkbox>
+																				</td>
+																			</tr>
+																			<tr>
+																				<td width="49%" class="lineone">
+																					<html:checkbox property='<%="factorother"+i%>'><%=messages.getText("datatype.accidentfactors.others")%></html:checkbox>
+																				</td>
+																				<td width="2%" class="lineone">&nbsp;</td>
+																				<td width="49%" class="lineone">
+																					<html:checkbox property='<%="factorlight"+i%>'><%=messages.getText("datatype.accidentfactors.lights")%></html:checkbox>
+																				</td>
+																			</tr>
+																			<tr>
+																				<td width="49%" class="lineone">
+																					<html:checkbox property='<%="factorhighspeed"+i%>'><%=messages.getText("datatype.accidentfactors.speed")%></html:checkbox>
+																				</td>
+																				<td width="2%" class="lineone">&nbsp;</td>
+																				<td width="49%" class="lineone">
+																					<html:checkbox property='<%="factorsigns"+i%>'><%=messages.getText("datatype.accidentfactors.ignoresigns")%></html:checkbox>
+																				</td>
+																			</tr>
+																			<tr>
+																				<td width="49%" class="lineone">
+																					<html:checkbox property='<%="factorstop"+i%>'><%=messages.getText("datatype.accidentfactors.stop")%></html:checkbox>
+																				</td>
+																				<td width="2%" class="lineone">&nbsp;</td>
+																				<td width="49%" class="lineone">
+																					<html:checkbox property='<%="factordistraction"+i%>'><%=messages.getText("datatype.accidentfactors.distraction")%></html:checkbox>
+																				</td>
+																			</tr>
+																			<tr>
+											                                	<td width="49%" class="lineone">
+																					<html:checkbox property='<%="factorConcience"+i%>'><%=messages.getText("datatype.accidentfactors.conscience")%></html:checkbox>
+																				</td>
+																				<td width="2%" class="lineone">&nbsp;</td>
+																				<td width="49%" class="lineone">
+																					<html:checkbox property='<%="factorOtherParking"+i%>'><%=messages.getText("datatype.accident.factors.other.parking.baking")%></html:checkbox>
+																				</td>
+																			</tr>
+																			<tr>
+																				<td width="49%" class="lineone">
+																					<html:checkbox property='<%="factorOtherCrossing"+i%>'><%=messages.getText("datatype.accident.factors.other.crossing")%></html:checkbox>
+																				</td>
+																				<td width="2%" class="lineone">&nbsp;</td>
+																				<td width="49%" class="lineone">
+										   											<html:checkbox property='<%="factorOtherStanding"+i%>'><%=messages.getText("datatype.accident.factors.other.parking.standing")%></html:checkbox>
+																				</td>
+																			</tr>
+																		</table>
+																		<jsp:include  page='<%="../component/utilitybox2bottom.jsp" %>'/>
+																	</td>
+																</tr>
+			      												<tr class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+																<tr  class="lineone">
+			      													<th align="left"> <%=messages.getText("generic.event.eventdata.hitrun")%></th>
+			      													<td align="right">
+ 	     																<html:select property='<%="hitrun"+i%>' styleClass="input" style="width:180;" >
+      																		<html:options collection="hitrunOther" property="value" labelProperty="label" styleClass="input"/>
+	  																	</html:select>   
+	  																</td>
+																</tr>																						      												
+			      												<tr class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+																<tr  class="lineone">
+			      													<th align="left"> <%=messages.getText("driver.othervehicle.contact")%></th>
+			      													<td align="right">
+ 	     																<html:select property='<%="contact"+i%>' styleClass="input" style="width:180;" >
+      																		<html:options collection="generic" property="value" labelProperty="label" styleClass="input"/>
+	  																	</html:select>   
+	  																</td>
+																</tr>
+															</table>
+															<jsp:include  page='<%="../component/utilitybox2bottom.jsp" %>'/>
+														</td>
+													</tr>
+									  				<tr>
+														<jsp:include  page="../component/spaceline.jsp" />
+												  	</tr>
+												</table>	
+												</div>
+											</td>
+										</tr>
+<%									}
+%>
+	                     			</table>
+									<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+				<tr>
+					<td colspan="3" width="600">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.environment")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+								<td width="270" valign="top">
+									<table width="100%" border="0" cellpadding="0" cellspacing="0">
+										<tr class="guideSearch">
+											<td width="19" >
+												<img src="/datacenter/util/imgs/left_top_search.jpg" width="19" height="30" align="bottom">
+											</td>
+											<td width="180" align="left" class="guideSearch">
+												<%=messages.getText("generic.event.way")%>							
+											</td>
+											<td width="19" >
+												<img src="/datacenter/util/imgs/right_top_search.jpg" width="19" height="30" align="bottom">
+											</td>
+										</tr>
+										<tr>
+											<td class="leftLineSearch">&nbsp;</td>
+											<td>
+	 											<table width="100%" border="0" cellpadding="0" cellspacing="0">
+													<tr>
+						        						<th align="left" class="lineone"> <%=messages.getText("generic.event.eventdata.way")%><span class="required">*</span></th>
+						        						<td align="right" class="lineone">
+							      							<html:select property="way" styleClass="input" >
+							      								<html:options collection="ways" property="value" labelProperty="label" styleClass="input"/>
+								  							</html:select>   
+						          						</td>
+						          					</tr>
+					      							<tr  class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td>
+					      							</tr>
+													<tr>
+						        						<th align="left" class="lineone"> <%=messages.getText("generic.event.eventdata.circulationdirection")%><span class="required">*</span></th>
+				    	    							<td align="right" class="lineone">
+					    	  								<html:select property="direction" styleClass="input" >
+						      									<html:options collection="directions" property="value" labelProperty="label" styleClass="input"/>
+						  									</html:select>   
+					          							</td>
+						          					</tr>
+						          					
+						          					<%if (sys.getCorporationId() == CorporationData.PEPSICO){ 
+						          						// Si es PEPSCIO permito que los controles de transito "Señalamientos existentes"
+						          						// sean multiple select
+						          					%>
+						          					<tr  class="lineone">
+					      								<th align="right">&nbsp;</th><td align="right">&nbsp;</td>
+					      							</tr>
+													<tr>
+						        						<th align="left" class="lineone" valign="top"> <%=messages.getText("generic.event.eventdata.trafficcontrol")%><span class="required">*</span></th>
+				    		    						<td align="right" class="lineone">
+						    		    						<!-- TODO: Elegir una o varias opciones -->
+																<table width="100%">
+		<%														String checks2 = eventForm.getControlMultiple();
+																	if (Util.empty(checks2)) { checks2 = "0000000"; }
+																	for(int j = 1; j <= 7; j++) {				
+		%>														<tr>
+																		<td>
+																			<input type="checkbox" name='<%="controlMultipleOption"+j%>' <%=(checks2.charAt(j-1) == '1') ? "checked" : "" %> />
+																			<span class="input"><%=messages.getText("driver.controlmultiple.option"+j) %></span>
+																		</td>		
+																	</tr>
+		<%														}
+		%>													</table>					      									
+						          						</td>
+						          					</tr>
+						          					<%}else{ %>
+					      							<tr  class="lineone">
+					      								<th align="right">&nbsp;</th><td align="right">&nbsp;</td>
+													</tr>
+													<tr>
+						        						<th align="left" class="lineone"> <%=messages.getText("generic.event.eventdata.trafficcontrol")%><span class="required">*</span></th>
+				    		    						<td align="right" class="lineone">
+					      									<html:select property="control" styleClass="input" >
+					      										<html:options collection="controls" property="value" labelProperty="label" styleClass="input"/>
+						  									</html:select>   
+						          						</td>
+						          					</tr>
+						          					<%} %>
+	 											</table>
+											</td>
+	  										<td class="rightLineSearch">&nbsp;</td>
+										</tr>	
+	  									<tr>
+	                 						<td height="11" valign="top"><img src="/datacenter/util/imgs/left_base_search.jpg" width="19" height="11"></td>
+	 				  						<td class="centerBaseSearch"></td>
+	 				  						<td valign="top" height="11"><img src="/datacenter/util/imgs/right_base_search.jpg" width="19" height="11"></td>
+			 							</tr>
+						  				<tr>
+											<jsp:include  page="../component/spaceline.jsp" />
+									  	</tr>
+										<tr>
+											<td colspan="3">
+												<table width="100%">
+													<tr>
+						        						<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.climate")%><span class="required">*</span></th>
+						        						<td align="right" class="linetwo">
+							      							<html:select property="climate" styleClass="input" style="width:155;">
+							      								<html:options collection="climates" property="value" labelProperty="label" styleClass="input"/>
+								  							</html:select>   
+						          						</td>
+													</tr>
+												</table>
+											</td>
+			          					</tr>
+									</table>
+								</td>
+								<td width="16">&nbsp;</td>
+								<td width="270" valign="top">
+									<table width="100%" border="0" cellpadding="0" cellspacing="0">
+										<tr class="guideSearch">
+											<td width="19" >
+												<img src="/datacenter/util/imgs/left_top_search.jpg" width="19" height="30" align="bottom">
+											</td>
+											<td width="180" align="left" class="guideSearch">
+												<%=messages.getText("generic.event.eventdata.pavement")%>							
+											</td>
+											<td width="19" >
+												<img src="/datacenter/util/imgs/right_top_search.jpg" width="19" height="30" align="bottom">
+											</td>
+										</tr>
+										<tr>
+											<td class="leftLineSearch">&nbsp;</td>
+											<td>
+	 											<table width="100%" border="0" cellpadding="0" cellspacing="0">
+													<tr>
+						        						<th align="left" class="lineone"> <%=messages.getText("generic.event.eventdata.pavement.state")%><span class="required">*</span></th>
+						        						<td align="right" class="lineone">
+							      							<html:select property="pavement" styleClass="input" >
+							      								<html:options collection="pavements" property="value" labelProperty="label" styleClass="input"/>
+								  							</html:select>   
+						          						</td>
+						          					</tr>
+					      							<tr  class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td>
+													<tr>
+						        						<th align="left" class="lineone"> <%=messages.getText("generic.event.eventdata.conditionrout")%><span class="required">*</span></th>
+						        						<td align="right" class="lineone">
+							      							<html:select property="condition" styleClass="input" >
+							      								<html:options collection="conditions" property="value" labelProperty="label" styleClass="input"/>
+								  							</html:select>   
+						          						</td>
+						          					</tr>
+	 											</table>
+											</td>
+	  										<td class="rightLineSearch">&nbsp;</td>
+										</tr>	
+	  									<tr>
+	                 						<td height="11" valign="top"><img src="/datacenter/util/imgs/left_base_search.jpg" width="19" height="11"></td>
+	 				  						<td class="centerBaseSearch"></td>
+	 				  						<td valign="top" height="11"><img src="/datacenter/util/imgs/right_base_search.jpg" width="19" height="11"></td>
+			 							</tr>
+						  				<tr>
+											<jsp:include  page="../component/spaceline.jsp" />
+									  	</tr>
+										<tr>
+											<td colspan="3">
+												<table width="100%">
+													<tr>
+						        						<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.lighting")%><span class="required">*</span></th>
+						        						<td align="right" class="linetwo">
+							      							<html:select property="lighting" styleClass="input" style="width:155;">
+							      								<html:options collection="lightings" property="value" labelProperty="label" styleClass="input"/>
+								  							</html:select>  
+						          						</td>
+						          					</tr>
+												</table>
+											</td>
+			          					</tr>
+						  				<tr>
+											<jsp:include  page="../component/spaceline.jsp" />
+										</tr>
+									  	<tr>
+											<td align="right" colspan="3">
+												<input type="button" value='<%=messages.getText("generic.messages.nodata")%>' onclick="javascript:setnodata(document.forms['EventForm'])" class="input"/>
+											</td>
+										</tr>
+									</table>
+								</td>								
+							</tr>
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+			  	<tr>
+					<td width="600" valign="top" colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.otherpedestrian")%>' />
+       						<table width='100%' border="0" cellpadding="0" cellspacing="0">
+	            				<tr class="linetwo">
+              						<td align="left" valign="middle"><strong><%=messages.getText("generic.event.pedestrian.count")%></strong></td>
+		         					<td align="left">
+<%								link = "javascript:changePedestrianCount('"+formName+"')";
+%>		         						<html:select property="pedestriancount" styleClass="input" onchange="<%=link%>">
+<%								for(int i = 0; i < 4; i++) {
+%>			         						<html:option value='<%=String.valueOf(i)%>'><%=String.valueOf(i)%></html:option>
+<%								}
+%>			         					</html:select>
+									</td>
+								</tr>
+	      						<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+<%								for(int i = 1; i < 4; i++) {
+%>								<tr>
+									<td colspan="2">
+										<div id=<%="pedestrian"+String.valueOf(i)%> style='<%= (i <= Integer.parseInt(eventForm.getPedestriancount())) ? "display:block" : "display:none" %>' >
+											<table width="100%">
+												<tr>
+													<td width="100%">
+														<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.event.pedestrian")+" "+i%>' />
+														<table width="100%" border="0" cellpadding="0" cellspacing="0">
+															<tr  class="lineone">
+		      													<th align="left"> <%=messages.getText("generic.event.eventdata.pedestrianaction")%><span class="required">*</span></th>
+		      													<td align="right">
+								 									<html:select property='<%="pedestrian"+String.valueOf(i)%>' styleClass="input" >
+																		<html:options collection="pedestrianActions" property="value" labelProperty="label" styleClass="input"/>
+																	</html:select>   
+			  													</td>
+			  												</tr>
+															<tr  class="lineone">
+		      													<th align="left"> <%=messages.getText("generic.event.pedestrian.comment")%></th>
+		      													<td align="right" colspan="2">
+								 									<html:text property='<%="pedestrianother"+String.valueOf(i)%>'  size="70" styleClass="input"	 />
+			  													</td>
+															</tr>
+														</table>
+														<jsp:include  page="../component/utilitybox2bottom.jsp" />
+													</td>
+												</tr>
+								  				<tr>
+													<jsp:include  page="../component/spaceline.jsp" />
+											  	</tr>
+											</table>	
+										</div>
+									</td>
+								</tr>
+<%								}		
+%>							</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+			  	
+			  	<!--  Esquema de Daños, con dibujo de vehiculo -->
+			  	<tr>
+					<td width="600" valign="top" colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.damageschema")%>' />
+						<table width="100%" border="0" cellpadding="0" cellspacing="0">
+							<tr >
+								<td colspan="2" align="center" class="linetwo">
+								<table class="SearchBack" width="100%" cellpadding="0" cellspacing="0">
+										<tr>
+											<td width="100%" valign="top" class="linetwo" >
+
+<%
+		// Si es forestal y tiene un vehiculo asigando
+		// al evento que sea camion, camion con trailer, o tractor, cambio el dibujo:
+		if( (sys.getUserSessionData().isForest() && vehicle != null && 
+				(vehicle.getType().getResourceBundleId().equals("datatype.vehicletype.truck")
+				|| vehicle.getType().getResourceBundleId().equals("datatype.vehicletype.tractortrailer")
+				|| vehicle.getType().getResourceBundleId().equals("datatype.vehicletype.trator")
+				|| vehicle.getType().getResourceBundleId().equals("datatype.vehicletype.pickup")
+				|| ( vehicle.getType().getResourceBundleId().equals("datatype.vehicletype.minivan") &&
+						sys.getCorporationId() == CorporationData.CIMSA	)
+				)
+			) 													
+			||	// Si es Forestal y creo un nuevo vehiculo asumo que es camion:
+				(sys.getUserSessionData().isForest() &&	vehicle == null )
+			|| // Si es CIMSA  y creo un nuevo vehiculo asumo que es camion (Ajuste: 17/08/2011)
+				(sys.getCorporationId() == CorporationData.CIMSA && vehicle == null )
+			|| 
+				// Si es PEPSICO  asumo que es camion (Ajuste: 17/08/2011)
+				// Pepsico es camion solo (sin zorra)
+				(sys.getCorporationId() == CorporationData.PEPSICO)
+		) {
+					String doubleCabinImage = ""; // camion con zorra
+					String onlyTruckImage = ""; 
+					String color = ""; // color del vehiculo
+					boolean onlyTruck = true;
+					
+					// Veo si tengo que mostrar un camion con zorra o solo el camion:
+						
+					
+					if( (sys.getCorporationId() == CorporationData.CIMSA 
+						&& eventDataType != null && eventDataType.isDoubleCabin()) ||
+						// si es Forestal es camion con zorra:
+						sys.getUserSessionData().isForest() ||
+						// Si es diferente de CIMSA o PEPSICO, es camion con zorra:
+						(sys.getCorporationId() != CorporationData.CIMSA &&
+								sys.getCorporationId() != CorporationData.PEPSICO)
+								
+					){
+						// Dibujo camion con zorra:
+						doubleCabinImage = " style='display:block'  "; // camion con zorra
+						onlyTruckImage = " style='display:none' ";
+						onlyTruck = false;
+					}else{
+						// Dibujo camion solo:
+						doubleCabinImage = " style='display:none' ";
+						onlyTruckImage = " style='display:block' "; // camion solo
+						onlyTruck = true;
+					}	
+					
+				
+%>
+													<jsp:include  page='<%="EventCreateTruckImage.jsp?onlyTruck="+onlyTruck  %>' />
+											</td>
+										</tr>
+									</table>
+									
+								</td>
+							</tr>
+							<tr>
+								<jsp:include  page='<%="../component/spaceline.jsp"  %>' />
+						  	</tr>
+						  	
+<%			if(sys.getCorporationId() == CorporationData.CIMSA) {	
+%>							
+							<tr>	
+								<td>&nbsp;</td>
+								<td rowspan="8">
+									<jsp:include  page="../component/utilitybox2top.jsp" />
+									<table width="100%" cellpadding="0" cellspacing="0">
+										<tr>
+											<th class="linetwo" align="left"><%=messages.getText("event.extracost.cost1")%></th>
+											<td class="linetwo"><html:text property="extracost1" styleClass="input" style="width:55;"/></td>
+										</tr>
+										<tr>
+											<th class="linetwo" align="left"><%=messages.getText("event.extracost.cost2")%></th>
+											<td class="linetwo"><html:text property="extracost2" styleClass="input" style="width:55;"/></td>
+										</tr>
+										<tr>
+											<th class="linetwo" align="left"><%=messages.getText("event.extracost.cost3")%></th>
+											<td class="linetwo"><html:text property="extracost3" styleClass="input" style="width:55;"/></td>
+										</tr>
+										<tr>
+											<th class="linetwo" align="left"><%=messages.getText("event.extracost.cost4")%></th>
+											<td class="linetwo"><html:text property="extracost4" styleClass="input" style="width:55;"/></td>
+										</tr>
+										<tr>
+											<th class="linetwo" align="left"><%=messages.getText("event.extracost.cost5")%></th>
+											<td class="linetwo"><html:text property="extracost5" styleClass="input" style="width:55;"/></td>
+										</tr>
+										<tr>
+											<th class="linetwo" align="left"><%=messages.getText("event.extracost.cost6")%></th>
+											<td class="linetwo"><html:text property="extracost6" styleClass="input" style="width:55;"/></td>
+										</tr>
+										<tr>
+											<th class="linetwo" align="left"><%=messages.getText("event.extracost.cost7")%></th>
+											<td class="linetwo"><html:text property="extracost7" styleClass="input" style="width:55;"/></td>
+										</tr>
+										<tr>
+											<th class="linetwo" align="left"><%=messages.getText("event.extracost.cost8")%></th>
+											<td class="linetwo"><html:text property="extracost8" styleClass="input" style="width:55;"/></td>
+										</tr>
+									</table>	
+									<jsp:include  page="../component/utilitybox2bottom.jsp" />
+								</td>
+							</tr>
+<%			}	
+%>
+		
+		
+<%
+		// GUS: Cimsa Doble Cabina
+		if(sys.getCorporationId() == CorporationData.CIMSA) {
+%>
+									<tr>
+										<td class="linetwo"  align="left" valign="top">   
+									   		<span>
+									   			<%=messages.getText("generic.event.cimsa.doublecabin")%>:
+									   		</span>
+						      				<span>
+						      					<html:checkbox property="doubleCabin" styleClass="input" 
+									 					onclick="javascript:doubleCabinCimsa();"  />
+									 					<script language="javascript">
+									 						doubleCabinCimsa();
+									 					</script>
+									 		</span>
+						  				</td>
+			  						</tr>
+<%	
+		}
+%>
+
+							<!-- Costo de Reparacion Estimado -->				  	
+							<tr>
+							   	<td class="linetwo" width="100%" align="left" valign="top">   
+							   		<span><%=messages.getText("generic.event.finedata.cost")%>:</span>
+				      				<span><html:text property="cost" styleClass="input"  style="width:55;"/></span>
+					  			</td>
+							</tr>
+<%					if (sys.isCorporation(new int[]{CorporationData.CIMSA,CorporationData.TRANSPORTES_AMERICAN})) {
+%>							
+							<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+						  	</tr>
+							<tr>
+			        			<td align="left" class="linetwo" width="100%" valign="top"> 
+									<span><%=messages.getText("generic.event.finedata.realcost")%>:</span>
+									<span><html:checkbox property="realCost"/></span>
+								</td>
+							</tr>
+							<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+						  	</tr>
+							<tr>
+			        			<td align="left" class="linetwo" width="100%" valign="top"> 
+			        				<%=messages.getText("generic.event.eventdata.damagecharged")%>
+									<html:select property="damageCharge" styleClass="input" >
+                						<html:options collection="generic" property="value" labelProperty="label" styleClass="input"/>
+              						</html:select>
+			          			</td>
+			          		</tr>
+<% 					} 
+				}else{ 
+%>						
+							<!-- Dibujo del auto -->
+							<div id="carImage" >
+								<table width="300px" border="0" cellpadding="0" cellspacing="0" background="/datacenter/util/imgs/carro.jpg">
+											<tr>
+												<td align="right" valign="middle" height="40" width="10">
+													<html:checkbox property="damage1"/>
+												</td>
+												<td align="center" valign="middle" height="40" width="280">
+													<html:checkbox property="damage2"/>
+												</td>
+												<td align="left" valign="middle" height="40" width="10">
+													<html:checkbox property="damage3"/>
+												</td>
+											</tr>
+											<tr>
+												<td align="right" valign="middle" height="48" width="10">
+													<html:checkbox property="damage4"/>
+												</td>
+												<td align="center" valign="middle" height="48" width="280">
+													<html:checkbox property="damage5"/>
+													&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+													<html:checkbox property="damage10"/>
+													&nbsp;&nbsp;&nbsp;&nbsp;
+												</td>
+												<td align="left" valign="middle" height="48" width="10">
+													<html:checkbox property="damage6"/>
+												</td>
+											</tr>
+											<tr>
+												<td align="right" valign="bottom" height="33" width="10">
+													<html:checkbox property="damage7"/>
+												</td>
+												<td align="center" valign="bottom" height="33" width="280">
+													<html:checkbox property="damage8"/>
+												</td>
+												<td align="left" valign="bottom" height="33" width="10">
+													<html:checkbox property="damage9"/>
+												</td>
+												   
+											</tr>
+											<tr>
+												<td align="left"height="5"></td>
+											</tr>
+										</table>
+									</div>
+									</td>
+									</tr>
+								</table>
+							</td>
+<%			boolean isMonsantoBr = (corporationId == CorporationData.MONSANTO && driver.getCountryName().equals(CountryData.BRASIL));
+%>
+							   	<td class="linetwo" colspan="1" align="left" valign="middle">   
+							   		<table width="100%" border="0">
+							   			<tr class="linetwo">
+							   				<td>
+										   		<span align="left">
+<%					if(isMonsantoBr) {
+%>
+										   			<%=messages.getText("event.data.reparationcost")%>
+													<span class="required">*</span>
+													<br>
+													<span class="messageRed">
+													<%=messages.getText("event.error.reparationcost")%>
+													</span>	
+<%					}else {		
+%>										   			<%=messages.getText("generic.event.finedata.cost")%>
+<%					}		
+%>									   		</span>
+										   	</td>
+										   	<td align="right">
+							      				<html:text property="cost" styleClass="input"  style="width:55;"/>
+							      			</td>
+							      		</tr>
+<%
+					if(sys.isCorporation(CorporationData.MONSANTO)) {	
+%>										<tr>
+											<th class="linetwo"  align="right" valign="top" rowspan="2">   
+							      				<span>
+							      					<html:checkbox property="doubleCabin" styleClass="input" />
+										 		</span>
+										   		<span>
+										   			TFLEET
+										   		</span>
+							  				</th>
+				  						</tr>
+<%					}
+%>							   		</table>
+					  			</td>
+							</tr>
+<%				}
+%>					 	</table>	
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+<%				if (sys.getCorporationId() == CorporationData.CIMSA) {
+%>  			<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+				<tr>
+					<td width="600" colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.eventdata.juntasiniestros")%>' />
+						<table>
+							<tr>
+								<th align="left" class="linetwo" width="22%"><%=messages.getText("generic.eventdata.ensurancedate")%></th>
+	        					<td align="left" class="linetwo" width="25%">
+           							<html:text property="ensuranceDay" style="width:20;" styleClass="input" styleId="dayIdEnsurance"  maxlength="2" />/
+           							<html:text property="ensuranceMonth" style="width:20;" styleClass="input" styleId="monthIdEnsurance" maxlength="2"/>/
+           							<html:text property="ensuranceYear" style="width:40;" styleClass="input" styleId="yearIdEnsurance" maxlength="4"/>
+           							<html:img page="/component/jscalendar-1.0/img.gif" styleId="calendar_buttonEnsurance" style="cursor: pointer; border: 1px solid red;"
+	  											onmouseover="this.style.background='red';" style="width:20;" align="middle" onmouseout="this.style.background=''"/>
+          						</td>
+          						<script type="text/javascript">
+									Calendar.setup({
+   											inputArea     :    "yearIdEnsurance",
+   											ifFormat       :    "%m/%Y",
+   											showsTime      :    true,
+   											timeFormat     :    "24",
+  											button         :    "calendar_buttonEnsurance",
+   											step           :    1,
+   											onSelect       :    onSelectEnsurance,
+   											singleClick    :    true
+										});
+								</script>
+				   			</tr>
+							<tr>
+								<th align="left" class="linetwo"><%=messages.getText("event.extracost.companyamount")%></th>
+								<td align="left"><html:text property="companyAmount" styleClass="input" style="width:55;"/></td>
+							</tr>
+							<tr>
+								<th align="left" class="linetwo"><%=messages.getText("event.extracost.driveramount")%></th>
+								<td align="left"><html:text property="driverAmount" styleClass="input" style="width:55;"/></td>
+							</tr>
+							<tr>
+								<th align="left" class="linetwo"><%=messages.getText("event.extracost.thirdamount")%></th>
+								<td align="left"><html:text property="thirdAmount" styleClass="input" style="width:55;"/></td>
+							</tr>
+					 	</table>	
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+<%		}
+%>	  			<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+<%   		if((type.equals("supervise") || (type.equals("edit") && eventDataType.isSupervised())) && (userSessionData.isBrasilCorporation() || sys.isCorporation(new int[]{CorporationData.JJ,CorporationData.MONTES_DE_PLATA}))) {
+				Collection accidentsCEPA = dataTypeUtil.getDataTypeReport().findAllCEPA(DataTypeConstants.ACCIDENT_CLASIFICATION,sys.getUserSessionData());
+    			Collection incidentsCEPA = dataTypeUtil.getDataTypeReport().findAllCEPA(DataTypeConstants.INCIDENT_CLASIFICATION,sys.getUserSessionData());
+    			Collection collisionsCEPA = dataTypeUtil.getDataTypeReport().findAllCEPA(DataTypeConstants.COLLISION_CLASIFICATION,sys.getUserSessionData());
+%>			<tr>
+				<td width="600" colspan="3">
+					<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("event.messages.cepaclasification")%>' />
+					<table width="100%" cellpadding="0" cellspacing="0">
+						<tr>
+							<td width="49%" valign="top">
+								<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.event.eventdata.accidents")%>' />
+								<table width="100%" cellpadding="0" cellspacing="0">
+<%				if(accidentsCEPA != null && accidentsCEPA.size() > 0) {
+				   	Iterator it = accidentsCEPA.iterator();
+				   	while(it.hasNext()) {
+				   		AccidentClasificationDataType accident = (AccidentClasificationDataType)it.next();
+%>									<tr>
+										<td width="100%" class="lineone">
+											<html:radio property="supervisedClasification" value='<%=accident.getResourceBundleId()%>' onclick="changeClasification(document.forms['<%=formName%>'],1,'supervisedCollision')"><%=messages.getText(accident.getResourceBundleId())%></html:radio>
+										</td>
+									</tr>
+<%					}
+				}
+%>								</table>
+								<jsp:include  page="../component/utilitybox2bottom.jsp" />
+							</td>
+							<td width="2%"></td>
+							<td width="49%" valign="top">
+								<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.event.eventdata.incidents")%>' />
+								<table width="100%" cellpadding="0" cellspacing="0">
+<%				if(incidentsCEPA != null && incidentsCEPA.size() > 0) {
+				   	Iterator it = incidentsCEPA.iterator();
+				   	while(it.hasNext()) {
+				       	IncidentClasificationDataType incident = (IncidentClasificationDataType)it.next();
+%>									<tr>
+										<td width="100%" class="lineone">
+											<html:radio property="supervisedClasification" value='<%=incident.getResourceBundleId()%>' onclick="changeClasification(document.forms['EventSuperviseForm'],2,'supervisedCollision')"><%=messages.getText(incident.getResourceBundleId())%></html:radio>
+										</td>
+									</tr>
+<%					}
+				  }
+%>								</table>
+								<jsp:include  page="../component/utilitybox2bottom.jsp" />
+							</td>
+						</tr>
+		  				<tr>
+							<jsp:include  page="../component/spaceline.jsp" />
+					  	</tr>
+						<tr>
+							<td valign="top" colspan="3" width="600">
+								<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.event.eventdata.colisionclasification")+"*"%>' />
+								<table width="100%" cellpadding="0" cellspacing="0">
+									<tr>
+<%				if(collisionsCEPA != null && collisionsCEPA.size() > 0) {
+				   	Iterator it = collisionsCEPA.iterator();
+					while (it.hasNext()){	
+						CollisionClasificationDataType accident = (CollisionClasificationDataType)it.next();
+%>										<td class="lineone">
+											<html:radio property="supervisedCollision"  value='<%=accident.getResourceBundleId()%>' ><%=messages.getText(accident.getResourceBundleId())%></html:radio>
+										</td>
+<%					}
+				}
+%>									</tr>
+								</table>
+	  							<jsp:include  page="../component/utilitybox2bottom.jsp" />
+	  						</td>
+	  					</tr>
+	  				</table>
+  					<jsp:include  page="../component/utilityboxbottom.jsp" />
+				</td>
+			</tr>						
+	  		<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+			</tr>
+<%    			
+    		}else {
+%>			<html:hidden property="supervisedClasification" value='<%=eventForm.getClasification()%>'/>	
+  			<html:hidden property="supervisedCollision" value='<%=eventForm.getCollision()%>'/>	
+<%    		}
+    		if(type.equals("supervise") || (type.equals("edit") && eventDataType.isSupervised())) {
+%>				<tr>
+					<td width="600" colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.supervition")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+							   	<th align="left" class="linetwo"> <%=messages.getText("generic.event.supervise.evitability")%></th>
+        	 					<td align="right">
+       								<html:select property="evitability" styleClass="input" style="width:155;">
+     									<html:options collection="generic" property="value" labelProperty="label" styleClass="input"/>
+       								</html:select>
+								</td>
+							</tr>
+<%				if(type.equals("supervise")) {
+%>		      				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr>
+								<th class="linetwo" align="left">
+									<html:checkbox property="recomendationCheck"><%=messages.getText("generic.event.supervise.recomendation")%></html:checkbox>
+								</th>
+							</tr>   	
+		      				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr>
+							   	<th align="left" class="linetwo" > <%=messages.getText("generic.event.supervise.email.recomendation")%> <span class="required">*</span></th>
+        	 					<td align="right">
+				      				<html:text property="emailrecomendation" styleClass="input" size="50"/>
+								</td>
+							</tr>
+<%				}
+%>		      				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr>
+								<th class="linetwo" align="left">
+									<html:checkbox property="nonrecordable"><%=messages.getText("generic.event.nonrecordable")%></html:checkbox>
+								</th>
+							</tr>
+<%				if(corporationId != CorporationData.MONSANTO) {
+%>		      				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr>
+							   	<th align="left" class="linetwo" > <%=messages.getText("generic.event.finedata.observations")%></th>
+							</tr>
+							<tr>
+								<th class="linetwo" align="left" colspan="2">
+									<html:textarea property="supervisionObservations" cols="80" />
+								</th>
+							</tr>
+<%				}		
+ 				if(!Util.empty(eventDataType.getRecomendation())) {
+%>							<tr>
+							   	<th align="left" class="linetwo" > <%=messages.getText("generic.event.recomendation")%> </th>
+							</tr>
+							<tr>   	
+								<td width="270" colspan="2">
+									<html:textarea property="recomendation" cols="80" />
+								</td>
+							</tr>							
+<%				}
+%>						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>						
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>							
+<%				if(sys.isCorporation(new int[]{CorporationData.CIMSA,CorporationData.FORESTALORIENTAL,CorporationData.MONTES_DE_PLATA,CorporationData.WEYERHAEUSER,CorporationData.SYNGENTA})) { 
+					Collection indexes = new LinkedList();
+					int severity = (sys.isCorporation(CorporationData.SYNGENTA)) ? 3 : 5;
+					for(int i = 0; i <= severity; i++) {
+						indexes.add(new OptionItem(messages.getText("event.severityindex."+i),String.valueOf(i)));
+					}
+					if(corporationId == CorporationData.CIMSA) {
+						indexes.add(new OptionItem(messages.getText("event.severityindex.6"),"6"));
+					}
+					session.setAttribute("severityIndexes",indexes);    		
+%>				<tr>
+					<td width="600" colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.eventdata.severityindex")%>' />
+						<table>
+			   				<tr class="linetwo">
+			   					<td align="left">
+							 		<html:select property="severity" styleClass="input" >
+										<html:options collection="severityIndexes" property="value" labelProperty="label" styleClass="input"/>
+									</html:select>   
+				   				</td>
+				   			</tr>
+				   		</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+  				</tr>
+<%				}
+				if(corporationId == CorporationData.MONSANTO) {
+%>				<tr>
+					<td width="600" colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.finedata.observations")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+								<td width="85%" align="center">
+									<html:textarea property="supervisionObservations" cols="80" rows="5"/>
+								</td>
+							</tr>
+							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+	  			<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+	  			</tr>
+<%				}
+			}
+%>			
+				<tr>
+					<td width="600" colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.eventdata.comment")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+								<td width="85%" align="center">
+									<html:textarea property="comment" cols="80" />
+								</td>
+							</tr>
+							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+	  			<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+	  			</tr>
+	  			<tr>
+	  				<td colspan="3">
+						<table width="100%">
+							<tr>
+				        		<td align="right">
+				          			<div align="right">
+				            			<input type="button" class="input" onclick="existEvent()" value='<%=messages.getText("generic.messages.save")%>' />
+						 				<html:cancel styleClass="input"><%=messages.getText("generic.messages.cancel")%></html:cancel >
+				          			</div>
+				          		</td>
+				  			</tr>
+						</table>
+	  				</td>
+	  			</tr>
+			</table>
+		</html:form>
+<%		}else {
+%>		<jsp:include  page='<%="/util/allowedData.jsp?message=event.error.access.event" %>'/>
+<%		}
+		%>
+		
+		
+<%
+		
+	}
+	
+%>	

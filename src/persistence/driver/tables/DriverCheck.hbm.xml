@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.driver.tables">
+	<class name="DriverCheck" table="driverchecks">
+		
+    	<composite-id class="DriverCheckPK" name="pk" >
+	        <key-property 	name="driver"	type="java.lang.Integer"	column="driver" />
+	        <key-property 	name="vehicleCheck"	type="java.lang.Integer"	column="vehiclecheck" />
+	    </composite-id>
+		
+		
+  	</class>
+</hibernate-mapping>

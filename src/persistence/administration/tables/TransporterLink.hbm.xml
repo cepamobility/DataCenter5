@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.administration.tables">
+    <class name="TransporterLink" table="transporterlinks">
+
+        <id	column="id"	name="id" type="java.lang.Integer">
+            <generator class="assigned">
+            </generator>
+        </id>
+
+
+        <many-to-one name="fosa" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="fosa" />
+        <many-to-one name="weyerhauser" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="weyerhauser" />
+        <many-to-one name="mdp" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="mdp" />
+        
+    </class>
+</hibernate-mapping>

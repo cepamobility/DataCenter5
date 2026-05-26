@@ -1,0 +1,57 @@
+package communication.activity.report;
+
+
+import net.sf.jasperreports.engine.JRDataSource;
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRField;
+
+import communication.activity.tables.CEPAActivityScheduleData;
+import communication.administration.corporation.tables.CorporationData;
+import communication.driver.tables.DriverData;
+import communication.language.Text;
+import communication.util.Utility;
+
+public class SmallCertificateDataSource implements JRDataSource {
+
+    private CEPAActivityScheduleData activity;
+	private DriverData[] drivers;
+    private int index = -1;
+	private Text messages;
+    
+    public SmallCertificateDataSource(DriverData driver,CEPAActivityScheduleData activity, Text messages) {
+    	this.drivers = new DriverData[1];
+    	drivers[0] = driver;
+    	this.activity = activity;
+    	this.messages  = messages;
+    }
+    
+    public boolean next() throws JRException {
+        if(index+1 < drivers.length) {
+        	index++;
+        	return true;
+        }
+        return false;
+    }
+
+    public Object getFieldValue(JRField field) throws JRException {
+    	if(field.getName().equals("name")) {
+    		return drivers[index].getFirstName()+" "+drivers[index].getLastName();
+    	}
+    	if(field.getName().equals("activity")) {
+    		String title = Utility.activityName(messages.getText(activity.getType().getResourceBundleId()));
+	    	if(activity.getCorpooration().getId().intValue() == CorporationData.DOW && activity.getTheme() != null && activity.getTheme().equals("datatype.vehicletype.4x4")) {
+	    		title += " 4x4";
+	    	}
+    		return title;
+    	}
+    	if(field.getName().equals("dateactivity")) {
+    		return Utility.formatDate(activity.getDate());
+    	}
+    	if(field.getName().equals("expiry")) {
+    		return Utility.formatDate(activity.getDateExpiry());
+    	}
+    	return null;
+    }
+
+
+}

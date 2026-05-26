@@ -1,0 +1,239 @@
+<%@page language="java"
+	errorPage="../exception.jsp"
+	import="java.util.*"
+	import="java.util.LinkedList"
+	import="business.*"
+	import="business.vehicle.*" 
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.util.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.activity.tables.*"
+	import="communication.vehicle.tables.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.driver.*"
+ 	import="communication.util.DateValue"
+ %>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<html:html>
+<%! RequestDispatcher dispatcher; String context;
+	Text messages;
+	SystemAccess sys;
+	VehicleData data;
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	
+	String check = Util.checkPermission(sys,SecurityConstants.MODIFY_DRIVER);
+	
+	// Permiso para Tests: Premios y Multas 
+	String check2 = Util.checkPermission(sys,SecurityConstants.TESTS_DRIVER);
+	
+	if(check != null && check2 != null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		messages=sys.getText();
+	
+		context=request.getContextPath();
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+
+		String id = request.getParameter("id");
+		if(id==null){
+	id=(String)request.getAttribute("id");
+	request.removeAttribute("id");
+		}
+		if(id!=null){	
+	data=sys.getVehicleReportFacade().findVehicleByPrimaryKey(new Integer(id), sys.getUserSessionData());
+		}
+		session.setAttribute("url","vehicle/unconformities.jsp?id="+id);
+		if(data != null) {
+%>
+	<head>
+		<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	</head>
+	<script>
+	function deleteItem(checksForm,form){
+		var elements=checksForm.elements;
+		for(i=0;i<elements.length;i++){
+			var element=elements[i];
+			if(element.type.toLowerCase()=="checkbox"){
+				if(element.checked){
+					if(form.list.value == ""){
+						form.list.value=element.value;
+					}else{
+						form.list.value=form.list.value+"<"+element.value;
+					}	
+				}	
+			} 
+		}
+		if(element.value.length>0){
+			form.submit();
+		}
+	}
+	</script>
+	<html:form action="/DeleteUnconformities">
+		<html:hidden property="vehicle" value='<%=id%>'/>
+		<html:hidden property="list"/>
+	</html:form>
+	<body bgcolor="#FFFFFF">
+		<table width="500" align='center' cellpadding="0" cellspacing="0">
+			<tr class="guide1">
+				<jsp:include  page='<%="../component/titlecomponent.jsp?colspan=5&title="+messages.getText("web.driver.editing")+"  "+data.getMatricula()%>' />
+			</tr>
+			<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+  			</tr>
+			<tr>
+				<td width="100%" colspan="5">
+					<form name="checks">
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+								<td valign="top">
+									<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.unconformities")%>' />
+									<table width="100%" cellpadding="0" cellspacing="0">
+										<tr>
+											<td width='5%' class="guide2" align="center">&nbsp;</td>
+											<td width='19%' class="guide2" align="center">
+												<%=messages.getText("driver.prizes.date")%>
+											</td>
+   											<td width='19%'	class="guide2" align="center">
+   												<%=messages.getText("driver.unconformities.origin")%>
+   											</td>
+   											<td width='19%'	class="guide2" align="center">
+   												<%=messages.getText("driver.unconformities.department")%>
+   											</td>
+   											<td width='19%'	class="guide2" align="center">
+   												<%=messages.getText("driver.unconformities.charge")%>
+   											</td>
+										</tr>
+<%
+	Collection unconformities = data.getUnconformities();
+	if(unconformities.size() == 0) {
+%>										<tr>
+											<td colspan="5">
+												<span class="linetwo"><%=messages.getText("driver.unconformities.nodata")%></span>
+											</td>								
+										</tr>
+<%
+	}else {
+    			Iterator itUnconformities = unconformities.iterator();
+    			boolean lineone = false;
+    			while(itUnconformities.hasNext()) {
+    				UnconformityData unconformity = (UnconformityData)itUnconformities.next();
+%>										<tr align=center align="right" class='<%=(lineone) ? "lineone" : "linetwo"%>'>
+											<td class='<%=(lineone) ? "lineone" : "linetwo"%>' align="center">
+												<input type="checkbox" value='<%=String.valueOf(unconformity.getDate().getTime())%>'>
+											</td>
+						            		<td class='<%=(lineone) ? "lineone" : "linetwo"%>' align="right"><%=Util.formatDate(unconformity.getDate())%> </td>
+						            		<td class='<%=(lineone) ? "lineone" : "linetwo"%>' align="right"><%=unconformity.getOrigin()%> </td>
+						            		<td class='<%=(lineone) ? "lineone" : "linetwo"%>' align="right"><%=unconformity.getDepartment()%> </td>
+						            		<td class='<%=(lineone) ? "lineone" : "linetwo"%>' align="right"><%=unconformity.getCharge()%> </td>
+										</tr>
+<%    				lineone = !lineone;
+	   			}
+			}
+%>										<tr>
+											<td colspan="6" align="right">
+												<input type="button" value='<%=messages.getText("generic.messages.delete")%>' class="input" onclick="javascript:deleteItem(document.forms['checks'],document.forms['DeleteUnconformityForm']);"/>
+											</td>
+										</tr>	
+									</table>
+									<jsp:include page="../component/utilityboxbottom.jsp"/>	
+								</td>
+			   				</tr>
+			   			</table>
+			   		</form>
+				</td>
+			</tr>			
+			<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+  			</tr>
+			<tr>
+				<td width="100%" colspan="5">
+					<html:form action="/AddUnconformity">
+						<html:hidden property="vehicle" value='<%=id%>'/>
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+								<td valign="top">
+									<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("driver.unconformities.new")%>' />
+									<table width="100%" cellpadding="0" cellspacing="0">
+										<tr>
+											<th class="linetwo" align="left"><%=messages.getText("driver.unconformities.date")+" ( "+messages.getText("generic.supportmaterial.reports.format")+": dd/mm/aaaa )"%></th>
+											<td class="linetwo">&nbsp;</td>
+											<td class="linetwo" align="right">
+	    	        							<html:text property="date" style="width:20;" styleClass="input"/>&nbsp;/&nbsp;
+	        	    							<html:text property="month" style="width:20;" styleClass="input"/>&nbsp;/&nbsp;
+	            								<html:text property="year" style="width:40;" styleClass="input"/>
+		          							</td>
+										</tr>
+										<tr>
+											<jsp:include  page="../component/spaceline.jsp" />
+							  			</tr>
+										<tr>
+											<th class="linetwo" align="left"><%=messages.getText("driver.unconformities.origin")%></th>
+											<td class="linetwo">&nbsp;</td>
+											<td class="linetwo" align="right">
+	            								<html:text property="origin" style="width:100;" styleClass="input"/>
+		          							</td>
+										</tr>
+										<tr>
+											<jsp:include  page="../component/spaceline.jsp" />
+							  			</tr>
+										<tr>
+											<th class="linetwo" align="left"><%=messages.getText("driver.unconformities.department")%></th>
+											<td class="linetwo">&nbsp;</td>
+											<td class="linetwo" align="right">
+	            								<html:text property="department" style="width:100;" styleClass="input"/>
+		          							</td>
+										</tr>
+										<tr>
+											<jsp:include  page="../component/spaceline.jsp" />
+							  			</tr>
+										<tr>
+											<th class="linetwo" align="left"><%=messages.getText("driver.unconformities.charge")%></th>
+											<td class="linetwo">&nbsp;</td>
+											<td class="linetwo" align="right">
+	            								<html:text property="charge" style="width:100;" styleClass="input"/>
+		          							</td>
+										</tr>
+										<tr>
+											<jsp:include  page="../component/spaceline.jsp" />
+							  			</tr>
+										<tr>
+											<th class="linetwo" align="left" colspan="3"><%=messages.getText("driver.unconformities.observations")%></th>
+										</tr>
+										<tr>
+											<th class="linetwo" align="left" colspan="3">
+	            								<html:textarea property="observations" rows="3" cols="120" styleClass="input"/>
+											</th>
+										</tr>
+										<tr>
+											<jsp:include  page="../component/spaceline.jsp" />
+								  		</tr>
+										<tr>
+											<td colspan="3" class="linetwo" align="right">
+												<html:submit value='<%=messages.getText("generic.messages.save")%>' styleClass="input"/>
+												<html:cancel value='<%=messages.getText("generic.messages.cancel")%>' styleClass="input"/>
+											</td>
+										</tr>	
+									</table>
+									<jsp:include page="../component/utilityboxbottom.jsp"/>	
+								</td>
+					   		</tr>
+					   	</table>
+			   		</html:form>
+				</td>
+			</tr>
+		</table>			
+	</body>
+<%			}
+		}
+%>	
+</html:html>

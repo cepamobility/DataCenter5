@@ -1,0 +1,797 @@
+<%@page language="java" 
+errorPage="../exception.jsp"
+	import="business.*"
+	import="communication.util.*"
+	import="java.util.*"
+	import="presentation.translator.web.util.*"
+	import="presentation.translator.web.event.*"
+	import="communication.language.*"
+	import="communication.driver.tables.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.event.tables.*"
+	import="communication.security.*"
+	import="communication.vehicle.tables.*"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<html:html>
+<%!
+	RequestDispatcher dispatcher; SystemAccess sys;	String context;
+	String pathLanguage; Text messages; Integer driverId; String driverName; String driverLastName;
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	if(sys == null){
+		response.sendRedirect("/exception.jsp");
+	}
+
+	int corporationId = sys.getUserSessionData().getFilter().getCorporationId().intValue();
+	DriverData driver = null;
+	Integer fineId = (Util.empty(request.getParameter("fine"))) ? (Integer)session.getAttribute("fine") : new Integer(request.getParameter("fine"));
+	FineDataType fineData = sys.getEventReportFacade().findFineByPrimaryKey(fineId,sys.getUserSessionData());
+	driver = fineData.getDriver();
+		
+	context=request.getContextPath();
+	dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+	dispatcher.include(request,response);
+	
+	messages=sys.getText();
+
+	session.setAttribute("url","event/FineView.jsp?fine="+fineData.getId().toString());
+	if(fineData != null) {
+		if(session.getAttribute("Breadcrumb") != null) {
+		    Hashtable parameters = new Hashtable();
+		    parameters.put("id",fineData.getId());
+		    parameters.put("name",driver.getLastName()+" "+Util.formatDate(fineData.getDate()));
+		    ((Breadcrumb)session.getAttribute("Breadcrumb")).addItem(Breadcrumb.FINE_EDIT,parameters);
+		}
+%>
+<script language="JavaScript" type="text/javascript">
+function confirmDelete(form,msg){
+	if(confirm(msg)){
+		form.submit();
+	}
+}
+</script>
+
+<html:form action="/Eventdelete" >
+	<html:hidden property="event" value='<%=String.valueOf(fineData.getId())%>'/>
+</html:form>
+<form action="layout.jsp?refer=/event/EventList.jsp" method="post">
+</form>
+<form action="layout.jsp?refer=/event/FineEdit.jsp?fine=<%=String.valueOf(fineData.getId())%>&actiontype=edit" name='edit' method="post">
+</form>	
+<form action="layout.jsp?refer=/event/FineEdit.jsp?fine=<%=String.valueOf(fineData.getId())%>&actiontype=supervise" name='supervise' method="post">
+</form>	
+<%
+		if(sys.isCorporation(new int[]{CorporationData.BAYER_MX,CorporationData.MONSANTO})) {
+	%>
+	<form action='layout.jsp?refer=/event/files.jsp?event=<%=String.valueOf(fineData.getId())%>' name='files' method="post">
+		<input type="hidden" name="type" value="2" />
+	</form>	
+<%
+		}
+	%>
+
+	<LINK REL="StyleSheet" HREF="../util/css/estilo.css" TYPE="text/css">
+	<head/>
+	
+		<body bgcolor="#FFFFFF">
+			<table width="750" border="0" align="center" cellpadding="0" cellspacing="0">
+  				<tr class="guide1">
+  					<jsp:include  page='<%="../component/titlecomponent.jsp?colspan=5&title="+messages.getText("generic.event.fine")%>' />
+			  	</tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+  				<tr>
+					<td width="100%" valign="top" colspan="3">
+						<jsp:include  page='<%="../component/utilitybox3top.jsp?title="+messages.getText("generic.messages.options")%>' />
+						<table width="100%" class="texts1" border="0" cellpadding="0" cellspacing="0">
+							<tr>
+<%
+	boolean line = true;
+		String modify = SecurityConstants.MODIFY_FINE;	
+		if(fineData.getStatus().intValue() != EventDataType.SUPERVISED) {	
+		    modify = SecurityConstants.SUPERVISE_EVENT;
+		}
+		if(sys.getUserSessionData().checkPermission(modify)) {
+	line = !line;
+%>					<%=(!line) ? "<tr>" : ""%>							
+								<td width="3%" class="texts1" align="right">
+									<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+								</td>
+								<td width="46%" align="left">
+									<a href="javascript:document.forms['edit'].submit()" class="texts">
+					         			<%=messages.getText("generic.messages.edit")%>
+					         		</a>
+								</td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								}
+														if(sys.getUserSessionData().checkPermission(SecurityConstants.SUPERVISE_EVENT) && (fineData.getStatus().intValue() != EventDataType.SUPERVISED)) {	
+															line = !line;
+							%>					<%=(!line) ? "<tr>" : ""%>							
+								<td width="3%" class="texts1" align="right">
+									<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+								</td>
+								<td width="46%" align="left">
+		   							<a href="javascript:document.forms['supervise'].submit()" class="texts">
+		    			         		<%=messages.getText("generic.messages.supervise")%>
+		    			         	</a>
+		    					</td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								}			
+														if(sys.getUserSessionData().checkPermission(SecurityConstants.DELETE_EVENT)) {	
+															line = !line;
+							%>					<%=(!line) ? "<tr>" : ""%>							
+								<td width="3%" class="texts1" align="right">
+									<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+								</td>
+								<td width="46%" align="left">
+<%
+	String link = "javascript:confirmDelete(document.forms['EventDeleteForm'],'"+messages.getText("generic.event.confirmdelete")+"')";
+%>						
+									<a href="<%=link%>" class="texts">
+										<%=messages.getText("generic.messages.delete")%>
+									</a>	
+								</td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								}
+														if(sys.getUserSessionData().isDriver() && sys.getCorporationId() != CorporationData.BAYER) {
+															if((fineData.getStatus().intValue() == EventDataType.PENDING_SUPERVISION) &&
+														        sys.getUserSessionData().checkPermission(SecurityConstants.DRIVER_MODIFY_EVENT)) {	
+																line = !line;
+							%>					<%=(!line) ? "<tr>" : ""%>							
+								<td width="3%" class="texts1" align="right">
+									<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+								</td>
+								<td width="46%" align="left">
+						        	<a href="javascript:document.forms['edit'].submit()" class="texts">
+						        		<%=messages.getText("generic.messages.edit")%>
+						        	</a>
+						        </td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								}
+														}
+														if(sys.isCorporation(new int[]{CorporationData.BAYER_MX,CorporationData.MONSANTO})) {
+																line = !line;
+							%>					<%=(!line) ? "<tr>" : ""%>							
+						<td width="3%" class="texts1" align="right">
+							<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+						</td>
+				    	<td width="46%">
+				        	<a href="javascript:document.forms['files'].submit()" class="texts">
+				        		<%=messages.getText("generic.event.files")%>
+				        	</a>
+				        </td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								}
+							%>					<%=(line) ? "<tr>" : ""%>							
+								<td width="3%" class="texts1" align="right">
+									<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+								</td>
+								<td width="46%" align="left">
+									<a href="javascript:document.forms[3].submit()" class="texts">
+										<%=messages.getText("generic.messages.cancel")%>
+									</a>	
+								</td>
+							</tr>
+						</table>
+						<jsp:include page="../component/utilitybox3bottom.jsp"/>
+					</td>
+				</tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+				<tr>
+					<td width="49%" valign="top">
+                    	<table width="100%">
+                    		<tr>
+                     			<td>
+									<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.driverdata")%>' />
+		        					<table width='100%' border="0" cellpadding="0" cellspacing="0">
+		            					<tr class="linetwo">
+	              							<td align="left" valign="middle"><strong><%=messages.getText("generic.event.driver.name")%></strong></td>
+	    									<td align="left" valign="middle" >			
+                       							<span class="linetwo"><%=driver.getFirstName()+" "+driver.getLastName()%></span>
+											</td>
+										</tr>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+		            					<tr class="linetwo">
+	              							<td align="left" valign="middle"><strong><%=messages.getText("generic.event.driver.birthdate")%></strong></td>
+	                            			<td>
+                       							<span class="linetwo"><%=Util.formatDate(driver.getBirthDate())%><%="  ( "+messages.getText("generic.messages.dateformat")+" )"%></span>
+							    			</td>
+	                         			</tr>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+		            					<tr class="linetwo">
+	              							<td align="left" valign="middle"><strong><%=messages.getText("generic.event.driver.startdate")%></strong></td>
+	                            			<td>
+                       							<span class="linetwo"><%=Util.formatDate(driver.getInclusionDate())%><%="  ( "+messages.getText("generic.messages.dateformat")+" )"%></span>
+							    			</td>
+	                         			</tr>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+		            					<tr class="linetwo">
+	              							<td align="left" valign="middle"><strong><%=messages.getText("generic.event.driver.licensecategory")%></strong></td>
+	                            			<td>
+                       							<span class="linetwo">
+													<%=(Util.empty(driver.getLicenseCategory())) ? "-------" : driver.getLicenseCategory()%>
+                       							</span>
+							    			</td>
+	                         			</tr>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+		            					<tr class="linetwo">
+	              							<td align="left" valign="middle"><strong><%=messages.getText("generic.event.driver.licenseexpiry")%></strong></td>
+	                            			<td>
+                       							<span class="linetwo"><%=Util.formatDate(driver.getLicenseExpiry())%><%="  ( "+messages.getText("generic.messages.dateformat")+" )"%></span>
+							    			</td>
+	                         			</tr>
+	                     			</table>
+									<jsp:include  page="../component/utilityboxbottom.jsp" />
+								</td>
+							</tr>
+				  			<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+				  			</tr>
+							<tr>
+								<td valign="top">
+									<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.divgeo")%>' />
+<%
+	if(sys.getCorporationId() != CorporationData.ALLERGAN) {	
+		if(fineData.getCountry() != null) {
+	    			GeoItemData geoItem1 = (GeoItemData)fineData.getCountry().getItemIterator().next();
+%>
+									<table width="100%" height="100%" valign="top" cellpadding="0" cellspacing="0">
+										<tr class="linetwo">
+											<th align="left"> <%=messages.getText(fineData.getCountry().getResourceKey())%> </th>
+											<td align="right">
+												<%=(geoItem1.getSubItems() != null) ? geoItem1.getName() : messages.getText(geoItem1.getName())%>
+											</td>
+										</tr>
+<%
+	if(geoItem1.getSubItems() != null) {
+		    	GeoItemData geoItem2 = (GeoItemData)geoItem1.getSubItems().getItemIterator().next();
+%>									
+										<tr  class="space"><td align="right">&nbsp;</td><td align="right">&nbsp;</td></tr>
+										<tr class="linetwo">
+											<th align="left"> <%=messages.getText(geoItem1.getSubItems().getResourceKey())%> </th>
+											<td align="right">
+												<%=(geoItem2.getSubItems() != null) ? geoItem2.getName() : messages.getText(geoItem2.getName())%>
+											</td>
+										</tr>
+<%
+	if(geoItem2.getSubItems() != null) {
+	    	GeoItemData geoItem3 = (GeoItemData)geoItem2.getSubItems().getItemIterator().next();
+%>										<tr  class="space"><td align="right">&nbsp;</td><td align="right">&nbsp;</td></tr>
+										<tr class="linetwo">
+											<th align="left"> <%=messages.getText(geoItem2.getSubItems().getResourceKey())%> </th>
+											<td align="right">
+												<%=messages.getText(geoItem3.getName())%>
+											</td>
+										</tr>
+<%
+	}
+	}
+		}
+	}else {
+%>									<table width="100%" height="100%" valign="top" cellpadding="0" cellspacing="0">
+<%
+	}
+%>										<tr  class="space"><td align="right">&nbsp;</td><td align="right">&nbsp;</td></tr>
+										<tr class="linetwo">
+											<th align="left"> <%=messages.getText("web.event.state")%> </th>
+											<td align="right">
+												<%=(Util.empty(fineData.getState())) ? "-------" : fineData.getState()%>
+											</td>
+										</tr>
+										<tr  class="space"><td align="right">&nbsp;</td><td align="right">&nbsp;</td></tr>
+										<tr class="linetwo">
+											<th align="left"> <%=messages.getText("web.event.city")%> </th>
+											<td align="right">
+												<%=(Util.empty(fineData.getCity())) ? "-------" : fineData.getCity()%>
+											</td>
+										</tr>
+									</table>	
+			   						<jsp:include page="../component/utilityboxbottom.jsp"/>	
+			   					</td>
+				   			</tr>
+				   			<tr><td height="5"><img src="x" width="1" height="1"></tr>
+			   			</table>
+					</td>
+					<td width="2%" valign="top">&nbsp;</td>
+					<td width="49%" valign="top">
+						<table width="100%" height="100%" valign="top" cellpadding="0" cellspacing="0">
+<%
+	Iterator it = fineData.getDivOrgs().iterator();
+		while(it.hasNext()) {		
+	DivOrgData divOrgData = (DivOrgData)it.next();
+	if(divOrgData.getDivOrgLevels() != null) {
+		ItemData item1 = (ItemData)divOrgData.getDivOrgLevels().getItemIterator().next();
+%>							<tr>
+								<td valign="top" width="50%">	
+									<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText(divOrgData.getName())%>' />
+									<table width="100%" valign="top" cellpadding="0" cellspacing="0">
+										<tr class="linetwo">
+											<th align="left"> <%=messages.getText(divOrgData.getDivOrgLevels().getName())%> </th>
+											<td align="right"><%=item1.getName()%></td>
+										</tr>
+<%
+	if(item1.getSubItems() != null) {
+			ItemData item2 = (ItemData)item1.getSubItems().getItemIterator().next();
+%>										<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr class="linetwo">
+											<th align="left"> <%=messages.getText(item1.getSubItems().getName())%> </th>
+											<td align="right"><%=item2.getName()%></td>
+										</tr>
+<%
+	if(item2.getSubItems() != null) {
+				ItemData item3 = (ItemData)item2.getSubItems().getItemIterator().next();
+%>										<tr  class="space"><td align="right">&nbsp;</td><td align="right">&nbsp;</td></tr>
+										<tr class="linetwo">
+											<th align="left"> <%=messages.getText(item2.getSubItems().getName())%> </th>
+											<td align="right"><%=item3.getName()%></td>
+										</tr>
+<%
+	}
+		}
+%>
+									</table>
+   									<jsp:include page="../component/utilityboxbottom.jsp"/>	
+	   							</td>
+		   					</tr>
+			   				<tr><td height="5"><img src="x" width="1" height="1"></tr>
+<%
+	}
+		}
+%>
+						</table>
+					</td>
+				</tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+				<tr>
+					<td colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.vehicledata")%>' />
+<%
+	if(fineData.getVehicle() == null) {
+%>						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+								<td width="270" class="linetwo">
+									<table width="100%">
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.plate")%></th>
+				         					<td align="right" class="linetwo">
+				         						<%=fineData.getPlate()%>
+				         					</td>
+			         					</tr>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.vehicle.vehicledata.trade")%></th>
+				         					<td align="right" class="linetwo">
+				         						<%=messages.getText(fineData.getTrade())%>
+				         					</td>
+										</tr>
+									</table>
+								</td>
+								<td width="16"></td>
+								<td width="270">
+									<table width="100%">
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.model")%> </th>
+				         					<td align="right" class="linetwo">
+				         						<%=fineData.getModel()%>
+				         					</td>
+										</tr>
+		      							<tr  class="space">
+		        							<th align="right">&nbsp;</th>
+		        							<td align="right">&nbsp;</td>
+		      							</tr>
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.vehicle.vehicledata.year")%> </th>
+				         					<td align="right" class="linetwo">
+				         						<%=messages.getText(fineData.getYear())%>
+                							</td>
+										</tr>				  
+									</table>
+								</td>
+							</tr>
+						</table>
+<%
+	}else {
+    					VehicleData vehicle = fineData.getVehicle();
+%>						<table>
+							<tr>
+								<td width="270" class="linetwo">
+									<table>
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.event.finedata.plate")+":"%> </th>
+				         					<td align="right" class="linetwo"><%=vehicle.getMatricula()%></td>
+			         					</tr>
+		      							<tr  class="space">
+		        							<th align="right">&nbsp;</th>
+		        							<td align="right">&nbsp;</td>
+		      							</tr>
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.event.finedata.trade")+":"%> </th>
+				         					<td align="right" class="linetwo"><%=messages.getText(vehicle.getTrade().getResourceBundleId())%></td>
+										</tr>
+									</table>
+								</td>
+								<td width="16"></td>
+								<td width="270">
+									<table>
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.event.finedata.model")+":"%> </th>
+				         					<td align="right" class="linetwo"><%=vehicle.getModel()%></td>
+										</tr>
+		      							<tr  class="space">
+		        							<th align="right">&nbsp;</th>
+		        							<td align="right">&nbsp;</td>
+		      							</tr>
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.event.finedata.year")+":"%> </th>
+				         					<td align="right" class="linetwo"><%=vehicle.getYear()%></td>
+										</tr>				  
+									</table>
+								</td>
+							</tr>
+						</table>    
+<%
+    	}
+    %>						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+	  			<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+	  			</tr>
+				<tr>
+					<td colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.finedata")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+								<td width="270">
+									<table width="100%">
+										<tr>
+			        						<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.date")%></th>
+			        						<td align="right" class="linetwo">
+			        							<%=Util.formatDate(fineData.getDate())%>
+			          						</td>
+			          					</tr>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+			        						<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.hour")%></th>
+			        						<td align="right" class="linetwo">
+	         									<%=(fineData.getHour() == null) ? messages.getText("generic.messages.nodata") : Util.formatHour(fineData.getHour())%>
+			          						</td>
+			          					</tr>
+<%
+	if(sys.isCorporation(CorporationData.JJ)) {
+%>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+			        						<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.expiry")%></th>
+			        						<td align="right" class="linetwo">
+			        							<%=Util.formatDate(fineData.getExpiry())%>
+			          						</td>
+			          					</tr>
+<%						}
+						if(!(sys.isCorporation(CorporationData.JJ) && driver.getCountryName().equals(CountryData.MEXICO))) {
+%>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo"> 
+										   		<%=messages.getText("generic.event.finedata.type")%>
+				         					</th>
+			        						<td align="right" class="linetwo">
+										   		<%=messages.getText(fineData.getFineType().getResourceBundleId())%>
+			          						</td>
+										</tr>
+<%						}
+%>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+									</table>
+								</td>
+								<td width="16">&nbsp;</td>
+								<td width="270" valign="top">
+									<table width="100%">
+									<% if(sys.isCorporation(CorporationData.JJ) && fineData.getQualify().getResourceBundleId().equals("datatype.finequalify.speedexceed")){ %>
+											<tr tag="showSpeed"  >
+											   	<th align="left" class="linetwo"> 
+											   		<%=messages.getText("generic.event.fine.speed")%>
+					         					</th>
+				        						<td align="right" class="linetwo">
+	                								<%=(fineData.getSpeed() == null) ? "----" : fineData.getSpeed()%>
+	                							</td>
+											</tr>
+			      							<tr tag="showSpeed"   class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+											<tr tag="showSpeed"  >
+											   	<th align="left" class="linetwo"> 
+											   		<%=messages.getText("generic.event.fine.speedpermitted")%><span class="required">*</span>
+					         					</th>
+				        						<td align="right" class="linetwo">
+					         						<%=(fineData.getPermittedSpeed() == null) ? "----" : fineData.getPermittedSpeed()%>
+				          						</td>
+											</tr>
+											<tr tag="showSpeed"   class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<% } %>
+										<tr>
+										   	<th align="left" class="linetwo"> 
+										   		<%=messages.getText("generic.event.finedata.article")%>
+				         					</th>
+			        						<td align="right" class="linetwo">
+										   		<%=(fineData.getArticle() == null) ? "----" : fineData.getArticle()%>
+			          						</td>
+										</tr>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo"> 
+										   		<%=messages.getText("generic.event.finedata.points")%>
+				         					</th>
+			        						<td align="right" class="linetwo">
+										   		<%=fineData.getPoints()%>
+			          						</td>
+										</tr>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo"> 
+										   		<%=messages.getText("event.finedata.cost")%>
+				         					</th>
+			        						<td align="right" class="linetwo">
+										   		<%=String.valueOf(fineData.getCost())%>
+			          						</td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+							<tr>
+								<td colspan="3" width="100%">
+									<table width="100%">
+										<tr>
+										   	<th align="left" class="linetwo"> 
+										   		<%=messages.getText("generic.event.finedata.qualify")%>
+				         					</th>
+			        						<td align="left" class="linetwo" >
+										   		<%=messages.getText(fineData.getQualify().getResourceBundleId())%>
+			          						</td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+				  			<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+				  			</tr>
+							<tr>
+								<td colspan="3" width="100%">
+									<table width="100%">
+										<tr>
+											<!-- Notificaciòn de Infracción -->
+											<th align="left" class="linetwo"> 
+							   					<%=messages.getText("event.eventdata.infringementnotice")%>
+	         								</th>
+        									<td align="right" class="linetwo"><%=(fineData.getInfringementNotice()==null)?"----":fineData.getInfringementNotice() %>
+          									</td>
+          								</tr>
+									</table>
+								</td>
+							</tr>
+<% 							if (sys.isCorporation(new int[]{CorporationData.ALLERGAN, CorporationData.ECOLAB})){ 
+%>							
+							<tr>
+								<td colspan="3" width="100%">
+									<table width="100%">
+										<tr>
+											<th align="left" class="linetwo"><%=messages.getText("generic.event.eventdata.lote")%>&nbsp;<%=messages.getText("generic.event.eventdata.loteformat")%></th>
+				        					<td align="right" class="linetwo">
+				        					<% if (fineData.getLote() != null){
+				        							Calendar c = Calendar.getInstance();
+				        							c.setTime(fineData.getLote()); %>
+				        							
+				        							<%= String.valueOf(c.get(Calendar.MONTH)+1) + "/" + String.valueOf(c.get(Calendar.YEAR))%>
+				        					<%		
+				        					}else{ %>
+				        							----
+				        					<%
+				        					} %>
+				        					</td>
+          								</tr>
+									</table>
+								</td>
+							</tr>
+							<%	
+								}
+							%>
+							
+							
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+	  			<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+	  			</tr>
+				<tr>
+					<td width="100%" colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.finedata.observations")+"*"%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+								<td width="270" class="linetwo">
+									<%=(fineData.getObservations() == null) ? messages.getText("generic.event.noobservations") : fineData.getObservations()%>
+								</td>
+							</tr>
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+<%		if(sys.isCorporation(new int[]{CorporationData.BAYER_MX,CorporationData.MONSANTO})) {
+			Collection<Object[]> files = sys.getEventReportFacade().getFiles(fineId, sys.getUserSessionData());
+%>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+	      		<tr>
+           			<td colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("event.file.list")%>' />
+						<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="default" >
+<%			if(files == null || files.size() == 0) {
+%>							<tr class='linetwo'>
+								<th align="left"><%=messages.getText("event.file.nofiles")%></th>
+							</tr>			
+<%			}else {
+				Iterator<Object[]> fileIt = files.iterator();
+				boolean lineone = true;
+				while(fileIt.hasNext()) {
+					Object[] fileData = (Object[]) fileIt.next();
+					String link = SecurityConstants.DATACENTER5_LINK_DIRECTORY+"eventfiles/event_"+fileData[0].toString();
+%>							<tr class='<%=(lineone) ? "lineone" : "linetwo"%>' height="30">
+								<td width="100%" align="left">
+									<a href='<%=(((Integer)fileData[2]).intValue() == 2) ? link + ".jpg" : link + ".pdf"%>' target="_blank">
+										<%=fileData[1]%>
+									</a>
+								</td>
+							</tr>
+<%					lineone = !lineone;
+				}
+			}
+%>						
+				      	</table>              
+						<jsp:include  page='../component/utilityboxbottom.jsp' />
+					</td>
+				</tr>
+<%			}
+		 if(fineData.getStatus().intValue() == EventDataType.SUPERVISED)	{			
+%>	  			<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+	  			</tr>
+				<tr>
+					<td width="100%" colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.finedata.supervisionobservations")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+								<td width="270" class="linetwo">
+									<%=(fineData.getSuperivisionObservations() == null || fineData.getSuperivisionObservations().length() == 0) ? messages.getText("generic.event.noobservations") : fineData.getSuperivisionObservations()%>
+								</td>
+							</tr>
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+<%		 }
+%>	  			<tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+  				<tr>
+					<td width="100%" valign="top" colspan="3">
+						<jsp:include  page='<%="../component/utilitybox3top.jsp?title="+messages.getText("generic.messages.options")%>' />
+						<table width="100%" class="texts1" border="0" cellpadding="0" cellspacing="0">
+							<tr>
+<%				line = true;
+				modify = SecurityConstants.MODIFY_FINE;	
+				if(fineData.getStatus().intValue() != EventDataType.SUPERVISED) {	
+				    modify = SecurityConstants.SUPERVISE_EVENT;
+				}
+				if(sys.getUserSessionData().checkPermission(modify)) {
+					line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+								<td width="3%" class="texts1" align="right">
+									<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+								</td>
+								<td width="46%" align="left">
+									<a href="javascript:document.forms['edit'].submit()" class="texts">
+					         			<%=messages.getText("generic.messages.edit")%>
+					         		</a>
+								</td>
+					<%=(line) ? "</tr>" : "" %>							
+<%				}
+				if(sys.getUserSessionData().checkPermission(SecurityConstants.SUPERVISE_EVENT) && (fineData.getStatus().intValue() != EventDataType.SUPERVISED)) {	
+					line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+								<td width="3%" class="texts1" align="right">
+									<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+								</td>
+								<td width="46%" align="left">
+		   							<a href="javascript:document.forms['supervise'].submit()" class="texts">
+		    			         		<%=messages.getText("generic.messages.supervise")%>
+		    			         	</a>
+		    					</td>
+					<%=(line) ? "</tr>" : "" %>							
+<%				}			
+				if(sys.getUserSessionData().checkPermission(SecurityConstants.DELETE_EVENT)) {	
+					line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+								<td width="3%" class="texts1" align="right">
+									<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+								</td>
+								<td width="46%" align="left">
+<% 		String link = "javascript:confirmDelete(document.forms['EventDeleteForm'],'"+messages.getText("generic.event.confirmdelete")+"')";
+%>						
+									<a href="<%=link%>" class="texts">
+										<%=messages.getText("generic.messages.delete")%>
+									</a>	
+								</td>
+					<%=(line) ? "</tr>" : "" %>							
+<%				
+				}
+				if(sys.getUserSessionData().isDriver() && sys.getCorporationId() != CorporationData.BAYER) {
+					if((fineData.getStatus().intValue() == EventDataType.PENDING_SUPERVISION) &&
+				        sys.getUserSessionData().checkPermission(SecurityConstants.DRIVER_MODIFY_EVENT)) {	
+						line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+								<td width="3%" class="texts1" align="right">
+									<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+								</td>
+								<td width="46%" align="left">
+						        	<a href="javascript:document.forms['edit'].submit()" class="texts">
+						        		<%=messages.getText("generic.messages.edit")%>
+						        	</a>
+						        </td>
+					<%=(line) ? "</tr>" : "" %>							
+<%					}
+				}
+				if(sys.isCorporation(CorporationData.BAYER_MX)) {
+						line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+						<td width="3%" class="texts1" align="right">
+							<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+						</td>
+				    	<td width="46%">
+				        	<a href="javascript:document.forms['files'].submit()" class="texts">
+				        		<%=messages.getText("generic.event.files")%>
+				        	</a>
+				        </td>
+					<%=(line) ? "</tr>" : "" %>							
+<% 				}
+
+%>					<%=(line) ? "<tr>" : "" %>							
+								<td width="3%" class="texts1" align="right">
+									<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+								</td>
+								<td width="46%" align="left">
+									<a href="javascript:document.forms[3].submit()" class="texts">
+										<%=messages.getText("generic.messages.cancel")%>
+									</a>	
+								</td>
+							</tr>
+						</table>
+						<jsp:include page="../component/utilitybox3bottom.jsp"/>
+					</td>
+				</tr>
+	  			<tr>
+					<jsp:include  page='<%="../component/spaceline.jsp" %>' />
+	  			</tr>
+			</table>
+		</body>
+<%		}else {
+%>		<jsp:include  page='<%="/util/allowedData.jsp?message=event.error.access.event" %>'/>
+<%		}
+%>		
+</html:html>

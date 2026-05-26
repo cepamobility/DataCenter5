@@ -1,0 +1,487 @@
+package business.report;
+
+import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+
+import javax.ejb.EJBException;
+import javax.ejb.SessionBean;
+import javax.ejb.SessionContext;
+
+import org.hibernate.Query;
+import org.hibernate.classic.Session;
+import org.jboss.logging.Logger;
+
+import persistence.administration.corporation.CorporationReportUtil;
+import persistence.alert.tables.ContractorData;
+import persistence.hibernate.HibernateUtil;
+import persistence.log.LoggerFormatting;
+import persistence.report.BIReportUtil;
+import business.driver.DriverABMFacadeBean;
+import business.util.ExceptionHandler;
+import business.vehicle.VehicleABMFacadeBean;
+import communication.administration.corporation.CalculateImpactData;
+import communication.administration.corporation.tables.CorporationConfigData;
+import communication.administration.corporation.tables.PointsDefinitionData;
+import communication.administration.corporation.util.FringeData;
+import communication.administration.user.UserSessionData;
+import communication.driver.tables.DriverStatusData;
+import communication.fleet.ContractorPointData;
+import communication.fleet.FleetStatusData;
+import communication.language.Text;
+import communication.report.JJChSumData;
+import communication.report.JJCrashByChampionData;
+import communication.report.JJCrashByTypeData;
+import communication.report.JJCrashSubtypesData;
+import communication.report.JJGoalsData;
+import communication.report.JJIncidentByTypeData;
+import communication.report.JJOGSumData;
+import communication.report.JJOGSumTotalData;
+import communication.report.JJResumeLAData;
+import communication.report.UnconformityAction;
+import communication.util.ListResult;
+import communication.vehicle.report.ChecklistReportHead;
+import communication.vehicle.report.ChecklistReportItem;
+import communication.vehicle.tables.VehicleStatusData;
+
+
+/**
+*@ejb.bean name="BIReportFacade"
+*           display-name="Name for BIReportFacade"
+*           description="Description for BIReportFacade" 
+*           jndi-name="ejb/BIReportFacade"
+*           type="Stateless"
+*           view-type="remote"
+* 			transaction-type = "Container"
+* 
+* @ejb.ejb-ref ejb-name = "BIReport" ref-name = "ejb/BIReport" view-type ="remote"
+* 
+* @jboss.ejb-ref-jndi jndi-name = "ejb/BIReport" ref-name = "BIReport"
+*
+* @ejb.ejb-ref ejb-name = "CorporationReport" ref-name = "ejb/CorporationReport" view-type ="remote"
+* 
+* @jboss.ejb-ref-jndi jndi-name = "ejb/CorporationReport" ref-name = "CorporationReport"
+* 
+* @ejb.util generate="physical"
+*/
+public class BIReportFacadeBean implements SessionBean {
+
+	private ExceptionHandler handler = new ExceptionHandler(VehicleABMFacadeBean.class);
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	/**
+	 * Logger for this class
+	 */
+	private Logger logger = Logger.getLogger(DriverABMFacadeBean.class);
+	private LoggerFormatting logFormatting = new LoggerFormatting();
+	
+	public BIReportFacadeBean() {
+		super();		
+	}
+
+	/**
+	 * Create method
+	 * 
+	 * @ejb.create-method
+    * @ejb.permission role-name = "administrator,systemaccess" 
+	 *  
+	 */
+	public void ejbCreate() throws javax.ejb.CreateException {		
+	}
+
+	@Override
+	public void setSessionContext(SessionContext ctx) throws EJBException,
+			RemoteException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void ejbRemove() throws EJBException, RemoteException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void ejbActivate() throws EJBException, RemoteException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	@Override
+	public void ejbPassivate() throws EJBException, RemoteException {
+		// TODO Auto-generated method stub
+		
+	}
+
+	/**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess"
+     */ 
+    public ListResult findDriverByCorporationIdFirstNameLastName(String stringSearch,Integer level,UserSessionData userRequest) throws Exception{
+     	try{
+			return BIReportUtil.getHome().create().findDriverByCorporationIdFirstNameLastName(stringSearch, level,userRequest);
+		}catch(Throwable th){
+			th.printStackTrace();
+		}
+     	return null;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess"
+     */ 
+    public DriverStatusData findDriverWithStatus(Integer driverId, UserSessionData userRequest, Text messages) throws Exception {
+    	try{
+			return BIReportUtil.getHome().create().findDriverWithStatus(driverId,userRequest,messages);
+		}catch(Throwable th){
+			th.printStackTrace();
+		}
+     	return null;
+    }
+    	
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess"
+     */ 
+    public ListResult findVehicleList(String value, UserSessionData userRequest,int attribute,int first,int count, int status) throws Exception {
+     	try{
+			return BIReportUtil.getHome().create().findVehicleList(value+"%", userRequest, attribute, first, count, status);
+		}catch(Throwable th){
+			th.printStackTrace();
+		}
+     	return null;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query,systemaccess"
+     */ 
+    public ArrayList<ContractorData> findFOSAContractors(UserSessionData userRequest ) throws Exception {
+    	ArrayList<ContractorData> res=new ArrayList<ContractorData>();
+        try{    
+        	return BIReportUtil.getHome().create().findFOSAContractors(userRequest);
+        }catch(Throwable th){
+			th.printStackTrace();
+		}
+        return res;
+            
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query,systemaccess"
+     */ 
+    public ArrayList<ContractorData> findLuminContractors(UserSessionData userRequest ) throws Exception {
+    	ArrayList<ContractorData> res=new ArrayList<ContractorData>();
+        try{    
+        	return BIReportUtil.getHome().create().findLuminContractors(userRequest);
+        }catch(Throwable th){
+			th.printStackTrace();
+		}
+        return res;
+            
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query,systemaccess"
+     */ 
+    public ArrayList<ContractorPointData> findContractorsPointData(Date startDate,Date endDate,Integer contractorId,UserSessionData userRequest ) throws Exception {
+    	ArrayList<ContractorPointData> res=new ArrayList<ContractorPointData>();
+    	try{
+    		return BIReportUtil.getHome().create().findContractorsPointData(startDate,endDate,contractorId,userRequest);
+	    }catch(Throwable th){
+			th.printStackTrace();
+		}
+    	return res;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query,systemaccess"
+     */ 
+    public ArrayList<ContractorPointData> findContractorsPointDataOld(Date startDate,Date endDate,Integer contractorId,UserSessionData userRequest ) throws Exception {
+    	ArrayList<ContractorPointData> res=new ArrayList<ContractorPointData>();
+    	try{
+    		return BIReportUtil.getHome().create().findContractorsPointDataOld(startDate,endDate,contractorId,userRequest);
+	    }catch(Throwable th){
+			th.printStackTrace();
+		}
+    	return res;
+    }
+
+    
+	/**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess" 
+     */
+    public ArrayList<ChecklistReportHead> findCheckReportHead(Integer startDay, Integer startMonth , Integer startYear, Integer endDay,Integer endMonth,Integer endYear,String type,UserSessionData userSessionData) throws Exception {
+    	try{
+			return BIReportUtil.getHome().create().findCheckReportHead(startDay, startMonth, startYear, endDay, endMonth, endYear, type, userSessionData);
+		}catch(Throwable th){
+			th.printStackTrace();
+		}
+    	return new ArrayList<ChecklistReportHead>();
+	}
+	/**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,systemaccess"
+	*/
+	public ArrayList<UnconformityAction> forestalesUnconformities(Integer vehicleId,String checkName,Date start,Date end,Integer type,Integer times ,  UserSessionData userSessionData,Text messages){
+		try{
+			return BIReportUtil.getHome().create().forestalesUnconformities(vehicleId,checkName, start, end, type, times ,userSessionData,messages);
+		}catch(Throwable th){
+			th.printStackTrace();
+		}
+		return null;
+	}
+	 
+   /**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,systemaccess"
+	 */
+	public JJResumeLAData jjResumeLA(Integer year, Integer month, UserSessionData userSessionData) throws Exception{
+		try{
+			return BIReportUtil.getHome().create().jjResumeLA(year, month, userSessionData);
+		}catch(Throwable th){
+			th.printStackTrace();
+		}
+		return null;
+	}
+	
+	/**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess" 
+     */
+    public ArrayList<ChecklistReportItem> findCheckReportItem(Integer startDay, Integer startMonth , Integer startYear, Integer endDay,Integer endMonth,Integer endYear,String type,UserSessionData userSessionData) throws Exception {
+    	try{
+			return BIReportUtil.getHome().create().findCheckReportItem(startDay, startMonth, startYear, endDay, endMonth, endYear, type, userSessionData);
+		}catch(Throwable th){
+			th.printStackTrace();
+		}
+		return null;
+    }
+
+    /**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,systemaccess"
+	 */
+	public JJGoalsData jjGoals(Integer year, UserSessionData userSessionData) throws Exception{
+		try{
+			return BIReportUtil.getHome().create().jjGoals(year,  userSessionData);
+		}catch(Throwable th){
+			th.printStackTrace();
+		}
+		return null;
+	}
+
+	  /**
+	  * @ejb.interface-method
+	  * @ejb.permission role-name = "administrator,systemaccess"
+	  */
+	public ArrayList<JJOGSumData> jjDataByCountry(Integer year, Integer month, UserSessionData userSessionData) throws Exception{		
+		try{
+			return BIReportUtil.getHome().create().jjDataByCountry(year, month, userSessionData);
+		}catch(Throwable th){
+			th.printStackTrace();
+		}
+		return null;
+	}
+			
+	 /**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,systemaccess"
+	 */
+	public ArrayList<JJOGSumTotalData> jjTotalDataByOP(Integer year, Integer month, UserSessionData userSessionData) throws Exception{		
+		try{
+			return BIReportUtil.getHome().create().jjTotalDataByOP(year, month, userSessionData);
+		}catch(Throwable th){
+			th.printStackTrace();
+		}
+		return null;
+	}
+	
+	  /**
+		  * @ejb.interface-method
+		  * @ejb.permission role-name = "administrator,systemaccess"
+		  */
+		public ArrayList<JJOGSumTotalData> jjDataByMonth(Integer year, Integer month, UserSessionData userSessionData) throws Exception{		
+			try{
+				return BIReportUtil.getHome().create().jjDataByMonth(year, month, userSessionData);
+			}catch(Throwable th){
+				th.printStackTrace();
+			}
+			return null;
+		}
+	
+	/**
+	  * @ejb.interface-method
+	  * @ejb.permission role-name = "administrator,systemaccess"
+	  */
+	public ArrayList<JJChSumData> jjDataByChampion(Integer year, Integer month, UserSessionData userSessionData) throws Exception{		
+		try{
+			return BIReportUtil.getHome().create().jjDataByChampion(year, month, userSessionData);
+		}catch(Throwable th){
+			th.printStackTrace();
+		}
+		return null;
+	}
+
+	/**
+	  * @ejb.interface-method
+	  * @ejb.permission role-name = "administrator,systemaccess"
+	  */
+	public ArrayList<JJCrashByTypeData> jjCrashBytype(Integer year, Integer month, UserSessionData userSessionData) throws Exception{		
+		try{
+			return BIReportUtil.getHome().create().jjCrashBytype(year, month, userSessionData);
+		}catch(Throwable th){
+			th.printStackTrace();
+		}
+		return null;
+	}
+	
+	/**
+	  * @ejb.interface-method
+	  * @ejb.permission role-name = "administrator,systemaccess"
+	  */
+	public ArrayList<JJCrashByChampionData> JJCrashByChampion(Integer year, Integer month, UserSessionData userSessionData) throws Exception{		
+		try{
+			return BIReportUtil.getHome().create().JJCrashByChampion(year, month, userSessionData);
+		}catch(Throwable th){
+			th.printStackTrace();
+		}
+		return null;
+	}
+	
+	/**
+	  * @ejb.interface-method
+	  * @ejb.permission role-name = "administrator,systemaccess"
+	  */
+	public ArrayList<JJIncidentByTypeData> jjIncidentByType(Integer year, Integer month, UserSessionData userSessionData) throws Exception{		
+		try{
+			return BIReportUtil.getHome().create().jjIncidentByType(year, month, userSessionData);
+		}catch(Throwable th){
+			th.printStackTrace();
+		}
+		return null;
+	}
+	
+	
+
+	/**
+	  * @ejb.interface-method
+	  * @ejb.permission role-name = "administrator,systemaccess"
+	  */
+	public ArrayList<JJCrashSubtypesData> jjDataBySubtype(Integer year, Integer month, UserSessionData userSessionData) throws Exception{		
+		try{
+			return BIReportUtil.getHome().create().jjDataBySubtype(year, month, userSessionData);
+		}catch(Throwable th){
+			th.printStackTrace();
+		}
+		return null;
+	}
+	
+	/**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess"
+     */ 
+    public ListResult findVehicleWithStatusList(String value, UserSessionData userRequest,int attribute,int first,int count, int status,Text messages) throws Exception {
+    	try{
+			return BIReportUtil.getHome().create().findVehicleWithStatusList(value, userRequest, attribute,first,count,status,messages);
+		}catch(Throwable th){
+			th.printStackTrace();
+		}
+		return null;
+    }	
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess"
+     */ 
+    public VehicleStatusData findVehicleWithStatus(Integer vehicleId, UserSessionData userRequest,Text messages) throws Exception {
+    	try{
+			return BIReportUtil.getHome().create().findVehicleWithStatus(vehicleId, userRequest,messages);
+		}catch(Throwable th){
+			th.printStackTrace();
+		}
+		return null;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query,systemaccess"
+     */ 
+    public FleetStatusData findFleetWithStatusList(Date dateBase,UserSessionData userRequest,Text messages ) throws Exception {
+     	try{
+			return BIReportUtil.getHome().create().findFleetWithStatusList(dateBase, userRequest, messages);
+		}catch(Throwable th){
+			th.printStackTrace();
+		}
+		return null;
+    }
+    
+    /**
+	  * @ejb.interface-method
+	  * @ejb.permission role-name = "administrator,pointconfupdate,systemaccess"
+	  */
+	public CalculateImpactData pointsCalculateRetroactiveImapact(Collection<PointsDefinitionData> definitions,ArrayList<CorporationConfigData> configs, Integer backDays, UserSessionData userSessionData) throws Exception{
+		CalculateImpactData calculate=new CalculateImpactData();
+		try{
+			
+		    HashMap<String, CorporationConfigData> valuesConfigs=new HashMap<String, CorporationConfigData>();
+		    Iterator<CorporationConfigData> iter=configs.iterator();
+            while(iter.hasNext()){
+            	CorporationConfigData conf=iter.next();
+            	valuesConfigs.put(conf.getKey(), conf);
+            }
+		               
+			ArrayList<FringeData> fringer=new ArrayList<FringeData>();
+			for(Integer i=1;i<=3;i++){
+   				CorporationConfigData confFringe=valuesConfigs.get("points_level_"+i+"_f");
+   				CorporationConfigData confTime=valuesConfigs.get("points_level_"+i+"_t");
+   				FringeData data=new FringeData();
+   				data.setTime(confTime.getValue());
+   				data.setAmount(Integer.valueOf(confFringe.getValue()));
+   				fringer.add(data);
+   			}
+   			
+   			CorporationConfigData confFringe=valuesConfigs.get("points_level_0_f");
+			CorporationConfigData confTime=valuesConfigs.get("points_level_0_t");
+			for(int i=1;i<11;i++){
+   				FringeData data=new FringeData();
+   				data.setTime(confTime.getValue());
+   				data.setAmount(-i*Integer.valueOf(confFringe.getValue()));
+   				fringer.add(data);
+   			}
+   		 		
+   			Collections.sort(fringer,new Comparator<FringeData>(){
+
+				@Override
+				public int compare(FringeData o1, FringeData o2) {
+					// TODO Auto-generated method stub
+					return o1.getAmount().compareTo(o2.getAmount());
+				}
+   					
+   			});
+			
+   			ArrayList<FringeData> oldFringers= CorporationReportUtil.getHome().create().getFringes(userSessionData);
+   			
+			calculate.setRetroactiveImpactOld(BIReportUtil.getHome().create().pointsCalculateRetroactiveImapact(CorporationReportUtil.getHome().create().getPointsDefinitions(userSessionData),oldFringers,backDays,userSessionData)); 
+			calculate.setRetroactiveImpactNew(BIReportUtil.getHome().create().pointsCalculateRetroactiveImapact(definitions,fringer, backDays, userSessionData));
+		}catch(Throwable th){
+			th.printStackTrace();
+		}
+		return calculate;
+	}
+	
+    
+}

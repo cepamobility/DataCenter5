@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.vehicle.tables">
+       <class name="VehicleOptionalInfo" table="vehiclesOptionalInfo">
+        
+        <id	column="id"	name="id"	type="java.lang.Integer">
+            <generator class="sequence">
+            	<param name="sequence">VehiclesOptionalInfo_Sequence</param>
+            </generator>
+        </id>
+	    <property	name="prefix"	type="java.lang.String"		column="prefix"	not-null="true" />        
+
+	    <property	name="totalGrossWeight"	type="java.lang.Integer" column="totalGrossWeight"/>        
+	    <property	name="totalCombinedGrossWeight"	type="java.lang.Integer" column="totalCombinedGrossWeight"/>        
+	    <property	name="monitoringSystem"	type="java.lang.String" column="monitoringSystem"/>        
+        <property	name="tachograph"	type="java.lang.String" column="tachograph"/>        
+        <property	name="renavan"	type="java.lang.String" column="renavan"/>        
+        <property	name="limitLoad"	type="java.lang.Integer" column="limitLoad"/>        
+        <property	name="asr"	type="java.lang.Boolean" column="asr"/>                                
+        <property	name="currentKm"	type="java.lang.Integer" column="currentKm"/>        
+        <property	name="dateCurrentKm"	type="java.util.Date" 	column="dateCurrentKm"/>
+        <property	name="anttExpiry"	type="java.util.Date" 	column="anttExpiry"/>
+        <property	name="citvExpiry"	type="java.util.Date" 	column="citvExpiry"/>
+      
+    </class>
+</hibernate-mapping>
+        

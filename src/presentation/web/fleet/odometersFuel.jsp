@@ -1,0 +1,228 @@
+<%@page language="java" 
+	errorPage="../exception.jsp"
+	import="java.util.*"
+	import="business.*"
+	import="business.fleet.*"
+	import="business.datatype.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.fleet.tables.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.datatype.tables.*"
+	import="communication.datatype.*"
+	import="communication.vehicle.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<html:html>
+<%!
+	RequestDispatcher dispatcher; String context;
+	Text messages; SystemAccess sys;
+	Integer period;String year;String id;
+%>
+<%
+	sys=(SystemAccess)session.getAttribute("SystemAccess");
+	String check = Util.checkPermission(sys,SecurityConstants.FLEET_INSERT_DATA);
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+
+		context=request.getContextPath();
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+
+		id = (Util.empty(request.getParameter("fleet"))) ? (String)session.getAttribute("fleet") : request.getParameter("fleet");
+	    period = (Util.empty(request.getParameter("period"))) ? new Integer((String)session.getAttribute("period")) : new Integer(request.getParameter("period"));
+	    year = (Util.empty(request.getParameter("year"))) ? (String)session.getAttribute("year") : request.getParameter("year");
+		session.setAttribute("url","fleet/odometersFuel.jsp?fleet="+id+"&period="+period+"&year="+year);
+		
+	    FleetReportFacade fleetReport = sys.getFleetReportFacade();
+		FleetData data = fleetReport.findFleetByPrimaryKey(new Integer(id),sys.getUserSessionData());
+		if(data != null) {
+	messages = sys.getText();
+		    
+	Hashtable values = fleetReport.findOdometers(new Integer(id),period,new Integer(year),null,null,sys.getUserSessionData());
+	
+		    String[] labels = sys.getUserSessionData().getFilter().getLevelLabels();
+		    Iterator divisions = data.getDivisions().iterator();
+	Collection vehicles = data.getVehicles();
+
+	Collection fuelTypes = sys.getDataTypeReportFacade().findAll(DataTypeConstants.TYPEFUEL,sys.getUserSessionData());
+%>
+	
+	<html:form action="/OdometerFuel">
+		<html:hidden property="fleet" value='<%=id%>' />
+		<html:hidden property="period" value='<%=String.valueOf(period)%>' />
+		<html:hidden property="year" value='<%=year%>' />
+		<table width="900" border="0" align="center" cellpadding="0" cellspacing="0">
+			<tr class="guide1">
+				<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText("generic.fleet.odometers")+" "+data.getName() + " "+messages.getText("generic.month."+String.valueOf(period))+" - "+year%>' />
+	  		</tr>
+<%
+	while(divisions.hasNext()) {
+    		FleetDivisionData division = (FleetDivisionData)divisions.next();
+%>	  		<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+      		</tr>
+	      	<tr>
+    	    	<td width="100%" colspan="3">
+					<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.fleet.detail")%>' />
+						<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+							<tr class="linetwo">
+								<td colspan="10">
+									<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("fleet.division.data")%>' />
+										<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+											<tr class="lineone">
+												<td width="49%">
+													<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+														<tr class="lineone">
+															<th align="left"><%=messages.getText("generic.fleet.country")%></th>
+															<td>&nbsp;</td>
+															<td align="left"><%=messages.getText(division.getCountryName())%></td>
+														</tr>
+														<tr class="lineone">
+															<th align="left"><%=messages.getText("generic.fleet.odometertype")%></th>
+															<td>&nbsp;</td>
+															<td align="left"><%=messages.getText(division.getOdometer().getResourceBundleId())%></td>
+														</tr>
+													</table>
+												</td>
+												<td width="2%" class="lineone">&nbsp;</td>
+												<td width="49%">
+													<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+<%
+	for(int i = 0; i < labels.length; i++) {
+    			if(!Util.empty(labels[i])) {
+%>														<tr class="lineone">
+															<th align="left"><%=messages.getText(labels[i])%></th>
+															<td>&nbsp;</td>
+															<td align="left"><%=division.getLabel(i)%></td>
+														</tr>
+<%
+	}
+	}
+%>													</table>
+												</td>
+											</tr>
+										</table>
+									<jsp:include  page="../component/utilitybox2bottom.jsp" />
+								</td>
+							</tr>
+<%
+	if(vehicles.size() > 0) {
+%>					      	<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+				      		</tr>
+							<tr>
+								<td class="guide2" ><%=messages.getText("generic.vehicle.vehicledata.matricula")%></td>				            				
+								<td class="guide2" ><%=messages.getText("generic.vehicle.vehicledata.driver")%></td>
+								<td class="guide2" ><%=messages.getText("fleet.odometer.lastvalue")%></td>
+								<td class="guide2" ><%=messages.getText("fleet.odometer.value")%></td>
+								<td class="guide2" ><%=messages.getText("fleet.odometer.road.miles")%></td>
+								<td class="guide2" ><%=messages.getText("fleet.odometer.road.km")%></td>
+								<td class="guide2" ><%=messages.getText("fleet.odometer.accidents")%></td>
+								<td class="guide2" ><%=messages.getText("fleet.odometer.incidents")%></td>
+								<td class="guide2" ><%=messages.getText("fleet.odometer.fuel")%></td>
+								<td class="guide2" ><%=messages.getText("fleet.odometer.fueltype")%></td>
+							</tr>
+
+<%
+	FleetUtil fleetUtil = new FleetUtil();
+		String[][] odometerData = fleetUtil.findFleetOdometerValues(values,division,vehicles);
+		int totalMiles = 0;
+		int totalKms = 0;
+		int totalAccidents = 0;
+		int totalIncidents = 0;
+		String line = "lineone";
+		int count = 0;
+		for(int i = 0; i < odometerData.length; i++) {
+		    	    totalMiles += (Util.empty(odometerData[i][5])) ? 0 : Integer.parseInt(odometerData[i][5]);
+		    	    totalKms += (Util.empty(odometerData[i][6])) ? 0 : Integer.parseInt(odometerData[i][6]);
+		    	    totalAccidents += (Util.empty(odometerData[i][7])) ? 0 : Integer.parseInt(odometerData[i][7]);
+		    	    totalIncidents += (Util.empty(odometerData[i][8])) ? 0 : Integer.parseInt(odometerData[i][8]);
+	    	count++;
+%>							<tr>
+								<td class=<%=line%>><%=odometerData[i][1]%></td>
+								<td class=<%=line%>><%=odometerData[i][2]%></td>
+								<td class=<%=line%>><%=odometerData[i][3]%></td>
+								<td class=<%=line%>>
+									<input type="hidden" name='<%="lastodometer"+odometerData[i][0]%>' value='<%=odometerData[i][4]%>'/>
+									<input name='<%="odometer"+odometerData[i][0]%>' value='<%=odometerData[i][4]%>' class="input" size="10"/>
+								</td>
+								<td class=<%=line%>><%=odometerData[i][5]%></td>
+								<td class=<%=line%>><%=odometerData[i][6]%></td>
+								<td class=<%=line%>>
+									<input name='<%="lastaccidents"+odometerData[i][0]%>' value='<%=odometerData[i][7]%>' type="hidden"/>
+									<input name='<%="accidents"+odometerData[i][0]%>' value='<%=odometerData[i][7]%>' class="input" size="10"/>
+								</td>
+								<td class=<%=line%>>
+									<input name='<%="lastincidents"+odometerData[i][0]%>' value='<%=odometerData[i][8]%>' type="hidden"/>
+									<input name='<%="incidents"+odometerData[i][0]%>' value='<%=odometerData[i][8]%>' class="input" size="10"/>
+								</td>
+								<td>
+									<input name='<%="lastfuel"+odometerData[i][0]%>' value='<%=odometerData[i][9]%>' type="hidden" />
+									<input name='<%="fuel"+odometerData[i][0]%>' value='<%=odometerData[i][9]%>' class="input" size="10"/>
+								</td>
+								<td>
+									<input name='<%="lastfueltype"+odometerData[i][0]%>' value='<%=odometerData[i][10]%>' type="hidden" />
+									<select name='<%="fueltype"+odometerData[i][0]%>' class="input">
+										<option value=""></option>
+<%	    			Iterator fuelIt = fuelTypes.iterator();
+	    			while(fuelIt.hasNext()) {
+	        			String name = ((TypeFuelDataType)fuelIt.next()).getResourceBundleId();
+%>										<option value='<%=name%>' <%=(odometerData[i][10].equals(name)) ? "selected" : ""%>><%=messages.getText(name)%></option>
+<%					}
+%>									</select>
+								</td>
+							</tr>			    
+<%					line = (line.equals("lineone")) ? "linetwo" : "lineone";
+				}
+				if(count == 0) {
+%>							<tr>
+								<td class="linetwo" colspan="8"><%=messages.getText("generic.messages.nodata")%></td>
+							</tr>	
+<%				}else {
+%>							<tr>
+								<td class='<%=line%>' colspan="3">&nbsp;</td>
+								<td class="guide3"><%=messages.getText("fleet.odometers.totals") %></td>
+								<td class="guide3"><%=String.valueOf(totalMiles)%></td>
+								<td class="guide3"><%=String.valueOf(totalKms)%></td>
+								<td class="guide3"><%=String.valueOf(totalAccidents)%></td>
+								<td class="guide3"><%=String.valueOf(totalIncidents)%></td>
+								<td class="guide3" colspan="2">&nbsp;</td>
+							</tr>
+<%				}	
+			}	
+%>						</table>
+					<jsp:include  page="../component/utilityboxbottom.jsp" />
+				</td>
+			</tr>
+<%		}
+%>
+	      	<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+      		</tr>
+	      	<tr>
+				<td colspan="3" align="right">
+					<html:submit value='<%=messages.getText("generic.messages.save")%>' styleClass="input"/>
+					<html:cancel value='<%=messages.getText("generic.messages.cancel")%>' styleClass="input"/>
+				</td>
+      		</tr>
+	      	<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+      		</tr>
+	    </table>
+	</html:form>
+<%		}else {
+%>	<jsp:include  page='<%="/util/allowedData.jsp?message=fleet.error.access.fleet" %>'/>
+<%		}
+	}	
+%>	
+</html:html>

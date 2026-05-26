@@ -1,0 +1,709 @@
+
+package presentation.translator.web.vehicle;
+
+import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
+
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+import business.vehicle.VehicleReportFacade;
+
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.CountryData;
+import communication.administration.corporation.tables.DivOrgAttribute;
+import communication.administration.corporation.tables.DivOrgData;
+import communication.administration.corporation.tables.GeoItemData;
+import communication.administration.corporation.tables.GeoLabelData;
+import communication.administration.corporation.tables.ItemData;
+import communication.administration.corporation.tables.LabelItemData;
+import communication.administration.user.UserSessionData;
+import communication.datatype.tables.EnsuranceDataType;
+import communication.driver.tables.DriverData;
+import communication.language.Text;
+import communication.vehicle.tables.VehicleData;
+import communication.vehicle.tables.VehicleOptionalInfoData;
+import communication.vehicle.tables.VehicleSMFData;
+
+/**
+ * @author adocarmo
+ */
+public class VehicleUtil {
+	
+	public static final int VIEW = 0;
+	public static final int EDIT = 1;
+	
+	public static VehicleData createSyngentaVehicleData(UserSessionData userSession) {
+		VehicleData vehicle = new VehicleData();
+		
+		Collection items1 = new LinkedList();
+        Collection items2 = new LinkedList();
+        items2.add(new GeoItemData(CountryData.BRASIL_ID,"",true,null));
+        GeoLabelData level1 = new GeoLabelData(null,null,null,items2);
+        items1.add(new GeoItemData(CountryData.SYNGENTA_REGION,"",true,level1));
+        vehicle.setCountry(new GeoLabelData(null,null,null,items1));  
+
+        DivOrgAttribute[] divOrgs = userSession.getFilter().getDivOrgsAttrs();
+        ArrayList<DivOrgData> list = new ArrayList<DivOrgData>();
+        if(divOrgs[0] != null) {
+            DivOrgAttribute divOrgAttribute = divOrgs[0];
+            LabelItemData labelData = Util.getDivOrgData(divOrgAttribute.SYNGENTA_DIVISION,divOrgAttribute.SYNGENTA_SUBDIVISION,null);
+            if(labelData != null) {
+                list.add(new DivOrgData(divOrgAttribute.getId(),divOrgAttribute.getName(),labelData));
+            }
+        }
+        if(divOrgs[1] != null) {
+            DivOrgAttribute divOrgAttribute = divOrgs[1];
+            LabelItemData labelData = Util.getDivOrgData(divOrgAttribute.SYNGENTA_UNIT,null,null);
+            if(labelData != null) {
+                list.add(new DivOrgData(divOrgAttribute.getId(),divOrgAttribute.getName(),labelData));
+            }
+        }
+        vehicle.setDivOrgs(list);
+        vehicle.setCorporation(new CorporationData(userSession.getFilter().getCorporationId(),"",null,null,null,null));
+        return vehicle;
+	}
+	
+    public static VehicleData createVehicleData(UserSessionData userSession, VehicleForm createData) {
+	
+        GeoLabelData country = Util.getGeoLabelData(createData);
+        Collection list = Util.getDivOrgs(createData,userSession);
+        Integer id = (createData.getId() != null) ? new Integer(createData.getId()) : null;
+		
+        boolean abs = ((createData.getAbs() != null) && (createData.getAbs().toLowerCase().equals("on"))) ? true : false;
+        boolean airBag = ((createData.getAirBag() != null) && (createData.getAirBag().toLowerCase().equals("on"))) ? true : false;
+        boolean aireAcondicionado = ((createData.getAireAcondicionado() != null) && (createData.getAireAcondicionado().toLowerCase().equals("on"))) ? true : false;
+        boolean suspension = ((createData.getSuspension() != null) && (createData.getSuspension().toLowerCase().equals("on"))) ? true : false;
+               
+        /*
+        String permissionNumber = null;
+        if (createData.getPermissionNumber() != null && !createData.getPermissionNumber().equals("") && !createData.getPermissionNumber().equals("null")) {
+        	permissionNumber = createData.getPermissionNumber().trim();
+        }     
+        
+        String chasisNumber = null;
+        //if (notEmpty(createData.getChasisNumber()) )
+        if (createData.getChasisNumber() != null && !createData.getChasisNumber().equals("")  && !createData.getChasisNumber().equals("null"))         
+        	chasisNumber = createData.getChasisNumber().trim();
+        */	
+        
+        Float co2emission = null;
+        if (notEmpty(createData.getCo2emission()) && Util.isFloat(createData.getCo2emission())){
+        	co2emission = new Float(createData.getCo2emission());
+        }
+
+        Float consume = null;
+        if (notEmpty(createData.getConsume()) && Util.isFloat(createData.getConsume())){
+        	consume = new Float(createData.getConsume());
+        }
+        
+        Integer tankCapacity = null;
+        //if (notEmpty(createData.getTankCapacity()) )
+        if (createData.getTankCapacity() != null && !createData.getTankCapacity().equals("")  && !createData.getTankCapacity().equals("null"))               
+        	//chasisNumber = new Integer(createData.getTankCapacity());
+        	tankCapacity = new Integer(createData.getTankCapacity().trim());
+        
+        DriverData driverData = null;
+        //if (driverId != null) {
+        if (createData.getDriver() != null) {
+        	driverData = new DriverData(new Integer(createData.getDriver()),
+        			null,null,null,null,null,null,null,null,null,null,null,null,null,null,null,
+        			null,null,null,null,null,null,null,false,false,null,null,null,false,
+        			null,null,null,null,null,null, null, null, null, null,null,null,false,null,false,null,false);
+        }
+        
+        String costCenter = null;
+        if (createData.getCostCenter() != null) {        	
+        	costCenter = createData.getCostCenter();
+        }
+        boolean owner = (createData.getOwnerCard() != null) && (createData.getOwnerCard().toLowerCase().equals("1"));
+        Integer axis = null;
+        if(!Util.empty(createData.getAxisCount())) {
+        		axis = new Integer(createData.getAxisCount().trim());
+        }
+        Integer hp = null;
+        if(!Util.empty(createData.getHp())) {
+            hp = new Integer(createData.getHp().trim());
+        }
+        EnsuranceDataType ensuranceType = null;
+        if(!Util.empty(createData.getEnsuranceType())) {
+            ensuranceType = new EnsuranceDataType(createData.getEnsuranceType().trim());
+        }
+        
+        /* Vehicle Optional Info para la empresa Klabin */
+        int corporationId = userSession.getFilter().getCorporationId().intValue();
+        VehicleOptionalInfoData optionalInfo = null;
+		if (corporationId == CorporationData.KLABIN
+                || corporationId == CorporationData.YOLI
+                || corporationId == CorporationData.CIMSA
+                || corporationId == CorporationData.MONTES_DE_PLATA
+                || corporationId == CorporationData.PEPSICO
+                || corporationId == CorporationData.MONSANTO
+                || corporationId == CorporationData.FORESTALORIENTAL ){
+			
+			optionalInfo = new VehicleOptionalInfoData();
+			optionalInfo.setId( (createData.getIdOptionalInfo() != null) ? 
+					new Integer(createData.getIdOptionalInfo()) : null );
+			optionalInfo.setPrefix((createData.getPrefix() == null) ? "" : createData.getPrefix());
+			if (createData.getTotalGrossWeight() != null && 
+					!createData.getTotalGrossWeight().equals("")  && 
+					!createData.getTotalGrossWeight().equals("null"))               
+			      optionalInfo.setTotalGrossWeight(new Integer(createData.getTotalGrossWeight()));
+			if (createData.getTotalCombinedGrossWeight() != null && 
+					!createData.getTotalCombinedGrossWeight().equals("")  && 
+					!createData.getTotalCombinedGrossWeight().equals("null"))               
+			      optionalInfo.setTotalCombinedGrossWeight(new Integer(createData.getTotalCombinedGrossWeight()));
+			optionalInfo.setMonitoringSystem(createData.getMonitoringSystem());
+			optionalInfo.setTachograph(createData.getTachograph());
+			optionalInfo.setRenavan(createData.getRenavan());
+			if (createData.getLimitLoad() != null && 
+					!createData.getLimitLoad().equals("")  && 
+					!createData.getLimitLoad().equals("null"))               
+			      optionalInfo.setLimitLoad(new Integer(createData.getLimitLoad()));
+			boolean asr = ((createData.getAsr() != null) && 
+					(createData.getAsr().toLowerCase().equals("on"))) ? true : false;		      
+			optionalInfo.setAsr(asr);
+			if (createData.getCurrentKm() != null && 
+					!createData.getCurrentKm().equals("")  && 
+					!createData.getCurrentKm().equals("null"))               
+			      optionalInfo.setCurrentKm(new Integer(createData.getCurrentKm()));
+			optionalInfo.setDateCurrentKm(createData.getDateCurrentKm());
+			optionalInfo.setAnttExpiry(createData.getAnttExpiry());
+			optionalInfo.setCitvExpiry(createData.getCitvExpiry());
+			 
+		}
+        
+        /* Fin Vehicle Optional Info */
+        
+        Integer cost = (Util.empty(createData.getCost()) || !Util.isNumber(createData.getCost())) ? null : new Integer(createData.getCost());
+        
+        //VEHICLE SMF MONSANTO
+        VehicleSMFData vehicleSMFData = new VehicleSMFData();
+       
+        if(vehicleSMFData != null){
+        	
+        	vehicleSMFData.setVehicleSMFId((createData.getVehicleSMFid()!=null) ? new Integer(createData.getVehicleSMFid()) : null);
+        	vehicleSMFData.setCorporationSMF(createData.getCorporationSMF());
+        	vehicleSMFData.setInstalationDateSMF(createData.getInstalationDateSMF());
+        	vehicleSMFData.setLocalInstallation(createData.getLocalInstallation());
+        	vehicleSMFData.setObservations(createData.getObservationsSMF());
+        	vehicleSMFData.setOrderNumber(   (createData.getOrderNumber() != null) ?
+        			new Integer (createData.getOrderNumber()): null);
+        	vehicleSMFData.setResponsibleTechnical(createData.getResponsibleTechnical());
+        	vehicleSMFData.setUstContact(createData.getUstContact());
+        		
+        }
+        
+        return new VehicleData(id,createData.getType(),new Integer(createData.getYear().trim()),
+        		createData.getColour(),createData.getPermissionNumber(),createData.getUse(),
+        		createData.getPermissionExpiryDate(),createData.getOwnership(),
+        		createData.getFuel(),createData.getPurchaseDate(),createData.getChasisNumber(),
+        		createData.getEngine(),tankCapacity,createData.getTankUnit(),
+        		abs,airBag,aireAcondicionado,suspension,createData.getDistanceUnit(),
+        		new CorporationData(userSession.getFilter().getCorporationId(),"",null,null,null,null),
+        		country,list,driverData,createData.getMatricula(),createData.getModel(),
+        		createData.getTrade(),createData.getCover(), costCenter, 
+        		createData.getInclusionDate(), createData.getExclusionDate(),
+        		createData.getSuctaExpiry()
+                ,createData.getMtopExpiry(),
+                createData.getEnsurance(),ensuranceType
+                ,owner,axis, hp,createData.getObservations(),
+                createData.getGreenCardExpiry(),optionalInfo,cost,new LinkedList(),
+                createData.getAssignedVehicleData(),
+                co2emission,consume,null,vehicleSMFData,null);
+	}   
+	
+/*
+	public static VehicleData createVehicleData2(UserData data,VehicleSearchForm createData) {
+		VehicleData vehicle = new VehicleData(null);
+		vehicle.setMatricula(createData.getMatricula());
+		if (notEmpty(createData.getChasisNumber())) {
+			vehicle.setChasisNumber(createData.getChasisNumber());
+		}					
+		if (notEmpty(createData.getFirstNameDriver()) || notEmpty(createData.getLastNameDriver())) {
+			DriverData driverData = new DriverData(null,createData.getFirstNameDriver(),
+				createData.getLastNameDriver(),
+				null,null,null,null,null,null,null,null,null,null,null,null,null,
+				null,null,null,null,null,null,false,false,null,null,null,false,null);	
+			vehicle.setDriver(driverData);
+		}	
+		
+		GeoLabelData country = null;
+        Collection items1 = new LinkedList();
+        
+	    if(createData.getCountry2() == null) {
+	    	// En el nombre de la división geográfica guarda un string vacío. En las capas de abajo,
+	    	// este campo lo carga hibernate a partir del id que viene en el form 
+	        items1.add(new GeoItemData(Integer.valueOf(createData.getCountry1()),"",true,null));
+	        country = new GeoLabelData(null,null,null,items1);
+	    }else{
+	        if(createData.getCountry3() == null) {
+		        Collection items2 = new LinkedList();
+		    	// En el nombre de la división geográfica guarda un string vacío. En las capas de abajo,
+		    	// este campo lo carga hibernate a partir del id que viene en el form 		        
+		        items2.add(new GeoItemData(Integer.valueOf(createData.getCountry2()),"",true,null));
+		        GeoLabelData level1 = new GeoLabelData(null,null,null,items2);
+		    	// En el nombre de la división geográfica guarda un string vacío. En las capas de abajo,
+		    	// este campo lo carga hibernate a partir del id que viene en el form 		        
+		        items1.add(new GeoItemData(Integer.valueOf(createData.getCountry1()),"",true,level1));
+	        }else {
+		        Collection items3 = new LinkedList();
+		    	// En el nombre de la división geográfica guarda un string vacío. En las capas de abajo,
+		    	// este campo lo carga hibernate a partir del id que viene en el form 		        
+		        items3.add(new GeoItemData(Integer.valueOf(createData.getCountry3()),"",true,null));
+		        GeoLabelData level2 = new GeoLabelData(null,null,null,items3);
+		        
+		        Collection items2 = new LinkedList();
+		        items2.add(new GeoItemData(Integer.valueOf(createData.getCountry2()),"",true,level2));
+		        GeoLabelData level1 = new GeoLabelData(null,null,null,items2);
+		        
+		        items1.add(new GeoItemData(Integer.valueOf(createData.getCountry1()),"",true,level1));
+	            
+	        }
+	    }
+        country = new GeoLabelData(null,null,null,items1);		
+		
+		vehicle.setCountry(country);
+
+		return vehicle;
+	}
+	*/ 
+
+	/**
+	 * @param licenseExpiryMonth
+	 * @return
+	 */
+	public static boolean notEmpty(String value) {
+		return (value != null && !value.trim().equals(""));
+	}
+	
+	public static VehicleForm createVehicleForm(VehicleData data, int function, Text messages) {
+		VehicleForm vehicleForm = new VehicleForm();
+		
+		if(data.getOptionalInfo()==null && data.getCorporation().getId().equals(CorporationData.FORESTALORIENTAL) ){
+			data.setOptionalInfo(new VehicleOptionalInfoData());
+			data.getOptionalInfo().setRenavan("NE");
+			data.getOptionalInfo().setPrefix("NE");
+			data.getOptionalInfo().setMonitoringSystem("NE");
+    		
+    	}
+		
+		vehicleForm.setId(String.valueOf(data.getId()));
+		vehicleForm.setChasisNumber(data.getChasisNumber());
+		vehicleForm.setCo2emission( 
+				(data.getCo2emission() != null) ? String.valueOf(data.getCo2emission()):"");
+		vehicleForm.setConsume( 
+				(data.getConsume() != null) ? String.valueOf(data.getConsume()):"");
+					
+		
+		vehicleForm.setCostCenter(data.getCostCenter());
+		if (data.getAbs()) 
+			vehicleForm.setAbs("on");
+		else 	
+			vehicleForm.setAbs(null);
+		if (data.getAirBag())
+			vehicleForm.setAirBag("on");
+		else 
+			vehicleForm.setAirBag(null);
+		if (data.getAireAcondicionado()) 
+			vehicleForm.setAireAcondicionado("on");
+		else 
+			vehicleForm.setAireAcondicionado(null);
+
+		if (data.getSuspension()) 
+			vehicleForm.setSuspension("on");
+		else 
+			vehicleForm.setSuspension(null);
+	
+	//	vehicleForm.setAireAcondicionado(data.getAireAcondicionado());
+		vehicleForm.setColour(data.getColour());
+		vehicleForm.setMatricula(data.getMatricula());
+		vehicleForm.setModel(data.getModel());		
+		vehicleForm.setPermissionNumber(data.getPermissionNumber());
+		vehicleForm.setYear(String.valueOf(data.getYear()));	
+		vehicleForm.setTankCapacity(String.valueOf(data.getTankCapacity()));		
+		
+		if(data.getPermissionExpiry() != null) {
+			Calendar permissionExpiryDate = Calendar.getInstance();
+			permissionExpiryDate.setTime(data.getPermissionExpiry());
+			vehicleForm.setPermissionExpiryDay(String.valueOf(permissionExpiryDate.get(Calendar.DATE)));
+			vehicleForm.setPermissionExpiryMonth(String.valueOf(permissionExpiryDate.get(Calendar.MONTH)+1));
+			vehicleForm.setPermissionExpiryYear(String.valueOf(permissionExpiryDate.get(Calendar.YEAR)));
+		}
+		if(data.getPurchaseDate() != null) {
+			Calendar purchaseDate = Calendar.getInstance();
+			purchaseDate.setTime(data.getPurchaseDate());
+			vehicleForm.setPurchaseDay(String.valueOf(purchaseDate.get(Calendar.DATE)));
+			vehicleForm.setPurchaseMonth(String.valueOf(purchaseDate.get(Calendar.MONTH)+1));
+			vehicleForm.setPurchaseYear(String.valueOf(purchaseDate.get(Calendar.YEAR)));
+		}		
+		
+		vehicleForm.setCorporation(String.valueOf(data.getCorporation().getId()));
+		
+		vehicleForm.setDriver(null);
+		if (data.getDriver() !=null) {
+			vehicleForm.setDriver(String.valueOf(data.getDriver().getId()));
+		}
+
+	    GeoItemData geoItem1 = (GeoItemData)data.getCountry().getItemIterator().next();
+	    vehicleForm.setCountry1(String.valueOf(geoItem1.getId()));
+	    if(geoItem1.getSubItems() != null) {
+		    GeoItemData geoItem2 = (GeoItemData)geoItem1.getSubItems().getItemIterator().next();
+		    vehicleForm.setCountry2(String.valueOf(geoItem2.getId()));
+		    if(geoItem2.getSubItems() != null) {
+			    GeoItemData geoItem3 = (GeoItemData)geoItem2.getSubItems().getItemIterator().next();
+			    vehicleForm.setCountry3(String.valueOf(geoItem3.getId()));
+		    }
+	    }
+	    
+	    	
+	    Iterator it = data.getDivOrgsIterator();
+		int i = 1;
+		while(it.hasNext()) {
+		    DivOrgData divOrgData = (DivOrgData)it.next();
+		    ItemData item1 = (ItemData)divOrgData.getDivOrgLevels().getItemIterator().next();
+		    vehicleForm.setDivOrg(String.valueOf(item1.getId()),i,1);
+		    if(item1.getSubItems() != null) {
+			    ItemData item2 = (ItemData)item1.getSubItems().getItemIterator().next();
+			    vehicleForm.setDivOrg(String.valueOf(item2.getId()),i,2);
+			    if(item2.getSubItems() != null) {
+				    ItemData item3 = (ItemData)item2.getSubItems().getItemIterator().next();
+				    vehicleForm.setDivOrg(String.valueOf(item3.getId()),i,3);
+			    }
+		    }
+		    i++;
+		}
+		
+		if(function == EDIT) {
+			if (data.getOdometerUnit() != null) 
+				vehicleForm.setDistanceUnit(data.getOdometerUnit().getResourceBundleId());
+			if (data.getOwnerShip() != null) 
+				vehicleForm.setOwnership(data.getOwnerShip().getResourceBundleId());
+			if (data.getFuel() != null) 
+				vehicleForm.setFuel(data.getFuel().getResourceBundleId());
+			if (data.getTankUnit() != null) 
+				vehicleForm.setTankUnit(data.getTankUnit().getResourceBundleId());
+			//vehicleForm.setVolumeUnit(data.getTankUnit().getResourceBundleId());
+			vehicleForm.setType(data.getType().getResourceBundleId());
+			vehicleForm.setUse(data.getUse().getResourceBundleId());
+			if (data.getEngine() != null) 
+				vehicleForm.setEngine(data.getEngine().getResourceBundleId());			
+			vehicleForm.setTrade(data.getTrade().getResourceBundleId());
+			if (data.getCover() != null) 
+				vehicleForm.setCover(data.getCover().getResourceBundleId());					
+		}else {			
+			if (data.getOdometerUnit() != null)
+				vehicleForm.setDistanceUnit(messages.getText(data.getOdometerUnit().getResourceBundleId()));
+			if (data.getOwnerShip() != null)
+				vehicleForm.setOwnership(messages.getText(data.getOwnerShip().getResourceBundleId()));
+			if (data.getFuel() != null)
+				vehicleForm.setFuel(messages.getText(data.getFuel().getResourceBundleId()));
+			if (data.getTankUnit() != null)
+				vehicleForm.setTankUnit(messages.getText(data.getTankUnit().getResourceBundleId()));
+			//vehicleForm.setVolumeUnit(messages.getText(data.getTankUnit().getResourceBundleId()));
+			vehicleForm.setType(messages.getText(data.getType().getResourceBundleId()));			
+			vehicleForm.setUse(messages.getText(data.getUse().getResourceBundleId()));
+			if (data.getEngine() != null)
+				vehicleForm.setEngine(messages.getText(data.getEngine().getResourceBundleId()));
+            if(data.getTrade().getResourceBundleId().equals("generic.messages.nodata")) {
+                vehicleForm.setTrade(messages.getText(data.getTrade().getResourceBundleId()));
+            }else {
+                vehicleForm.setTrade(data.getTrade().getResourceBundleId());
+            }
+			if (data.getCover() != null)
+				vehicleForm.setCover(data.getCover().getResourceBundleId());			
+		}
+        if(data.getSuctaExpiry() != null) {
+            Calendar suncaDate = Calendar.getInstance();
+            suncaDate.setTime(data.getSuctaExpiry());
+            vehicleForm.setSuctaExpiryDate(String.valueOf(suncaDate.get(Calendar.DATE)));
+            vehicleForm.setSuctaExpiryMonth(String.valueOf(suncaDate.get(Calendar.MONTH)+1));
+            vehicleForm.setSuctaExpiryYear(String.valueOf(suncaDate.get(Calendar.YEAR)));
+        }
+        if(data.getMtopExpiry() != null) {
+            Calendar mtopDate = Calendar.getInstance();
+            mtopDate.setTime(data.getMtopExpiry());
+            vehicleForm.setMtopExpiryDate(String.valueOf(mtopDate.get(Calendar.DATE)));
+            vehicleForm.setMtopExpiryMonth(String.valueOf(mtopDate.get(Calendar.MONTH)+1));
+            vehicleForm.setMtopExpiryYear(String.valueOf(mtopDate.get(Calendar.YEAR)));
+        }
+        
+        if(data.getGreenCardExpiry() != null) {
+            Calendar greenCardDate = Calendar.getInstance();
+            greenCardDate.setTime(data.getGreenCardExpiry());
+            vehicleForm.setGreenCardExpiryDate(String.valueOf(greenCardDate.get(Calendar.DATE)));
+            vehicleForm.setGreenCardExpiryMonth(String.valueOf(greenCardDate.get(Calendar.MONTH)+1));
+            vehicleForm.setGreenCardExpiryYear(String.valueOf(greenCardDate.get(Calendar.YEAR)));
+        }
+        
+        vehicleForm.setEnsurance(data.getEnsurance());
+        if(data.getEnsuranceType() != null) {
+            vehicleForm.setEnsuranceType(data.getEnsuranceType().getResourceBundleId());
+        }
+        if(data.isOwnerCard())
+            vehicleForm.setOwnerCard("on");
+        else 
+            vehicleForm.setOwnerCard(null);
+        if(data.getAxisCount() != null) {
+        	vehicleForm.setAxisCount(String.valueOf(data.getAxisCount()));
+        }
+        if(data.getHp() != null) {
+            vehicleForm.setHp(String.valueOf(data.getHp()));
+        }
+        vehicleForm.setObservations(data.getObservations());
+        if(data.getCost() != null) {
+            vehicleForm.setCost(String.valueOf(data.getCost()));
+        }
+        
+        if(data.getAssignedVehicle() != null) {
+        	vehicleForm.setAssignedVehicle(data.getAssignedVehicle().getResourceBundleId());
+        }
+
+        /* Informacion del Vehiculo Opcional - 
+         * Para por ejmplo: KLABIN, YOLI; CIMSA Y PEPSICO */
+        if (data.getOptionalInfo() != null){
+        	if (data.getOptionalInfo().getId() != null){
+        		vehicleForm.setIdOptionalInfo(data.getOptionalInfo().getId().toString());
+        	}
+        	if (data.getOptionalInfo().getPrefix() != null){
+        		vehicleForm.setPrefix(data.getOptionalInfo().getPrefix());
+        	}
+        	if (data.getOptionalInfo().getTotalGrossWeight() != null){
+        		vehicleForm.setTotalGrossWeight(data.getOptionalInfo().getTotalGrossWeight().toString());
+        	}
+        	if (data.getOptionalInfo().getTotalCombinedGrossWeight() != null) {
+        		vehicleForm.setTotalCombinedGrossWeight(data.getOptionalInfo().getTotalCombinedGrossWeight().toString());
+        	}
+        	if (data.getOptionalInfo().getMonitoringSystem() != null){
+        		vehicleForm.setMonitoringSystem(data.getOptionalInfo().getMonitoringSystem());
+        	}
+        	if (data.getOptionalInfo().getTachograph() != null){
+        		vehicleForm.setTachograph(data.getOptionalInfo().getTachograph());
+        	}
+        	if (data.getOptionalInfo().getRenavan() != null){
+        		vehicleForm.setRenavan(data.getOptionalInfo().getRenavan());
+        	}
+        	if (data.getOptionalInfo().getLimitLoad() != null){
+        		vehicleForm.setLimitLoad(data.getOptionalInfo().getLimitLoad().toString());
+        	}
+        	if (data.getOptionalInfo().getAsr()) 
+    			vehicleForm.setAsr("on");
+    		else 	
+    			vehicleForm.setAsr(null);
+        	if (data.getOptionalInfo().getCurrentKm() != null){
+        		vehicleForm.setCurrentKm(data.getOptionalInfo().getCurrentKm().toString());
+        	}        	
+        	if(data.getOptionalInfo().getDateCurrentKm() != null) {
+                Calendar dateCurrentKmDate = Calendar.getInstance();
+                dateCurrentKmDate.setTime(data.getOptionalInfo().getDateCurrentKm());
+                vehicleForm.setDateCurrentKmDate(String.valueOf(dateCurrentKmDate.get(Calendar.DATE)));
+                vehicleForm.setDateCurrentKmMonth(String.valueOf(dateCurrentKmDate.get(Calendar.MONTH)+1));
+                vehicleForm.setDateCurrentKmYear(String.valueOf(dateCurrentKmDate.get(Calendar.YEAR)));
+            }
+        	if(data.getOptionalInfo().getAnttExpiry() != null) {
+                Calendar anttExpiry = Calendar.getInstance();
+                anttExpiry.setTime(data.getOptionalInfo().getAnttExpiry());
+                vehicleForm.setAnttExpiryDate(String.valueOf(anttExpiry.get(Calendar.DATE)));
+                vehicleForm.setAnttExpiryMonth(String.valueOf(anttExpiry.get(Calendar.MONTH)+1));
+                vehicleForm.setAnttExpiryYear(String.valueOf(anttExpiry.get(Calendar.YEAR)));
+            }
+        	if(data.getOptionalInfo().getCitvExpiry() != null) {
+                Calendar citvExpiry = Calendar.getInstance();
+                citvExpiry.setTime(data.getOptionalInfo().getCitvExpiry());
+                vehicleForm.setCitvExpiryDate(String.valueOf(citvExpiry.get(Calendar.DATE)));
+                vehicleForm.setCitvExpiryMonth(String.valueOf(citvExpiry.get(Calendar.MONTH)+1));
+                vehicleForm.setCitvExpiryYear(String.valueOf(citvExpiry.get(Calendar.YEAR)));
+            }
+        } 
+        	//VEHICLE SMF
+        	if(data.getVehicleSMFData()!=null){
+        
+        	if (data.getVehicleSMFData().getVehicleSMFId()!=null){
+        		vehicleForm.setVehicleSMFid(data.getVehicleSMFData().getVehicleSMFId());
+        	}
+        	if(data.getVehicleSMFData().getInstalationDateSMF()!=null){
+        		Calendar dateSMF = Calendar.getInstance();
+        		dateSMF.setTime(data.getVehicleSMFData().getInstalationDateSMF());
+        		vehicleForm.setDaySMF(String.valueOf(dateSMF.get(Calendar.DATE)));
+        		vehicleForm.setMonthSMF(String.valueOf(dateSMF.get(Calendar.MONTH)+1));
+        		vehicleForm.setYearSMF(String.valueOf(dateSMF.get(Calendar.YEAR)));
+        	}
+        	if(data.getVehicleSMFData().getOrderNumber()!=null){
+        		vehicleForm.setOrderNumber(data.getVehicleSMFData().getOrderNumber());
+        	}
+        	if(data.getVehicleSMFData().getCorporationSMF()!=null){
+        		vehicleForm.setCorporationSMF(data.getVehicleSMFData().getCorporationSMF());
+        	}
+        	if(data.getVehicleSMFData().getResponsibleTechnical()!=null){
+        		vehicleForm.setResponsibleTechnical(data.getVehicleSMFData().getResponsibleTechnical());
+        	}
+        	if(data.getVehicleSMFData().getLocalInstallation()!=null){
+        		vehicleForm.setLocalInstallation(data.getVehicleSMFData().getLocalInstallation());
+        	}
+        	if(data.getVehicleSMFData().getObservations()!=null){
+        		vehicleForm.setObservationsSMF(data.getVehicleSMFData().getObservations());
+        	}
+        	if(data.getVehicleSMFData().getUstContact()!=null){
+        		vehicleForm.setUstContact(data.getVehicleSMFData().getUstContact());
+        	}
+        }
+		return vehicleForm;
+	}
+		
+	
+	public static VehicleForm createVehicleForm(DriverData data, Text messages) {
+		VehicleForm vehicleForm = new VehicleForm();
+
+		GeoItemData geoItem1 = (GeoItemData)data.getCountry().getItemIterator().next();
+	    vehicleForm.setCountry1(String.valueOf(geoItem1.getId()));
+	    if(geoItem1.getSubItems() != null) {
+		    GeoItemData geoItem2 = (GeoItemData)geoItem1.getSubItems().getItemIterator().next();
+		    vehicleForm.setCountry2(String.valueOf(geoItem2.getId()));
+		    if(geoItem2.getSubItems() != null) { 
+			    GeoItemData geoItem3 = (GeoItemData)geoItem2.getSubItems().getItemIterator().next();
+			    vehicleForm.setCountry3(String.valueOf(geoItem3.getId()));
+		    }
+	    }
+
+	    Iterator it = data.getDivOrgsIterator();
+		int i = 1;
+		while(it.hasNext()) {
+		    DivOrgData divOrgData = (DivOrgData)it.next();
+		    ItemData item1 = (ItemData)divOrgData.getDivOrgLevels().getItemIterator().next();
+		    vehicleForm.setDivOrg(String.valueOf(item1.getId()),i,1);
+		    if(item1.getSubItems() != null) {
+			    ItemData item2 = (ItemData)item1.getSubItems().getItemIterator().next();
+			    vehicleForm.setDivOrg(String.valueOf(item2.getId()),i,2);
+			    if(item2.getSubItems() != null) {
+				    ItemData item3 = (ItemData)item2.getSubItems().getItemIterator().next();
+				    vehicleForm.setDivOrg(String.valueOf(item3.getId()),i,3);
+			    }
+		    }
+		    i++;
+		}
+
+		return vehicleForm;
+	}
+	
+	public static String vehicleExist(SystemAccess sys,VehicleForm data,
+			UserSessionData userSessionData) throws Exception {
+		
+        /*UserGeoLabelData geoLabelData = sys.getUserRequest().getFilter().getUserGeoLabelData();
+        Integer country = null;
+        switch(geoLabelData.getLevelCount()) {
+            case 1:
+                country = new Integer(data.getCountry1());            	
+                break;
+            case 2:
+                country = new Integer(data.getCountry2());            	
+                break;
+            case 3:
+                country = new Integer(data.getCountry3());            	
+                break;                
+        }*/      
+        
+		Integer country = getCountry(sys,data,userSessionData);
+                
+		String message = null;
+        VehicleReportFacade vehicleReportFacade = sys.getVehicleReportFacade();
+        
+        if (vehicleReportFacade.vehicleExist(data.getMatricula(),country,sys.getUserSessionData()))
+        	message ="generic.vehicle.vehicledata.vehicleAlreadyExist"; 
+        return message;
+		
+	}
+	
+	
+	
+	
+	public static String existOther(SystemAccess sys,VehicleForm data,
+			UserSessionData userSessionData) throws Exception {
+		String message = null;
+		Integer country = getCountry(sys,data,userSessionData);
+		
+        VehicleReportFacade vehicleReportFacade = sys.getVehicleReportFacade();
+        if (vehicleReportFacade.existOther(new Integer(data.getId()),data.getMatricula(),country))
+        	message ="generic.vehicle.vehicledata.vehicleAlreadyExist"; 
+        return message;
+	}	
+	
+	/**
+	 * 
+	 * @param sys
+	 * @param data
+	 * @param userSessionData
+	 * @return
+	 * @throws RemoteException
+	 */
+	private static Integer getCountry(SystemAccess sys,VehicleForm data,UserSessionData userSessionData) throws RemoteException {
+        Integer country = null;
+        switch(sys.getUserSessionData().getFilter().getGeoLevelCount()) {
+            case 1:
+                country = new Integer(data.getCountry1());            	
+                break;
+            case 2:
+                country = new Integer(data.getCountry2());            	
+                break;
+            case 3:
+                country = new Integer(data.getCountry3());            	
+                break;
+        }
+        return country;
+	}
+	
+	/**
+	 * 
+	 * @param sys
+	 * @param createData
+	 * @param userSessionData
+	 * @return
+	 * @throws Exception
+	 */
+	public static String validateVehicleOptionalInfo(SystemAccess sys, VehicleForm createData, UserSessionData userSessionData) throws Exception {
+
+		String msg = null;
+		Integer aux = null;
+		try{
+			msg = "generic.error.totalgrosserror"; 
+			aux = (createData.getTotalGrossWeight() != null && 
+					!createData.getTotalGrossWeight().equals(""))?
+							new Integer(createData.getTotalGrossWeight()):null;
+							
+			msg = "generic.error.totalcombinedgrosserror";
+			aux = (createData.getTotalCombinedGrossWeight() != null && 
+					!createData.getTotalCombinedGrossWeight().equals(""))?
+							new Integer(createData.getTotalCombinedGrossWeight()):null;
+
+			msg = "generic.error.limitloaderror";
+			aux = (createData.getLimitLoad() != null && 
+					!createData.getLimitLoad().equals(""))?
+							new Integer(createData.getLimitLoad()):null;
+
+			msg = "generic.error.currentkmerror";
+			aux = (createData.getCurrentKm() != null && 
+					!createData.getCurrentKm().equals(""))?
+							new Integer(createData.getCurrentKm()):null;							
+
+		}catch (NumberFormatException e){
+			return msg;
+		}
+		return null;
+	}
+	
+	public static String getCleanMatricula(String matricula){
+	    /*
+		String alfanumerico;
+		String result;
+		
+		alfanumerico = matricula.replaceAll("[^ a-zA-Z0-9]" ,""); //Solo alfanumericos
+		
+		result = alfanumerico.replaceAll(" ", "") ; //Saca los espacios
+*/
+		return matricula.toUpperCase();
+
+    }
+	
+}

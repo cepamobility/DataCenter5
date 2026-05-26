@@ -1,0 +1,250 @@
+<%@page import="communication.security.SecurityConstants"%>
+<%@page import="communication.administration.corporation.tables.CorporationData"%>
+<%@page import="java.util.ArrayList"%>
+<%@page import="communication.vehicle.report.CheckListImageData"%>
+<%@page import="java.util.Calendar"%>
+<%@page import="java.util.StringTokenizer"%>
+<%@page import="communication.activity.tables.PointCommentData"%>
+<%@page import="communication.activity.tables.ItemValueStrData"%>
+<%@page import="communication.activity.tables.ItemData"%>
+<%@page import="communication.activity.tables.PointData"%>
+<%@page import="java.util.LinkedList"%>
+<%@page import="java.util.Collection"%>
+<%@page import="communication.activity.tables.CheckListData"%>
+<%@page import="communication.vehicle.tables.VehicleData"%>
+<%@page import="communication.vehicle.tables.VehicleCheckData"%>
+<%@ page contentType="application/json" %>
+
+<%@page import="java.util.HashMap"%>
+<%@page import="org.json.JSONObject"%>
+<%@page import="org.json.JSONTokener"%>
+<%@page import="org.json.JSONStringer"%>
+<%@page import="java.util.Iterator"%>
+<%@page import="org.json.JSONArray"%>
+<%@page import="java.util.Enumeration"%>
+<%@page import="communication.language.Text"%>
+<%@page import="business.SystemAccess"%>
+
+<%
+	SystemAccess sys = (SystemAccess)session.getAttribute("SystemAccess");
+	Text messages = sys.getText();
+	Enumeration enumeration = request.getParameterNames();
+ 	if(enumeration.hasMoreElements())  {
+ 		String name = (String)enumeration.nextElement();
+		JSONObject object = new JSONObject(name);
+		String module = object.getString("module");
+		JSONArray answers = object.getJSONArray("answers");
+		HashMap answerMap = new HashMap();
+		HashMap<String,ArrayList<String>> answerImagesMap = (HashMap<String,ArrayList<String>>)session.getAttribute("imagesCheckList");
+		session.removeAttribute("imagesCheckList");
+		if(answerImagesMap==null){
+			answerImagesMap=new HashMap<String,ArrayList<String>>();
+		}
+		String valids = "";
+		for(int i = 0; i < answers.length(); i++) {
+			JSONObject answerObj = (JSONObject)answers.get(i);
+			Integer id = new Integer(answerObj.getString("id"));
+			String answer = answerObj.getString("answer");
+			if(i > 0) {
+				valids += ",";
+			}
+			valids += "\""+id+"\"";
+			answerMap.put(id,answer);
+		}
+
+		VehicleCheckData vehicleCheck = new VehicleCheckData();
+		VehicleData vehicle = sys.getVehicleReportFacade().findVehicleByPrimaryKey(new Integer((String)answerMap.get(new Integer(1))), sys.getUserSessionData());
+		vehicleCheck.setVehicle(vehicle);
+		
+		if((module.equals("79") || module.equals("80") || module.equals("123")) && sys.isCorporation(new int[]{CorporationData.FORESTALORIENTAL, CorporationData.MONTES_DE_PLATA, CorporationData.FRAYLOG})) {
+			vehicleCheck.setVehicleType(new Integer((String)answerMap.get(new Integer(7))));
+			vehicleCheck.setChargeType(new Integer((String)answerMap.get(new Integer(6))));
+			if(module.equals("80") || module.equals("123")) {
+				vehicleCheck.setCheckPlace(new Integer((String)answerMap.get(new Integer(5))));
+			}
+		}
+		
+		StringTokenizer tokenDate = new StringTokenizer((String)answerMap.get(new Integer(3)),"-");
+		Calendar c = Calendar.getInstance();
+		c.set(Calendar.YEAR, Integer.parseInt(tokenDate.nextToken()));
+		c.set(Calendar.MONTH, Integer.parseInt(tokenDate.nextToken())-1);
+		c.set(Calendar.DATE, Integer.parseInt(tokenDate.nextToken()));
+		if(answerMap.containsKey(new Integer(33))){
+			StringTokenizer tokenHour = new StringTokenizer((String)answerMap.get(new Integer(33)),"-");
+			c.set(Calendar.HOUR_OF_DAY, Integer.parseInt(tokenHour.nextToken()));
+			c.set(Calendar.MINUTE, Integer.parseInt(tokenHour.nextToken()));
+		}
+		vehicleCheck.setDate(c.getTime());
+
+		vehicleCheck.setName(module);
+		vehicleCheck.setInspectedby(sys.getUserSessionData().getFullName());
+		
+		CheckListData checkList = sys.getVehicleReportFacade().getCheckList(new Integer(module),sys.getUserSessionData());
+        Collection itemValueSet = new LinkedList();
+        Collection pointCommentValueSet = new LinkedList();
+        Iterator points = checkList.getSortPoints();
+        LinkedList imagesData=new LinkedList();
+        boolean fallaNoTiene = false;
+        while(points.hasNext()) {
+        	PointData point = (PointData)points.next();
+        	Iterator itemsIt = point.getSortItems();
+            while(itemsIt.hasNext()) {
+                ItemData item = (ItemData)itemsIt.next();
+                String value = (String)answerMap.get(item.getId());
+                
+                if(item.getType() > 2) {
+	                itemValueSet.add(new ItemValueStrData(new ItemData(item.getId()),value));
+                }else {
+                	System.out.println("VALOR:"+value);
+                	if(value==null){
+                		continue;
+                	}
+	                String insertedValue = null;
+	                String insertedTag = "0";
+	                String comment = "";
+	                int valueIndex = value.indexOf("-");
+	                int valueIndexP = value.indexOf("#");
+	                int valueIndex16 = value.indexOf("##");
+	                if(valueIndex16 > 0) {
+	                	insertedTag = "-1";
+	                	String[] aux =value.split("##");
+	                	
+	                	if(aux.length>2){
+		                	insertedValue = aux[0];
+		                	insertedTag=aux[1];
+		                	comment = aux[2];
+	                	}else{
+	                		if(aux.length>1){
+			                	insertedValue = aux[0];
+			                	comment = aux[1];
+	                		}else{
+	                			insertedValue = aux[0];
+	                		}
+	                	}
+	                	if(answerImagesMap.containsKey(item.getId().toString())){
+	                		ArrayList<String> imagesStr=answerImagesMap.get(item.getId().toString());
+	                		for(int i=0; i<imagesStr.size();i++){
+	                			String src=imagesStr.get(i);
+	                			CheckListImageData idata=new CheckListImageData();
+		                		idata.setFileName("_"+i+"_.png");
+		                		idata.setImageBase64(src);
+		                		idata.setPointId(point.getId());
+		                		idata.setText(item.getText());
+		                		imagesData.add(idata);
+	                		}
+	                	}
+	                	
+	                	System.out.println("Iv:"+insertedValue+"It:"+insertedTag+"C:"+comment);
+	                }else
+	                if(valueIndexP > 0) {
+	                	String[] aux1 =value.split("_A_A_");
+	                	String[] aux =aux1[0].split("#");
+	                	if(aux.length>2){
+		                	insertedValue = aux[0];
+		                	insertedTag=aux[1]!=null && aux[1].equalsIgnoreCase("on")?"1":"0";
+		                	comment = aux[2];
+	                	}else{
+	                		if(aux.length>1){
+			                	insertedValue = aux[0];
+			                	comment = aux[1];
+	                		}else{
+	                			insertedValue = aux[0];
+	                		}
+	                	}
+	                	if(answerImagesMap.containsKey(item.getId().toString())){
+	                		ArrayList<String> imagesStr=answerImagesMap.get(item.getId().toString());
+	                		for(int i=0; i<imagesStr.size();i++){
+	                			String src=imagesStr.get(i);
+	                			CheckListImageData idata=new CheckListImageData();
+		                		idata.setFileName("_"+i+"_.png");
+		                		idata.setImageBase64(src);
+		                		idata.setPointId(point.getId());
+		                		idata.setText(item.getText());
+		                		imagesData.add(idata);
+	                		}
+	                	}
+	                	System.out.println("Iv:"+insertedValue+"It:"+insertedTag+"C:"+comment);
+	                	
+	                }else
+	                if(valueIndex > 0) {
+	                	insertedValue = value.substring(0, valueIndex);
+	                	comment = value.substring(valueIndex+1);
+	                }else {
+	                	insertedValue = value;
+	                }
+	                if(point.getId().intValue() >= 4000 && point.getId().intValue() < 4022) {
+	                	if(insertedValue.equals("3")) {
+	                		vehicle.setExtradata(point.getId().intValue()-4000, "0");
+	                		if(point.isProcesable(vehicle, sys.getCorporationId())) {
+		                		int itemId = item.getId().intValue();
+								if(sys.isCorporation(new int[]{CorporationData.FORESTALORIENTAL})) {
+									if((itemId >= 17000 && itemId < 17003) || itemId == 17009 || itemId == 17010 || itemId == 17012) {
+										insertedValue = "2";
+										fallaNoTiene = true;
+										insertedTag = "2";
+									} else if(itemId == 17005 || itemId == 17006 || itemId == 17015 || itemId == 17016) {
+										insertedValue = "2";
+										insertedTag = "0";
+									} else {
+										insertedValue = "1";
+									}
+		                		}else {
+									insertedValue = "1";
+								}
+	                		}else {
+								insertedValue = "1";
+	                		}
+	                	} else {
+	                		vehicle.setExtradata(point.getId().intValue()-4000, "1");
+	                	}
+	                }
+	                itemValueSet.add(new ItemValueStrData(new ItemData(item.getId()),insertedValue.toString(),insertedTag));
+	                if(comment != null && comment.length() > 0 && !(item.getType().intValue() != 3 && comment.equals("30"))) {
+	                	pointCommentValueSet.add(new PointCommentData(point,comment));
+	                }
+                }
+            }
+        }
+        
+        if(sys.isCorporation(new int[]{CorporationData.FORESTALORIENTAL, CorporationData.MONTES_DE_PLATA, CorporationData.FRAYLOG}) && module.equals("80")) {
+        	sys.getVehicleABMFacade().vehicleUpdate(vehicle, "Items nuevos", sys.getUserSessionData());	
+        }
+
+        Integer result = new Integer((String)answerMap.get(new Integer(0)));
+        if(result.intValue() == 1 && fallaNoTiene) {
+        	result = new Integer(3);
+        }
+        vehicleCheck.setResult(result);      
+        vehicleCheck.setSerie((String)answerMap.get(new Integer(4)));
+        vehicleCheck.setObs((String)answerMap.get(new Integer(2)));
+		vehicleCheck.setItemValueSet(itemValueSet);
+		vehicleCheck.setPointCommentSet(pointCommentValueSet);
+		Integer ch=0;
+		
+		 //sys.getVehicleABMFacade().uploadCheckListImagesBase64(imagesData, ch,  sys.getUserSessionData());
+		 
+		if(module.equals("91")){
+			vehicleCheck.setInspectedby(sys.getUserSessionData().getFullName());
+		}
+		
+		
+		if(module.equals("92")){//Checklist MP MDP
+			ch=sys.getVehicleABMFacade().createOrUpdateVehicleCheckUPMMDP(imagesData,vehicleCheck, "", sys.getUserSessionData(),messages);
+		}else{
+			if(module.equals("80") || module.equals("79") || module.equals("84") || module.equals("123")){//UPM MDP e internos MDP y WEYER
+				ch=sys.getVehicleABMFacade().createOrUpdateVehicleCheckUPMMDP(imagesData,vehicleCheck, "", sys.getUserSessionData(),sys.getText());	
+			}else{
+				ch=sys.getVehicleABMFacade().createOrUpdateVehicleCheck(vehicleCheck, "", sys.getUserSessionData());
+			}
+				
+		}
+	    
+	   
+		
+		String resp = "{\"valids\": ["+valids+"],\"errors\": [],\"final_text\": \"Module finished\"}";
+		System.out.println(resp);
+		response.getWriter().print(resp);
+        sys.getUserSessionData().setUrl("/vehicle/VehicleView.jsp?id="+answerMap.get(new Integer(1)));
+        sys.getUserSessionData().setMsg("Check list ingresado con éxito");
+	}
+%>

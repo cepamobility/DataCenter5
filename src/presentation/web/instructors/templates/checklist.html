@@ -1,0 +1,45 @@
+<ion-view view-title="{{f}}">
+    <loading></loading> 
+	  <ion-content class="padding">
+	    <div class="list card" ng-repeat="p in ch.points" >
+	      <div class="item item-divider" style="cursor:pointer;" ng-click="openClose(p.id)" >{{p.name}}</div>
+	       <ion-item class="item item-body"  ng-repeat="i in p.items" type="item-text-wrap" tag="{{p.id}}" tagI="H" >
+				<p ng-show="i.type==1"><ion-checkbox style="overflow: initial !important;white-space: initial !important;" class="wrapping-list" ng-model="i.checked" id="{{i.id}}" tagInput="C"   ng-click="offItems(i.disabledItems)">{{i.name}}</ion-checkbox></p>
+				<p ng-show="i.type==2"><ion-radio  style="overflow: initial !important;white-space: initial !important;" class="wrapping-list"ng-model="i.idRadio"  ng-value="i.id" tagInput="R"   id="{{i.id}}" ng-click="offItems(i.disabledItems)">{{i.name}}</ion-radio></p>
+				<p ng-show="i.type==3">{{i.name}}</p>
+			</ion-item>
+			<div class="item item-divider" style="cursor:pointer;" ng-click="openClose('o'+p.id)" ng-show="p.observations.length>0" >{{txt.observations}}</div>
+			<ion-item class="item item-body"  ng-repeat="i in p.observations" type="item-text-wrap" tag="o{{p.id}}" tagI="H" >
+				<p><ion-checkbox  style="overflow: initial !important;white-space: initial !important;" ng-model="i.checked" id="o{{i.id}}" tagInput="OC" >{{i.label}}</ion-checkbox></p>
+			</ion-item>
+			</div>
+			
+	      </div>
+	      
+	       
+	    </div>
+	    
+	    <div class="list card"  >
+	    	<div class="item item-divider"   >{{txt.note}}</div>
+	    	<div class="item item-body">
+	    	<p><ion-radio ng-model="ch.note" ng-value="'A'" tagInput="R"   id="A" value="A">{{txt.approved}}</ion-radio></p>
+	    	<p><ion-radio ng-model="ch.note"   ng-value="'approvedwithobservations'" tagInput="R"   id="approvedwithobservations" >{{txt.approvedwithobservations}}</ion-radio></p>
+	    	<p><ion-radio ng-model="ch.note"  ng-value="'notapproved'" tagInput="R"   id="notapproved" >{{txt.notapproved}}</ion-radio></p>
+	    	
+	    	</div>
+	    	<div class="item item-divider" style="cursor:pointer;" ng-click="openClose('og')" >{{txt.observations}}</div>
+				<ion-item class="item item-body"  ng-repeat="i in ac.observations" type="item-text-wrap" tag="og" tagI="H" >
+					<p><ion-checkbox  style="overflow: initial !important;white-space: initial !important;"  class="wrapping-list" ng-model="i.checked" id="og{{i.id}}" tagInput="OGC" >{{i.label}}</ion-checkbox></p>
+				</ion-item>
+			</div> 
+	    </div>
+	    
+	    <ion-radio ng-model="i.idRadio" ng-change="actRadios(i.id)" ng-value="i.id" tagInput="R"   id="{{i.id}}" ng-click="offItems(i.disabledItems)">{{i.name}}</ion-radio>
+	    <button class="button button-assertive"  ng-click="cancel()">
+	      {{txt.close}}
+	    </button>
+	    <button class="button button-positive"  ng-click="acept()">
+	      {{txt.accept}}
+	    </button>
+	  </ion-content>
+</ion-view>

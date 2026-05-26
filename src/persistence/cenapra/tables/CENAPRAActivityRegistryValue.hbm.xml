@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC  "-//Hibernate/Hibernate Mapping DTD 3.0//EN"  "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.cenapra.tables" >
+    <class name="CENAPRAActivityRegistryValue" table="cenapraactivityregistryvalues">
+		
+       <composite-id class="CENAPRAActivityRegistryValuePK" name="pk" >
+       		<key-many-to-one name="registry" column="registry" class="CENAPRAActivityRegistry" />
+       		<key-many-to-one name="item" column="item" class="persistence.activity.tables.Item" />
+       </composite-id>
+
+        <many-to-one name="checklist" class="persistence.activity.tables.CheckList" not-null="true" column="checklist" />        
+        
+	 </class>
+</hibernate-mapping>

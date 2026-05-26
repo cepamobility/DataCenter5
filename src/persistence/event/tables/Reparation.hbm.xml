@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.event.tables" >
+	<class name="Reparation" table="reparations">
+        
+		<id column="id" name="id">
+            <generator class="sequence">
+            	<param name="sequence">Reparation_Sequence</param>
+            </generator>
+        </id>		 
+		
+   		<property 	name="date" 	type="java.sql.Date" column="date"	not-null="true"/>
+		
+   		<many-to-one class="persistence.driver.tables.Driver" name="driver" not-null="true"/>
+	   	<many-to-one class="persistence.vehicle.tables.Vehicle" name="vehicle" not-null="true"/>
+	   	<many-to-one class="persistence.administration.corporation.tables.Corporation" name="corporation" not-null="true" />
+   		
+   		<property 	name="observation"	type="text"		column="observation" />
+   		<property 	name="status" 	type="java.lang.Integer" column="status"	not-null="true"/>
+   		<property 	name="kms" 	type="java.lang.Integer" column="kms" />
+		<property 	name="inserted" 	type="java.util.Date" column="inserted" />
+   					
+    </class>
+</hibernate-mapping>

@@ -1,0 +1,247 @@
+<%@page language="java" 
+	errorPage="../exception.jsp"
+	import="java.util.*"
+	import="business.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.util.*"
+	import="communication.administration.user.*"
+	import="communication.administration.user.tables.*"
+	import="presentation.translator.web.util.*"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+<%!
+	RequestDispatcher dispatcher; String context;
+	String pathView; String pathMsg; String pathSearch;
+	Integer pageNum; int pageSize; boolean all; 
+	String pathLanguage; Text messages;
+	SystemAccess sys; Collection col; 
+	String attribute; String value;
+%>
+<%
+	sys=(SystemAccess)session.getAttribute("SystemAccess");
+	String check = Util.checkPermission(sys,SecurityConstants.VIEW_USER_LIST);
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+	
+		context=request.getContextPath();
+		
+		if(session.getAttribute("Msg")!=null){
+	session.removeAttribute("Msg");
+		}
+		
+		pathLanguage="/util/jsp/language.jsp";
+		
+		dispatcher=request.getRequestDispatcher(pathLanguage);
+		dispatcher.include(request,response);
+
+		messages=sys.getText();
+
+		String group = request.getParameter("id");
+		String url = "user/UserSearch.jsp";
+		if(!Util.empty(group)) {
+		    url += "?id="+group;
+		}
+		
+		attribute = "firstName";
+		if(request.getParameter("attribute")!=null){
+	attribute = request.getParameter("attribute");
+		    url += "&attribute="+attribute;
+		}		
+		value = "";
+		if(request.getParameter("value")!=null){
+	value = request.getParameter("value");
+		    url += "&value="+value;
+		}		
+		if(request.getParameter("pageNum")!=null){
+	pageNum=new Integer(request.getParameter("pageNum"));
+		    url += "&pageNum="+pageNum;
+		}else{
+	pageNum=new Integer(1);
+		}
+		pageSize = 10;
+		if(request.getParameter("pageSize")!=null){
+	pageSize = Integer.parseInt(request.getParameter("pageSize"));
+		}		
+		all=(request.getParameter("all")!=null);
+		session.setAttribute("url",url);
+
+		UserReportFacade userReportFacade = sys.getUserReportFacade();
+
+		ListResult result = null;
+		if(all) {
+		    result = userReportFacade.findUserList(attribute,value,0,-1,sys.getUserSessionData(),null,false);
+		}else{
+	if(pageNum.intValue() == 1) {
+		result = userReportFacade.findUserList(attribute,value,0,pageSize,sys.getUserSessionData(),null,false);
+	}else {
+		result = userReportFacade.findUserList(attribute,value,(pageNum.intValue()-1)*pageSize,pageSize,sys.getUserSessionData(),null,false);
+	}
+		}
+
+		String link = "/user/UserSearch.jsp?id="+group;
+		Collection col = result.getElements();
+
+		session.setAttribute("target","UserSearch");
+%>
+
+
+<script language="javascript" src='../util/js/Prepared_Parameters.js' type='text/javascript' ></script>
+
+<script>
+	
+function doSubmit() {
+	document.forms[2].submit();
+}
+
+function deleteIFConfirm(form,msg){
+	var elements=form.elements;
+	var length=elements.length;
+	var i;
+	var valueCheckboxParamList="";
+	var separator="<";
+		
+	for(i=0;i<length;i++){
+		var element=elements[i];
+		if(element.type.toLowerCase()=="checkbox"){
+			if(element.checked){
+				if(valueCheckboxParamList==""){
+					valueCheckboxParamList=element.value;
+				}else{
+					valueCheckboxParamList=element.value+"<"+valueCheckboxParamList;
+				}	
+			}	
+		} 
+	}
+	form.checkboxParamList.value=valueCheckboxParamList;
+	if(valueCheckboxParamList.length>0){
+		if(confirm(msg)){
+			form.submit();
+		}
+	}
+}
+</script>
+
+	<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+		
+<head/>
+
+<body>
+	<table width="600" border="0" align="center" cellpadding="0" cellspacing="0">
+		<tr class="guide1">
+			<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText("web.user.usernedlist.systemusers")%>' />
+  		</tr>
+      	<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+  		<tr>
+    		<td width="100%" valign="top">
+				<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.messages.search")%>' />
+	    		<table width="100%" border="0" cellpadding="0" cellspacing="0">
+					<tr>
+						<td>
+							<form action='<%="layout.jsp?refer=/user/UserSearch.jsp?id="+group%>' method="post">
+								<input type="hidden" name="pageNum" value='<%=String.valueOf(pageNum)%>'/>
+<%			if(all) {
+%>								<input type="hidden" name="all" value="all"/>
+<%			}
+%>								<input type="hidden" name="pageNum2" value='<%=pageNum%>'/>
+								<select name="attribute" class="input" onChange="javascript:modifyOptions()">
+									<option value="firstName" <%= (attribute.equals("firstName"))?"selected":""%>><%=messages.getText("generic.user.userdata.firstname")%></option>
+									<option value="lastName" <%= (attribute.equals("lastName"))?"selected":""%>><%=messages.getText("generic.user.userdata.lastname")%></option>
+								</select>
+								<input type="text" name="value" size="16" class="input" value='<%=value%>'/>
+								<input name="button" type="button" onClick="javascript:doSubmit();" value='<%=messages.getText("generic.messages.search")%>' class="input"/>
+								<input type="hidden" name="pageSize" value='<%=pageSize%>'/>
+							</form>
+						</td>
+					</tr>
+				</table>
+				<jsp:include  page="../component/utilityboxbottom.jsp" />
+			</td>
+	  	</tr>
+  		<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+  		<tr>
+    		<td colspan="3">
+				<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("web.user.usernedlist.systemusers")%>' />
+    			<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0">
+      				<tr>
+<%!		Iterator iter; UserAttributes user; int i;
+		String uid; boolean linetwo;
+%>
+<%		linetwo = true;
+		if(col!=null && col.isEmpty()){
+%>
+		                <td class="guide2"><%=messages.getText("generic.user.userdata.firstname")%></td>
+		                <td class="guide2"><%=messages.getText("generic.user.userdata.lastname")%></td>
+		                <td class="guide2"><%=messages.getText("generic.user.userdata.nickname")%></td>
+		                <td class="guide2"><%=messages.getText("generic.user.userdata.mail")%></td>
+		                <td class="guide2"><%=messages.getText("generic.user.userdata.language")%></td>
+              		</tr>
+              		<tr>
+              			<td colspan="5"><%=messages.getText("generic.messages.notresult")%></td>
+              		</tr>
+            	</table>
+<%		}else {
+			if(col!=null) {
+				iter=col.iterator();
+%>	        	<html:form action="/AddUserGroup"  >
+					<html:hidden property="group" value='<%=group%>'/>
+              		<html:hidden property="checkboxParamList" />
+              		<table width="100%" border="0">
+                		<tr align="center">
+							<td width='3%' class="guide2">&nbsp;</td>
+					        <td width='18%' class="guide2"><%=messages.getText("generic.user.userdata.firstname")%></td>
+			                <td width='17%' class="guide2"><%=messages.getText("generic.user.userdata.lastname")%></td>
+			                <td width='15%' class="guide2"><%=messages.getText("generic.user.userdata.nickname")%></td>
+			                <td width='31%' class="guide2"><%=messages.getText("generic.user.userdata.mail")%></td>
+			                <td width='16%' class="guide2"><%=messages.getText("generic.user.userdata.language")%></td>
+                		</tr>
+              		</table>
+              		<table name="users" width="100%" >
+<%				while(iter.hasNext()){
+	    			user=(UserAttributes)iter.next();
+%>	            		<tr align=center class='<%=(linetwo)?"linetwo":"lineone"%>'>
+<%					linetwo = !linetwo;	
+%>	              			<td width="3%" style='width:5% align='center''>
+								<input type='checkbox' name='<%=user.getLoginName()%>' value='<%=user.getLoginName()%>' >                  
+							</td>
+	              			<td width='21%' align="right"><%=user.getFirstName()%></td>
+                  			<td width='19%' align="right"><%=user.getLastName()%></td>
+                  			<td width='19%' align="right"><%=user.getLoginName()%></td>
+                  			<td width='19%' align="right"><%=user.getEmail()%></td>
+                  			<td width='19%' align="right"><%=messages.getText(user.getLanguage())%></td>
+                		</tr>
+<%				}
+%>		            </table>
+            	</html:form>
+            	<table width='100%'  border="0" cellpadding="0" cellspacing="0" class="default">
+              		<tr>
+                		<td class="linetwo">
+                    		<div align="right">
+                      			<input name="button2" type="button" onClick="javascript:deleteIFConfirm(document.forms[3],'<%=messages.getText("group.user.confirminsert")%>');" value=<%=messages.getText("generic.messages.add")%> class="input"/>
+                    		</div>
+						</td>
+              		</tr>
+            	</table>
+          		<jsp:include page='<%="../util/pagination.jsp?size="+pageSize+"&num="+String.valueOf(pageNum)+"&total="+String.valueOf(result.getTotal())+"&link="+link+"&attribute="+attribute+"&value="+value%>' />      
+<%			}
+		}
+%>        		<jsp:include page="../component/utilityboxbottom.jsp" />
+			</td>
+	 	</tr>
+    </table>
+</body>
+<%
+	}
+%>
+</html>

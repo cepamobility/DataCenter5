@@ -1,0 +1,77 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.vehicle.tables" >
+    <class name="VehicleCheck" table="vehiclecheck">
+		
+		 <id
+            column="vehicleCheckId"
+            name="vehicleCheckId"
+        >
+            <generator class="sequence">
+            	<param name="sequence">VehicleCheck_Sequence</param>
+            </generator>
+        </id>
+        
+        <property	name="date" type="java.util.Date" column="date"/>              
+        <property	name="name" type="java.lang.String" column="name"/>        
+        <property	name="licenseNumber" type="java.lang.String" column="licenseNumber"/>                
+        <property	name="dateLicenseExpiry" type="java.util.Date" column="dateLicenseExpiry"/>        
+        
+        <property	name="obs" type="java.lang.String" column="obs"/>
+        
+        <property	name="serie" type="java.lang.String" column="serie"/>                
+        
+        <property	name="vehicleKm" type="java.lang.Integer" column="vehicleKm"/>
+        
+        <property	name="result" type="java.lang.Integer" column="result"/>
+        
+        <many-to-one name="vehicle" class="persistence.vehicle.tables.Vehicle" not-null="true" >
+             <column name="vehicle"></column>
+        </many-to-one>
+        
+      <set name="itemValueSet" table="vehiclecheckitemsvalues" cascade="all-delete-orphan">
+       		<key column="vehiclecheck"></key>
+       		<composite-element class="persistence.activity.tables.ItemValueStr">
+       			<property name="itemValue" type="java.lang.String">
+       				<column  name="itemValue" default="0"></column>
+       			</property>
+       			<property name="itemTag" type="java.lang.String">
+       				<column  name="itemTag" default="0"></column>
+       			</property>
+       			<many-to-one class="persistence.activity.tables.Item" name="item" fetch="join" />       		
+       		</composite-element>
+       </set>   
+       
+       <!-- Para Nalco -->
+        <property	name="inspectedby" type="java.lang.String" column="inspectedby"/>
+        <property	name="distrito" type="java.lang.String" column="distrito"/>
+        <property	name="grupo" type="java.lang.String" column="grupo"/>                         
+
+       	<property	name="vehicleType" type="java.lang.Integer" column="vehicletype"/>
+		<property	name="chargeType" type="java.lang.Integer" column="chargetype"/>
+		<property	name="checkPlace" type="java.lang.Integer" column="checkplace"/>
+        
+       <set name="pointCommentSet" table="vehiclecheckpointscomment" cascade="all-delete-orphan">
+       		<key column="vehiclecheck"></key>       		
+       		<composite-element class="persistence.vehicle.tables.PointComment" >
+        		<property name="comment" column="comment" ></property>
+        		<many-to-one class="persistence.activity.tables.Point" name="point" fetch="join" />
+		    </composite-element>
+       	</set>
+       
+        <set name="pointImageSet" table="vehiclecheckpointsimage" cascade="all-delete-orphan">
+       		<key column="vehiclecheck"></key>       		
+       		<composite-element class="persistence.vehicle.tables.VehicleCheckListImage" >
+        		<property name="imageName" column="imageName" ></property>
+        		<property name="text" column="text" ></property>
+        		<many-to-one class="persistence.activity.tables.Point" name="point" fetch="join" />
+		    </composite-element>
+       	</set>
+       	
+	 </class>
+
+</hibernate-mapping>

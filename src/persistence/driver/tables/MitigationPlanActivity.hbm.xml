@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.driver.tables">
+	<class name="MitigationPlanActivity" table="mitigationplanactivities">
+		
+    	<composite-id class="MitigationPlanActivityPK" name="pk" >
+       		<key-many-to-one
+       			 name="plan"
+       			 column="id"
+       			 class="MitigationPlan"
+       	 	/>
+	        <key-property 	name="activity"	type="java.lang.Integer"	column="activity" />
+       	</composite-id>
+		
+        <property column="done" name="done"/>
+		
+  	</class>
+</hibernate-mapping>

@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.fleet.tables" >
+	<class name="FleetDivisionDetail" table="fleetdivisiondetail">
+        
+       <composite-id class="FleetDivisionDetailPK" name="pk" >
+       		<key-many-to-one
+       			 name="fleet"
+       			 column="id"
+       			 class="persistence.fleet.tables.FleetDivision"
+       	 	/>
+	        <key-property 	name="period"	type="java.lang.Integer"	column="period" />
+    	    <key-property 	name="year"		type="java.lang.Integer"	column="year" />
+       </composite-id>
+
+   	    <property 	name="vehicles"		type="java.lang.Integer"	column="vehicles" />
+   	    <property 	name="miles"		type="java.lang.Integer"	column="miles" />
+
+   	    <property 	name="accidents"	type="java.lang.Integer" >	
+   	    	<column name="accidents" default="0"  />   	    	
+   	    </property>
+   	    
+   	    <property 	name="incidents"	type="java.lang.Integer"	>
+   	    	<column name="incidents" default="0"  />
+   	    </property>
+   	    
+   	    <property 	name="nearmiss"		type="java.lang.Integer"	>
+   	    	<column name="nearmiss" default="0" />
+   	    </property>
+   	    
+
+   	    <property 	name="APMM"			type="java.lang.Double"	column="apmm" />
+
+
+    </class>
+</hibernate-mapping>

@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.vehicle.tables">
+       <class name="VehicleStateHistory" table="vehiclestatehistory">
+        
+	        <id	column="id"	name="id"	type="java.lang.Integer">
+	           <generator class="sequence">
+					<param name="sequence">VehicleStateHistory_Sequence</param>
+				</generator>
+	        </id>
+	        <property	name="state"	type="java.lang.String"		column="state"	not-null="true" />        
+	        <property	name="stateDate"	type="java.sql.Timestamp"		column="stateDate"	not-null="true" />        
+	        <property	name="hours"	type="java.lang.Integer"		column="hours"	not-null="true" />  
+	        <property	name="reasonDescription"	type="java.lang.String"		column="reasonDescription"	not-null="true" />  
+	        <property	name="reasonCode"	type="java.lang.Integer"		column="reasonCode"	not-null="true" />  
+	        <property	name="typeOfPenalty"	type="java.lang.Integer"		column="typeOfPenalty"	not-null="true" />  
+    	</class>
+</hibernate-mapping>

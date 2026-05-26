@@ -1,0 +1,394 @@
+<%@page language="java" 
+	errorPage="../exception.jsp"
+	import="java.util.*"
+	import="business.*"
+	import="business.fleet.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.fleet.tables.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<script language="JavaScript" type="text/javascript">
+function submitPagination(page,all) {
+	document.forms[2].all.value = all;
+	document.forms[2].pageNum.value = page;
+	document.forms[2].submit();
+}
+function setAction(form,action){
+	
+	if(preparedCheckboxParameters(form)) {
+		form.action.value=action;
+		form.submit();
+	}
+}
+
+</script>
+<script language="javascript" src='/datacenter/util/js/Prepared_Parameters.js' type='text/javascript' >
+</script>
+
+<html:html>
+<%!
+	RequestDispatcher dispatcher; String context;
+	Text messages; SystemAccess sys;
+	Integer pageNum; boolean all; int pageSize; 
+	String value;String type;String status;
+%>
+<%
+	sys=(SystemAccess)session.getAttribute("SystemAccess");
+	String check = Util.checkPermission(sys,SecurityConstants.VIEW_FLEET_LIST);
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		
+	    type = "0";
+		if(request.getParameter("type")!=null){
+		    type = request.getParameter("type");
+		}		
+
+		String url = "fleet/FleetList.jsp?type="+type;
+		
+		context=request.getContextPath();
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+	
+		messages=sys.getText();
+	
+		session.setAttribute("target","FleetList");
+		if(request.getParameter("pageNum")!=null){
+	pageNum=new Integer(request.getParameter("pageNum"));
+	url += "&pageNum="+pageNum;
+		}else{
+	pageNum=new Integer(1);
+		}
+
+		value = "";
+		if(request.getParameter("value")!=null){
+	value = request.getParameter("value");
+	url += "&value="+value;
+		}		
+		
+		status = String.valueOf(FleetData.ACTIVE);
+		if (request.getParameter("status") != null) {
+	status = request.getParameter("status");
+	url += "&status="+status;
+		}
+		
+		pageSize = 10;
+		if(request.getParameter("pageSize")!=null){
+	pageSize = Integer.parseInt(request.getParameter("pageSize"));
+		}		
+		int first = 0;
+		int count = pageSize;
+		all=!Util.empty(request.getParameter("all")) && request.getParameter("all").equals("true");
+		if(all) {
+		    count=-1;
+		}else{
+		    first=(pageNum.intValue()-1)*pageSize;
+		}
+		FleetReportFacade fleetReportFacade = sys.getFleetReportFacade();
+		String link = request.getContextPath()+"/fleet/FleetList.jsp";
+	    session.setAttribute("url",url);
+		session.setAttribute("fleetSearchList", fleetReportFacade.findFleetList(
+		value,Integer.parseInt(type),first,count,sys.getUserSessionData(),
+		Integer.parseInt(status)));
+%>
+
+	<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	<style type="text/css">	</style>
+	<head>
+		<META http-equiv="Cache-Control" content="no-cache">
+		<META http-equiv="Pragma" content="no-cache">
+		<META http-equiv="Expires" content="-1">		
+	</head>
+
+	<body bgcolor="#FFFFFF">	
+		<table width="600" border="0" align="center" cellpadding="0" cellspacing="0">
+			<tr class="guide1">
+				<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText("generic.data.fleet.pl")%>' />
+	  		</tr>
+	      	<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+      		</tr>
+      		<tr>
+      			<!-- Options Start -->
+      		    <td width="100%" valign="top">
+					<jsp:include  page='<%="../component/utilitybox3top.jsp?title="+messages.getText("generic.messages.options")%>' />
+					<table width="100%" border="0" cellpadding="0" cellspacing="0" dwcopytype="CopyTableCell">
+<%
+	if(sys.getUserSessionData().checkPermission(SecurityConstants.CREATE_FLEET)) {
+%>						<tr>
+							<td width="50%">
+								<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="layout.jsp?refer=/fleet/create.jsp?type=1" class="texts">
+									<%=messages.getText("generic.messages.addindividualfleet")%>					
+								</a>
+							</td>
+							<td width="50%">
+								<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="layout.jsp?refer=/fleet/create.jsp?type=2" class="texts">
+									<%=messages.getText("generic.messages.addcolectivefleet")%>					
+								</a>								
+							</td>
+						</tr>	
+<%
+		}
+	%>					</table>					
+					<jsp:include page="../component/utilitybox3bottom.jsp"/>	
+				</td>
+	      		<!-- Options Ends -->
+      		</tr>
+      		<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+      		</tr>
+	      	<tr>
+    	    	<td width="100%" valign="top">
+					<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.messages.search")%>' />
+					<table width="100%" border="0" cellpadding="0" cellspacing="0">
+						<tr>
+							<td width="100%">
+								<form id="FleetList" name="FleetList"  action="layout.jsp?refer=/fleet/FleetList.jsp" method="post">
+									<table width="100%" border="0" cellpadding="0" cellspacing="0">
+										<tr>
+											<td width="30%" class="texts">
+												<input type="hidden" name="pageNum" value='<%=String.valueOf(pageNum)%>'/>    
+	 											<input type="hidden" name="all" <%=(all) ? "value='all'" : ""%>/>    
+												<%=messages.getText("generic.fleet.fleetsearch.name")%>
+											</td>
+											<td width="80%">
+												<input type="text" name="value" value='<%=value%>' width="100%" class="input">    
+											</td>
+										</tr>  
+<%
+  	if(sys.getUserSessionData().getFilter().getCorporationId().intValue() != CorporationData.JJ) {
+  %>		      							<tr  class="space">
+		      								<th align="right">&nbsp;</th>
+		      								<td align="right">&nbsp;</td>
+		      							</tr>
+										<!--  Search -->
+										<tr>
+											<td width="30%" class="texts">
+												<%=messages.getText("generic.fleet.fleetdata.type")%>
+											</td>
+											<td width="80%">
+												<select name="type" class="input" width="100%" >
+													<option value="0" class="input">
+														<%=messages.getText("generic.messages.all.pl")%>
+													</option>
+													<option value='<%=String.valueOf(FleetData.INDIVIDUAL)%>' <%=(type.equals(String.valueOf(FleetData.INDIVIDUAL)))? "selected" : ""%> class="input">
+														<%=messages.getText("generic.fleet.individual")%>
+													</option>
+													<option value='<%=String.valueOf(FleetData.COLECTIVE)%>' <%=(type.equals(String.valueOf(FleetData.COLECTIVE)))? "selected" : ""%> class="input">
+														<%=messages.getText("generic.fleet.colective")%>
+													</option>
+												</select>
+											</td>
+										</tr> 
+<%
+ 	}
+ %>										<tr>
+											<td width="100%" colspan="2" align="left" class="texts">
+											<table width="100%" border="0" align="right" cellpadding="0" 
+												cellspacing="0" class="specialarea">
+											<tr>
+												<!--  Active - Excluded Radio Buttons -->
+												<td width="12%" valign="middle" ><input type="radio" class="specialarea" name="status" 
+        	                                    	value='<%=FleetData.ACTIVE%>' <%=(Integer.parseInt(status) == FleetData.ACTIVE)? "checked" : ""%>> 
+							                        <%=messages.getText("generic.messages.active")%> </td>
+							                    <td width="15%" valign="middle" ><input type="radio" class="specialarea" name="status" 
+							                        value='<%=FleetData.EXCLUDED%>' <%=(Integer.parseInt(status) == FleetData.EXCLUDED) ? "checked" : ""%>> 
+							                        <%=messages.getText("generic.messages.excluded")%> </td>
+						    	                <td width="73%" align="left" valign="middle"> 
+						        	                <input type="radio" class="specialarea" name="status" 
+						            	            value='<%=FleetData.ALL%>' <%=(Integer.parseInt(status) == FleetData.ALL) ? "checked" : ""%> />
+						                	        <%=messages.getText("generic.messages.all.pl")%> </td>						                 
+						                	</tr>
+						                	</table>
+						                	</td>						                	
+										</tr>									 
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>  
+											<td colspan="2" align="right">
+	   											<input type="hidden" name="pageSize" value='<%=pageSize%>'/>    
+												<input name="button" type="button" 
+													onClick="javascript:document.forms[2].submit();" 
+													value='<%=messages.getText("generic.messages.search")%>' class="input"/>	
+											</td>	
+										</tr>  
+									</table>	
+								</form>			
+							</td>
+						</tr>
+					</table>			
+   					<jsp:include page="../component/utilityboxbottom.jsp"/>	
+				</td>
+			</tr>
+      		<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+	      	</tr>
+    	  	<tr>
+        		<td colspan="3">
+					<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("web.fleet.fleetlist")%>' />
+					<table width='100%' border="0" align='center' cellpadding="0" cellspacing="0">
+      					<tr>
+        					<td width="100%">
+<%!		String uid; int pageMax; int contIter; int total;
+%>
+<%
+	ListResult col=(ListResult)session.getAttribute("fleetSearchList");
+		total = col.getTotal();
+		if(col!=null && col.getElements().isEmpty()){
+%>			    				<table width="100%" border="0">
+            	  					<tr align="center">
+						                <td width='20%' class="guide2"><%=messages.getText("generic.fleet.fleetsearch.name")%></td>
+						                <td width='40%'	class="guide2"><%=messages.getText("generic.fleet.fleetdata.description")%></td>
+					    	            <td width='20%'	class="guide2"><%=messages.getText("generic.fleet.fleetdata.type")%></td>
+					    	            <td width='15%'	class="guide2"><%=messages.getText("generic.driver.driverdata.exclusiondate")%></td>
+              						</tr>
+            	  					<tr>
+            	  						<td colspan="3" class="linetwo">
+    	      								<%=messages.getText("generic.messages.notresult")%>
+            	  						</td>
+            	  					</tr>
+	            				</table>
+<%
+	}else {
+	if(col!=null){
+		Iterator iter=col.getElements().iterator();
+		contIter=0;
+%>
+							<form name="FleetExclusion" action="layout.jsp?refer=/fleet/FleetExclusion.jsp"  method="post">
+									<input type="hidden" name="checkboxParamList" />
+									<input type="hidden" name="action" />
+    	          					<table width="100%" border="0">
+        	        					<tr align="center">
+<%
+	if(sys.getUserSessionData().checkPermission(SecurityConstants.DELETE_FLEET)) {
+%>	        	      						<td width='5%' class="guide2"></td>
+<%
+	}
+%>							                <td width='20%' class="guide2"><%=messages.getText("generic.fleet.fleetsearch.name")%></td>
+							                <td width='40%'	class="guide2"><%=messages.getText("generic.fleet.fleetdata.description")%></td>
+							                <td width='20%'	class="guide2"><%=messages.getText("generic.fleet.fleetdata.type")%></td>
+							                <td width='15%'	class="guide2"><%=messages.getText("generic.driver.driverdata.exclusiondate")%></td>
+              							</tr>
+              						</table>
+	              					<table width="100%" >
+<%
+	while(iter.hasNext() && (contIter<pageSize || all)){
+	contIter++;
+	FleetMainAttributes fleet=(FleetMainAttributes)iter.next();
+%>		            					<tr align=center align="right" class="linetwo">
+<%
+	if(sys.getUserSessionData().checkPermission(SecurityConstants.DELETE_FLEET)) {
+%>	    	        						<td width='5%' align="center"><input type='checkbox' name='<%=String.valueOf(fleet.getId())%>' value='<%=String.valueOf(fleet.getId())%>' ></td>
+<%
+	}
+	if(sys.getUserSessionData().checkPermission(SecurityConstants.EDIT_FLEET)) {
+%>							                <td width='20%' align="right">
+												<a href='layout.jsp?refer=/fleet/FleetView.jsp?id=<%=fleet.getId()%>'>
+													<%=fleet.getName()%> 
+												</a>
+											</td>
+<%
+	}else{
+%>						        	        <td width='20%' align="right"><%=fleet.getName()%></td>
+<%
+	}
+%>	          								<td width='40%' align="right">
+	              								 <%=fleet.getDescription()%> 
+	              							</td>
+<%
+	switch(fleet.getType().intValue()) {
+	    case FleetData.COLECTIVE:
+%>							                <td width='20%' align="right"><%=messages.getText("generic.fleet.colective")%> </td>
+<%
+	break;
+	    case FleetData.INDIVIDUAL:
+%>							                <td width='20%' align="right"><%=messages.getText("generic.fleet.individual")%> </td>
+<%
+	break;
+	}
+%>          	     
+								  	      	<td width='15%'	align="center" ><%=(fleet.getExclusionDate()== null) ? "-" : Util.formatDate(fleet.getExclusionDate())%></td>
+              					
+					 					</tr>
+<%				}
+%>		      						</table>
+            					</form>
+            					<table width='100%'  border="0" cellpadding="0" cellspacing="0" class="default">
+              						<tr>
+                						<td class="lineone" align="right">
+<%				if(sys.getUserSessionData().checkPermission(SecurityConstants.DELETE_FLEET)) {	%>
+							                <input name="button2" type="button" onClick="javascript:setAction(document.forms['FleetExclusion'],'exclude');" value='<%=messages.getText("generic.driver.exclude")%>' class="input"/> 
+							                <input name="button2" type="button" onClick="javascript:setAction(document.forms['FleetExclusion'],'include');" value='<%=messages.getText("generic.messages.include")%>' class="input"/>
+                    						<input name="button2" type="button" onClick="javascript:setAction(document.forms['FleetExclusion'],'delete');" value='<%=messages.getText("generic.messages.delete")%>' class="input"/>
+<%				}															
+%>		            					</td>
+        	      					</tr>
+          						</table>
+          					</td>
+      					</tr>
+	      				<tr>
+    	    				<td>
+<%			Hashtable paginationParameters = new Hashtable();
+			paginationParameters.put("value",value);
+			paginationParameters.put("type",type);
+			
+			session.setAttribute("paginationParameters",paginationParameters);
+%>        				
+        						<jsp:include page='<%="../util/pagination2.jsp?size="+pageSize+"&num="+String.valueOf(pageNum)+"&total="+String.valueOf(total)+"&link="+link%>' />        
+        					</td>
+      					</tr>
+<%			}			
+		}	
+%>					</table>
+   					<jsp:include page="../component/utilityboxbottom.jsp"/>	
+				</td>
+    	  	</tr>
+    	  	<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+      		</tr>
+    	  	<tr>
+      			<!-- Options Start -->
+      		    <td width="100%" valign="top">
+					<jsp:include  page='<%="../component/utilitybox3top.jsp?title="+messages.getText("generic.messages.options")%>' />
+					<table width="100%" border="0" cellpadding="0" cellspacing="0" dwcopytype="CopyTableCell">
+<%		if(sys.getUserSessionData().checkPermission(SecurityConstants.CREATE_FLEET)) {	
+%>						<tr>
+							<td width="50%">
+								<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="layout.jsp?refer=/fleet/create.jsp?type=1" class="texts">
+									<%=messages.getText("generic.messages.addindividualfleet") %>					
+								</a>
+							</td>
+							<td width="50%">
+								<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="layout.jsp?refer=/fleet/create.jsp?type=2" class="texts">
+									<%=messages.getText("generic.messages.addcolectivefleet")%>					
+								</a>								
+							</td>
+						</tr>	
+<%		}	
+%>					</table>					
+					<jsp:include page="../component/utilitybox3bottom.jsp"/>	
+				</td>
+	      		<!-- Options Ends -->
+      		</tr>
+      		<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+      		</tr>
+	    </table>
+	</body>
+<%
+	}	
+%>	
+</html:html>

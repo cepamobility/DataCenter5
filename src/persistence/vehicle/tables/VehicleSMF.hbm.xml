@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+                                   
+<hibernate-mapping package="persistence.vehicle.tables">
+
+ <class name="VehicleSMF" table="vehicleSMF">
+ 
+   <id 	column="vehicleSMFid" name="vehicleSMFid" type="java.lang.Integer">
+   		<generator class="sequence">
+            	<param name="sequence">VehicleSMF_Sequence</param>
+            </generator>   
+   </id>
+   
+  <property name="corporationSMF" type="java.lang.String" column="corporationSMF" />
+  <property name="orderNumber" type="java.lang.Integer" column="orderNumber" />
+  <property name="instalationDateSMF"  type="java.util.Date" column="instalationDateSMF" />
+  <property name="responsibleTechnical"  type="java.lang.String" column="responsibleTechnical" />
+  <property name="localInstallation"  type="java.lang.String" column="localInstallation"/>
+  <property name="observationsSMF" type="java.lang.String" column="observationsSMF" />
+  <property name="ustContact" type="java.lang.String" column="ustContact" />
+  
+  
+ </class>
+</hibernate-mapping>

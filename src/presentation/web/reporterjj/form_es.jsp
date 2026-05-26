@@ -1,0 +1,132 @@
+<%@page language="java" 
+	errorPage="exception.jsp" 
+	import="java.util.*"
+	import="business.*"
+	import="business.vehicle.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.fleet.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.vehicle.*" 	
+ 	import="communication.administration.user.*" 	
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<%@page import="communication.administration.corporation.tables.CorporationData"%>
+<%@page import="communication.driver.tables.DriverData"%>
+<%@page import="communication.administration.corporation.tables.CountryData"%><html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	 	<title> CEPA International</title>
+		<META http-equiv="Cache-Control" content="no-cache">
+		<META http-equiv="Pragma" content="no-cache">
+		<style type="text/css">
+<!--	body {
+			margin-left: 0px;
+			margin-top: 0px;
+			margin-right: 0px;
+			margin-bottom: 0px;
+		}
+		.contain {
+			width: 100%; 
+			height: 100%;
+		}
+ -->
+		</style>
+	</head>
+	<script type="text/javascript">
+		function doNext(formName) {
+			var form = document.forms[formName];
+			form.submit();
+		}
+	</script>
+
+<%!
+	Text messages; 
+	SystemAccess sys;
+	String attribute; 
+	String value;
+	UserSessionData userSessionData; 
+%>
+<%
+	sys=(SystemAccess)session.getAttribute("SystemAccess");
+	int corporationId = sys.getCorporationId();
+	userSessionData=sys.getUserSessionData();
+	String check = Util.checkPermission(sys,SecurityConstants.JJ_REPORTER);
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		session.setAttribute("url","reporter.jsp");
+		messages=sys.getText();
+		
+		String pathLanguage="/util/jsp/language.jsp";	
+		RequestDispatcher dispatcher=request.getRequestDispatcher(pathLanguage);
+		dispatcher.include(request,response);
+	
+		String  pathMsg="/util/jsp/message.jsp";
+	
+		dispatcher=request.getRequestDispatcher(pathMsg);
+		dispatcher.include(request,response);
+
+		userSessionData.setDriver(null);
+%>	
+	<body>
+	 	<table width="100%" height="90" border="0" cellpadding="0" cellspacing="0" class="default">
+		 	<form name="logout" action="../login.jsp" method="post">
+	 		</form>
+			<form name="driver" action="driver.jsp">
+				<input type="hidden" name="formType" value="1"/>
+			</form>
+			<form name="vehicle" action="vehicle.jsp">
+			</form>
+  			<tr>
+    			<td colspan="2">
+					<table width="100%" border="0" cellspacing="0" cellpadding="0" valign="top">
+      					<tr>
+        					<td><jsp:include  page='<%="../topMenu.jsp?home=true&reporter=true" %>'/></td>
+      					</tr>
+    				</table>	
+    			</td><!--end the top�s table -->
+  			</tr>
+  		</table>
+  		<br>
+  		<br>	
+		<table width="700" border="0" align="center" cellpadding="0" cellspacing="0">
+			<tr class="guide1"> 
+		    	<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText("reporterjj.commentarydrive.forms")%>' />
+			</tr>
+		  	<tr> 
+	  			<jsp:include  page="../component/spaceline.jsp" />
+		  	</tr>
+			<tr> 
+	  			<td colspan="3"> 
+		    		<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.activity.form.formulario")%>' /> 
+					<table width="100%" border="0" align='center' cellpadding="0" cellspacing="0">
+   						<tr  class="linetwo">
+				            <td width="50%" align="center">
+						        <input type="button" value='<%=messages.getText("generic.messages.addvehiclecheck")%>' onclick="doNext('vehicle')"/>
+						    </td>
+				            <td width="50%" align="center">
+						        <input type="button" value='<%=messages.getText("scheduledactivitytype.reporterjj.commentarydrive")%>' onclick="doNext('driver')"/>
+						    </td>
+						 </tr>
+					</table>			
+	    			<jsp:include page="../component/utilityboxbottom.jsp"/>
+		      	</td>	
+		  	</tr>
+		  	<tr> 
+		    	<jsp:include  page="../component/spaceline.jsp" />
+		  	</tr>
+		</table>		
+	</body>
+<%	}
+%>		
+</html>

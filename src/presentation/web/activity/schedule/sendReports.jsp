@@ -1,0 +1,259 @@
+<%@page import="communication.driver.tables.DriverData"%>
+<%@page language="java" 
+	errorPage="../exception.jsp" 
+	import="business.*"
+	import="business.activity.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.activity.schedule.*" 	
+ 	import="presentation.translator.web.vehicle.*"
+ 	import="communication.administration.user.*" 	
+ 	import="communication.datatype.tables.ActivityTypeDataType"
+	import="business.vehicle.VehicleReportFacade"
+	import="java.util.*"	
+	import="org.apache.struts.action.DynaActionForm"
+	import="communication.activity.tables.*"
+	import="business.vehicle.VehicleReportFacadeBean"
+%>
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+<%!
+	RequestDispatcher dispatcher; 
+	Text messages; SystemAccess sys;
+	UserSessionData userSessionData; 
+	VehicleCheckData vehicleCheck;
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	userSessionData=sys.getUserSessionData();	
+	
+	String check = Util.checkPermission(sys,SecurityConstants.MODIFY_CEPASCHEDULEACTIVITY);	
+	
+	if (check!=null) { 
+		response.sendRedirect(request.getContextPath()+check);	
+	}else {
+		messages=sys.getText();
+	
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+	dispatcher.include(request,response);
+
+		String activityId = (String)request.getParameter("activity");
+
+		ActivityReportFacade activityReport=sys.getActivityReportFacade();
+		CEPAActivityScheduleData data = activityReport.findCEPAActivityScheduleByPrimaryKey(new Integer(activityId),userSessionData); 
+		
+		if(data != null) {
+	Collection drivers = activityReport.getParticipants(new Integer(activityId),userSessionData);
+%>	
+
+
+<html:html>
+	<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+		<script type="text/javascript">
+		function send(){
+			var list = "";		
+			var form = document.forms['SendActivityReportForm'];
+			var elements = form.elements;
+			for(i = 0; i < elements.length; i++){
+				var element=elements[i];
+				if(element.type.toLowerCase()=="checkbox"){
+					if(element.checked){
+						if(list==""){
+							list=element.value;
+						}else{
+							list=element.value+"<"+list;
+						}	
+					}	
+				} 		
+			}
+			if(list.length > 0){
+				form.list.value=list;
+				form.submit();
+			}
+		}
+		function changeSelected(selectionNumber) {
+			var elements=document.forms['SendActivityReportForm'].elements;
+			for(i = 0; i < elements.length; i++) {
+				var element=elements[i];
+				if(element.type.toLowerCase()=="checkbox"){
+					if(selectionNumber == 1) {
+						element.checked = true;
+					}else if(selectionNumber == 2) {
+						element.checked = false;
+					}else {
+						element.checked = !element.checked;
+					}
+				}
+			}
+		}
+		</script>
+	</head>
+
+	<body>
+		<html:form action="/ActivitySendReport" method="post" >
+			<html:hidden property="activity" value='<%=activityId%>' />	
+			<html:hidden property="list"/>	
+			<table width="700" border="0" cellspacing="2" cellpadding="2" align="center">  
+				<tr>
+					<jsp:include  page='<%="../../component/titlecomponent.jsp?title="+messages.getText("generic.messages.sendreports")%>' />
+	  			</tr>
+				<tr> 
+					<td height="40" colspan="3" valign="middle">
+						<jsp:include  page='<%="../../component/utilityboxtop.jsp?title="+messages.getText("generic.activity.activitydata")%>' />
+						<table width="100%" height="60" border="0" cellpadding="2" cellspacing="2">
+		   	 				<tr> 
+		       					<td width="50%" align="left" class="texts">        
+		   							<%=messages.getText("generic.activity.date")%><%=" ( "+messages.getText("generic.messages.dateformat")+" ) "%>
+								</td>
+								<td width="50%" align="right" class="linetwo">
+									<%=Util.formatDate(data.getDate())%>	
+								</td>
+		   					</tr>
+		     				<tr> 
+		        				<td width="50%" align="left" class="texts">        
+		       						<%= messages.getText("generic.driver.name")%>
+								</td>
+								<td width="50%" align="right" class="linetwo">		
+									<%=messages.getText(data.getType().getResourceBundleId()) %>                                     
+		        				</td>
+		     				</tr>
+		     				<tr> 
+		        				<td width="50%" align="left" class="texts">        
+		       						<%= messages.getText("generic.vehicle.vehicledata.plate")%>
+								</td>
+								<td width="50%" align="right" class="linetwo">		
+									<%=data.getCity()%>                                     
+		        				</td>
+		     				</tr>
+						</table>
+						<jsp:include  page="../../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>  
+		    	<tr>
+		    		<td colspan="3" valign="top">
+						<jsp:include  page='<%="../../component/utilityboxtop.jsp?title="+messages.getText("activity.messages.selectdrivers")%>' />
+						<table width="100%" height="60" border="0" cellpadding="2" cellspacing="2">
+							<tr>
+								<td class="guide2" width='5%' align="center"></td>
+								<td class="guide2" align="center" width="35%">
+									<%=messages.getText("generic.driver.driverdata.firstname")%>
+								</td>
+								<td class="guide2" align="center" width="35%">
+									<%=messages.getText("generic.driver.driverdata.lastname")%>
+								</td>
+							</tr>
+<%    	  					Iterator itObservations = drivers.iterator();
+						String line = "linetwo";
+    					while(itObservations.hasNext()) {
+   							DriverData driver = (DriverData)itObservations.next();
+							boolean hasResult = activityReport.hasResult(new Integer(activityId),driver.getId(),sys.getUserSessionData());
+							if(hasResult) {
+%>								<tr class="<%=line%>">
+								<td width='5%' align="center">
+									<input type='checkbox' name='<%=driver.getId()%>' value='<%=driver.getId()%>' >
+								</td>
+								<td align="center">
+									<%=driver.getFirstName()%> 
+								</td>	
+								<td align="center">
+									<%=driver.getLastName()%> 
+								</td>	
+							</tr>
+<%									line = (line.equals("linetwo")) ? "lineone" : "linetwo";
+							}
+						}
+%>
+   							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr>
+								<td colspan="3" align="right">
+									<input type="button" value='<%=messages.getText("generic.messages.all.pl")%>' onclick="javascript:changeSelected(1);" class="input" />
+									<input type="button" value='<%=messages.getText("generic.messages.none")%>' onclick="javascript:changeSelected(2);" class="input" />
+									<input type="button" value='<%=messages.getText("generic.messages.invertselection")%>' onclick="javascript:changeSelected(3);" class="input" />
+								</td>
+							</tr>
+						</table>
+						<jsp:include  page="../../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>  
+				<tr> 
+					<td height="40" colspan="3" valign="middle">
+						<jsp:include  page='<%="../../component/utilityboxtop.jsp?title="+messages.getText("activities.sendreports.emaildata")%>' />
+						<table width="100%" height="60" border="0" cellpadding="2" cellspacing="2">
+		   	 				<tr> 
+		       					<td width="50%" align="left" class="texts">        
+		   							<%= messages.getText("generic.sendemail.data")%>
+								</td>
+								<td width="50%" align="right" class="linetwo">
+									<html:select property="data" styleClass="input">
+										<html:option value="1"><%=messages.getText("generic.sendemail.onlyreport")%></html:option>
+<% 								if(!data.getDefinition().getResourceKeyName().startsWith("datatype.scheduledactivitytype.outtraining")) {
+%> 										<html:option value="2"><%=messages.getText("generic.sendemail.onlycertificate")%></html:option>
+										<html:option value="3"><%=messages.getText("generic.sendemail.reportandcertificate")%></html:option>
+<%								}
+%>									</html:select>                                     
+								</td>
+		   					</tr>
+		   	 				<tr> 
+		       					<td width="50%" align="left" class="texts">        
+		   							<%= messages.getText("generic.sendemail.address")%>
+								</td>
+								<td width="50%" align="right" class="linetwo">
+									<html:text property="address" styleClass="input" size="50"></html:text>                                     
+								</td>
+		   					</tr>
+		   	 				<tr> 
+		       					<td width="50%" align="left" class="texts">        
+		   							<%= messages.getText("activity.sendreports.sendtype")%>
+								</td>
+								<td width="50%" align="right" class="linetwo">
+									<html:select property="type" styleClass="input">                                     
+		   								<html:option value="1"><%=messages.getText("activity.sendreports.oneemail")%></html:option>
+		   								<html:option value="2"><%=messages.getText("activity.sendreports.oneattachement")%></html:option>
+		   							</html:select>
+								</td>
+		   					</tr>
+		   	 				<tr> 
+		       					<td width="50%" align="left" class="texts">        
+		   							<%= messages.getText("generic.sendemail.subject")%>
+								</td>
+								<td width="50%" align="right" class="linetwo">
+									<html:text property="subject" styleClass="input" size="50"></html:text>                                     
+								</td>
+		   					</tr>
+		   	 				<tr> 
+		       					<td width="50%" align="left" class="texts">        
+		   							<%= messages.getText("generic.sendemail.body")%>
+								</td>
+							</tr>
+		   	 				<tr> 
+								<td colspan="2" align="left" class="linetwo">
+									<html:textarea property="body" styleClass="input" cols="120" rows="5"></html:textarea>                                     
+								</td>
+		   					</tr>
+						</table>
+						<jsp:include  page='../../component/utilityboxbottom.jsp' />
+					</td>
+				</tr>
+		       	<tr>   		
+			   		<td align="right">
+			   			<input type="button" value='<%=messages.getText("generic.messages.sendreports") %>' class="input" onclick="send();"/>			   			
+			   			<html:cancel value='<%=messages.getText("generic.messages.cancel") %>' styleClass="input"/>			   			
+		           	</td>             
+		   	  	</tr>              
+			</table>
+		</html:form>
+	</body>
+</html:html>
+<%
+
+		}
+	}
+%>

@@ -1,0 +1,504 @@
+ <%@page language="java" 
+	errorPage="../../exception.jsp"
+	import="java.util.*"
+	import="business.SystemAccess"
+	import="business.activity.*"
+	import="business.datatype.*"
+	import="business.administration.user.*"
+	import="communication.datatype.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.datatype.tables.*"
+	import="communication.administration.user.tables.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.util.ListResult"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.activity.schedule.*" 	
+ 	import="communication.administration.user.*" 	
+ 	import="communication.datatype.tables.ActivityTypeDataType"
+	import="communication.administration.user.UserSessionData"
+	import="communication.activity.tables.*" 
+	
+%>  
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<%
+	SystemAccess sys = (SystemAccess)session.getAttribute("SystemAccess");
+	UserSessionData userSessionData = sys.getUserSessionData();
+	String check = Util.checkPermission(sys,SecurityConstants.VIEW_CEPASCHEDULE_ACTIVITY_LIST);
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		// session.setAttribute("url","activity/schedule/ActivityList.jsp");
+		userSessionData.setUrl("activity/schedule/ActivityList.jsp");
+
+		RequestDispatcher dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+	
+		Text messages=sys.getText();
+		
+		String startDay = (Util.empty(request.getParameter("startDay"))) ? "" : request.getParameter("startDay");
+		String startMonth = (Util.empty(request.getParameter("startMonth"))) ? "" : request.getParameter("startMonth");
+		String startYear = (Util.empty(request.getParameter("startYear"))) ? "" : request.getParameter("startYear");
+		
+		String endDay = (Util.empty(request.getParameter("endDay"))) ? "" : request.getParameter("endDay");
+		String endMonth = (Util.empty(request.getParameter("endMonth"))) ? "" : request.getParameter("endMonth");
+		String endYear = (Util.empty(request.getParameter("endYear"))) ? "" : request.getParameter("endYear");
+
+		Integer pageNum = (Util.empty(request.getParameter("pageNum"))) ? new Integer(1) : new Integer(request.getParameter("pageNum"));
+		
+		String type = (Util.empty(request.getParameter("type"))) ? "" : request.getParameter("type");
+		String country = (Util.empty(request.getParameter("country"))) ? "" : request.getParameter("country");
+		String city = (Util.empty(request.getParameter("city"))) ? "" : request.getParameter("city");
+		String status = (Util.empty(request.getParameter("status"))) ? "" : request.getParameter("status");
+		
+		int pageSize = (Util.empty(request.getParameter("pageSize"))) ? 10 : Integer.parseInt(request.getParameter("pageSize"));
+
+		int first = (Util.empty(request.getParameter("first"))) ? 10 : Integer.parseInt(request.getParameter("first"));
+		int count = pageSize;
+		boolean all=!Util.empty(request.getParameter("all")) && request.getParameter("all").equals("true");
+		if(all) {
+		    count=-1;
+		}else{
+		    first=(pageNum.intValue()-1)*pageSize;
+		}		
+
+		ActivityReportFacade activityReportFacade = sys.getActivityReportFacade();
+		DataTypeReportFacade datatypeReportFacade = sys.getDataTypeReportFacade();
+		
+		String link = "/datacenter/activity/schedule/ActivityList.jsp"; 		
+		ListResult list = activityReportFacade.findActivityList(startDay,startMonth,startYear,endDay,endMonth,endYear,type,country,city,status,first,count,userSessionData);
+		
+		Collection types = datatypeReportFacade.findAll(DataTypeConstants.TYPECEPAACTIVITY,userSessionData);
+		List colTypes = new LinkedList();
+		Iterator it5 = types.iterator();
+       	while(it5.hasNext()){
+          	GeneralDTData itemType=(GeneralDTData)it5.next();
+       		OptionItem oi = new OptionItem(messages.getText(itemType.getResourceBundleId()),
+       				itemType.getResourceBundleId());
+            if (type.equals(oi.getLabel())) oi.setSelected(true);                   			
+   			colTypes.add(oi);
+       	}
+       	Collections.sort(colTypes);
+       	// request.setAttribute("types", col2);
+		
+		
+%>		
+
+	
+<%@page import="communication.administration.RoleData"%><script language="JavaScript" type="text/javascript">
+	function submitPagination(page,all) {
+		document.forms[2].all.value = all;
+		document.forms[2].pageNum.value = page;
+		document.forms[2].submit();
+	}
+	function setAction(form,action){
+		if(preparedCheckboxParameters(form)) {
+			form.action.value=action;
+			form.submit();
+		}
+	}
+	function resetPageNum(){
+		document.forms[2].resetPN.value = "true";
+		document.forms[2].submit();
+		return true;
+	}
+	function onSelect1(calendar, date) {
+		var date2 = calendar.date;
+		var time = date2.getTime();
+  		var input_day = document.getElementById("dayId1");
+  		var input_month = document.getElementById("monthId1");
+  		var input_year = document.getElementById("yearId1");
+  		var date3 = new Date(time);
+  		input_day.value = date3.print("%d");
+  		input_month.value = date3.print("%m");
+  		input_year.value= parseInt(date3.print("%Y"),10);
+  	}
+	function onSelect2(calendar, date) {
+		var date2 = calendar.date;
+		var time = date2.getTime();
+  		var input_day = document.getElementById("dayId2");
+  		var input_month = document.getElementById("monthId2");
+  		var input_year = document.getElementById("yearId2");
+  		var date3 = new Date(time);
+  		input_day.value = date3.print("%d");
+  		input_month.value = date3.print("%m");
+  		input_year.value= parseInt(date3.print("%Y"),10);
+  	}
+	</script>
+	<script language="javascript" src='/datacenter/menu/js/driverFunctions.js' type='text/javascript' >
+	</script>
+	<script language="javascript" src='/datacenter/util/js/Prepared_Parameters.js' type='text/javascript' >
+	</script>
+
+		<table width="768" border="0" align="center" cellpadding="0" cellspacing="0">
+			<tr class="guide1">
+				<jsp:include  page='<%="../../component/titlecomponent.jsp?title="+messages.getText("web.activity.activitylist.systemactivities")%>' />
+	  		</tr>
+    	  	<tr>
+				<jsp:include  page="../../component/spaceline.jsp" /> 
+	      	</tr>
+    	  	<tr>
+        		<td valign="top" width="60%" >
+					<jsp:include  page='<%="../../component/utilityboxtop.jsp?title="+messages.getText("generic.messages.search")%>' />
+					<form action="layout.jsp?refer=/activity/schedule/ActivityList.jsp" method="post">
+						<input type="hidden" name="pageNum" value='<%=String.valueOf(pageNum)%>'/>
+						<input type="hidden" name="all" value='<%=(all) ? "all" : "" %>' >    
+						<input type="hidden" name="pageSize" value='<%=pageSize%>'/>					
+						<table width="100%"  border="0" cellpadding="0" cellspacing="0">
+							<tr>
+								<td width="41%" align="left" class="texts">
+									<%=messages.getText("generic.messages.initialdate")%><%=" ("+messages.getText("generic.messages.dateformat")+")"%>
+								</td>
+								<td width="59%"  align="right">
+    								<input type="text" name="startDay" id="dayId1"  maxlength="2"  style="width:27;" class="input"  value='<%=startDay%>'/>&nbsp;/&nbsp;
+						        	<input type="text" name="startMonth" id="monthId1" maxlength="2" style="width:27;" class="input"  value='<%=startMonth%>'/>&nbsp;/&nbsp;
+								    <input type="text" name="startYear" id="yearId1" maxlength="4"  style="width:40;" class="input"  value='<%=startYear%>'/>
+						        </td>
+	          					<td width="40"  align="right">
+	          						<img src="./component/jscalendar-1.0/img.gif" id="calendar_button1" style="cursor: pointer;"
+     										onmouseover="this.style.background='red';" style="width:20;" align="middle" onmouseout="this.style.background=''"/>
+	          					</td>
+          						<script type="text/javascript">
+									Calendar.setup({
+										inputArea     :    "yearId1",
+      									ifFormat       :    "%d/%m/%Y",
+      									showsTime      :    true,
+      									timeFormat     :    "24",
+      									button         :    "calendar_button1",
+      									step           :    1,
+      									onSelect       :    onSelect1,
+      									singleClick    :    true
+    								});
+								</script>
+	    					</tr>
+				    	  	<tr>
+								<jsp:include  page="../../component/spaceline.jsp" /> 
+					      	</tr>
+	    					<tr>	  
+	    						<td width="41%" align="left" class="texts">
+									<%=messages.getText("generic.messages.lastdate")%><%=" ("+messages.getText("generic.messages.dateformat")+")"%>
+								</td>
+	    						<td width="59%"  align="right">
+	    							<input type="text" name="endDay"  maxlength="2"  id="dayId2" style="width:27;" class="input"  value='<%=endDay%>'/>&nbsp;/&nbsp;
+	    							<input type="text" name="endMonth"  maxlength="2"  id="monthId2" style="width:27;" class="input"  value='<%=endMonth%>'/>&nbsp;/&nbsp;
+	    							<input type="text" name="endYear"  maxlength="4"  id="yearId2" style="width:40;" class="input"  value='<%=endYear%>'/>
+	          					</td>
+	          					<td width="40"  align="right">
+									<img src="./component/jscalendar-1.0/img.gif" id="calendar_button2"   style="cursor: pointer;"
+     										onmouseover="this.style.background='red';" style="width:20;" align="middle" onmouseout="this.style.background=''"/>
+			          					
+			          			</td>
+			          			<script type="text/javascript">
+									Calendar.setup({
+        								inputArea     :    "yearId2",
+        								ifFormat       :    "%d/%m/%Y",
+        								showsTime      :    true,
+        								timeFormat     :    "24",
+        								button         :    "calendar_button2",
+        								step           :    1,
+        								onSelect       :    onSelect2,
+        								singleClick    :    true
+    								});
+								</script>	    									  
+							</tr>
+				    	  	<tr>
+								<jsp:include  page="../../component/spaceline.jsp" /> 
+					      	</tr>
+							<tr class="texts">
+								<td align="left">
+									<%=messages.getText("generic.activity.activitydata.type")%>
+								</td>
+								<td align="right" colspan="2">
+<%		if(userSessionData.getRole().getName().equals(RoleData.CDS)) {
+			if(sys.getCorporationId() == CorporationData.CEPA) {
+%>				            		<input type="hidden" name="type" value='<%=CEPAActivityConstants.CEPA_SYSTEM_COURSE_2_ENTRENADORES%>' />
+                            		<%=messages.getText(CEPAActivityConstants.CEPA_SYSTEM_COURSE_2_ENTRENADORES)%>
+<%			}else {
+%>									<select name="type" class="input" style="width:180;" >
+										<option value=""><%=messages.getText("generic.messages.select")%></option>	
+                            			<option value='<%=CEPAActivityConstants.CEPA_SYSTEM_COURSE_2_ENTRENADORES%>' <%=(type.equals(CEPAActivityConstants.CEPA_SYSTEM_COURSE_2_ENTRENADORES)) ? "selected" : "" %>><%=messages.getText(CEPAActivityConstants.CEPA_SYSTEM_COURSE_2_ENTRENADORES)%></option>
+                            			<option value='<%=CEPAActivityConstants.COMMENTARYDRIVECAYACO%>' <%=(type.equals(CEPAActivityConstants.COMMENTARYDRIVECAYACO)) ? "selected" : "" %>><%=messages.getText(CEPAActivityConstants.COMMENTARYDRIVECAYACO)%></option>
+									</select> 
+<%			}
+		}else {	
+%>									<select name="type" class="input" style="width:180;" >
+										<option value=""><%=messages.getText("generic.messages.select")%></option>	
+<%	
+			// Muestra listado de tipos de actividad ordenado alfabeticamente
+			if (colTypes != null && colTypes.size() > 0){
+				Iterator it2 = colTypes.iterator();
+				while (it2.hasNext()){
+					OptionItem oi = (OptionItem) it2.next();
+					%>
+										<option value='<%=oi.getValue()%>' 
+											<%=(type.equals(oi.getValue())) ? "selected" : "" %>>
+											<%=oi.getLabel()%>
+										</option>
+					<%
+				}
+			}
+
+			// Esta seccion mostraba el listado de tipos de actividad pero nunca quedaba ordenada, entonces agregue lo 
+			// anterior y comente esta parte 
+// 			Collection types = datatypeReportFacade.findAll(DataTypeConstants.TYPECEPAACTIVITY,userSessionData);
+// 			Collections.sort((List)types);
+			
+// 			List col2 = new LinkedList();
+			
+// 			Iterator it = types.iterator();
+//            	while(it.hasNext()){
+//               	GeneralDTData itemType=(GeneralDTData)it.next();
+//            		if(itemType.getResourceBundleId().trim().equals("datatype.scheduledactivitytype.commentarydrive")) {
+//                    	if(userSessionData.getFilter().getCorporationId().equals(new Integer(CorporationData.MONSANTO))) {
+//                    		if(userSessionData.checkPermission(SecurityConstants.CREATE_CD_ACTIVITY)) {
+                   			
+//                    			OptionItem oi = new OptionItem(messages.getText(itemType.getResourceBundleId()),itemType.getResourceBundleId());
+//                    			if (type.equals(oi.getLabel())) oi.setSelected(true);                   			
+//                    			col2.add(oi);
+//                              			// <option value='<%=itemType.getResourceBundleId() % >' <%=(type.equals(itemType.getResourceBundleId())) ? "selected" : "" % >><%=messages.getText(itemType.getResourceBundleId()) % ></option>
+// 						}
+//                    	}
+//                	}else if (itemType.getResourceBundleId().trim().equals("datatype.scheduledactivitytype.commentarydriveother")) {
+// 					if(!userSessionData.getFilter().getCorporationId().equals(new Integer(CorporationData.MONSANTO))) {
+// 						if(userSessionData.checkPermission(SecurityConstants.CREATE_CD_ACTIVITY)) {
+							
+// 							OptionItem oi = new OptionItem(messages.getText(itemType.getResourceBundleId()),itemType.getResourceBundleId());
+//                    			if (type.equals(oi.getLabel())) oi.setSelected(true);                   			
+//                    			col2.add(oi);
+//                             		//	<option value='<%=itemType.getResourceBundleId() % >' <%=(type.equals(itemType.getResourceBundleId())) ? "selected" : "" % >><%=messages.getText(itemType.getResourceBundleId()) % ></option>
+// 						}
+//                   	}
+// 				}else {
+// 							OptionItem oi = new OptionItem(messages.getText(itemType.getResourceBundleId()),itemType.getResourceBundleId());
+// 		           			if (type.equals(oi.getLabel())) oi.setSelected(true);                   			
+// 		           			col2.add(oi);			
+//                             		//<option value='<%=itemType.getResourceBundleId() % >' <%=(type.equals(itemType.getResourceBundleId())) ? "selected" : ""  % >><%=messages.getText(itemType.getResourceBundleId()) % ></option>
+// 				}
+//            	}
+           	
+//            	Collections.sort(col2);
+           	
+		}
+%>
+									</select>   											
+    					  	    </td>																									
+							</tr>		
+				    	  	<tr>
+								<jsp:include  page="../../component/spaceline.jsp" /> 
+					      	</tr>
+							<tr class="texts">
+								<td align="left">												
+									<%=messages.getText("generic.activity.activitydata.country")%>													
+								</td>
+								<td align="right" colspan="2">
+									<select name="country" class="input" style="width:180;" >
+										<option value=""><%=messages.getText("generic.messages.select")%></option>
+<%				Iterator it = userSessionData.getFilter().getLastLevelItems(userSessionData.getFilter().getGeoLevelCount(),null,null);
+                while(it.hasNext()){
+                 	GeoItemData item=(GeoItemData)it.next();
+%>					  					<option value='<%=String.valueOf(item.getId())%>' <%=(country.equals(String.valueOf(item.getId()))) ? "selected" : "" %>><%=messages.getText(item.getName())%></option>
+<%              }
+%>									</select>   											
+	    						</td>				
+	    					</tr>	
+				    	  	<tr>
+								<jsp:include  page="../../component/spaceline.jsp" /> 
+					      	</tr>
+	    					<tr class="texts">
+								<th align="left"> 
+									<%=messages.getText("generic.activity.activitydata.city")%> 
+								</th>
+								<td align="right" colspan="2">
+									<input type="text" name="city" style="width:180" class="input" value='<%=city%>'/>
+								</td>
+							</tr>
+<%		        if (!userSessionData.isGerente() || userSessionData.checkPermission(SecurityConstants.SUPERVISE_CEPASCHEDULEACTIVITY)) {
+%>				    	  	<tr>
+								<jsp:include  page="../../component/spaceline.jsp" /> 
+					      	</tr>
+							<tr class="texts">
+								<td align="left">
+									<%=messages.getText("generic.activity.activitydata.state")%>
+								</td>
+								<td align="right" colspan="2">
+									<select name="status" class="input" style="width:180;" >
+										<option value=""><%=messages.getText("generic.messages.select")%></option>
+<%		         	Collection states = datatypeReportFacade.findAll(DataTypeConstants.TYPECEPAACTIVITYSCHEDULESTATE,userSessionData);
+					Collections.sort((List)states);
+					it = states.iterator();
+					while(it.hasNext()){
+					  	GeneralDTData item = (GeneralDTData)it.next();
+%>					  					<option value='<%=item.getResourceBundleId()%>' <%=(status.equals(item.getResourceBundleId())) ? "selected" : "" %>><%=messages.getText(item.getResourceBundleId())%></option>
+<%         	        }
+%>									</select>   											
+    							</td>																									
+							</tr>		
+<%				}
+%>				
+				    	  	<tr>
+								<jsp:include  page="../../component/spaceline.jsp" /> 
+					      	</tr>
+							<tr class="texts">
+								<td align="right" colspan="3">
+									<input name="button" type="submit" value='<%=messages.getText("generic.messages.search")%>' class="input"/>
+								</td>
+							</tr>	
+						</table>
+					</form>
+   					<jsp:include page="../../component/utilityboxbottom.jsp"/>	
+			    </td> 
+	        	<td width="2%" >&nbsp;</td>
+    	    	<td width="38%" valign="top" >
+    	    		<jsp:include  page='<%="../../component/utilityboxtop.jsp?title="+messages.getText("generic.messages.options")%>' />
+						<table width="100%"  border="0" cellpadding="0" cellspacing="0">
+<%			if(userSessionData.checkPermission(SecurityConstants.CREATE_CEPASCHEDULEACTIVITY) || 
+				(userSessionData.checkPermission(SecurityConstants.CREATE_CD_ACTIVITY) && !sys.isCorporation(CorporationData.SYNGENTA_BR)))	{
+%>
+							<tr>
+								<td width="100%" align="left" class="texts">
+									<img align="middle" border="0" src="/datacenter/util/imgs/icon1.jpg" width="12">&nbsp;
+									<a href='layout.jsp?refer=/activity/schedule/CEPAActivityScheduleCreate.jsp?target=ActivityList' class="texts" >						
+										<%=messages.getText("generic.messages.addcepaactivityschedule")%>					
+									</a> 
+								</td>
+							</tr>
+<%			}	
+			if(sys.isCorporation(CorporationData.BAYER_MX)) {
+%>						
+							<tr>
+								<td width="100%" align="left" class="texts">
+									<img align="middle" border="0" src="/datacenter/util/imgs/icon1.jpg" width="12">&nbsp;
+									<a href='layout.jsp?refer=/activity/schedule/InternalActivityCreate.jsp?target=ActivityList' class="texts" >						
+										<%=messages.getText("generic.messages.internalactivitycreate")%>					
+									</a>
+								</td>
+							</tr> 
+<%			}
+%>						</table>
+					<jsp:include page="../../component/utilityboxbottom.jsp"/>	
+				</td>
+			</tr>		
+	      	<tr>
+				<jsp:include  page="../../component/spaceline.jsp" />
+      		</tr>
+	      	<tr>
+    	    	<td colspan="3"> 
+					<jsp:include  page='<%="../../component/utilityboxtop.jsp?title="+messages.getText("web.activity.activitylist.systemactivities")%>' />
+					<table width='100%' border="0" align='center' cellpadding="0" cellspacing="0">
+      					<tr>
+        					<td width="100%">
+<%		if (all) {
+    		pageSize = list.getTotal(); 
+		}
+%>								<form name="exclusion"  action="layout.jsp?refer=/activity/schedule/CEPAActivityScheduleExclusion.jsp"  method="post">
+		    						<table width="100%" border="0">
+              							<tr align="center">
+<%		if(userSessionData.checkPermission(SecurityConstants.DELETE_CEPASCHEDULEACTIVITY)) {	
+%>											<td width='4%' class="guide2"></td>
+<%		}
+%>						                	<td  width="12%" class="guide2"><%=messages.getText("generic.activity.activitydata.date")%><%=" "+messages.getText("generic.messages.dateformat")%></td>
+						                	<td width="12%"	class="guide2"><%=messages.getText("generic.activity.activitydata.type")%></td>
+<% 		String[] principalLabels = userSessionData.getFilter().getPrincipalLabels();
+		for (int z = 0; z < principalLabels.length; z++){ 
+%>					                		<td width="12%"	class="guide2"><%=messages.getText(principalLabels[z])%></td>
+<% 		} 
+%>					                		<td width="12%"	class="guide2"><%=messages.getText("generic.activity.activitydata.country")%></td>
+						                	<td width="12%"	class="guide2"><%=messages.getText("generic.activity.activitydata.city")%></td>					                					                
+						                	<td width="12%"	class="guide2"><%=messages.getText("generic.activity.activitydata.state")%></td>					                
+						                	<td width="12%"	class="guide2"><%=messages.getText("generic.activity.activitydata.drivercount")%></td>					                
+            	  						</tr>
+<% 		if(list.getTotal() == 0) {
+%>             							<tr align="left">
+											<td colspan="10">	
+          										<%=messages.getText("generic.messages.notresult")%>
+          									</td>
+          								</tr>		
+<%		}else {
+			it = list.getElements().iterator();
+			int counter = 0;
+			while(it.hasNext() && (counter < pageSize || all)){
+				counter++;
+    			ActivityListData activity=(ActivityListData)it.next();
+%>		        						<tr align=center align="right" class='<%=((counter % 2)==0) ? "lineone" : "linetwo"%>'>                
+<%				if(userSessionData.checkPermission(SecurityConstants.DELETE_CEPASCHEDULEACTIVITY)) {
+					if(userSessionData.canModifyActivityRegitry(activity.getType())) {
+%>	            							<td width='4%' align="center"><input type='checkbox' name='<%=activity.getActivityId()%>' value='<%=activity.getActivityId()%>' ></td>
+<%					}else {
+%>	            							<td width='4%' align="center">-</td>
+<%					}
+				}					
+%>											<td  width="12%" align="right">
+<%				if(userSessionData.checkPermission(SecurityConstants.VIEW_CEPASCHEDULE_ACTIVITY)) {
+%>	              								<a href='layout.jsp?refer=/activity/schedule/CEPAActivityScheduleView.jsp?id=<%=activity.getActivityId()%>' > 
+													<%=Util.formatDate(activity.getDate())%> 
+												</a>
+<%				}else {		
+%>  											<%=Util.formatDate(activity.getDate())%>
+<%				}
+%>              							</td>
+						                	<td width="12%" align="right"><%=messages.getText(activity.getType())%> </td>
+<%
+				principalLabels = userSessionData.getFilter().getPrincipalLabels();
+				for (int z = 0; z < principalLabels.length; z++){  
+					if (activity.getDivorg(z+1) != null && z < 4){
+%>
+					                		<td width="12%"	align="right"><%=activity.getDivorg(z+1)%></td>
+<% 					}
+				} 
+%>
+						                	<td  width="12%" align="right"><%=messages.getText(activity.getCountry())%> </td>				
+						                	<td  width="12%" align="right"><%=activity.getCity()%> </td>				
+						                	<td  width="12%" align="right"><%=messages.getText(activity.getStatus())%> </td>										                						                
+						                	<td  width="12%" align="right"><%=String.valueOf(activityReportFacade.getParticipantCount(activity.getActivityId(),activity.getType().equals(CEPAActivityConstants.SECURITY_TALK_KIDS),userSessionData))%> </td>				                						                
+                						</tr>
+<%			}
+		}
+%>
+              						</table>
+              						<input type="hidden" name="checkboxParamList" />         					
+	            				</form>
+	            			</td>
+	            		</tr>
+			      		<tr>
+	            			<td>		
+	            				<table width='100%'  border="0" cellpadding="0" cellspacing="0" class="default">
+    	          					<tr>
+        	        					<td class="linetwo" align="right">
+<%			if(userSessionData.checkPermission(SecurityConstants.DELETE_CEPASCHEDULEACTIVITY)) {	%>
+            			   					<input name="button2" type="button" onClick="javascript:setAction(document.forms['exclusion'],'delete');" value='<%=messages.getText("generic.messages.delete")%>' class="input"/>                    					
+<%			}															
+%>			        					</td>
+            	  					</tr>
+          						</table>
+          					</td>
+	      				</tr>
+	      				<tr>
+        					<td>
+<%				Hashtable paginationParameters = new Hashtable();
+				paginationParameters.put("startDay",startDay);
+				paginationParameters.put("startMonth",startMonth);
+				paginationParameters.put("startYear",startYear);
+			
+				paginationParameters.put("endDay",endDay);
+				paginationParameters.put("endMonth",endMonth);
+				paginationParameters.put("endYear",endYear);
+			
+				paginationParameters.put("type",type);
+				paginationParameters.put("country",country);
+				paginationParameters.put("city",city);
+				paginationParameters.put("status",status);
+				session.setAttribute("paginationParameters",paginationParameters);
+%>								<jsp:include page='<%="../../util/pagination2.jsp?size="+pageSize+"&num="+String.valueOf(pageNum)+"&total="+String.valueOf(list.getTotal())+"&link="+link%>' />        
+        					</td>
+      					</tr>
+					</table>
+	   				<jsp:include page="../../component/utilityboxbottom.jsp"/>	
+				</td>
+      		</tr>
+	  </table>
+<%	}
+%>

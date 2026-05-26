@@ -1,0 +1,156 @@
+/**
+ * Created on 24-jul-2006
+ * CEPA
+ * DataCenter 5
+ */
+package persistence.fleet.tables;
+
+import org.hibernate.Session;
+
+import persistence.administration.corporation.tables.DivOrgItemLevel1;
+import persistence.datatype.tables.TypeFuel;
+import persistence.vehicle.tables.Vehicle;
+
+import communication.datatype.tables.TypeFuelDataType;
+import communication.fleet.tables.OdometerData;
+
+
+public class Odometer {
+
+    private OdometerPK pk;
+
+    private Integer odometer;
+    
+    private Integer accidents;
+    private Integer incidents;
+    private Integer nearmiss;
+    
+    private Integer fuel;
+    private TypeFuel fuelType;
+    
+    private DivOrgItemLevel1 divOrg1;
+    private DivOrgItemLevel1 divOrg2;
+    private DivOrgItemLevel1 divOrg3;
+    
+    public Odometer() {
+    }
+
+    public Odometer(OdometerData odometerData, Session session) {
+        
+        IndividualFleet fleet = (IndividualFleet)session.load(IndividualFleet.class,odometerData.getFleet().getId());
+        Vehicle vehicle = (Vehicle)session.load(Vehicle.class,odometerData.getVehicle().getId());
+        pk = new OdometerPK(fleet,vehicle,odometerData.getPeriod(),odometerData.getYear());
+
+        odometer = odometerData.getOdometer();
+        
+        accidents = odometerData.getAccidents();
+        incidents = odometerData.getIncidents();
+        nearmiss = (odometerData.getNearmiss() != null)?odometerData.getNearmiss():0;
+        
+        if(odometerData.getFuel() != null && odometerData.getFuelType() != null) {
+            fuel = odometerData.getFuel();
+            fuelType = (TypeFuel)session.load(TypeFuel.class,odometerData.getFuelType().getResourceBundleId());
+        }
+        divOrg1 = vehicle.getDivOrg1();
+        divOrg2 = vehicle.getDivOrg2();
+        divOrg3 = vehicle.getDivOrg3();
+    }
+
+    public Integer getAccidents() {
+        return accidents;
+    }
+
+    public Integer getOdometer() {
+        return odometer;
+    }
+
+    public Integer getIncidents() {
+        return incidents;
+    }
+
+    public OdometerPK getPk() {
+        return pk;
+    }
+
+    public void setAccidents(Integer accidents) {
+        this.accidents = accidents;
+    }
+
+    public void setOdometer(Integer odometer) {
+        this.odometer = odometer;
+    }
+
+    public void setIncidents(Integer incidents) {
+        this.incidents = incidents;
+    }
+
+    public void setPk(OdometerPK pk) {
+        this.pk = pk;
+    }
+
+    
+    public Integer getFuel() {
+        return fuel;
+    }
+
+    public TypeFuel getFuelType() {
+        return fuelType;
+    }
+
+    public void setFuel(Integer fuel) {
+        this.fuel = fuel;
+    }
+
+    public void setFuelType(TypeFuel fuelType) {
+        this.fuelType = fuelType;
+    }
+
+    public OdometerData getData() {
+        OdometerData data = new OdometerData();
+        data.setFleet(pk.getFleet().getFleetData());
+        data.setVehicle(pk.getVehicle().getVehicleData());
+        data.setPeriod(pk.getPeriod());
+        data.setYear(pk.getYear());
+        data.setAccidents(accidents);
+        data.setOdometer(odometer);
+        data.setIncidents(incidents);
+        data.setNearmiss(nearmiss);
+        if(fuel != null && fuelType != null) {
+            data.setFuel(fuel);
+            data.setFuelType((TypeFuelDataType)fuelType.getData());
+        }
+        return data;
+    }
+
+	public Integer getNearmiss() {
+		return nearmiss;
+	}
+
+	public void setNearmiss(Integer nearmiss) {
+		this.nearmiss = nearmiss;
+	}
+
+	public DivOrgItemLevel1 getDivOrg1() {
+		return divOrg1;
+	}
+
+	public void setDivOrg1(DivOrgItemLevel1 divOrg1) {
+		this.divOrg1 = divOrg1;
+	}
+
+	public DivOrgItemLevel1 getDivOrg2() {
+		return divOrg2;
+	}
+
+	public void setDivOrg2(DivOrgItemLevel1 divOrg2) {
+		this.divOrg2 = divOrg2;
+	}
+
+	public DivOrgItemLevel1 getDivOrg3() {
+		return divOrg3;
+	}
+
+	public void setDivOrg3(DivOrgItemLevel1 divOrg3) {
+		this.divOrg3 = divOrg3;
+	}
+}

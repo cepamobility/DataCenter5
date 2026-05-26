@@ -1,0 +1,2619 @@
+package business.alert.handler;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.Serializable;
+import java.rmi.RemoteException;
+import java.sql.Time;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.StringTokenizer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.struts.action.DynaActionForm;
+import org.jfree.chart.ChartUtilities;
+import org.jfree.chart.JFreeChart;
+
+import persistence.alert.AlertPersistence;
+import presentation.translator.web.driver.DriverDivOrgForm;
+import presentation.translator.web.util.DivOrgForm;
+import presentation.translator.web.util.OptionItem;
+import business.SystemAccess;
+import business.alert.access.AlertSystemAccess;
+
+import communication.activity.tables.ItemValueData;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.DivOrgAttribute;
+import communication.administration.corporation.tables.DivOrgData;
+import communication.administration.corporation.tables.GeoItemData;
+import communication.administration.corporation.tables.GeoLabelData;
+import communication.administration.corporation.tables.ItemData;
+import communication.administration.corporation.tables.LabelItemData;
+import communication.administration.dpa.UnconformityItemAlertDPAData;
+import communication.administration.group.tables.GroupData;
+import communication.administration.group.tables.GroupLineData;
+import communication.administration.group.tables.GroupMainAttributes;
+import communication.administration.user.UserSessionData;
+import communication.alert.AlertConstants;
+import communication.alert.AlertData;
+import communication.alert.Message;
+import communication.alert.PersonData;
+import communication.fleet.tables.FleetDivisionDetailData;
+import communication.language.Text;
+import communication.security.SecurityConstants;
+import communication.util.ExcelGenerator;
+import communication.util.Filter;
+import communication.util.MailSender;
+
+public class AlertHandler implements Serializable{
+	private static class Util {
+
+	    public static final double KMS_TO_MILES = 1.609344;
+	    private static final String PATH =  SecurityConstants.IMAGES_WAR_DIRECTORY; // "/tmp/datacenter/images/";
+	    public static final String [] MENU_LEVELS={"top","sub","sub2","sub3","sub4","sub5","sub6"};
+	    /**
+	     * 
+	     */
+	    public Util() {
+	        super();
+	    }
+	    
+	    /**
+	     * 
+	     * @param text
+	     * @param signature
+	     * @param email
+	     * @return
+	     */
+	    public static String getCompleteHTMLMail(String text,String signature,String email) {
+	        String mail = "<html>";
+    		mail +="<body>";
+    		mail +="<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'>"+
+	        "<span style='font-family:Arial;'> "+
+	        text+
+	        "</span> "+
+	        "</p> "+
+	        "--  "+
+	        "<br> "+
+	        "<span style='font-size:10.0pt;font-family:Arial;color:navy'>.................................................</span> "+
+	        "<br> "+
+	        "<em><b><span lang=EN-US style='font-size:10.0pt;font-family:Verdana;color:navy'>"+signature+"</span></b></em>"+
+	        "<br> "+
+	        "<em><b><span lang=EN-US style='font-size:10.5pt;font-family: Verdana;color:navy;mso-ansi-language:EN-US'> DataCenter&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "+
+	        "</span></b></em> "+
+	        "<br> "+
+	        "<em><b><span lang=EN-US style='font-size:10.0pt;font-family:Verdana;color:blue;mso-ansi-language: "+
+	        "EN-US'>CEPA International</span></b></em> "+
+	        "<br> "+
+	        "<strong><span "+
+	        "lang=EN-US style='font-size:7.5pt;font-family:Verdana;mso-ansi-language:EN-US; "+
+	        "font-weight:normal'><a href='mailto:"+email+"'>"+email+"</a></span></strong><span "+
+	        "lang=EN-US style='font-size:10.0pt;font-family:Arial;mso-ansi-language:EN-US'> </span><span "+
+	        "lang=EN-US style='mso-ansi-language:EN-US'></span> "+
+
+	        "<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=823 "+
+	         "style='width:617.25pt;mso-cellspacing:0cm;mso-padding-alt:0cm 0cm 0cm 0cm'> "+
+	         "<tr style='mso-yfti-irow:0;mso-yfti-lastrow:yes;mso-yfti-firstrow: yes'> "+
+	          "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+	          "<p class=MsoNormal align=center style='mso-margin-top-alt:auto;mso-margin-bottom-alt: "+
+	          "auto;text-align:center'><span lang=EN-US style='mso-ansi-language:EN-US'>&nbsp;<o:p></o:p></span></p> "+
+	          "</td> "+
+	          "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+	          "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'><span "+
+	          "lang=EN-US style='mso-ansi-language:EN-US'>&nbsp;<o:p></o:p></span></p> "+
+	          "</td> "+
+	          "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+	          "<div class=MsoNormal align=center style='text-align:center'><span "+
+	          "style='font-size:7.5pt'> "+
+	          "<hr size=2 width='100%' align=center> "+
+	          "</span></div> "+
+	          "<div align=center> "+
+	          "<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=827 "+
+	          " style='width:620.25pt;mso-cellspacing:0cm;mso-padding-alt:0cm 0cm 0cm 0cm'> "+
+	           "<tr style='mso-yfti-irow:0;mso-yfti-lastrow:yes;mso-yfti-firstrow: yes'> "+
+	           "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+	            "<p class=MsoNormal align=center style='mso-margin-top-alt:auto;mso-margin-bottom-alt: "+
+	            "auto;text-align:center'><span lang=EN-GB style='font-size:7.5pt;color:navy; "+
+	            "mso-ansi-language:EN-GB'>&nbsp; *Confidentiality Notice*<br> "+
+	            "The information contained in this e-mail and any accompanying documents is "+
+	            "confidential, may be privileged. It is intended solely for the person "+
+	            "and/or entity to whom it is addressed (i.e. those identified in the "+
+	            "&quot;To&quot; and &quot;cc&quot; box). The message and any attachments are "+
+	            "the property of CEPA International LLC, its group companies, or clients. "+
+	            "Unauthorized review, use, disclosure, or copying of this communication, or "+
+	            "any part thereof, is strictly prohibited and may be unlawful. If you have "+
+	            "received this e-mail in error, please return it and any attachment to the "+
+	            "sender and delete the e-mail and attachments and any copy from your system. "+
+	            "</span><span style='font-size:7.5pt;color:navy'>CEPA <span class=SpellE>International</span> "+
+	            "<span class=SpellE><span class=spelle>thanks</span></span> <span "+
+	            "class=SpellE><span class=spelle>you</span></span> <span class=SpellE><span "+
+	            "class=spelle>for</span></span> <span class=SpellE><span class=spelle>your</span></span> "+
+	            "<span class=SpellE><span class=spelle>cooperation</span></span>. </span></p> "+
+	            "<p align=center style='text-align:center'>&nbsp;</p> "+
+	            "</td> "+
+	           "</tr> "+
+	          "</table> "+
+	          "</div> "+
+	          "<p class=MsoNormal align=center style='text-align:center'><o:p></o:p></p> "+
+	          "</td> "+
+	         "</tr> "+
+	        "</table> ";
+    		mail +="</body>";
+	        mail += "</html>";
+	        return mail;
+	    }
+	    
+	    /**
+	     * Valida que el string sea diferente de null y de vacio.
+	     * @param label
+	     * @return
+	     */
+	    public static boolean empty(String label) {
+	        return label == null || label.trim().length() == 0;
+	    }
+
+	    public static String checkPermission(SystemAccess systemAccess,String label) {
+	    	if(systemAccess==null){
+				return "/home.jsp";
+			}
+			if(!systemAccess.getUserSessionData().checkPermission(label)){
+				return "/error.jsp";
+			}
+	    	return null;
+	    }
+	    
+	    /**
+	     * Return dd-mm-yyyy
+	     * @param date
+	     * @return
+	     */
+	    public static String formatDate(Date date) {
+	        if(date == null) {
+	            return "";
+	        }
+	        Calendar calendar = Calendar.getInstance();
+	        calendar.setTime(date);
+	        return calendar.get(Calendar.DAY_OF_MONTH)+"-"+(calendar.get(Calendar.MONTH)+1)+"-"+calendar.get(Calendar.YEAR);
+	    }
+	    
+	    /**
+	     * Return yyyy-mm-dd
+	     * @param date
+	     * @return
+	     */
+	    public static String formatDateYYYYMMDD(Date date) {
+	        if(date == null) {
+	            return "";
+	        }
+	        Calendar calendar = Calendar.getInstance();
+	        calendar.setTime(date);
+	            
+	       	String month = (calendar.get(Calendar.MONTH)+1 < 10) ? 
+	        			"0"+ String.valueOf(calendar.get(Calendar.MONTH)+1):
+	        				String.valueOf(calendar.get(Calendar.MONTH)+1);
+	        			
+	        String day = (calendar.get(Calendar.DAY_OF_MONTH)+1 < 10) ? 
+	    			"0"+ String.valueOf(calendar.get(Calendar.DAY_OF_MONTH)+1):
+	    				String.valueOf(calendar.get(Calendar.DAY_OF_MONTH)+1);
+	    			
+	        return calendar.get(Calendar.YEAR)+"-"+month+"-"+day;
+	    }
+
+
+	    public static String formatHour(Time time) {
+	        if(time == null) {
+	            return "";
+	        }
+	        Calendar calendar = Calendar.getInstance();
+	        calendar.setTime(time);
+	        String minute = (calendar.get(Calendar.MINUTE) < 10) ? "0"+String.valueOf(calendar.get(Calendar.MINUTE)) : String.valueOf(calendar.get(Calendar.MINUTE)); 
+	        return String.valueOf(calendar.get(Calendar.HOUR_OF_DAY))+":"+minute;
+	    }
+
+	    public static String formatHour(Date time) {
+	        if(time == null) {
+	            return "";
+	        }
+	        Calendar calendar = Calendar.getInstance();
+	        calendar.setTime(time);
+	        String minute = (calendar.get(Calendar.MINUTE) < 10) ? "0"+String.valueOf(calendar.get(Calendar.MINUTE)) : String.valueOf(calendar.get(Calendar.MINUTE)); 
+	        return String.valueOf(calendar.get(Calendar.HOUR_OF_DAY))+":"+minute;
+	    }
+
+	    /**
+	     * 
+	     * @param date
+	     * @param month
+	     * @param year
+	     * @return
+	     */
+	    public static Date getDate(String date, String month, String year) {
+	        try {
+	            Calendar calendar = Calendar.getInstance();
+	            calendar.set(Calendar.DAY_OF_MONTH,Integer.parseInt(date));
+	            calendar.set(Calendar.MONTH,Integer.parseInt(month)-1);
+	            calendar.set(Calendar.YEAR,Integer.parseInt(year));
+	            
+	            calendar.set(Calendar.HOUR,0);
+	            calendar.set(Calendar.MINUTE,0);
+	            calendar.set(Calendar.SECOND,0);
+	            calendar.set(Calendar.MILLISECOND,0);
+	            
+	            return calendar.getTime();
+	        } catch (NumberFormatException e) {
+	            return null;
+	        }
+	    }
+	    
+	    
+	    public static Calendar getCalendar(Date slqdate) {
+	        try {
+	        	Calendar date = Calendar.getInstance();
+	            date.setTime(slqdate);
+	            
+	            return date;
+	        } catch (Exception e) {
+	            return null;
+	        }
+	    }
+
+	    /**
+	     * A partir de un string de hora y otro de minuto devuelve un objeto Time
+	     * con dichos valores seteados.
+	     * 
+	     * @param hour
+	     * @param minute
+	     * @return
+	     */
+	    public static Time getTime(String hour, String minute) {
+	        Calendar calendar = Calendar.getInstance();
+	        
+	        if(isNumber(hour)) {
+	            calendar.set(Calendar.HOUR_OF_DAY,Integer.parseInt(hour));
+	        }
+	        if(isNumber(minute)) {
+	            calendar.set(Calendar.MINUTE,Integer.parseInt(minute));
+	        }
+	        calendar.set(Calendar.SECOND, 0);
+	        
+	        return new Time(calendar.getTimeInMillis());
+	    }
+	    
+	    public static GeoLabelData getGeoLabelData(DriverDivOrgForm createData) {
+	        Collection items1 = new LinkedList();
+	        if(Util.empty(createData.getCountry2())) {
+	            items1.add(new GeoItemData(Integer.valueOf(createData.getCountry1()),"",true,null));
+	        }else{
+	            if(Util.empty(createData.getCountry3())) {
+	                Collection items2 = new LinkedList();
+	                items2.add(new GeoItemData(Integer.valueOf(createData.getCountry2()),"",true,null));
+	                GeoLabelData level1 = new GeoLabelData(null,null,null,items2);
+	                items1.add(new GeoItemData(Integer.valueOf(createData.getCountry1()),"",true,level1));
+	            }else {
+	                Collection items3 = new LinkedList();
+	                items3.add(new GeoItemData(Integer.valueOf(createData.getCountry3()),"",true,null));
+	                GeoLabelData level2 = new GeoLabelData(null,null,null,items3);
+	                
+	                Collection items2 = new LinkedList();
+	                items2.add(new GeoItemData(Integer.valueOf(createData.getCountry2()),"",true,level2));
+	                GeoLabelData level1 = new GeoLabelData(null,null,null,items2);
+	                
+	                items1.add(new GeoItemData(Integer.valueOf(createData.getCountry1()),"",true,level1));
+	            }
+	        }
+	        return new GeoLabelData(null,null,null,items1);        
+	    }
+
+	    public static Collection getDivOrgs(DriverDivOrgForm createData, UserSessionData userSession) {
+	        DivOrgAttribute[] divOrgs = userSession.getFilter().getDivOrgsAttrs();
+	        Collection list = new LinkedList();
+	        if(divOrgs[0] != null) {
+	            DivOrgAttribute divOrgAttribute = divOrgs[0];
+	            LabelItemData labelData = getDivOrgData(createData.getDivOrg11(),createData.getDivOrg12(),createData.getDivOrg13());
+	            if(labelData != null) {
+	                list.add(new DivOrgData(divOrgAttribute.getId(),divOrgAttribute.getName(),labelData));
+	            }
+	        }
+	        if(divOrgs[1] != null) {
+	            DivOrgAttribute divOrgAttribute = divOrgs[1];
+	            LabelItemData labelData = getDivOrgData(createData.getDivOrg21(),createData.getDivOrg22(),createData.getDivOrg23());
+	            if(labelData != null) {
+	                list.add(new DivOrgData(divOrgAttribute.getId(),divOrgAttribute.getName(),labelData));
+	            }
+	        }
+	        if(divOrgs[2] != null) {
+	            DivOrgAttribute divOrgAttribute = divOrgs[2];
+	            LabelItemData labelData = getDivOrgData(createData.getDivOrg31(),createData.getDivOrg32(),createData.getDivOrg33());
+	            if(labelData != null) {
+	                list.add(new DivOrgData(divOrgAttribute.getId(),divOrgAttribute.getName(),labelData));
+	            }
+	        }
+	        return list;
+	    }
+
+	    public static LabelItemData getDivOrgData(String item1,String item2,String item3) {
+	        Collection items1 = new LinkedList();
+	        if(Util.empty(item2)) {
+	            items1.add(new ItemData(Integer.valueOf(item1),"",true,null));
+	        }else{
+	            if(Util.empty(item3)) {
+	                Collection items2 = new LinkedList();
+	                items2.add(new ItemData(Integer.valueOf(item2),"",true,null));
+	                LabelItemData level1 = new LabelItemData(null,null,items2,null);
+	                items1.add(new ItemData(Integer.valueOf(item1),"",true,level1));
+	            }else {
+	                Collection items3 = new LinkedList();
+	                items3.add(new ItemData(Integer.valueOf(item3),"",true,null));
+	                LabelItemData level2 = new LabelItemData(null,null,items3,null);
+	                
+	                Collection items2 = new LinkedList();
+	                items2.add(new ItemData(Integer.valueOf(item2),"",true,level2));
+	                LabelItemData level1 = new LabelItemData(null,null,items2,null);
+	                
+	                items1.add(new ItemData(Integer.valueOf(item1),"",true,level1));
+	                
+	            }
+	        }
+	        return new LabelItemData(null,null,items1,null);     
+	    }
+
+	    public static boolean isNumber(String string) {
+	        try {
+	            Integer.parseInt(string.trim());
+	        }catch(Exception e) {
+	            return false;
+	        }
+	        return true;
+	    }
+	    
+	    public static boolean isFloat(String string){
+	    	try{
+	    		Float.parseFloat(string);
+	    	}catch(Exception e){
+	    		return false;
+	    	}
+	    	return true;
+	    }
+
+	    public static Collection stringToCollection(String stringList){
+	        String[] stringArray=stringList.split("<");
+	        Collection col=new LinkedList();
+	        
+	        for(int i=0; i < stringArray.length; i++){
+	            col.add(stringArray[i]);
+	        }
+	        
+	        return col;
+	    }
+	    
+	    public static Collection stringToCollection(String stringList,String splitChar){
+	        String[] stringArray=stringList.split(splitChar);
+	        Collection col=new LinkedList();
+	        
+	        for(int i=0; i < stringArray.length; i++){
+	            col.add(stringArray[i]);
+	        }
+	        
+	        return col;
+	    }
+
+	    public static Hashtable stringToHash(String stringList){
+	        String[] stringArray=stringList.split("<");
+	        Hashtable col=new Hashtable();
+	        
+	        for(int i=0; i < stringArray.length; i++){
+	            col.put(stringArray[i],stringArray[i]);
+	        }
+	        
+	        return col;
+	    }
+	    public static boolean checkEmail(String email ) {
+	    	email.trim();
+	       	StringTokenizer mail1 = new StringTokenizer(email);	
+	       	mail1.nextElement();
+	       	if(mail1.hasMoreElements()==true){
+	   		 return false;
+	       	}
+	       	Pattern p = Pattern.compile("^[\\w-]+(\\.[\\w-]+)*@([\\w-]+\\.)+[a-zA-Z]{2,7}$");
+	     	Matcher m = p.matcher(email);
+	     	if (!m.find()){
+	     		return false;
+	     	}
+	     	else{
+	     		return true;
+	     	}
+	    }
+	    public static boolean checkDate(int day,int month,int year) {
+	        if(day <= 0 || month <= 0 || year <= 0) {
+	            return false;
+	        }
+	        String validateYear=""+year;
+	        if(validateYear.length()!=4){
+	        	return false;
+	        }
+	          switch(month) {
+	            case 2:
+	                int max = (year % 4 == 0) ? 29 : 28; 
+	                if(day > max) {
+	                    return false;
+	                }
+	                break;
+	            case 1: case 3: case 5: case 7: case 8: case 10: case 12:
+	                if(day > 31) {
+	                    return false;
+	                }    
+	                break;
+	            case 4: case 6: case 9: case 11:
+	                if(day > 30) {
+	                    return false;
+	                }    
+	                break;
+	            default: return false;    
+	        }
+	        return true;
+	    }    
+	    
+
+	    /**
+	     * Valida que la hora y los minutos sean un horario valido
+	     * @param hour
+	     * @param minute
+	     * @return
+	     */
+	    public static boolean checkHour(int hour, int minute) {
+	        if(hour > 23 || hour < 0) {
+	            return false;
+	        }
+	        if(minute > 59 || minute < 0) {
+	            return false;
+	        }
+	        return true;
+	    }
+	    
+	    public static boolean isChecked(String label) {
+	        return !Util.empty(label) && label.toLowerCase().equals("on");
+	    }
+
+	    public static String formatDouble(Double value,int decimals) {
+	        String result = String.valueOf(value);
+	        int point = result.indexOf('.');
+	        if(point > 0) {
+	            if(point+1+decimals < result.length()) {                
+	                int lastValue = Integer.parseInt(String.valueOf(result.charAt(point+decimals)));
+	                if(Integer.parseInt(String.valueOf(result.charAt(point+1+decimals))) >= 5) {
+	                    lastValue++;
+	                }
+	                result = result.substring(0,point+decimals)+String.valueOf(lastValue);
+	            }
+	        }        
+	        return result;
+	    }
+	    
+	    /**
+	     * @param chart : JFreeChart 
+	     * @param chartName : Name of the JFreeChart
+	     * @param reportName : Name of the report which contains the Chart
+	     * @return String : Name of the image generated. 
+	     */
+	    public static String createJPEGFromChart(SystemAccess sys,JFreeChart chart, String chartName, String reportName)
+	    {
+	    	
+	    	// Genero imagenes para mostrar en el html:    	
+	    	String loginActual = null;
+	    	File imagen = null;
+	    	Date now = new Date();
+	    	long nowLong;
+	    	try{
+	    		// Segundos de la fecha de generacion de la grafica
+	            nowLong = now.getTime();
+	            // Login del usuario que solicito el reporte
+	        	loginActual = sys.getUserSessionData().getFilter().getLoginName().toString();
+	        	imagen = new File(PATH + loginActual + "-" +
+	        			reportName + "-" + chartName + "-" + String.valueOf(nowLong)+".jpg");        	
+	        	ChartUtilities.saveChartAsJPEG(imagen,chart,600,450);        	
+	        }catch (IOException e){
+	        	String message = e.getMessage();
+	        	System.out.print(message);
+	        }
+	        return imagen.getName();
+	    }
+	    
+	    public static String getGroups(GroupData group) {
+	        String groups = String.valueOf(group.getId());
+	        if(group.getType().equals(GroupMainAttributes.COMPOSED) && group.getGroups() != null) {
+	            Iterator it = group.getGroups().iterator();
+	            while(it.hasNext()) {
+	                groups += ","+getGroups((GroupData)it.next());
+	            }
+	        }
+	        return groups;
+	    }
+	    
+	  public static boolean dateRange(String yearFrom,String yearTo,String monthFrom,String monthTo,int rangeYear){
+		  try{
+			  int yearRange = Integer.parseInt(yearTo.trim())-Integer.parseInt(yearFrom.trim());
+			  int monthRange = Integer.parseInt(monthTo.trim())-Integer.parseInt(monthFrom.trim());
+			  if (rangeYear<0||yearRange>rangeYear||yearRange<0||((yearRange==rangeYear)&&(monthRange>0)))
+				  return false;
+		  }catch(Exception e){
+			  return false;
+		  } 
+		  return true;
+	  }  
+	  
+	  /**
+	   * 
+	   * @param detail
+	   * @param request
+	   * @param object
+	   * @param id
+	   * @return
+	   */
+	  public static String getFleetValue(FleetDivisionDetailData detail,
+			  HttpServletRequest request,int object,Integer id) {
+	      switch(object) {
+	          case 1:
+	              if(detail != null) {
+	                  return String.valueOf(detail.getVehicles());
+	              }
+	              String value = request.getParameter("vehicles"+String.valueOf(id));  
+	              if(!empty(value)) {
+	                  return value;
+	              }
+	              break;
+	          case 2:
+	              if(detail != null) {
+	                  return String.valueOf(detail.getMiles());
+	              }
+	              value = request.getParameter("miles"+String.valueOf(id));  
+	              if(!empty(value)) {
+	                  return value;
+	              }
+	              break;
+	          case 3:
+	              if(detail != null) {
+	                  return String.valueOf(detail.getAccidents());
+	              }
+	              value = request.getParameter("accidents"+String.valueOf(id));  
+	              if(!empty(value)) {
+	                  return value;
+	              }
+	              break;
+	          case 4:
+	              if(detail != null) {
+	                  return String.valueOf(detail.getIncidents());
+	              }
+	              value = request.getParameter("incidents"+String.valueOf(id));  
+	              if(!empty(value)) {
+	                  return value;
+	              }
+	              break;
+	              
+	          case 5:
+	              if(detail != null) {
+	            	  if (detail.getNearmiss() != null){
+	            		  return String.valueOf(detail.getNearmiss());
+	            	  }else{
+	            		  return "0";
+	            	  }
+	              }
+	              value = request.getParameter("nearmiss"+String.valueOf(id));  
+	              if(!empty(value)) {
+	                  return value;
+	              }
+	              break;
+	      }
+	      return "";
+	  }
+
+	  /**
+	   * 
+	   * @param sys
+	   * @param form
+	   * @param corporation
+	   * @return
+	   */
+	  public static Integer[][] getDivOrgs(SystemAccess sys, DivOrgForm form, int corporation) {
+	      Collection result = new LinkedList();
+	      for(int j = 0; j < sys.getUserSessionData().getDivOrgCount(); j++) {
+	          Collection divOrgs = new LinkedList();
+	          switch(sys.getUserSessionData().getFilter().getDivOrgLevel(j)) {
+	              case 1:
+	                  String[] list = form.getDivOrg(j+1,1);
+	                  if(list == null) {
+	                      return new Integer[0][0];
+	                  }
+	                  switch(list.length) {
+	                      case 0:
+	                          return new Integer[0][0];
+	                      case 1:
+	                          if(list[0].equals("0")) {
+	                              Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(1,j,null,null,corporation);
+	                              while(it2.hasNext()) {
+	                                  ItemData itemData = (ItemData)it2.next();
+	                                  if(!divOrgs.contains(itemData.getId())) {
+	                                      divOrgs.add(itemData.getId());
+	                                  }
+	                              }
+	                          }else {
+	                              if(!divOrgs.contains(new Integer(list[0]))) {
+	                                  divOrgs.add(new Integer(list[0]));
+	                              }
+	                          }
+	                          break;
+	                      default:
+	                          for(int i = 0; i < list.length; i++) {
+	                              if(!divOrgs.contains(new Integer(list[i]))) {
+	                                  divOrgs.add(new Integer(list[i]));
+	                              }
+	                          }
+	                          break;
+	                  }
+	                  break;
+	              case 2:
+	                  String[] list2 = form.getDivOrg(j+1,2);
+	                  if((list2 == null) || (list2.length == 0) || (list2.length == 1 && list2[0].equals("0"))) {        
+	                      list = form.getDivOrg(j+1,1);
+	                      if(list == null) {
+	                          return new Integer[0][0];
+	                      }
+	                      switch(list.length) {
+	                          case 0:
+	                              return new Integer[0][0];
+	                          case 1:
+	                              if(list[0].equals("0") || list[0].equals("")) {
+	                                  Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(2,j,null,null,corporation);
+	                                  while(it2.hasNext()) {
+	                                      ItemData itemData = (ItemData)it2.next();
+	                                      if(!divOrgs.contains(itemData.getId())) {
+	                                          divOrgs.add(itemData.getId());
+	                                      }
+	                                  }
+	                              }else {
+	                                  Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(2,j,list[0],null,corporation);
+	                                  while(it2.hasNext()) {
+	                                      ItemData itemData = (ItemData)it2.next();
+	                                      if(!divOrgs.contains(itemData.getId())) {
+	                                          divOrgs.add(itemData.getId());
+	                                      }
+	                                  }
+	                              }
+	                              break;
+	                          default:
+	                              for(int i = 0; i < list.length; i++) {
+	                                  Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(2,j,list[i],null,corporation);
+	                                  while(it2.hasNext()) {
+	                                      ItemData itemData = (ItemData)it2.next();
+	                                      if(!divOrgs.contains(itemData.getId())) {
+	                                          divOrgs.add(itemData.getId());
+	                                      }
+	                                  }
+	                              }
+	                              break;
+	                      }
+	                  }else {
+	                      for(int i = 0; i < list2.length; i++) {
+	                          if(!divOrgs.contains(new Integer(list2[i]))) {
+	                              divOrgs.add(new Integer(list2[i]));
+	                          }
+	                      }
+	                  }
+	                  break;
+	              case 3:
+	                  String[] list3 = form.getDivOrg(j+1,3);
+	                  if((list3 == null) || (list3.length == 0) || (list3.length == 1 && list3[0].equals("0"))) {
+	                      list2 = form.getDivOrg(j+1,2);
+	                      if((list2 == null) || (list2.length == 0) || (list2.length == 1 && list2[0].equals("0"))) {
+	                          list = form.getDivOrg(j+1,1);
+	                          if(list == null) {
+	                              return new Integer[0][0];
+	                          }
+	                          switch(list.length) {
+	                              case 0:
+	                                  return new Integer[0][0];
+	                              case 1:
+	                                  if(list[0].equals("0")) {
+	                                      Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(3,j,null,null,corporation);
+	                                      while(it2.hasNext()) {
+	                                          ItemData itemData = (ItemData)it2.next();
+	                                          if(!divOrgs.contains(itemData.getId())) {
+	                                              divOrgs.add(itemData.getId());
+	                                          }
+	                                      }
+	                                  }else {
+	                                      Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(3,j,list[0],null,corporation);
+	                                      while(it2.hasNext()) {
+	                                          ItemData itemData = (ItemData)it2.next();
+	                                          if(!divOrgs.contains(itemData.getId())) {
+	                                              divOrgs.add(itemData.getId());
+	                                          }
+	                                      }
+	                                  }
+	                                  break;
+	                              default:
+	                                  for(int i = 0; i < list.length; i++) {
+	                                      Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(3,j,list[i],null,corporation);
+	                                      while(it2.hasNext()) {
+	                                          ItemData itemData = (ItemData)it2.next();
+	                                          if(!divOrgs.contains(itemData.getId())) {
+	                                              divOrgs.add(itemData.getId());
+	                                          }
+	                                      }
+	                                  }
+	                                  break;
+	                          }
+	                      }else {
+	                          for(int i = 0; i < list2.length; i++) {
+	                              Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(3,j,null,list2[i],corporation);
+	                              while(it2.hasNext()) {
+	                                  ItemData itemData = (ItemData)it2.next();
+	                                  if(!divOrgs.contains(itemData.getId())) {
+	                                      divOrgs.add(itemData.getId());
+	                                  }
+	                              }
+	                          }
+	                      }
+	                  }else {
+	                      for(int i = 0; i < list3.length; i++) {
+	                          if(!divOrgs.contains(new Integer(list3[i]))) {
+	                              divOrgs.add(new Integer(list3[i]));
+	                          }
+	                      }
+	                  }
+	                  break;
+	          }
+	          result.add((Integer[])divOrgs.toArray(new Integer[0]));
+	      }
+	      return (Integer[][])result.toArray(new Integer[0][0]);
+	  }
+	  
+	    public static Integer[] getDivGeos(SystemAccess sys, DivOrgForm form, int data) throws Exception {
+	        Collection countries = new LinkedList();
+	        switch(sys.getUserSessionData().getFilter().getGeoLevelCount()) {
+	            case 1:
+	                String[] list = form.getCountry1();
+	                if(list == null) {
+	                    return new Integer[0];
+	                }
+	                switch(list.length) {
+	                    case 0:
+	                        return new Integer[0];
+	                    case 1:
+	                        if(list[0].equals("0")) {
+	                            Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(1,null,null,data);
+	                            while(it2.hasNext()) {
+	                                GeoItemData itemData = (GeoItemData)it2.next();
+	                                if(!countries.contains(itemData.getId())) {
+	                                    countries.add(itemData.getId());
+	                                }
+	                            }
+	                        }else {
+	                            if(!countries.contains(new Integer(list[0]))) {
+	                                countries.add(new Integer(list[0]));
+	                            }
+	                        }
+	                        break;
+	                    default:
+	                        for(int i = 0; i < list.length; i++) {
+	                            if(!countries.contains(new Integer(list[i]))) {
+	                                countries.add(new Integer(list[i]));
+	                            }
+	                        }
+	                        break;
+	                }
+	                break;
+	            case 2:
+	                String[] list2 = form.getCountry2();
+	                if((list2 == null) || (list2.length == 0) || (list2.length == 1 && (list2[0].equals("0") || list2[0].equals("")))) {        
+	                    list = form.getCountry1();
+	                    if(list == null) {
+	                        return new Integer[0];
+	                    }
+	                    switch(list.length) {
+	                        case 0:
+	                            return new Integer[0];
+	                        case 1:
+	                            if(list[0].equals("0")) {
+	                                Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(2,null,null,data);
+	                                while(it2.hasNext()) {
+	                                    GeoItemData itemData = (GeoItemData)it2.next();
+	                                    if(!countries.contains(itemData.getId())) {
+	                                        countries.add(itemData.getId());
+	                                    }
+	                                }
+	                            }else {
+	                                Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(2,list[0],null,data);
+	                                while(it2.hasNext()) {
+	                                    GeoItemData itemData = (GeoItemData)it2.next();
+	                                    if(!countries.contains(itemData.getId())) {
+	                                        countries.add(itemData.getId());
+	                                    }
+	                                }
+	                            }
+	                            break;
+	                        default:
+	                            for(int i = 0; i < list.length; i++) {
+	                                Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(2,list[i],null,data);
+	                                while(it2.hasNext()) {
+	                                    GeoItemData itemData = (GeoItemData)it2.next();
+	                                    if(!countries.contains(itemData.getId())) {
+	                                        countries.add(itemData.getId());
+	                                    }
+	                                }
+	                            }
+	                            break;
+	                    }
+	                }else {
+	                	System.out.println("List "+list2.length);
+	                    for(int i = 0; i < list2.length; i++) {
+	                        if(!countries.contains(new Integer(list2[i]))) {
+	                            countries.add(new Integer(list2[i]));
+	                        }
+	                    }
+	                }
+	                break;
+	            case 3:
+	                String[] list3 = form.getCountry3();
+	                if((list3 == null) || (list3.length == 0) || (list3.length == 1 && list3[0].equals("0"))) {
+	                    list2 = form.getCountry2();
+	                    if((list2 == null) || (list2.length == 0) || (list2.length == 1 && list2[0].equals("0"))) {
+	                        list = form.getCountry1();
+	                        if(list == null) {
+	                            return new Integer[0];
+	                        }
+	                        switch(list.length) {
+	                            case 0:
+	                                return new Integer[0];
+	                            case 1:
+	                                if(list[0].equals("0")) {
+	                                    Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(3,null,null,data);
+	                                    while(it2.hasNext()) {
+	                                        GeoItemData itemData = (GeoItemData)it2.next();
+	                                        if(!countries.contains(itemData.getId())) {
+	                                            countries.add(itemData.getId());
+	                                        }
+	                                    }
+	                                }else {
+	                                    Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(3,list[0],null,data);
+	                                    while(it2.hasNext()) {
+	                                        GeoItemData itemData = (GeoItemData)it2.next();
+	                                        if(!countries.contains(itemData.getId())) {
+	                                            countries.add(itemData.getId());
+	                                        }
+	                                    }
+	                                }
+	                                break;
+	                            default:
+	                                for(int i = 0; i < list.length; i++) {
+	                                    Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(3,list[i],null,data);
+	                                    while(it2.hasNext()) {
+	                                        GeoItemData itemData = (GeoItemData)it2.next();
+	                                        if(!countries.contains(itemData.getId())) {
+	                                            countries.add(itemData.getId());
+	                                        }
+	                                    }
+	                                }
+	                                break;
+	                        }
+	                    }else {
+	                        for(int i = 0; i < list2.length; i++) {
+	                            Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(3,null,list2[i],data);
+	                            while(it2.hasNext()) {
+	                                GeoItemData itemData = (GeoItemData)it2.next();
+	                                if(!countries.contains(itemData.getId())) {
+	                                    countries.add(itemData.getId());
+	                                }
+	                            }
+	                        }
+	                    }
+	                }else {
+	                    for(int i = 0; i < list3.length; i++) {
+	                        if(!countries.contains(new Integer(list3[i]))) {
+	                            countries.add(new Integer(list3[i]));
+	                        }
+	                    }
+	                }
+	                break;
+	        }
+	        return (Integer[])countries.toArray(new Integer[0]);
+	    }
+
+	    public static Integer[][] getDivOrgs(SystemAccess sys, DriverDivOrgForm driverSearchForm) throws RemoteException {
+	        return getDivOrgs(sys,driverSearchForm,Filter.USER);
+	    }
+	    
+	    public static Integer[][] getDivOrgs(SystemAccess sys, DriverDivOrgForm driverSearchForm,int data) throws RemoteException {
+	        Collection result = new LinkedList();
+	        for(int j = 0; j < 3; j++) {
+	            Collection divOrgs = new LinkedList();
+	            switch(sys.getUserSessionData().getFilter().getDivOrgLevel(j)) {
+	                case 1:
+	                    if(!Util.empty(driverSearchForm.getDivOrg(j+1,1))) {
+	                        divOrgs.add(new Integer(driverSearchForm.getDivOrg(j+1,1)));
+	                    }
+	                    break;
+	                case 2:
+	                    if(!Util.empty(driverSearchForm.getDivOrg(j+1,1))) {
+	                        if(!Util.empty(driverSearchForm.getDivOrg(j+1,2))) {
+	                            divOrgs.add(new Integer(driverSearchForm.getDivOrg(j+1,2)));
+	                        }else {
+	                            Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(2,j,driverSearchForm.getDivOrg(j+1,1),null,data);
+	                            while(it2.hasNext()) {
+	                                ItemData itemData = (ItemData)it2.next();
+	                                divOrgs.add(itemData.getId());
+	                            }
+	                        }
+	                    }
+	                    break;
+	                case 3:
+	                    if(!Util.empty(driverSearchForm.getDivOrg(j+1,3))) {
+	                        divOrgs.add(new Integer(driverSearchForm.getDivOrg(j+1,3)));
+	                    }else {
+	                        String level2 = null;
+	                        if(!Util.empty(driverSearchForm.getDivOrg(j+1,1))) {
+	                            if(!Util.empty(driverSearchForm.getDivOrg(j+1,2))) {
+	                                level2 = driverSearchForm.getDivOrg(j+1,2);
+	                            }
+	                            Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(3,j,driverSearchForm.getDivOrg(j+1,1),level2,data);
+	                            while(it2.hasNext()) {
+	                                ItemData itemData = (ItemData)it2.next();
+	                                divOrgs.add(itemData.getId());
+	                            }
+	                        }
+	                    }
+	                    break;
+	            }
+	            result.add((Integer[])divOrgs.toArray(new Integer[0]));
+	        }
+	        return (Integer[][])result.toArray(new Integer[0][0]);
+	    }
+
+	    public static Integer[] getDivGeos(SystemAccess sys, DriverDivOrgForm driverSearchForm) throws RemoteException {
+	        return getDivGeos(sys,driverSearchForm,Filter.USER);
+	    }
+	    
+	    public static Integer[] getDivGeos(SystemAccess sys, DriverDivOrgForm driverSearchForm,int data) throws RemoteException {
+	        Integer[] result = new Integer[0]; 
+	        Collection countries = new LinkedList();
+	        switch(sys.getUserSessionData().getFilter().getGeoLevelCount()) {
+	            case 1:
+	                if(!Util.empty(driverSearchForm.getCountry1())) {
+	                    countries.add(new Integer(driverSearchForm.getCountry1()));
+	                }
+	                break;
+	            case 2:
+	                if(!Util.empty(driverSearchForm.getCountry1())) {
+	                    if(!Util.empty(driverSearchForm.getCountry2())) {
+	                        countries.add(new Integer(driverSearchForm.getCountry2()));
+	                    }else {
+	                        Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(2,driverSearchForm.getCountry1(),null,data);
+	                        while(it2.hasNext()) {
+	                            GeoItemData itemData = (GeoItemData)it2.next();
+	                            countries.add(itemData.getId());
+	                        }
+	                    }
+	                }
+	                break;
+	            case 3:
+	                if(!Util.empty(driverSearchForm.getCountry3())) {
+	                    countries.add(new Integer(driverSearchForm.getCountry3()));
+	                }else {
+	                    String level2 = null;
+	                    if(!Util.empty(driverSearchForm.getCountry1())) {
+	                        if(!Util.empty(driverSearchForm.getCountry2())) {
+	                            level2 = driverSearchForm.getCountry2();
+	                        }
+	                        Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(3,driverSearchForm.getCountry1(),level2);
+	                        while(it2.hasNext()) {
+	                            GeoItemData itemData = (GeoItemData)it2.next();
+	                            countries.add(itemData.getId());
+	                        }
+	                    }
+	                }
+	                break;
+	        }
+	        result = (Integer[])countries.toArray(new Integer[0]);
+	        return result;
+	    }
+
+	    public static String[][] integrityCheck(Collection fleets,Collection events) {
+	        Collection errors = new LinkedList();
+	        Iterator fleetIt = fleets.iterator();
+	        while(fleetIt.hasNext()) {
+	            Object[] fleet = (Object[])fleetIt.next();
+	            int original = ((Integer)fleet[6]).intValue();
+	            Iterator eventIt = events.iterator();
+	            while(eventIt.hasNext()) {
+	                Object[] event = (Object[])eventIt.next();
+	                boolean equals = true;
+	                for(int i = 3; i < 6 && equals; i++) {
+	                    if(event[i] != null && fleet[i] != null){
+	                        if(!event[i].equals(fleet[i])) {
+	                            equals = false;
+	                        }
+	                    }
+	                }
+	                if(equals) {
+	                    fleet[6] = new Integer(((Integer)fleet[6]).intValue() - ((Integer)event[6]).intValue());
+	                    eventIt.remove();
+	                }
+	            }
+	            if(((Integer)fleet[6]).intValue() != 0) {
+	                String[] s = {null,null,null,String.valueOf(original),String.valueOf(fleet[6])};
+	                for(int i = 0; i < 3; i++) {
+	                    if(fleet[i] != null) {
+	                        s[i] = String.valueOf(fleet[i]);
+	                    }
+	                }
+	                errors.add(s);
+	            }
+	        }
+	        Iterator eventIt = events.iterator();
+	        while(eventIt.hasNext()) {
+	            Object[] event = (Object[])eventIt.next();
+	            String[] s = {null,null,null,"0",String.valueOf(event[6])};
+	            for(int i = 0; i < 3; i++) {
+	                if(event[i] != null) {
+	                    s[i] = String.valueOf(event[i]);
+	                }
+	            }
+	            errors.add(s);
+	        }
+	        return (String[][])errors.toArray(new String[0][0]);
+	    }
+
+	    /**
+	     * Convierte un string en formato dd/mm/aaaa en un Calendar.
+	     * @param word
+	     * @return
+	     */
+	    public static Calendar getDate(String word) {
+	    	word = word.replace("-", "/");
+	    	if (word != null && word.trim() != ""){
+		        StringTokenizer tokDate = new StringTokenizer(word,"/");
+		        Calendar c = Calendar.getInstance();
+		        c.set(Calendar.DAY_OF_MONTH,Integer.parseInt(tokDate.nextToken()));
+		        c.set(Calendar.MONTH,Integer.parseInt(tokDate.nextToken())-1);
+		        c.set(Calendar.YEAR,Integer.parseInt(tokDate.nextToken()));
+		        
+		        c.set(Calendar.HOUR, 0);
+		        c.set(Calendar.MINUTE, 0);
+		        c.set(Calendar.SECOND,0);
+		        c.set(Calendar.MILLISECOND,0);
+		        
+		        return c;
+	    	}
+	    	return null;
+	    }
+
+	    public static GeoLabelData getCountry(Collection groups,String region,String country,Text messages) {
+	        Iterator it = groups.iterator();
+	        while(it.hasNext()) {
+	            GroupLineData line = (GroupLineData) it.next();
+	            GeoLabelData lid = line.getCountry();
+	            if(lid != null) {
+	                GeoItemData item = (GeoItemData)lid.getItemIterator().next();
+	                
+	                // System.out.println("Region: "+region+" Region DB: "+item.getName());
+	                
+	                if(item.getName().equals(region) && item.getSubItems() != null) {
+	                    GeoItemData item2 = (GeoItemData)item.getSubItems().getItemIterator().next();
+	                    if(messages.getText(item2.getName()).equalsIgnoreCase(country)) {
+	                        return lid;
+	                    }
+	                }
+	            }
+	        }
+	        return null;
+	    }
+
+	    public static LabelItemData getDivOrg(Collection groups,int divOrg,String divorg1,String divorg2,String divorg3) {
+	        Iterator it = groups.iterator();
+	        while(it.hasNext()) {
+	            GroupLineData line = (GroupLineData) it.next();
+	            LabelItemData lid = line.getDivOrgs()[divOrg];
+	            if(lid != null) {
+	                ItemData item = (ItemData)lid.getItemIterator().next();
+	                
+	                System.out.println("Divorg1: "+divorg1+" Divorg2 DB: "+item.getName());
+	                
+	                if(item.getName().equalsIgnoreCase(divorg1)) {
+	                    if(divorg2 == null) {
+	                        return lid;
+	                    }else {
+	                        item = (ItemData)item.getSubItems().getItemIterator().next();
+	                        
+	                        System.out.println("Divorg2: "+divorg2+" Divorg2 DB: "+item.getName());
+	                        
+	                        if(item.getName().equalsIgnoreCase(divorg2)) {
+	                            if(divorg3 == null) {
+	                                return lid;
+	                            }else {
+	                                item = (ItemData)item.getSubItems().getItemIterator().next();
+	                                
+	                                System.out.println("Divorg3: "+divorg3+" Divorg3 DB: "+item.getName());
+
+	                                if(item.getName().equalsIgnoreCase(divorg3)) {
+	                                    return lid;
+	                                }
+	                            }
+	                        }
+	                    }
+	                }
+	            }
+	        }
+	        return null;
+	    }
+	    
+	    public static String emailTranslation(String word) {
+	        StringBuffer result = new StringBuffer();
+	        for(int i = 0; i < word.length(); i++) {
+	            char c = word.charAt(i); 
+	            switch(c) {
+	                case '·':
+	                    result.append("&aacute;");
+	                    break;
+	                case 'È':
+	                    result.append("&eacute;");
+	                    break;
+	                case 'Ì':
+	                    result.append("&iacute;");
+	                    break;
+	                case 'Û':
+	                    result.append("&oacute;");
+	                    break;
+	                case '˙':
+	                    result.append("&uacute;");
+	                    break;
+	                case 'Ò':
+	                    result.append("&ntilde;");
+	                    break;
+	                case 'Á':
+	                    result.append("&ccedil;");
+	                    break;
+	                case 'ı':
+	                    result.append("&otilde;");
+	                    break;
+	                case '„':
+	                    result.append("&atilde;");
+	                    break;
+	                default:
+	                    result.append(c);
+	            }
+	        }
+	        return result.toString();
+	    }
+	    
+
+	    /**
+	     * Convierte un string a unicode. Pasando letras con tildes
+	     * a codigos unicode.
+	     * @param word
+	     * @return
+	     */
+	    public static String toUnicodeString(String word){
+	    	 StringBuffer result = new StringBuffer();
+	         for(int i = 0; i < word.length(); i++) {
+	             char c = word.charAt(i); 
+	             switch(c) {
+	                case '·':
+	                     result.append("\\u00e1");
+	                     break;
+	                 case 'È':
+	                     result.append("\\u00e9");
+	                     break;
+	                 case 'Í':
+	                 	// Todo 
+	                 	result.append("\\u00EA");
+	                 	break;
+	                 case 'Ì':
+	                     result.append("\\u00ED");
+	                     break;
+	                 case 'Û':
+	                     result.append("\\u00F3");
+	                     break;
+	                 case '˙':
+	                     result.append("\\u00FA");
+	                     break;
+	                 case 'Ò':
+	                     result.append("\\u00F1");
+	                     break;
+	                 case 'Á':
+	                     result.append("\\u00E7");
+	                     break;
+	                 case 'ı':
+	                     result.append("\\u00F5");
+	                     break;
+	                 case '„':
+	                     result.append("\\u00E3");
+	                     break;
+	                 default:
+	                     result.append(c);
+	             }
+	         }
+	         System.out.println("texto HTML: " + result.toString());
+	         return result.toString();
+	    }
+	    
+	    public static String toHTMLString(String word) {
+	        StringBuffer result = new StringBuffer();
+	        for(int i = 0; i < word.length(); i++) {
+	            char c = word.charAt(i); 
+	            switch(c) {
+
+	               case '·':
+	            	   
+	                    result.append("&aacute;");
+	                    break;
+	                case 'È':
+	                    result.append("&eacute;");
+	                    break;
+	                case 'Í':
+	                	// Todo 
+	                	result.append("&ecirc;");
+	                	break;
+	                case 'Ì':
+	                    result.append("&iacute;");
+	                    break;
+	                case 'Û':
+	                    result.append("&oacute;");
+	                    break;
+	                case '˙':
+	                    result.append("&uacute;");
+	                    break;
+	                case 'Ò':
+	                    result.append("&ntilde;");
+	                    break;
+	                case 'Á':
+	                    result.append("&ccedil;");
+	                    break;
+	                case 'ı':
+	                    result.append("&otilde;");
+	                    break;
+	                case '„':
+	                    result.append("&atilde;");
+	                    break;
+	                case '\n':
+	                    result.append("<br>");
+	                    break;
+	                default:
+	                    result.append(c);
+
+	            }
+	        }
+	        System.out.println("texto HTML: " + result.toString());
+	        return result.toString();
+	    }
+	    
+	    public static String formatHTML(String word) {
+	        StringBuffer result = new StringBuffer();
+	        for(int i = 0; i < word.length(); i++) {
+	            char c = word.charAt(i); 
+	            switch(c) {
+	                case '\r':
+	                    break;
+	                case '\n':
+	                    result.append("<br>");
+	                    break;
+	                case '\t':
+	                    result.append("&nbsp;&nbsp;&nbsp;&nbsp;");
+	                    break;
+	                case ' ':
+	                    result.append("  ");
+	                    break;
+	                default:
+	                    result.append(c);
+	            }
+	        }
+	        return result.toString();
+	    }
+	    
+	    public static Collection getCollisions(Object form,Text messages) {
+	        Collection elements = new LinkedList();
+	        if(form != null) {
+	            DynaActionForm dynaForm = (DynaActionForm)form;
+	            if(dynaForm.getString("colisionclasification").equals("datatype.collisionclasification.betweenmotionvehicles")){
+	                elements.add(new OptionItem(messages.getText("generic.messages.select"),""));
+	                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.ourdriverfailedyield"),"datatype.accidentclasification.ourdriverfailedyield"));
+	                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.ourdriverhitrear"),"datatype.accidentclasification.ourdriverhitrear"));     
+	                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.otherpartyfailedyield"),"datatype.accidentclasification.otherpartyfailedyield"));
+	                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.otherpartyhitrear"),"datatype.accidentclasification.otherpartyhitrear"));
+	                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.other"),"datatype.accidentclasification.other"));        
+	            }else if (dynaForm.getString("colisionclasification").equals("datatype.collisionclasification.fixedobject")) {
+	                elements.add(new OptionItem(messages.getText("generic.messages.select"),""));
+	                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.ourdriverparkingbacking"),"datatype.accidentclasification.ourdriverparkingbacking"));
+	                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.other"),"datatype.accidentclasification.other"));    
+	                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.evasivemaneuver"),"datatype.accidentclasification.evasivemaneuver"));  
+	            }else if (dynaForm.getString("colisionclasification").equals("datatype.collisionclasification.noncollision")) {
+	                elements.add(new OptionItem(messages.getText("generic.messages.select"),""));
+	                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.rollover"),"datatype.accidentclasification.rollover"));
+	                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.offroad"),"datatype.accidentclasification.offroad"));
+	                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.other"),"datatype.accidentclasification.other"));
+	            }else if (dynaForm.getString("colisionclasification").equals("datatype.collisionclasification.pedestrian")) {
+	                elements.add(new OptionItem(messages.getText("generic.messages.select"),""));
+	                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.atrop"),"datatype.accidentclasification.atrop"));
+	            }else if (dynaForm.getString("colisionclasification").equals("datatype.collisionclasification.contact")) {
+	                elements.add(new OptionItem(messages.getText("generic.messages.select"),""));
+	                elements.add(new OptionItem(messages.getText("datatype.collisionclasification.contact"),"datatype.collisionclasification.contact"));
+	            }else if (dynaForm.getString("colisionclasification").equals("datatype.collisionclasification.companyvehicles")) {
+	                elements.add(new OptionItem(messages.getText("generic.messages.select"),""));
+	                elements.add(new OptionItem(messages.getText("datatype.collisionclasification.companyvehicles"),"datatype.collisionclasification.companyvehicles"));
+	            }else if (dynaForm.getString("colisionclasification").equals("datatype.collisionclasification.nonemployee")) {
+	                elements.add(new OptionItem(messages.getText("generic.messages.select"),""));
+	                elements.add(new OptionItem(messages.getText("datatype.collisionclasification.nonemployee"),"datatype.collisionclasification.nonemployee"));
+	            }
+	        }
+	        return elements;
+	    }
+
+	    public static boolean before(Date before,int month,int year) {
+	        Calendar date = Calendar.getInstance();
+	        date.setTime(before);
+	        if(date.get(Calendar.YEAR) < year) {
+	            return true;
+	        }
+	        if(date.get(Calendar.YEAR) == year) {
+	            return (date.get(Calendar.MONTH)+1 < month); 
+	        }
+	        return false;
+	    }
+
+	    public static boolean checkDate(String date, String month, String year) {
+	        if (empty(date) || !isNumber(date) || empty(month) || !isNumber(month) || empty(year) || !isNumber(year)) {
+	            return false;
+	        }
+	        return checkDate(Integer.parseInt(date.trim()),Integer.parseInt(month.trim()),Integer.parseInt(year.trim()));
+	    }
+	    
+	    public static int getlevel(int [] items,int parentId,int last) {
+	        int iter=last;
+	        while(iter>=0){
+	        	if (parentId==items[iter]){
+	        		return iter+1-last;	
+	        	}
+	       		iter-=1;
+	       	}
+	        return iter+1-last;	  
+	    }
+	    
+	    
+	    /**
+	     * Convierte un string en un string posible de usarse
+	     * como url o directorio de linux.
+	     * @param word
+	     * @return
+	     */
+	    public static String stringToSlug(String word) {
+	        StringBuffer result = new StringBuffer();
+	        String wordSlug = word.toLowerCase();
+	        for(int i = 0; i < wordSlug.length(); i++) {
+	            char c = wordSlug.charAt(i); 
+	            switch(c) {
+	/*                case '√°':
+	                    result.append("a");
+	                    break;
+	                case '√©':
+	                    result.append("e");
+	                    break;
+	                case '√≠':
+	                    result.append("i");
+	                    break;
+	                case '√≥':
+	                    result.append("o");
+	                    break;
+	                case '√∫':
+	                    result.append("u");
+	                    break;
+	                case '√±':
+	                    result.append("n");
+	                    break;
+	                case '√ß':
+	                    result.append("c");
+	                    break;
+	                case '√µ':
+	                    result.append("o");
+	                    break;
+	                case '√£':
+	                    result.append("a");
+	                    break;*/
+	                case ' ':case '/':
+	                	result.append("-");
+	                	break;
+	                case '&':case ',':case '.':case ';': case ':':
+	                	result.append("");
+	                	break;
+	                default:
+	                    result.append(c);
+	            }
+	        }
+	        return result.toString();
+	    }
+
+	    /**
+	     * 
+	     * @param h
+	     * @param m
+	     * @return
+	     */
+		public static boolean checkHour(String h, String m) {
+			if(!empty(h) || !empty(m)) {
+				try {
+					int hour = Integer.parseInt(h);
+					int minute = Integer.parseInt(m);
+			        if(hour > 23 || hour < 0) {
+			            return false;
+			        }
+			        if(minute > 59 || minute < 0) {
+			            return false;
+			        }
+				}catch (Exception e) {
+					return false;
+				}
+			}
+			return true;
+		}
+
+		/**
+		 * 
+		 * @param date
+		 * @return
+		 */
+	    public static String getDay(Date date) {
+	        if(date == null) {
+	            return "";
+	        }
+	        Calendar calendar = Calendar.getInstance();
+	        calendar.setTime(date);
+	        return String.valueOf(calendar.get(Calendar.DAY_OF_MONTH));
+	    }
+
+	    /**
+	     * 
+	     * @param date
+	     * @return
+	     */
+	    public static String getMonth(Date date) {
+	        if(date == null) {
+	            return "";
+	        }
+	        Calendar calendar = Calendar.getInstance();
+	        calendar.setTime(date);
+	        return String.valueOf(calendar.get(Calendar.MONTH)+1);
+	    }
+
+	    /**
+	     * 
+	     * @param date
+	     * @return
+	     */
+	    public static String getYear(Date date) {
+	        if(date == null) {
+	            return "";
+	        }
+	        Calendar calendar = Calendar.getInstance();
+	        calendar.setTime(date);
+	        return String.valueOf(calendar.get(Calendar.YEAR));
+	    }
+	    
+	    public static String getHour(String value) {
+	    	if(value != null) {
+		    	StringTokenizer tokenizer = new StringTokenizer(value,":");
+		    	if(tokenizer.hasMoreTokens()) {
+		    		return tokenizer.nextToken();
+		    	}
+	    	}
+	    	return "";
+	    }
+
+	    public static String getMinute(String value) {
+	    	if(value != null) {
+		    	StringTokenizer tokenizer = new StringTokenizer(value,":");
+		    	if(tokenizer.countTokens() == 3) {
+		    		tokenizer.nextToken();
+		    		return tokenizer.nextToken();
+		    	}
+	    	}
+	    	return "";
+	    }
+
+	    public static String getSecond(String value) {
+	    	if(value != null) {
+		    	StringTokenizer tokenizer = new StringTokenizer(value,":");
+		    	if(tokenizer.countTokens() == 3) {
+		    		tokenizer.nextToken();
+		    		tokenizer.nextToken();
+		    		return tokenizer.nextToken();
+		    	}
+	    	}
+	    	return "";
+	    }
+
+	    /**
+		 * 
+		 * @param items ItemValueData Collection
+		 * @param item ItemData
+		 * @return
+		 */
+		public static boolean contains(Collection<communication.activity.tables.ItemValueData> items,
+				communication.activity.tables.ItemData item){
+			
+			Iterator<communication.activity.tables.ItemValueData> iter = items.iterator();
+			boolean contain = false;
+			while(iter.hasNext() && !contain){
+				communication.activity.tables.ItemValueData itemData = iter.next();
+				contain = (item.getId().intValue() == itemData.getItem().getId().intValue());
+			}
+			
+			return contain;
+		}
+		
+		/**
+		 * 
+		 * @param items
+		 * @param item
+		 * @return
+		 */
+		public static Integer getValueFromItem(
+				Collection<communication.activity.tables.ItemValueData> items,
+				communication.activity.tables.ItemData item){
+			
+			if (items == null || item == null) return null;
+			
+			Iterator<communication.activity.tables.ItemValueData> iter = items.iterator();
+			boolean contain = false;
+			while(iter.hasNext() && !contain){
+				communication.activity.tables.ItemValueData itemData = iter.next();
+				contain = (item.getId().intValue() == itemData.getItem().getId().intValue());
+				if (contain){
+					return itemData.getItemValue();
+				}
+			}
+			
+			return null;
+		}
+		
+		 /**
+		 * Recibe un stringList que tiene items y valores con el formato:
+		 * Item1-ValorItem1<Item2-ValorItem2<Item3-ValorItem3 ....
+		 * y devuelve una coleccion de elementos ItemValue (Item,Value)
+		 * 
+		 * itemOrPoint : item, genero una lista item value de los items
+		 * 						point, genero una lsita item vlaue de los points
+		 */
+		public static Collection stringToItemValueCollection(String stringList, String itemOrPoint)
+		{
+			String[] stringItemValue;
+			String element;
+			ItemValueData itemValue;
+			String itemId = null;
+			String[] stringArray=stringList.split("<");
+			Collection<ItemValueData> col = new LinkedList<ItemValueData>();
+			
+			for(int i=0; i < stringArray.length; i++){
+				element  = (String) stringArray[i];
+				stringItemValue = (element).split("-");
+				
+				// Solo guardo valores de items, no de puntos
+				if (stringItemValue[0].contains("item") ){
+					if ( ! itemOrPoint.equalsIgnoreCase("item")){
+						itemId = null;
+					}else{
+						itemId = stringItemValue[0].substring(4);
+					}
+				}else if (stringItemValue[0].contains("point")  ){
+					 if (! itemOrPoint.equalsIgnoreCase("point")){
+						 itemId = null;
+					 }else{
+						 itemId = stringItemValue[0].substring(5);
+					 }
+				}else{
+					itemId = stringItemValue[0];
+				}	
+				
+				if (itemId != null){ 
+					itemValue = new ItemValueData(
+							new communication.activity.tables.ItemData(new Integer(itemId)),
+							new Integer(stringItemValue[1]));	
+					col.add(itemValue);
+				}
+				
+			}
+			return col;
+		}
+
+		
+
+		public static String getTimeString(String hour, String minute, String second) {
+			String value = "";
+			if(Util.isNumber(hour)) {
+				int h = Integer.parseInt(hour);
+				if(h >= 0 && h < 24) {
+					value += String.valueOf(h);
+				}else {
+					return null;			
+				}
+			}else {
+				return null;			
+			}
+			value += ":";
+			if(Util.isNumber(minute)) {
+				int m = Integer.parseInt(minute);
+				if(m >= 0 && m < 60) {
+					if(m < 10) 
+						value += "0";
+					value += String.valueOf(m);
+				}else {
+					return null;			
+				}
+			}else {
+				return null;			
+			}
+			value += ":";
+			if(Util.isNumber(second)) {
+				int s = Integer.parseInt(second);
+				if(s >= 0 && s < 60) {
+					if(s < 10)
+						value += "0";
+					value += String.valueOf(s);
+				}else {
+					return null;			
+				}
+			}else {
+				return null;			
+			}
+			return value;
+		}
+	}
+	
+	private static final long serialVersionUID = 1L;
+	
+	protected String type;
+	protected int alertId;
+	protected Integer idCorporation;
+	
+	// Colecci√≥n de objetos de tipo Mensaje
+	protected Collection messages;
+		
+	public AlertHandler() {
+	}
+	
+	/**
+	 * 
+	 * @param alertId
+	 */
+	public AlertHandler(int alertId) {
+		this.alertId = alertId;
+	}
+	
+	/**
+	 * 
+	 * @param type
+	 * @param alertId
+	 */
+	public AlertHandler(String type,int alertId) {
+		this.type = type;
+		this.alertId = alertId;
+	}	
+
+	public AlertHandler(String type,int alertId, Integer idCorporation) {
+		this.type = type;
+		this.alertId = alertId;
+		this.idCorporation = idCorporation;
+	}	
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public int getAlertId() {
+		return alertId;
+	}
+
+	public String getType() {
+		return type;
+	}
+
+	public void setType(String type) {
+		this.type = type;
+	}
+	
+	// M√©todo por defecto
+	public void constructMessage(Message message) {
+		if (message != null) {
+			messages = new LinkedList();
+			messages.add(message);
+		}	
+	}
+	
+	/**
+	 * 
+	 * @param contractors
+	 */
+	public void constructPersonsMessages(Collection persons) {
+		
+		if (persons != null) {
+			messages = new LinkedList();
+			Iterator it = persons.iterator();
+			while(it.hasNext()){
+				Message email = (Message)it.next();
+				messages.add(email);
+			}
+		}	
+	}
+	
+	/**
+	 * Encargado de mandar los mensajes generados luegos de evento 
+	 * que activa la creaci√≥n de mensajes 
+	 */	
+	public void sendMessages() throws Throwable{
+		
+		//System.out.println("INICIO ENVIA MENSAJES");
+		
+        MailSender sender = new MailSender();        
+        Message message;
+        
+        // Collection sended = new LinkedList();
+        
+        if (messages != null){
+        		
+		Iterator i = messages.iterator();
+		Boolean sent = false;
+		Collection toFrom = null;
+		Collection sentTo = null; // emails a enviar mas copia a alertasdc@gmail.com
+		Collection bccTo = null; // emails a enviar mas copia a alertasdc@gmail.com
+		Collection to = null; // solo emails a enviar
+		String toemails = null;
+		String email = null;
+		Collection bcc = null;
+		String bccemails = null;
+		
+		String replyToMail = null;
+		String replyToName = null;
+		String[] mailAddress = null;
+		
+        while(i.hasNext()) {
+    		 
+    
+        	message = (Message) i.next();          
+        	sent = false;
+        	int count = 0;
+           
+            	
+            	/**
+            	 * TODO:
+            	 * Restriccion, si estoy en produccion mando
+            	 * los emails que correspondan...
+            	 * 
+            	 * sino solo mando a gbenaderet@cepasafedrive.com
+            	 */
+        	
+          	if (AlertConstants.isProductionServer()){
+            		
+            		to = message.getTo();
+                	sentTo = message.getTo();
+                	bcc = message.getBcc();
+                	bccTo = message.getBcc();
+                	System.out.println("Mando emails como si estuviera en produccion...");
+               	
+            	}else{
+            		// Si envio desde maquina local:
+            		 
+            		// To
+            		to = message.getTo();
+            		if (to != null){
+            			to.clear();
+            			to.add("fcarriquiry@cepasafedrive.com");     
+            		}            		       		
+            		sentTo = to;            		
+                	bcc = null;    
+                	bccTo = null;           	
+                	
+            	}
+
+           	
+            	// Solo mando emails si to != null
+            	if ( to != null && to.size() > 0) {         	         		
+            		
+            		Iterator it = to.iterator();
+            		
+            		toemails = "";
+            		while (it.hasNext()) {
+            			email = (String) it.next(); 
+            			if (email != null && !email.trim().equals("") && email.contains("@")){ 
+            				if (toemails.equals("")){
+            					toemails = email;
+            				}else{
+            					toemails += " - " + email;
+            				}
+            			}
+            		}
+            	}
+            	
+            	// Solo mando emails si bcc != null
+            	if ( bcc != null && bcc.size() > 0) {         	         		
+            		
+            		Iterator it = bcc.iterator();
+            		bccemails = "";
+            		while (it.hasNext()) {
+            			email = (String) it.next(); 
+            			if (email != null && !email.trim().equals("") && email.contains("@")){ 
+            				if (bccemails.equals("")){
+            					bccemails = email;
+            				}else{
+            					bccemails += " - " + email;
+            				}
+            			}
+            		}
+            	}
+            	
+            	// Solo mando email si to o bcc son diferentes de null y no vacios.
+            	if ( (to != null && to.size() >0 ) || 
+            			(bcc != null && bcc.size() > 0)){
+            		
+            		
+            		System.out.println("Destinatarios TO emails: ");
+            		Iterator it = to.iterator();
+            		while(it.hasNext()) {
+            			System.out.println(it.next());
+            		}
+            		System.out.println("Destinatarios BCC emails: "+  ((bccemails != null)?bccemails:" ninguno."));
+			    	System.out.println("From: " + message.getFrom());
+            		System.out.println("Subject: " + message.getSubject());
+            		// System.out.println("Body: " + message.getBody());
+            		
+            		String from = message.getFrom(); // AlertConstants.BCC;
+            		String fromName = message.getFromName();
+            		String mailServer = null;
+            		// String password = message.getFromPassword(); // AlertConstants.BCC_PASSWORD; 
+            	
+            		if ( message.getAttachment() != null &&
+            				(!Util.empty(toemails) || !Util.empty(bccemails)) ){
+            			// Mails con ATTACHMENT y con destinatarios to o bcc diferentes de vacio.
+            			
+            			//	Intento mandar el mail 3 veces , si no puedo mando mail de error a casilla de salida
+            			while( ( !sent ) && ( count < 5 )){
+            				count += 1;
+            				
+            				mailAddress = sender.getAvailableAddress(idCorporation); 
+            				mailServer = AlertConstants.MAILSERVER; 
+            				
+            				if (mailAddress[0] != null && mailAddress[0].contains("cepainternational.com")){
+            					mailServer = AlertConstants.MAILSERVER2;
+            				}else if (mailAddress[0] != null && mailAddress[0].contains("cepalogistica.com")){
+            					mailServer = AlertConstants.MAILSERVER_INMOTION;
+            				}
+
+            				replyToMail = (message.getReplyTo() != null) ? 
+            						message.getReplyTo() : AlertConstants.REPLY_TO;
+            				replyToName = fromName;
+            				
+            				try{
+            					Collection<String> files = new LinkedList();
+            					files.add(message.getAttachment());
+            					Collection<String> names = new LinkedList();
+            					names.add(message.getName());
+            					sender.sendImageMandrill(sentTo, AlertConstants.FROMNAME_DC, AlertConstants.EMAIL_SUPPORT, message.getSubject(), message.getBody(), files, names, replyToMail, replyToName, bccTo, null);
+            				}catch(Exception e){
+            					sent = false;
+            					/**
+            					 * Si hubo exception espero 3 minutos antes de intentar de nuevo:
+            					 * 3 minutos: 180000
+            					 */
+            					// e.printStackTrace();
+            					System.out.println("Espero 3 minutos debido a la excepci√≥n...");
+            					Thread.sleep(180000);             					
+            				}
+            				
+            				if (sent){
+            					System.out.println("Mail con attachment enviado a TO: "+ ((toemails != null)?toemails:" ninguno. "));
+            					System.out.println("Mail con attachment enviado a BCC: "+ ((bccemails != null)?bccemails: " ninguno. "));
+            					Collection persons = message.getPersons();
+            					updatePersonEmailSended(persons);
+            				}
+            				
+            				if(count==4){
+            					toFrom = new LinkedList();
+            					toFrom.add(AlertConstants.EMAIL_JUAN);
+            					sentTo = toFrom;
+            					bccTo = null;
+            					String emails = ((toemails != null)?toemails:"")+" - "+ ((bccemails != null)?bccemails: "");
+            					message.setBody("<p>ERROR EMAILS: "+ emails+"</p><br>" +
+            							"<p>Driver:</p><br><br>"+message.getBody());
+            					message.setSubject("ERROR:EMAIL UNSEND: "+""+message.getSubject());
+            					System.out.println("ERROR: Mail con attachment NO enviado ");
+            				}
+            			}
+            		}else if (
+            				(!Util.empty(toemails) || !Util.empty(bccemails)) ) {
+            			
+            		
+            			// Mails SIN ATTACHMENT y con destinatarios diferentes de vacio:
+            			
+            			//	Intento mandar el mail 3 veces , si no puedo mando mail de error a casilla de salida
+            			while( (!sent) && (count < 5) ){
+            				count += 1;
+            				
+            				mailAddress = sender.getAvailableAddress(idCorporation);
+            				mailServer = AlertConstants.MAILSERVER; 
+            				
+            				if (mailAddress[0] != null && mailAddress[0].contains("cepainternational.com")){
+            					mailServer = AlertConstants.MAILSERVER2;
+            				}else if (mailAddress[0] != null && mailAddress[0].contains("cepalogistica.com")){
+            					mailServer = AlertConstants.MAILSERVER_INMOTION;
+            				}
+            				
+            				replyToMail = (message.getReplyTo() != null) ? message.getReplyTo() : AlertConstants.REPLY_TO;
+            				replyToName = message.getFromName();
+            				
+            				try{
+            					
+            					Collection<String> files = new LinkedList();
+            					files.add(message.getAttachment());
+            					Collection<String> names = new LinkedList();
+            					names.add(message.getName());
+            					sender.sendImageMandrill(sentTo, AlertConstants.FROMNAME_DC, AlertConstants.EMAIL_SUPPORT, message.getSubject(), message.getBody(), files, names, replyToMail, replyToName, bccTo, null);
+            				
+            				}catch(Exception e){
+            					sent = false;
+            					/**
+            					 * Si hubo exception espero 3 minutos antes de intentar de nuevo:
+            					 * 3 minutos: 180000
+            					 */
+            					// e.printStackTrace();
+            					System.out.println("Espero 3 minutos debido a la excepci√≥n...");
+            					Thread.sleep(180000);             					
+            				}
+            				
+            				if (sent){
+            					System.out.println("Mail con attachment enviado a TO: "+ ((toemails != null)?toemails:" ninguno. "));
+            					System.out.println("Mail con attachment enviado a BCC: "+ ((bccemails != null)?bccemails: " ninguno. "));
+            				
+            					Collection persons = message.getPersons();
+            					updatePersonEmailSended(persons);
+            				}
+            				
+            				if(count == 4){
+            					toFrom = new LinkedList();
+            					toFrom.add(AlertConstants.EMAIL_JUAN);
+	            				sentTo = toFrom;
+	            				bccTo = null;
+            					String emails = ((toemails != null)?toemails:"")+" - "+ ((bccemails != null)?bccemails: "");
+            					message.setBody("<p>ERROR EMAILS:"+emails+"</p><br><br><br>"+message.getBody());
+	            				message.setSubject("ERROR:EMAIL UNSEND: "+""+message.getSubject());
+	            				System.out.println("ERROR: Mail NO enviado a: "+ emails);
+	            			}
+	            		}
+            		}
+        		
+	                	
+            	}else{
+            		System.out.println("Message error: NO existe destinatarios Message Subject:"+message.getSubject());
+            	}					 	
+	        }
+        }
+       
+	}
+	
+	
+
+	/** 
+	 * Este metodo se reescribe segun la alerta, actualiza la fecha del ultimo email
+	 * enviado al usuario por el sistema de alertas. Para evitar mandarle una misma 
+	 * alerta 2 veces el mismo dia por ejemplo.
+	 */
+	public void updatePersonEmailSended(Collection persons){
+		try{
+			
+			AlertPersistence alertPersistence = new AlertPersistence();
+			if (persons != null && persons.size() > 0){
+				Iterator<PersonData> it = persons.iterator();
+				while (it.hasNext()){
+					PersonData person =  it.next();
+					
+					switch (this.alertId) {
+					
+						/* Alertas Monsanto Brasil, Recordatorio de Flotas */
+						case AlertConstants.MONSANTO_BRASIL_REMEMBER_ALERT:
+						case AlertConstants.MONSANTO_ARGENTINA_REMEMBER_ALERT:
+						case AlertConstants.MONSANTO_PARAGUAY_REMEMBER_ALERT:
+							/**
+							 * Sabemos que las personas a las que se le envia este email son usuarios,
+							 * por lo que actualizamos el usuario cuyo login coicida con el de la persona.
+							 */					
+							System.out.println("Actualizo alertDate para el usuario conductor con email: "+person.getEmail());
+							alertPersistence.getUpdateAlertDateUserByLoginParallel(person);
+							break;
+							
+							
+						/* Alertas Lilly, Recordatorios de Flotas */
+						case AlertConstants.LILLY_ENGLISH_REMEMBER_ALERT_1DIA:
+						case AlertConstants.LILLY_ENGLISH_REMEMBER_ALERT_5DIA:
+						case AlertConstants.LILLY_SPANISH_WITHOUT_ODOMETERS_REMEMBER_ALERT_1DIA:
+						case AlertConstants.LILLY_SPANISH_WITHOUT_ODOMETERS_REMEMBER_ALERT_5DIA:
+						case AlertConstants.LILLY_SPANISH_WITH_ODOMETERS_REMEMBER_ALERT_1DIA:
+						case AlertConstants.LILLY_SPANISH_WITH_ODOMETERS_REMEMBER_ALERT_2DIA:
+						case AlertConstants.LILLY_SPANISH_WITH_ODOMETERS_REMEMBER_ALERT_3DIA:
+						case AlertConstants.LILLY_SPANISH_WITH_ODOMETERS_REMEMBER_ALERT_4DIA:
+						case AlertConstants.LILLY_SPANISH_WITH_ODOMETERS_REMEMBER_ALERT_5DIA:
+							
+							System.out.println("Actualizo alertDate para el conductor con email: "+person.getEmail());
+							alertPersistence.getUpdateAlertDateDriverByIdParallel(person);
+							break;
+								
+						default:
+							System.out.println("Actualizo alertDate para el conductor con email: "+person.getEmail());
+							alertPersistence.getUpdateAlertDateDriverByIdParallel(person);
+							break;
+					}
+					
+					
+				}
+			}
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		
+	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public Collection getMensajes() {
+		return messages;
+	}
+
+	/**
+	 * 
+	 * @param messages
+	 */
+	public void setMensajes(Collection messages) {
+		this.messages = messages;
+	}
+	
+
+	/**
+	 * 	devuelve una collection con las alertas con fechas menores o iguales al d√≠a actual
+	 */
+	public static LinkedList<AlertData> getTodayAlert() throws Exception {
+		try{
+			AlertPersistence alertPersistence = new AlertPersistence();
+            return alertPersistence.getTodayAlert();
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		return null;
+	}
+
+	/**
+	 * 
+	 * @param idAlert
+	 * @throws Exception
+	 */
+	public static void finishAlert(Integer idAlert) throws Exception {
+		
+		try{
+			AlertPersistence alertPersistence = new AlertPersistence();
+			alertPersistence.finishAlert(idAlert);
+		}catch(Exception e){
+			e.printStackTrace();
+		}
+		
+	}
+	
+		
+	
+	/**
+	 * Obtiene la proxima fecha de corrida de la alerta segun 
+	 * la frecuencia que tenga: DAILY, MONTHLY, WEEKLY, NA (YEARLY)
+	 * Actualizada: Junio 2010
+	 * @param alertData
+	 * @return
+	 */
+	private static Date getNextDate(AlertData alertData){
+		
+		// NextDate:
+		Date nextDate = alertData.getNextdate();
+		
+		// StartDate:
+		Date startDate = alertData.getStartdate();
+		Calendar startDateCal = Util.getCalendar(startDate);
+		int dayStartDay = startDateCal.get(Calendar.DAY_OF_MONTH);
+		
+		// LastDate:
+		Date lastDate = alertData.getLastdate();
+		if (lastDate == null){ 
+			lastDate = startDate;			
+		}		
+		// Calendar lastDateCal = Util.getCalendar(lastDate);
+		// int monthLastDate = lastDateCal.get(Calendar.MONTH) + 1;
+				
+		
+		// Today:
+		Date today = new Date();
+		Calendar todaycal = Util.getCalendar(today);
+		// int dayToday = todaycal.get(Calendar.DAY_OF_MONTH);
+		int monthToday = todaycal.get(Calendar.MONTH) + 1;
+		int yearToday = todaycal.get(Calendar.YEAR);
+		
+		String frecuency = (alertData.getFrecuency()!= null) ? 
+				alertData.getFrecuency().getResourceBundleId():
+				AlertConstants.ALERT_FRECUENCY_NA;
+				
+		int addDay = 0;
+			
+			
+		if (frecuency.equals(AlertConstants.ALERT_FRECUENCY_DAILY)){
+
+			// Frecuencia Diaria:
+			addDay = 1 * (24 * 60 * 60 * 1000);
+			// Aca no se usa lastDate, porque si lastDate fue hace mas de un d√¨a 
+			// podr√¨a correrse esta alerta tantas veces como dias falten hasta hoy, 
+			// cuando solo deber√¨a correrse una vez por dia.
+			// Por eso usamos today + 1 dia
+			nextDate = new Date(today.getTime() + addDay);
+			
+		}else if(frecuency.equals(AlertConstants.ALERT_FRECUENCY_WEEKLY)){
+
+			// Frecuencia Semanal:
+			addDay = 7 * (24 * 60 * 60 * 1000);
+			nextDate = new Date(lastDate.getTime() + addDay);
+		
+		}else if (frecuency.equals(AlertConstants.ALERT_FRECUENCY_MONTHLY)){
+			
+			// Frecuencia Mensual, manteniendo el d√≠a de envio. 
+			// (un mes despues del ultimo envio, que se pudo haber 
+			// retasado unos dias si era el 28 y hoy es 2 del siguiente mes)
+			
+			
+			if (monthToday < 12){
+				nextDate = Util.getDate(
+						String.valueOf(dayStartDay), 
+						String.valueOf((monthToday + 1)),
+						String.valueOf(yearToday));
+				
+				System.out.println("ALERTAS: Actualice fecha a "+
+					String.valueOf(dayStartDay)+"-"+ 
+					String.valueOf((monthToday + 1))+"-"+
+					String.valueOf(yearToday));
+				
+			}else{
+				nextDate = Util.getDate(
+						String.valueOf(dayStartDay), 
+						String.valueOf(1),
+						String.valueOf(yearToday+1));
+				
+				System.out.println("ALERTAS: Actualice fecha a "+
+						String.valueOf(dayStartDay)+"-"+
+						String.valueOf(1)+"-"+
+						String.valueOf(yearToday+1));
+			}	
+			
+			
+		}else  if (frecuency.equals(AlertConstants.ALERT_FRECUENCY_YEARLY)){
+			
+			// Otras frecuencias: ANUAL
+			addDay = 365 * (24 * 60 * 60 * 1000);
+			nextDate = new Date(lastDate.getTime()+addDay);
+
+		}else{
+			// Si la frecuencia es NA (Quiere decir que la alerta no se va a repetir nuevamente)
+			// en ese caso seteamos nextDate = 2100-01-01 
+			// en un futuro no alcanzable por esta generaci√≥n...
+			
+			/* TODO
+			Calendar c = Calendar.getInstance();
+			c.set(Calendar.YEAR, 2100);
+			c.set(Calendar.MONTH, 0);
+			c.set(Calendar.DATE, 1);
+			nextDate = c.getTime();
+			*/
+		}
+		
+	
+		return nextDate;
+	
+	}
+	
+	
+	/**
+	 * Obtiene la fecha del proximo mail para los contratistas de FOSA (en ppio 1 mes)
+	 * @param alertData
+	 * @return
+	 */
+	private static Date getNextDateContractorsMails(AlertData alertData){
+		Date nextDate = alertData.getNextdate();
+		Date startDate= alertData.getStartdate();
+		Date today = new Date();
+		
+		Calendar todaycal = Util.getCalendar(today);
+		Calendar startDateCal = Util.getCalendar(startDate);
+		// int dayToday = todaycal.get(Calendar.DAY_OF_MONTH);
+		int monthToday = (todaycal.get(Calendar.MONTH)+1);
+		int yearToday = todaycal.get(Calendar.YEAR);
+		int dayStartDay = startDateCal.get(Calendar.DAY_OF_MONTH);
+		
+		
+		if (monthToday<12){
+			nextDate = Util.getDate(
+					String.valueOf(dayStartDay), 
+					String.valueOf((monthToday+1)),
+					String.valueOf(yearToday));
+		}else{
+			nextDate = Util.getDate(
+					String.valueOf(dayStartDay), 
+					String.valueOf(1),
+					String.valueOf(yearToday+1));
+	
+		}	
+		return nextDate;
+	}
+	
+	/**
+	 * Actualiza las fechas de la alerta.
+	 * @param alertData
+	 * @throws Exception
+	 */
+	public static void updateDateAlert(AlertData alertData) throws Exception {
+		
+		Date nextDate = null;
+		
+		String alertType = alertData.getAlertType().getResourceBundleId();
+			
+		if (alertType.equalsIgnoreCase(AlertConstants.ALERTTYPE_REPORT_DRIVER) ){
+			// Actualmente, FOSA
+			// Actualizado a Mayo 2010:
+			if(alertData.getCorporation()==CorporationData.FORESTALORIENTAL){
+				AlertHandler.finishAlert(alertData.getAlertId());
+				return;
+			}else{
+				nextDate = getNextDateContractorsMails(alertData);
+			}
+		
+		}else{
+			
+			// Actualizado a Junio 2010:		
+			// Para alertas que corren mensualmente, diariamente y semanalmente.
+			nextDate = getNextDate(alertData);
+		}
+		
+		// Actualizo proxima fecha de alerta:
+		alertData.setNextdate(nextDate);
+		
+		// Actualizo ultima vez que corri esta alerta:
+		Date today = new Date(); 
+		alertData.setLastdate(today);
+		
+		AlertPersistence alertPersistence = new AlertPersistence();
+        alertPersistence.updateAlert(alertData);			    
+		
+	
+	}
+	
+	
+	public static void dpaLoadUnconformityAlertsAndSend() throws Exception{
+		AlertPersistence persistenceA=new AlertPersistence();
+		LinkedList<UnconformityItemAlertDPAData> result=persistenceA.getDPAUnconformityTodayAlert();
+		Iterator<UnconformityItemAlertDPAData> iter=result.iterator();
+		AlertSystemAccess system = new AlertSystemAccess("vgomes");
+		while(iter.hasNext()){
+			UnconformityItemAlertDPAData item=iter.next();
+			String b="N&atilde;o Conformidade: <a href='https://fdmpro.cepasafedrive.com/datacenter/layout.jsp?refer=/dpa/DPAUnconformityView.jsp?id="+item.getUnconformityId()+"&href=/dpa/DPAUnconformityList.jsp'>https://fdmpro.cepasafedrive.com/datacenter/layout.jsp?refer=/dpa/DPAUnconformityView.jsp?id="+item.getUnconformityId()+"&href=/dpa/DPAUnconformityList.jsp</a>";
+			b+="<br> Tipo:"+system.getText().getText(item.getUnconformityType());
+			b+="<br> Data:"+item.getDate();
+			b+="<br> Iten:"+system.getText().getText(item.getType());
+			b+="<br> ExpiraÁ&atilde;o:"+item.getExpirity();
+			b+="<br> Coment&aacute;rio:"+item.getComment();
+			String subject=(!item.getFirstNotify()?"(Lembrete) ":"")+item.getReferencia()+" - "+system.getText().getText(item.getType())+" / "+system.getText().getText(item.getUnconformityType());
+			String to = "";
+			Collection bcc=new LinkedList();
+			if(SecurityConstants.isProductionServer()){
+				to=item.getEmail();	
+				bcc.add("controle.dpa@cepadc.com");
+			}else{
+				to="jrodriguez@cepasafedrive.com";
+			} 
+			String body=b;
+			
+			MailSender sender = new MailSender();
+			boolean sended = false;
+			int count = 0;
+			while(!sended && count < 10) {
+				try {
+					sended = true;
+				}catch (Exception e) {
+					e.printStackTrace();
+				}
+				count++; 
+			}
+		}
+		
+		
+		
+	}
+	
+	public static void forestalesLoadUnconformityAlertsAndSend() throws Exception{
+		AlertPersistence persistenceA=new AlertPersistence();
+		LinkedList<UnconformityItemAlertDPAData> result=persistenceA.getForestalesDPAUnconformityTodayAlert();
+		Iterator<UnconformityItemAlertDPAData> iter=result.iterator();
+		AlertSystemAccess system = new AlertSystemAccess("lpuentes");
+		while(iter.hasNext()){
+			UnconformityItemAlertDPAData item=iter.next();
+			String b = "<p>Estimado Contratista usted tiene NO conformidades pendientes para el veh&iacute;culo "+item.getReferencia()+" que vencen hoy.</br>"+
+					 "Una vez reparadas/corregidas las faltas/fallas le agradecemos ingresar al Data Center para corregir la NO conformidad.</p>"+
+					 "</br>";
+					 
+			b+="<p>No Conformidad: <a href='https://www.cepadc.com/datacenter/home.jsp?refer=/dpa/DPAUnconformityView.jsp?id="+item.getUnconformityId()+"&href=/dpa/DPAUnconformityList.jsp'>https://www.cepadc.com/datacenter/home.jsp?refer=/dpa/DPAUnconformityView.jsp?id="+item.getUnconformityId()+"&href=/dpa/DPAUnconformityList.jsp</a></p>";
+			b+="<p>Tipo:"+system.getText().getText(item.getUnconformityType())+"</p>";
+			b+="<p>Fecha:"+item.getDate()+"</p>";
+			b+="<p>Item:"+system.getText().getText(item.getType())+"</p>";
+			b+="<p>Vencimiento:"+item.getExpirity()+"</p>";
+			b+="<p>Comentario:"+item.getComment()+"</p>";
+			b+="</br><p>Muchas Gracias</p>";
+			String subject="CEPA- Checklist Recordatorio:"+item.getReferencia()+"-"+system.getText().getText(item.getType());
+			Collection<String> to = new ArrayList<String>();
+			String toStr = "";
+			if(SecurityConstants.isProductionServer()){
+				toStr = item.getEmail();	
+			}else{
+				to.add("jrodriguez@cepasafedrive.com");
+			}
+			
+			String body=b;
+			MailSender sender = new MailSender();
+			boolean sended = false;
+			int count = 0;
+			Collection bcc=new ArrayList<String>();
+			bcc.add("cepasafedrive@gmail.com");
+			String[] aux=toStr.split(",");
+			if(aux.length>1){
+				for(int i =1; i<aux.length;i++){
+					if(!aux[i].toLowerCase().contains("montesdelplata")){
+						to.add(aux[i]);	
+					}
+					
+				}
+				to.add(aux[0]);
+			}else {
+				to.add(toStr);
+			}
+			
+			while(!sended && count < 10) {
+				try {
+					System.out.println("envio alerta a "+toStr);
+					Iterator it2 = to.iterator();
+					while(it2.hasNext()) {
+						System.out.println("mail a "+it2.next());
+					}
+					sender.sendImageMandrill(to, AlertConstants.FROMNAME_DC, AlertConstants.EMAIL_SUPPORT, subject, business.alert.handler.Util.getCompleteHTMLMail(body,AlertConstants.DIGITAL_SIGNATURE_FOSA,AlertConstants.EMAIL_MICA), new LinkedList(), new LinkedList(), AlertConstants.EMAIL_MICA, AlertConstants.DIGITAL_SIGNATURE_FOSA, bcc, null);
+					sended = true;
+				}catch (Exception e) {
+					e.printStackTrace();
+				}
+				count++; 
+			}
+		}
+		
+		//upmXLSAbstractUnconformities();
+	}
+	
+	private static void upmXLSAbstractUnconformities() throws Exception{
+		AlertPersistence persistenceA=new AlertPersistence();
+		LinkedList<UnconformityItemAlertDPAData> result=persistenceA.getUPMDPAUnconformityTodayAlert();
+		Iterator<UnconformityItemAlertDPAData> iter=result.iterator();
+		AlertSystemAccess system = new AlertSystemAccess("lpuentes");
+		ArrayList<ArrayList<String>> books=new ArrayList<ArrayList<String>>();
+		ArrayList<String> header=new ArrayList<String>();
+		header.add("Contratista");
+		header.add("Fecha");
+		header.add("Vencimiento");
+		header.add("Placa");
+		header.add("Item");
+		header.add("Comentario");
+		header.add("Link");
+		books.add(header);
+		
+		while(iter.hasNext()){
+			UnconformityItemAlertDPAData item=iter.next();
+			ArrayList<String> row=new ArrayList<String>();
+			row.add(item.getDivOrgItem1());
+			row.add(item.getDate());
+			row.add(item.getExpirity());
+			row.add(item.getReferencia());
+			row.add(system.getText().getText(item.getType()));
+			row.add(item.getComment());
+			row.add("https://fdmpro.cepasafedrive.com/datacenter/home.jsp?refer=/dpa/DPAUnconformityView.jsp?id="+item.getUnconformityId()+"&href=/dpa/DPAUnconformityList.jsp");
+			books.add(row);
+		}
+		File file=new File(AlertConstants.TEMP_DIRECTORY_DPA+"out/CEPA_NoConformidadesXVencimiento.xls");
+		if(file.exists()){
+			file.delete();
+		}
+		OutputStream output=new FileOutputStream(file);
+		ExcelGenerator.generatorXLS(books,"No_Conformidades",output);
+		
+		Collection<String> files = new LinkedList();
+		Collection<String> names = new LinkedList();
+	 
+		files.add(AlertConstants.TEMP_DIRECTORY_DPA+"out/CEPA_NoConformidadesXVencimiento.xls");
+		names.add("CEPA_NoConformidadesXVencimiento.xls");
+			
+		String b="<p>Adjunto le enviamos el resumen de no conformidades, en el mismo puede ver todos los puntos vencidos y por vencer hoy.</p>"+
+				 "</br></br><p>Saludos atentamente.</p>";
+				 
+	
+		String subject="CEPA- Resumen No Conformidades X Vencimiento";
+		
+		Collection<String> to = new LinkedList();
+		if(SecurityConstants.isProductionServer()){
+			to.add("planificacion@upm.com");	
+		}
+		
+		String body=b;
+		MailSender sender = new MailSender();
+		boolean sended = false;
+		int count = 0;
+		Collection bcc=new ArrayList<String>();
+		bcc.add("fcarriquiry@cepasafedrive.com");
+		while(!sended && count < 10) {
+			try {
+				
+				String[] mailAddress = sender.getAvailableAddress(CorporationData.REPORTER_JJ); 
+				String mailServer = AlertConstants.MAILSERVER; 
+				if (mailAddress[0] != null && mailAddress[0].contains("cepainternational.com")){
+					mailServer = AlertConstants.MAILSERVER2;
+				}else if (mailAddress[0] != null && mailAddress[0].contains("cepalogistica.com")){
+					mailServer = AlertConstants.MAILSERVER_INMOTION;
+				}
+				
+				sender.sendImageMandrill(to, AlertConstants.FROMNAME_DC, AlertConstants.EMAIL_SUPPORT, 
+						subject, Util.getCompleteHTMLMail(b,AlertConstants.DIGITAL_SIGNATURE_FOSA,
+								AlertConstants.EMAIL_MICA), files,
+						names, AlertConstants.EMAIL_MICA, AlertConstants.DIGITAL_SIGNATURE_FOSA, bcc, null);
+				sended = true;
+			}catch (Exception e) {
+				e.printStackTrace();
+			}
+			count++; 
+		}
+	}
+	
+	
+	public static void logisticaUruguay() throws Exception{
+		
+		Calendar cal=Calendar.getInstance();
+		
+		if(cal.get(Calendar.DAY_OF_WEEK)==cal.TUESDAY ){
+			
+			AlertPersistence persistenceA=new AlertPersistence();
+			//Cheklist pesados Montes del plata
+			ArrayList<ArrayList<String>> mdpCheckList=persistenceA.getLogisticContractorWeekAlert(50, 80);
+			ArrayList<ArrayList<String>> mdpSeguimientos=persistenceA.getLogisticContractorWeekAlert(50, 79);
+			ArrayList<ArrayList<String>> fosaCheckList=persistenceA.getLogisticContractorWeekAlert(9, 80);
+			ArrayList<ArrayList<String>> fosaSeguimientos=persistenceA.getLogisticContractorWeekAlert(9, 79);
+			 
+			AlertSystemAccess system = new AlertSystemAccess("lpuentes");
+			ArrayList<String> header=new ArrayList<String>();
+			header.add("Contratista");
+			header.add("Cantidad");
+			ArrayList<ArrayList<String>> books1=new ArrayList<ArrayList<String>>();
+			books1.add(header);
+			books1.addAll(mdpCheckList);
+			ArrayList<ArrayList<String>> books2=new ArrayList<ArrayList<String>>();
+			books2.add(header);
+			books2.addAll(mdpSeguimientos);
+			ArrayList<ArrayList<String>> books3=new ArrayList<ArrayList<String>>();
+			books3.add(header);
+			books3.addAll(fosaCheckList);
+			ArrayList<ArrayList<String>> books4=new ArrayList<ArrayList<String>>();
+			books4.add(header);
+			books4.addAll(fosaSeguimientos);
+			
+			File file=new File(AlertConstants.TEMP_DIRECTORY_DPA+"out/ResumenGuzmanLogistica.xls");
+			if(file.exists()){
+				file.delete();
+			}
+			OutputStream output=new FileOutputStream(file);
+			ExcelGenerator.generatorXLS(books1,"MDP Checklist",books2,"MDP Seguimientos",books3,"FOSA Checklist",books4,"FOSA Seguimientos",output);
+			
+			Collection<String> files = new LinkedList();
+			Collection<String> names = new LinkedList();
+		 
+			files.add(AlertConstants.TEMP_DIRECTORY_DPA+"out/ResumenGuzmanLogistica.xls");
+			names.add("ResumenGuzmanLogistica.xls");
+				
+			String b="<p>Estimado Guzman, </p><p>Este es un reporte autom&aacute;tico del sistema DataCenter que le llegara todos los lunes con el resumen de los checklist por contratista adjunto en formato excel, </br> que tenga usted un excelente transcurso del dÌa y un mejor termino al final del mismo.</p>"+
+					 "</br></br><p>Saludos atentamente.</p>";
+					 
+		
+			String subject="CEPA- Resumen Logistica";
+			
+			Collection<String> to = new LinkedList();
+			if(SecurityConstants.isProductionServer()){
+				to.add("gdelasovera@cepasafedrive.com");	
+			}
+			
+			String body=b;
+			MailSender sender = new MailSender();
+			boolean sended = false;
+			int count = 0;
+			Collection bcc=new ArrayList<String>();
+			bcc.add("fcarriquiry@cepasafedrive.com");
+			while(!sended && count < 10) {
+				try {
+					
+					String[] mailAddress = sender.getAvailableAddress(CorporationData.REPORTER_JJ); 
+					String mailServer = AlertConstants.MAILSERVER; 
+					if (mailAddress[0] != null && mailAddress[0].contains("cepainternational.com")){
+						mailServer = AlertConstants.MAILSERVER2;
+					}else if (mailAddress[0] != null && mailAddress[0].contains("cepalogistica.com")){
+						mailServer = AlertConstants.MAILSERVER_INMOTION;
+					}
+					
+					sender.sendImageMandrill(to, AlertConstants.FROMNAME_DC, AlertConstants.EMAIL_SUPPORT, 
+							subject, Util.getCompleteHTMLMail(b,"Sistemas",
+									"jrodriguez@cepasafedrive.com"), files,
+							names, "jrodriguez@cepasafedrive.com", "Sistemas", bcc, null);
+
+					sended = true;
+				}catch (Exception e) {
+					e.printStackTrace();
+				}
+				count++; 
+			}
+		
+		}
+		
+	}
+	
+	
+
+	/**
+	 * @return the idCorporation
+	 */
+	public int getIdCorporation() {
+		return idCorporation;
+	}
+
+	/**
+	 * @param idCorporation the idCorporation to set
+	 */
+	public void setIdCorporation(int idCorporation) {
+		this.idCorporation = idCorporation;
+	}
+
+	/**
+	 * @return the messages
+	 */
+	public Collection getMessages() {
+		return messages;
+	}
+
+	/**
+	 * @param messages the messages to set
+	 */
+	public void setMessages(Collection messages) {
+		this.messages = messages;
+	}
+
+	/**
+	 * @param alertId the alertId to set
+	 */
+	public void setAlertId(int alertId) {
+		this.alertId = alertId;
+	}
+	
+	
+
+}
+

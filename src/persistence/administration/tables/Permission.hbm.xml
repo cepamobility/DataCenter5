@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.administration.tables">
+    <class name="Permission" table="permissions">
+
+        <id name="key" column="key" type="java.lang.String">
+            <generator class="assigned">
+            </generator>
+        </id>
+        <property	name="module"	type="java.lang.String"		column="module"	/>
+        <property	name="index"	type="java.lang.Integer"	column="index" />
+       	<property name="corporationId" type="java.lang.Integer">
+		    <column name="corporationId" default="0"/>
+	   	</property>
+    </class>
+
+</hibernate-mapping>

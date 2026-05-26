@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.log.corporation" default-cascade="all">
+    <class name="DivOrgItemLevel1Log" table="divorgitemlevel1log" >
+
+       	<composite-id class="persistence.log.IdLogPK" name="pk" >
+	        <key-property	name="id"	type="java.lang.Integer"	column="id"/>
+	        <key-property	name="loginUser"	type="java.lang.String"	column="loginuser"/>
+	        <key-property	name="date"	type="java.util.Date"	column="date"/>
+       	</composite-id>
+
+		<many-to-one name="divOrg" class="DivOrgLog" not-null="true">
+			<column name="idDivOrg" /> 
+			<column name="loginUserDivOrg" /> 
+			<column name="dateDivOrg" />
+		</many-to-one>
+
+        <property column="resourcekey" name="resourceKey" type="java.lang.String" not-null="true" />
+
+        <property name="active" not-null="true" />
+		
+		<many-to-one name="divOrgItemLevel2" class="DivOrgItemLevel2Log" not-null="false">
+			<column name="idLevel2" /> 
+			<column name="loginLevel2" /> 
+			<column name="dateLevel2" />
+		</many-to-one>         
+        
+    </class>
+</hibernate-mapping>

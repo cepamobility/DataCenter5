@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.util.tables">
+    <class name="DriverAccessLog" table="driveraccess">
+
+       <composite-id class="DriverAccessLogPK" name="pk" >
+	        <key-property	name="driver"	type="java.lang.Integer"	column="driver"/>
+	        <key-property	name="userId"	type="java.lang.String"	column="userid"/>
+	        <key-property	name="date"	type="java.util.Date"	column="date"/>
+       </composite-id>
+        
+        <property	name="contratist"	type="java.lang.Integer"		column="contratist"		not-null="true" />
+        <property	name="access"	type="java.lang.Integer"		column="access"		not-null="true" />
+        <property	name="active"	type="java.lang.Integer"		column="active"		not-null="true" />
+        <property	name="license"	type="java.lang.Integer"		column="license"		not-null="true" />
+        <property	name="health"	type="java.lang.Integer"		column="health"		not-null="true" />
+        <property	name="aptitud"	type="java.lang.Integer"		column="aptitud"		not-null="true" />
+        <property	name="radar"	type="java.lang.Integer"		column="radar"		not-null="true" />
+        <property	name="induction"	type="java.lang.Integer"		column="induction"		not-null="true" />
+    </class> 
+</hibernate-mapping>

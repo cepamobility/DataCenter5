@@ -1,0 +1,362 @@
+package communication.queries.report;
+
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.List;
+
+import javax.swing.table.AbstractTableModel;
+
+import org.jfree.data.category.CategoryDataset;
+import org.jfree.data.category.DefaultCategoryDataset;
+
+import presentation.translator.web.util.Util;
+
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.user.UserSessionData;
+import communication.fleet.util.FleetMileage;
+import communication.language.Text;
+
+public class ReportMileageData extends AbstractTableModel 
+	implements Serializable {
+
+    static final long serialVersionUID = 1L;
+    
+    int total;
+    FleetMileage[] attributes;
+    boolean color = true;
+    Text messages;
+
+    private Hashtable divisions;
+    private Hashtable subdivisions;
+
+    int accidents = 0;
+    int incidents = 0;
+    int miles = 0;
+    private Integer monthCount;
+
+    private float totalVehicles = 0;
+    private Hashtable totalPeriods;
+
+	private UserSessionData sys;
+    
+    public ReportMileageData() {
+        total = 0;
+        attributes = new FleetMileage[0]; 
+    }
+    
+    public ReportMileageData(Collection details,Integer monthCount, UserSessionData sys) {
+    	this.sys = sys;
+        total = details.size();
+        Collections.sort((List) details);
+        attributes = new FleetMileage[total];
+        Iterator it = details.iterator();
+        int index = 0;
+        totalPeriods = new Hashtable();
+        while(it.hasNext()) {
+            attributes[index] = (FleetMileage)it.next();
+            totalVehicles += ((Float)attributes[index].getVehicles()).floatValue(); 
+            if(!totalPeriods.containsKey(attributes[index].getPeriod()+"/"+attributes[index].getYear())) {
+                totalPeriods.put(attributes[index].getPeriod()+"/"+attributes[index].getYear(),"");
+            }
+            index++;
+        }
+        this.monthCount=monthCount;
+    }
+
+    public int getRowCount() {
+        return total;
+    }
+
+    public int getColumnCount() {
+        return 29;
+    }
+
+    public Object getValueAt(int rowIndex, int columnIndex) {
+        switch(columnIndex) {
+            case 0:
+            	if (attributes[rowIndex].getPeriod() == null || attributes[rowIndex].getYear() == null ){
+            		return "---";
+            	}
+                return messages.getText("generic.month."+attributes[rowIndex].getPeriod())+" "+
+                	attributes[rowIndex].getYear();
+                
+            case 1:
+            	if (attributes[rowIndex].getCountry() == null){
+            		return "---";
+            	}
+            	return messages.getText(attributes[rowIndex].getCountry());
+            	
+            case 2:
+            	if (attributes[rowIndex].getDivOrg1Id() == null){
+            		return new Integer(0);
+            	}
+                return attributes[rowIndex].getDivOrg1Id();
+                
+            case 3:
+            	if (attributes[rowIndex].getDivOrg1Name() == null){
+            		return "---";
+            	}
+                return attributes[rowIndex].getDivOrg1Name();
+                
+            case 4:
+            	if (attributes[rowIndex].getDivOrg2Id() == null){
+            		return new Integer(0);
+            	}
+                return attributes[rowIndex].getDivOrg2Id();
+                
+            case 5:
+            	if (attributes[rowIndex].getDivOrg2Name() == null){
+            		return "---";
+            	}
+                return attributes[rowIndex].getDivOrg2Name();
+                
+            case 6:
+            	if (attributes[rowIndex].getDivOrg3Id() == null){
+            		return new Integer(0);
+            	}
+                return attributes[rowIndex].getDivOrg3Id();
+                
+            case 7:
+                if (attributes[rowIndex].getDivOrg3Name() == null){
+                	return "---";
+                }
+            	return attributes[rowIndex].getDivOrg3Name();
+            	
+            case 8:
+            	if (attributes[rowIndex].getDivOrg4Name() == null){
+            		return "---";
+            	}
+                return attributes[rowIndex].getDivOrg4Name();
+                
+            case 9:
+            	if (attributes[rowIndex].getDivOrg5Name() == null){
+            		return "---";
+            	}
+                return attributes[rowIndex].getDivOrg5Name();
+                
+            case 10:
+            	if (attributes[rowIndex].getDivOrg6Name() == null){
+            		return "---";
+            	}
+                return attributes[rowIndex].getDivOrg6Name();
+                
+            case 11:
+            	if (attributes[rowIndex].getDivOrg7Name() == null){
+            		return "---";
+            	}
+                return attributes[rowIndex].getDivOrg7Name();
+                
+            case 12:
+            	if (attributes[rowIndex].getDivOrg8Name() == null){
+            		return "---";
+            	}
+                return attributes[rowIndex].getDivOrg8Name();
+                
+            case 13:
+            	if (attributes[rowIndex].getDivOrg9Name() == null){
+            		return "---";
+            	}
+                return attributes[rowIndex].getDivOrg9Name();
+                
+            case 14:
+            	if (attributes[rowIndex].getVehicles() == null){
+            		return new Float(0);
+            	}
+                return attributes[rowIndex].getVehicles();
+                
+            case 15:
+                if (attributes[rowIndex].getMiles() == null){
+                	return new Integer(0);
+                }
+            	return attributes[rowIndex].getMiles();
+            	
+            case 16:
+            	if (attributes[rowIndex].getAccidents() == null){
+            		return new Integer(0);
+            	}
+                return attributes[rowIndex].getAccidents();
+                
+            case 17:
+            	if (attributes[rowIndex].getIncidents() == null){
+            		return new Integer(0);
+            	}
+                return attributes[rowIndex].getIncidents();
+                
+            case 18:
+                if(attributes[rowIndex].getMiles() == null || attributes[rowIndex].getMiles().doubleValue() == 0
+                	|| attributes[rowIndex].getAccidents() == null) {
+                    return new Float(0);
+                }
+            	if(sys.isCorporation(CorporationData.SYNGENTA_BR)) {
+            		return new Float(attributes[rowIndex].getAccidents().floatValue() * 1000000 / 
+            				Math.round(attributes[rowIndex].getMiles().doubleValue() * Util.KMS_TO_MILES));
+            	}else {
+            		return new Float(attributes[rowIndex].getAccidents().floatValue() * 1000000 / 
+                		attributes[rowIndex].getMiles().floatValue());
+            	}
+            case 19:
+            	if (attributes[rowIndex].getVehicleType() == null){
+            		return "---";
+            	}
+            	return messages.getText(attributes[rowIndex].getVehicleType());
+            	
+            case 20:
+                color = !color;
+                return new Boolean(color);
+                
+            case 21:
+                if (totalPeriods.size() == 0){
+                	return new Float(0);
+                }
+            	return new Float(totalVehicles / totalPeriods.size());
+                
+            case 22:
+            	if (attributes[rowIndex].getAccidentCost() == null){
+            		return new Integer(0);
+            	}
+                return attributes[rowIndex].getAccidentCost();
+                
+            case 23:
+            	if (attributes[rowIndex].getIncidentCost() == null){
+            		return new Integer(0);
+            	}
+            	return attributes[rowIndex].getIncidentCost();
+            	
+            case 24:
+	                if(attributes[rowIndex].getMiles() == null || 
+	                	attributes[rowIndex].getIncidents() == null ||
+	                	attributes[rowIndex].getMiles().doubleValue() == 0) {
+	                	
+	                    return new Float(0);
+	                }
+	            	if(sys.isCorporation(CorporationData.SYNGENTA_BR)) {
+	            		return new Float(attributes[rowIndex].getIncidents().floatValue() * 1000000 / 
+	            				Math.round(attributes[rowIndex].getMiles().doubleValue() * Util.KMS_TO_MILES));
+	            	}else {
+	            		return new Float(attributes[rowIndex].getIncidents().floatValue() * 1000000 / 
+	                		attributes[rowIndex].getMiles().floatValue());
+	            	}
+            case 25:
+            	if(attributes[rowIndex].getVehicles() == null || 
+            		attributes[rowIndex].getVehicles().doubleValue() == 0 ||
+            		attributes[rowIndex].getAccidents() == null || monthCount == null) {
+            		
+                    return new Double(0);
+                }
+                return new Double((attributes[rowIndex].getAccidents().doubleValue() / 
+                		attributes[rowIndex].getVehicles().doubleValue() * 12 / monthCount.doubleValue()) * 100);
+            case 26:
+            	if (attributes[rowIndex].getMiles() == null){
+            		return new Integer(0);
+            	}
+                return new Integer(String.valueOf(Math.round(attributes[rowIndex].getMiles().doubleValue() * 
+                		Util.KMS_TO_MILES)));
+            case 27:
+            	if (attributes[rowIndex].getNearmiss() == null){
+            		return new Integer(0);
+            	}
+                return attributes[rowIndex].getNearmiss();
+            case 28:
+            	if (attributes[rowIndex].getNearmissCost() == null){
+            		return new Integer(0);
+            	}
+            	return attributes[rowIndex].getNearmissCost();
+
+        }
+        return null;
+    }
+
+    public String getColumnName(int column) {
+        switch(column) {
+            case 0:
+                return "period";
+            case 1:
+                return "country";
+            case 2:
+                return "divOrg1Id";
+            case 3:
+                return "divOrg1Name";
+            case 4:
+                return "divOrg2Id";
+            case 5:
+                return "divOrg2Name";
+            case 6:
+                return "divOrg3Id";
+            case 7:
+                return "divOrg3Name";
+            case 8:
+                return "divOrg4Name";
+            case 9:
+                return "divOrg5Name";
+            case 10:
+                return "divOrg6Name";
+            case 11:
+                return "divOrg7Name";
+            case 12:
+                return "divOrg8Name";
+            case 13:
+                return "divOrg9Name";
+            case 14:
+                return "vehicleCount";
+            case 15:
+                return "miles";
+            case 16:
+                return "accidentCount";
+            case 17:
+                return "incidentCount";
+            case 18:
+                return "apmm";
+            case 19:
+                return "vehicleType";
+            case 20:
+                return "color";
+            case 21:
+                return "vehicleCountTotal";
+            case 22:
+                return "accidentCost";
+            case 23:
+                return "incidentCost";
+            case 24:
+                return "ipmm";
+            case 25:
+            	return "vehicle_percent";
+            case 26:
+            	return "kilometers";
+            case 27:
+            	return "nearmissCount";
+            case 28:
+                return "nearmissCost";
+        }
+        return null;
+    }
+    
+    public void setMessages(Text messages) {
+        this.messages = messages;
+    }
+    
+    public CategoryDataset getDivisionsDataset() {
+        final DefaultCategoryDataset result = new DefaultCategoryDataset();
+        Enumeration enumeration = divisions.elements();
+        while(enumeration.hasMoreElements()) {
+            Object[] data = (Object[])enumeration.nextElement();
+            result.setValue(((Integer)data[1]).intValue() * 1000000 / ((Integer)data[2]).intValue(),"APMM", (String)data[0]);
+        }
+        return result;
+    }
+
+    public CategoryDataset getSubdivisionsDataset() {
+
+        final DefaultCategoryDataset result = new DefaultCategoryDataset();
+        Enumeration enumeration = subdivisions.elements();
+        while(enumeration.hasMoreElements()) {
+            Object[] data = (Object[])enumeration.nextElement();
+            result.setValue(((Integer)data[1]).intValue() * 1000000 / ((Integer)data[2]).intValue(),"APMM", (String)data[0]);
+        }
+        return result;
+    }
+
+}

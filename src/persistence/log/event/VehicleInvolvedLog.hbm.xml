@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.log.event" >
+	<class name="VehicleInvolvedLog" table="vehiclesinvolvedlog">
+        
+       	<composite-id class="persistence.log.IdLogPK" name="pk" >
+	        <key-property	name="id"	type="java.lang.Integer"	column="id"/>
+	        <key-property	name="loginUser"	type="java.lang.String"	column="loginuser"/>
+	        <key-property	name="date"	type="java.util.Date"	column="date"/>
+       	</composite-id>
+		
+		<many-to-one name="event" not-null="true">
+	       	<column name="eventVehicle"></column>
+	       	<column name="userVehicle"></column>
+	       	<column name="dateVehicle"></column>
+		</many-to-one>
+
+       	<property 	name="number" 			type="java.lang.Integer"		column="number" />
+
+		<property  	name="typeVehicle" 		type="java.lang.String"		column="vehicletype"/>
+ 		<property 	name="behaviourVehicle" type="java.lang.String"		column="vehiclebehaviour"/>
+
+       	<property name="hitrun" 			type="java.lang.String"		column="hitrun" />
+
+	    <property name="principalFactor" 	type="java.lang.String"		column="principalFactor"/>
+
+       	<property name="factortooclose" />
+       	<property name="factorhighspeed" />
+       	<property name="factorsigns" />
+       	<property name="factorturn" />
+       	<property name="factorlight" />
+       	<property name="factorstop" />
+       	<property name="factorother" />
+       	<property name="factorchangelane" />
+       	<property name="factoralcohol" />
+       	<property name="factorovertaking" />
+       	<property name="factorsleep" />
+       	<property name="factordistraction" />
+		<property name="factorConcience" />	
+       	<property name="contact" type="java.lang.String"/>
+
+    </class>
+</hibernate-mapping>

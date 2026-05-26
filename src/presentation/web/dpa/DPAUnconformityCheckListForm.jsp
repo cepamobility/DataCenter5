@@ -1,0 +1,265 @@
+<%@page import="communication.administration.corporation.tables.CorporationData"%>
+<%@page import="persistence.vehicle.tables.VehicleCheck"%>
+<%@page import="presentation.translator.web.dpa.DPAUnconformityCheckListForm"%>
+<%@page import="communication.administration.dpa.UnconformityDPAData"%>
+<%@page import="communication.administration.dpa.UnconformityItemTypeDPADataType"%>
+<%@page import="communication.datatype.DataTypeConstants"%>
+<%@page import="communication.driver.tables.TelematicControlData"%>
+<%@page import="persistence.driver.tables.TelematicControl"%>
+<%@page import="communication.administration.dpa.UnconformityTypeDPADataType"%>
+<%@page import="presentation.translator.web.dpa.DPAUnconformityForm"%>
+<%@page language="java" 
+	errorPage="../exception.jsp" 
+	import="business.*"
+	import="business.activity.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.activity.schedule.*" 	
+ 	import="presentation.translator.web.vehicle.*"
+ 	import="communication.administration.user.*" 	
+ 	import="communication.datatype.tables.ActivityTypeDataType"
+	import="business.vehicle.VehicleReportFacade"
+	import="java.util.*"	
+	import="org.apache.struts.action.DynaActionForm"
+	import="communication.activity.tables.*"
+%>
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+<%!
+	RequestDispatcher dispatcher; 
+	Text messages; SystemAccess sys;
+	UserSessionData userSessionData; 
+	VehicleCheckData vehicleCheck;
+	TelematicControlData telematicControl;
+	VehicleData vehicleData;
+	String idReferido;
+	String mode;
+	String id;
+	UnconformityDPAData data;
+%>
+<%
+	//PARA EDITAR id=488552&mode=edit, donde 488552 es el id de la inconformidad
+	//PARA NUEVO  TELEMATICCONTROL telec=111&mode=new&type=UnconformityTypeDPADataType.TYPE_TELEMATIC_CONTROL donde 111 es el id del control telematico
+	//PARA NUEVO  CHECK check=111&mode=new&type=UnconformityTypeDPADataType.TYPE_VEHICLE_CHECK donde 111 es el id del vehiclecheck
+
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	userSessionData=sys.getUserSessionData();	
+
+	
+	
+	String check = Util.checkPermission(sys,SecurityConstants.EDIT_VEHICLE);
+	String check1 = Util.checkPermission(sys,SecurityConstants.MODIFY_VEHICLE);	
+	String check2 = Util.checkPermission(sys,SecurityConstants.CHECKLIST_VEHICLE);	
+	
+	
+	if (check!=null) { 
+		response.sendRedirect(request.getContextPath()+check);	
+	}else if (check1!=null) { 
+		response.sendRedirect(request.getContextPath()+check1);	
+	} else if (check2!=null) { 
+		response.sendRedirect(request.getContextPath()+check2);	
+	}else {
+		messages=sys.getText();
+	
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+
+		String checkId = (String)request.getParameter("check");
+		String unconformityType = UnconformityTypeDPADataType.TYPE_VEHICLE_CHECK;
+		mode = (String)request.getParameter("mode");
+		String href = (String)request.getParameter("href");
+		id=(String)request.getParameter("id");
+
+		
+		
+		if(mode.equals("new")){
+	idReferido=checkId;
+	data=sys.getCorporationReportFacade().findUnconformityDPAByCheckId(sys.getUserSessionData(), Integer.valueOf(idReferido));
+		}
+		
+		VehicleReportFacade vehicleReport = sys.getVehicleReportFacade(); 
+		vehicleCheck = vehicleReport.findVehicleCheck(new Integer(checkId),userSessionData);
+		VehicleData vehicleData = vehicleCheck.getVehicle();
+		Integer checkTypeId=0;
+		if(sys.isCorporation(CorporationData.DPA) || sys.isCorporation(CorporationData.FORESTALORIENTAL) || sys.isCorporation(CorporationData.MONTES_DE_PLATA)){
+	checkTypeId=new Integer(vehicleCheck.getName());
+		}else{
+	//Este es el general pero puede que no aplique para alguna empresa en particular
+	checkTypeId=CheckListData.TRUCK_CHECKLIST;
+		}
+		
+		CheckListData checkList = sys.getVehicleReportFacade().getCheckList(checkTypeId,sys.getUserSessionData());
+		Iterator points = checkList.getSortPoints();
+		
+		DPAUnconformityCheckListForm form=new DPAUnconformityCheckListForm();
+		form.setIdReferido(Integer.valueOf(idReferido!=null?idReferido:"0"));
+		form.setUnconformityType(unconformityType);
+		if(request.getAttribute("DPAUnconformityCheckListForm")!=null){
+	form=(DPAUnconformityCheckListForm) request.getAttribute("DPAUnconformityCheckListForm");
+		}else{
+	if(mode.equals("edit")){
+		form.load(sys, Integer.valueOf(id),data,points,vehicleCheck);
+	}else if(mode.equals("new") && data!=null){
+		form.load(sys, null,data,points,vehicleCheck);
+	}
+		}
+		form.setHref(href.replaceAll("_", "&"));
+		session.setAttribute("DPAUnconformityCheckListForm", form);
+		
+		points = checkList.getSortPoints();
+%>	
+
+<%@page import="business.vehicle.VehicleReportFacadeBean"%>
+
+<html:html>
+
+<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+
+<body>
+	 
+	<center>
+	<html:form action="/DPAUnconformityCheckList" >
+		<input type="hidden" value="<%=checkId%>" name="checkId"/>
+		<html:hidden property="unconformityType"/>
+		<input type="hidden" value="<%=mode%>" name="mode"/>
+		<html:hidden property="idReferido"/>
+		<html:hidden property="href"/>
+		<html:hidden property="id"/>
+		<input type="hidden"  name="status"/>
+		<input type="hidden" name="cancel" value="no" id="cancel"/>
+		<table width="768" border="0" cellspacing="0" cellpadding="0">  
+			<tr class="guide1">
+			<%
+				String page14 = "../component/titlecomponent.jsp?title="+messages.getText("generic.dpa.unconformity.title");
+			%>
+				<jsp:include  page='<%=page14 %>' />
+  			</tr>
+      		<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+  			</tr>
+		<tr> 
+			<td height="40" colspan="3" valign="middle">
+<%
+		String page13 = "../component/utilityboxtop.jsp?title="+messages.getText("generic.dpa.unconformity");
+				%>
+				<jsp:include  page='<%=page13 %>' />
+				<table width="100%" height="60" border="0" cellpadding="0" cellspacing="0">
+   	 				<tr> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= messages.getText("generic.activity.date")%><%=" ( "+messages.getText("generic.messages.dateformat")+" ) "%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							
+							<html:text style="width:30;" property="dateDay" styleClass="input"  />&nbsp;/&nbsp;                
+							<html:text style="width:30;" property="dateMonth" styleClass="input"  />&nbsp;/&nbsp; 
+							<html:text style="width:60;" property="dateYear" styleClass="input"  />&nbsp;         
+						</td>
+   					</tr>
+   					<tr><td colspan=2>&nbsp</td></tr>
+   					<tr> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= messages.getText("generic.dpa.uncnformity.comment")%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							<html:textarea style="width:600px;height:100px" property="comment" styleClass="input"  />&nbsp;         
+						</td>
+   					</tr>
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					
+				</table>
+				<jsp:include  page="../component/utilityboxbottom.jsp" />
+			</td>
+		</tr>  
+      	<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+  		<tr> 
+			<td height="40" colspan="3" valign="middle">
+<%
+			 page13 = "../component/utilityboxtop.jsp?title="+messages.getText("generic.dpa.unconformity.items");
+				%>
+				<jsp:include  page='<%=page13 %>' />
+				<table width="100%" height="60" border="0" cellpadding="0" cellspacing="0">
+					<tr class="guide2">
+					<td><%=messages.getText("generic.dpa.unconformity.items")%></td>
+					<td><%=messages.getText("generic.dpa.unconformity.termdate")%></td>
+					<td><%=messages.getText("generic.dpa.unconformity.notify")%></td>
+					<td align="center"><%= messages.getText("generic.dpa.uncnformity.comment")%></td>
+					</tr>
+					<% 						
+					while(points.hasNext()) {
+							PointData point = (PointData)points.next();
+							Iterator items = point.getSortItems();
+							if(items.hasNext()) {
+								ItemData item = (ItemData)items.next();
+								int value = -1;
+								String pointComment = null;
+								if(vehicleCheck != null) {
+									String checkValue = vehicleCheck.getValueFromItem(item.getId()).trim();
+									value = (checkValue == null || !checkValue.equals("2")) ? -1 : 2;
+								}//
+								if(value==2){
+									%>	
+									<tr>
+										<td width="45%" align="left" class="texts">        
+				   							<%= messages.getText(item.getText())%>
+										</td>
+										<td width="5%"  align="left" class="texts">
+										<html:select property='<%="expirity["+ point.getId()+"]"%>'>
+										<% if(!sys.isCorporation(CorporationData.DPA)){%>
+											<html:option value='-1'><%="S/P"%></html:option>
+											<html:option value='0'><%="Inmediata"%></html:option>
+											<html:option value='1'><%="24hs"%></html:option>
+											<html:option value='2'><%="48hs"%></html:option>
+											<html:option value='3'><%="72hs"%></html:option>
+											<html:option value='30'><%="30Días"%></html:option>
+										<%}else{%>
+											<% for(int i=1;i<121;i++){%>
+												<html:option value='<%=String.valueOf(i) %>'><%=i%></html:option>
+											<%}%>	   
+										<%}%>
+										</html:select>
+										</td>
+										<td width="5%" align="center" class="linetwo">
+											<html:checkbox property='<%="notify["+point.getId()+"]" %>'></html:checkbox>
+										</td>
+										<td width="50%" align="right" class="linetwo">
+											<html:textarea style="width:300px;height:50px" property='<%="text["+point.getId()+"]"%>' styleClass="input"  />                
+										</td>
+				   					</tr>
+				   					<tr><td colspan=2>&nbsp</td></tr>
+														
+									<% 			
+								}
+							}
+						}
+					%>	
+   	 			</table>
+				<jsp:include  page="../component/utilityboxbottom.jsp" />
+			</td>
+		</tr>  
+       	<tr>   		
+	   		<td align="right">
+	   			<input name="button2" type="button" onclick="cancel.value='yes';s.click();" value='<%=messages.getText("generic.messages.back")%>' class="input"/>
+	   			<input name="button2" type="submit" id="s" value='<%=messages.getText("generic.messages.save")%>' class="input"/>
+	       	</td>             
+   	  	</tr>              
+	</table>
+	</html:form>
+	</center>
+	</body>
+	
+</html:html>
+<%
+	}
+%>

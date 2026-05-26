@@ -1,0 +1,50 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.activity.tables" >
+    <class name="Point" table="point">
+		
+		 <id
+            column="id"
+            name="id"
+        >
+            <generator class="sequence">
+            	<param name="sequence">Point_Sequence</param>
+            </generator>
+        </id>
+        
+        <property	name="text" type="java.lang.String" column="text"/>                		        
+        <property	name="textReport" type="java.lang.String" column="textReport"/>                		        		                
+        <many-to-one name="defaultItem" class="persistence.activity.tables.Item">
+             <column name="defaultItem"></column>
+        </many-to-one>        
+        
+		<set name="items"  cascade="all-delete-orphan">
+			<key column="point" not-null="true"/>
+			<one-to-many class="Item" />
+		</set>  
+		
+		<set name="observations"  cascade="all-delete-orphan">
+			<key column="point" not-null="true"/>
+			<one-to-many class="PointObservation" />
+		</set>
+		
+		<property name="pointOrder" type="integer">
+		    <column name="pointOrder" default="-1"/>
+		</property>
+		
+		<property name="pointOrderReport" type="integer">
+		    <column name="pointOrderReport" default="-1"/>
+		</property>		
+		
+        <property name="disableForNovato">
+        	<column name="disableForNovato" default="false"/>
+        </property>                		
+		
+        
+	 </class>
+
+</hibernate-mapping>

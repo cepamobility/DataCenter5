@@ -1,0 +1,3041 @@
+/*
+ * Created on 30-sep-2005
+ *
+ * TODO To change the template for this generated file go to
+ * Window - Preferences - Java - Code Style - Code Templates
+ */
+package persistence.administration.corporation;
+
+import java.io.OutputStream;
+import java.sql.Time;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import java.util.StringTokenizer;
+
+import javax.ejb.CreateException;
+import javax.ejb.SessionBean;
+
+import org.hibernate.Hibernate;
+import org.hibernate.Query;
+import org.hibernate.SQLQuery;
+import org.hibernate.classic.Session;
+
+import communication.administration.corporation.tables.CorporationAttribute;
+import communication.administration.corporation.tables.CorporationConfigData;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.CorporationDirectoryData;
+import communication.administration.corporation.tables.CountryData;
+import communication.administration.corporation.tables.InstructorRegistryData;
+import communication.administration.corporation.tables.MenuOptionData;
+import communication.administration.corporation.tables.MobilTrackEventData;
+import communication.administration.corporation.tables.PointAccountData;
+import communication.administration.corporation.tables.PointDetailBayerData;
+import communication.administration.corporation.tables.PointMoveData;
+import communication.administration.corporation.tables.PointsDefinitionData;
+import communication.administration.corporation.util.DPAUnconformityFilter;
+import communication.administration.corporation.util.DPAUnconformityItemFilter;
+import communication.administration.corporation.util.FringeData;
+import communication.administration.dpa.CorrectiveActionDPAData;
+import communication.administration.dpa.LevelOfServiceDriverDPAData;
+import communication.administration.dpa.LevelOfServiceVehicleDPAData;
+import communication.administration.dpa.UnconformityDPAData;
+import communication.administration.dpa.UnconformityItemDPAData;
+import communication.administration.dpa.UnconformityTypeDPADataType;
+import communication.administration.user.PermissionData;
+import communication.administration.user.UserSessionData;
+import communication.administration.user.tables.UserCorporationData;
+import communication.driver.tables.DriverData;
+import communication.driver.tables.MitigationPlanData;
+import communication.driver.tables.TelematicControlData;
+import communication.exception.DeslogedException;
+import communication.exception.InvalidDataException;
+import communication.fleet.tables.FleetBayerData;
+import communication.language.Text;
+import communication.util.ListResult;
+import communication.util.tables.AppFileData;
+import persistence.administration.corporation.tables.Corporation;
+import persistence.administration.corporation.tables.CorporationConfig;
+import persistence.administration.corporation.tables.CorporationDirectory;
+import persistence.administration.corporation.tables.Country;
+import persistence.administration.corporation.tables.DivOrgItemLevel1;
+import persistence.administration.corporation.tables.InstructorRegistry;
+import persistence.administration.corporation.tables.MenuOption;
+import persistence.administration.corporation.tables.PointAccount;
+import persistence.administration.corporation.tables.PointMove;
+import persistence.administration.corporation.tables.PointsDefinition;
+import persistence.administration.tables.CorrectiveActionDPA;
+import persistence.administration.tables.LevelOfServiceDriverDPA;
+import persistence.administration.tables.LevelOfServiceVehicleDPA;
+import persistence.administration.tables.TransporterLink;
+import persistence.administration.tables.UnconformityDPA;
+import persistence.administration.tables.UnconformityItemDPA;
+import persistence.alert.tables.ContractorData;
+import persistence.hibernate.HibernateUtil;
+import persistence.util.ExcelGenerator;
+import persistence.util.ExceptionHandler;
+import persistence.util.Util;
+import persistence.util.UtilityQuery;
+import persistence.util.tables.AppFile;
+
+/**
+ * @ejb.bean name="CorporationReport"
+ *           display-name="Name for CorporationReport"
+ *           description="Description for CorporationReport"
+ *           jndi-name="ejb/CorporationReport"
+ *           type="Stateless"
+ *           view-type="both"
+ *           
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/CorporationABM" ref-name = "CorporationABM"          
+ *           
+ */
+public abstract class CorporationReportBean implements SessionBean {
+
+    private ExceptionHandler handler = new ExceptionHandler(CorporationReportBean.class);
+
+    /**
+     * @ejb.create-method
+     * @ejb.permission role-name = "administrator,systemaccess,query,corporationedit,resetpassword,dpachecklist,vehicleview, drivercreate,cepascheduleactivityupdate"
+     * @throws CreateException
+     */
+    public void ejbCreate() throws CreateException{
+        
+    }
+    
+	/**
+	 * @ejb.interface-method 
+     * @ejb.permission role-name = "administrator,corporationedit"
+	 * @param name
+	 * @param userRequest
+	 * @return
+	 * @throws Exception
+	 */
+	public List findCorporationByLikeName(String name, UserSessionData userRequest) throws Exception {
+		if (name == null) {
+			throw new InvalidDataException("persistence.corporation.findcorporationbylikename","name = null");
+		}
+		if (userRequest == null) {
+			throw new DeslogedException("persistence.corporation.findcorporationbylikename","userRequest = null");
+		}
+
+		List result = new LinkedList();
+		Session session = null;
+		try {
+			session = HibernateUtil.currentSession();
+			Query query = session.createQuery("select crp from persistence.corporation.tables.Corporation as crp  "
+											+ "where lower(crp.name) like lower(:name)"
+											+ "order by crp.name");
+			query.setParameter("name", name + "%");
+
+			List crpColl = query.list();
+			Iterator iter = crpColl.iterator();
+
+			while (iter.hasNext()) {
+				Corporation crp = (Corporation) iter.next();
+				result.add(crp);
+			}
+		} 
+		catch (Exception e) {
+			Object[] parameters = {name};
+            handler.getException(e,"findCorporationByLikeName",userRequest,parameters);
+		}
+		return result;
+	}
+
+	
+	/**
+	 * @ejb.interface-method 
+     * @ejb.permission role-name = "administrator,systemaccess,corporationedit,resetpassword"
+	 * @param name
+	 * @param userRequest
+	 * @return
+	 * @throws Exception
+	 */
+	public CorporationData findCorporationByPrimaryKey(Integer id, UserSessionData userRequest) throws Exception {
+		if (id == null) {
+			throw new InvalidDataException("persistence.corporation.findcorporationbyprimarykey","id = null");
+		}
+		if (userRequest == null) {
+			throw new DeslogedException("persistence.corporation.findcorporationbyprimarykey","userRequest = null");
+		}
+		CorporationData crpData = null;
+		try {
+			Session session = HibernateUtil.currentSession();
+			Corporation corporation=null;
+			
+			corporation=(Corporation)session.load(Corporation.class,id);
+			
+			Query query = session.createQuery("select corporationCountry from CorporationCountry as corporationCountry  "
+					+ "where corporationCountry.pk.corporation.id = (:corp)");
+			query.setParameter("corp", id);
+
+			List crpColl = query.list();
+			Iterator iter = crpColl.iterator();
+
+			Set countries = new HashSet();
+			while (iter.hasNext()) {
+			    countries.add(iter.next());
+			}
+			corporation.setCountries(countries);
+			crpData=corporation.getData();
+		}catch (Exception e) {
+			Object[] parameters = {id};
+            handler.getException(e,"findCorporationByPrimaryKey",userRequest,parameters);
+		}
+		return crpData;
+	}
+
+	
+	/**
+	 * @ejb.interface-method 
+     * @ejb.permission role-name = "administrator,systemaccess,corporationedit,resetpassword"
+	 * @param name
+	 * @param userRequest
+	 * @return
+	 * @throws Exception
+	 */
+	public CorporationDirectoryData findCorporationDirectoryByPrimaryKey(Integer id, UserSessionData userRequest) throws Exception {
+		if (id == null) {
+			throw new InvalidDataException("persistence.corporation.findcorporationbyprimarykey","id = null");
+		}
+		if (userRequest == null) {
+			throw new DeslogedException("persistence.corporation.findcorporationbyprimarykey","userRequest = null");
+		}
+		CorporationDirectory crpData = null;
+		CorporationDirectoryData data = null;
+		try {
+			Session session = HibernateUtil.currentSession();	
+						
+			Query query = session.createQuery("select corporationdir from " +
+					" persistence.administration.corporation.tables.CorporationDirectory as corporationdir  "
+					+ "where corporationId = (:corp)");
+			query.setParameter("corp", id);
+
+			List crpColl = query.list();
+			Iterator iter = crpColl.iterator();			
+			while (iter.hasNext()) {
+			   crpData = (CorporationDirectory)iter.next();			   
+			   data = new CorporationDirectoryData(crpData.getCorporationId(),
+					   crpData.getDirectory());
+			}			
+		}catch (Exception e) {
+			Object[] parameters = {id};
+            handler.getException(e,"findCorporationDirectoryByPrimaryKey",userRequest,parameters);
+		}
+		return data;
+	}
+	/**
+	 * @ejb.interface-method 
+     * @ejb.permission role-name = "administrator,systemaccess"
+	 */ 
+	public Collection findAllCountries(UserSessionData userRequest) throws Exception {
+		if (userRequest == null) {
+            throw new DeslogedException("persistence.corporation.findallcountries","userRequest = null");
+		}
+		Collection result = new LinkedList();
+		try {
+			Session session = HibernateUtil.currentSession();
+			Query query = session.createQuery("select country from Country country  ");
+			List countryColl = query.list();
+			Iterator iter = countryColl.iterator();
+			while (iter.hasNext()) {
+				result.add(((Country) iter.next()).getData());
+			}
+			session.close();
+		} catch (Exception e) {
+			Object[] parameters = {};
+            handler.getException(e,"findAllCountries",userRequest,parameters);
+		} 
+		return result;
+	}
+
+	/**
+	 * Returns all corporations (CorporationAttributes) that a user can get.
+	 * @ejb.interface-method 
+     * @ejb.permission role-name = "administrator,systemaccess"
+	 * @param userRequest Logged user
+	 * @param userId User login name
+	 * @return A Collection with CorporationAttributes
+	 * @throws Exception
+	 */
+	public Collection<CorporationAttribute> findCorporationAttributesByUser(UserSessionData userSessionData,String userId) throws Exception {
+		if (userSessionData == null) {
+            throw new DeslogedException("sessionexpired","session expired");
+		}
+		Collection<CorporationAttribute> result = new LinkedList<CorporationAttribute>();
+		try {
+			Session session = HibernateUtil.currentSession();
+			Query query = session.createSQLQuery("SELECT DISTINCT c.id, c.name, c.type " +
+					"FROM corporations c " +
+					"JOIN usercorporations uc ON uc.id = c.id " +
+					"JOIN userpermissions up ON up.userid = uc.loginname AND up.corporationid = uc.id " +
+					"WHERE lower(uc.loginname) = '"+userId.toLowerCase()+"' AND up.permission IN ('systemaccess','administrator')").addScalar("id",Hibernate.INTEGER).addScalar("name",Hibernate.STRING).addScalar("type",Hibernate.INTEGER);
+			Iterator iter = query.list().iterator();
+			while (iter.hasNext()) {
+				Object[] data = (Object[])iter.next();
+				result.add(new CorporationAttribute((Integer)data[0],(String)data[1],(Integer)data[2]));
+			}
+			session.close();
+		} catch (Exception e) {
+			Object[] parameters = {userId};
+            handler.getException(e,"findCorporationAttributesByUser",userSessionData,parameters);
+		} 
+		return result;
+	}
+	
+	/**
+	 * Returns all corporations (CorporationAttributes) that a user can get.
+	 * @ejb.interface-method 
+     * @ejb.permission role-name = "administrator,systemaccess"
+	 * @param userRequest Logged user
+	 * @param userId User login name
+	 * @return A Collection with CorporationAttributes
+	 * @throws Exception
+	 */
+	public Collection<UserCorporationData> findCorporationRoleByUser(UserSessionData userSessionData,String userId) throws Exception {
+		if (userSessionData == null) {
+            throw new DeslogedException("sessionexpired","session expired");
+		}
+		Collection<UserCorporationData> result = new LinkedList<UserCorporationData>();
+		try {
+			Session session = HibernateUtil.currentSession();
+			Query query = session.createSQLQuery("SELECT DISTINCT c.id, c.name, uc.role " +
+					"FROM corporations c " +
+					"JOIN usercorporations uc ON uc.id = c.id " +
+					"JOIN userpermissions up ON up.userid = uc.loginname AND up.corporationid = uc.id " +
+					"WHERE lower(uc.loginname) = '"+userId.toLowerCase()+"' AND up.permission IN ('systemaccess','administrator')").addScalar("id",Hibernate.INTEGER).addScalar("name",Hibernate.STRING).addScalar("role",Hibernate.STRING);
+			Iterator iter = query.list().iterator();
+			while (iter.hasNext()) {
+				Object[] data = (Object[])iter.next();
+				result.add(new UserCorporationData((Integer)data[0],(String)data[1],userId,(String)data[2]));
+			}
+			session.close();
+		} catch (Exception e) {
+			Object[] parameters = {userId};
+            handler.getException(e,"findCorporationAttributesByUser",userSessionData,parameters);
+		} 
+		return result;
+	}
+
+    /**
+     * Returns all corporations (CorporationAttributes) that a user can get.
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess"
+     */ 
+    public String findCorporationName(Integer corporation,UserSessionData userSessionData) throws Exception {
+        if (userSessionData == null) {
+            throw new DeslogedException("findCorporationName","userSessionData = null");
+        }
+        try {
+            Session session = HibernateUtil.currentSession();
+            Query query = session.createSQLQuery("select name from corporations where id = " + String.valueOf(corporation)).addScalar("name",Hibernate.STRING);
+            Iterator it = query.list().iterator();
+            if (it.hasNext()) {
+                return (String)it.next();
+            }
+        }catch (Exception e) {
+			Object[] parameters = {corporation};
+            handler.getException(e,"findCorporationName",userSessionData,parameters);
+        }
+        return null;
+    }
+    
+    /**
+     * Returns menu options.
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess"
+	 * @throws Exception
+	 */
+	public Collection findMenuOption(UserSessionData userSession) throws Exception {
+        try{	
+            Session session = HibernateUtil.currentSession();
+            Collection items= new LinkedList();
+        	if(userSession.isCorporation(CorporationData.BAYER_MX) && (userSession.isGerente() || userSession.isDriver())) {
+	            String queryStr = "SELECT id, parentid, labelkey, urloption,ordermenu FROM menuoption ";
+	            queryStr += (userSession.isGerente()) ? " WHERE id in (87, 205, 193, 204, 206,210,212) " : " WHERE id in (87,213) ";
+	            Query query = session.createSQLQuery(queryStr)
+	            .addScalar("id", Hibernate.INTEGER)
+				.addScalar("parentid", Hibernate.INTEGER)
+				.addScalar("labelkey", Hibernate.STRING)
+				.addScalar("urloption", Hibernate.STRING)
+	            .addScalar("ordermenu", Hibernate.INTEGER);
+	            
+	            List userColl = query.list();
+	            Iterator iter = userColl.iterator();
+	            Collection ids = new LinkedList();
+	            while(iter.hasNext()) {
+            		Object[] menu = (Object[]) iter.next();
+            		MenuOptionData menuItem= new MenuOptionData( (Integer)menu[0],1,(String)menu[2],(String)menu[3],null,null,null,null,(Integer)menu[4]);
+            		items.add(menuItem);
+	            }
+        	} else {
+	            String language=userSession.getLenguage();
+	            Collection permissions= new LinkedList();
+	            String queryStr = "SELECT id, parentid, labelkey, urloption,ordermenu FROM menuoption mo ";
+	            queryStr += " Where id not in (select Distinct parentid from menuoption) ";
+	            if(userSession.isGerente() && userSession.isCorporation(CorporationData.SYNGENTA)) {
+	            	queryStr += " AND id NOT IN (38) "; 
+	            }
+	            
+	            if(language.equals("en")){
+	                queryStr += " and (language ='en' or language is null) ";
+	            }else if(language.equals("es")){
+	                queryStr += " and (language ='es' or language is null) ";
+	            }else{
+	                queryStr += " and (language ='pt' or language is null) ";
+	            }
+	            if (!userSession.isAdministrator()){
+	            	permissions = userSession.getPermissionsData();
+	            	if (permissions.size()>0){
+	            		queryStr += " and ( securityconstant in ( ";
+	            		Iterator iter = permissions.iterator();
+	            		if(iter.hasNext()){
+	            			String permission= ((PermissionData) iter.next()).getName();
+	            			queryStr += "'"+permission+"'";
+	            		}
+	            		while (iter.hasNext()) {
+	            			String permission= ((PermissionData) iter.next()).getName();
+	            			queryStr += ",'"+permission+"'";
+	            		}
+	            		queryStr += ") or securityconstant is null) ";
+	            	}else{
+	            		queryStr += " and securityconstant is null ";
+	            	}
+	            }
+	            if(userSession.isDriver()) {
+	            	int corporationId = userSession.getFilter().getCorporationId().intValue();
+	            	// queryStr += " and (country is null or country='"+userSession.getDriverData().getCountryName()+"') ";
+	            	
+	            	if(corporationId != CorporationData.LILLY) {
+	            		String countryName = userSession.getDriverData().getCountryName();
+	            		if(corporationId == CorporationData.MONSANTO && (countryName.equals(CountryData.PARAGUAY) || countryName.equals(CountryData.BOLIVIA) || countryName.equals(CountryData.URUGUAY))) {
+	            			countryName = CountryData.ARGENTINA;
+	            		}
+	                    queryStr += " and (country is null or country='"+countryName+"') ";
+	                }
+	            	
+	                queryStr += "and role='driver' ";
+	            }else{
+	            	queryStr += " and country is null ";
+	            	queryStr += "and role is null ";	
+	            }
+	        
+	            queryStr += " and id not in (select id from corporationmenu where corporation= "+userSession.getFilter().getCorporationId().intValue()+") ";
+	            
+	            queryStr += " and id not in (select id from corporationmenuexceptions where corporation= "+userSession.getCorporationId()+" and role = '"+userSession.getRole().getName()+"') ";
+
+	            queryStr += " order by ordermenu  ";
+	           
+	            Query query = session.createSQLQuery(queryStr)
+	            .addScalar("id", Hibernate.INTEGER)
+				.addScalar("parentid", Hibernate.INTEGER)
+				.addScalar("labelkey", Hibernate.STRING)
+				.addScalar("urloption", Hibernate.STRING)
+	            .addScalar("ordermenu", Hibernate.INTEGER);
+	            
+	            List userColl = query.list();
+	            Iterator iter = userColl.iterator();
+	            Collection ids = new LinkedList();
+	            while(userColl.size()>0){
+	            	queryStr = "SELECT Distinct id, parentid, labelkey, urloption,ordermenu FROM menuoption where id in (";
+	            	String queryin="";
+	            	while(iter.hasNext()) {
+	            		Object[] menu = (Object[]) iter.next();
+	            		MenuOptionData menuItem= new MenuOptionData( (Integer)menu[0],(Integer)menu[1],(String)menu[2],(String)menu[3],null,null,null,null,(Integer)menu[4]);
+	            		items.add(menuItem);
+	            		ids.add((Integer)menu[0]);
+	            		if (!queryin.equals("")){
+	            			queryin += ","+(Integer)menu[1];
+	            		}else{
+	            			queryin += (Integer)menu[1];
+	            		}
+	            	}
+	            	queryStr+=queryin+") and id not in(";
+	            	Iterator iterids = ids.iterator();
+	            	queryin="";
+	            	while(iterids.hasNext()) {
+	            		Integer idItem = (Integer) iterids.next();
+	            		if (!queryin.equals("")){
+	            			queryin += ","+(Integer)idItem;
+	            		}else{
+	            			queryin += (Integer)idItem;
+	            		}
+	            	}
+	            	queryStr+=queryin+")";
+	            	
+	            	query = session.createSQLQuery(queryStr)
+	            	.addScalar("id", Hibernate.INTEGER)
+	    			.addScalar("parentid", Hibernate.INTEGER)
+	    			.addScalar("labelkey", Hibernate.STRING)
+	    			.addScalar("urloption", Hibernate.STRING)
+	                .addScalar("ordermenu", Hibernate.INTEGER);
+	            	userColl = query.list();
+	                iter = userColl.iterator();
+	            }
+        	}
+    		return items;
+    		
+    	}catch (Exception e) {
+			Object[] parameters = {};
+    		handler.getException(e,"findMenuOption",userSession,parameters);
+    	}
+        return null;
+	}
+	
+	
+	 /**
+     * Returns menu options.
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess"
+	 * @throws Exception
+	 */
+	public Collection findAllMenuOption(UserSessionData userSession,boolean driver) throws Exception {
+        try{	
+            Session session = HibernateUtil.currentSession();
+            String queryStr = "SELECT id, parentid, labelkey, urloption,ordermenu,country,language FROM menuoption mo ";
+            queryStr += " Where id not in (select Distinct parentid from menuoption) ";
+            
+            if(driver) {
+            	queryStr += "and role='driver' ";
+            }else {
+            	queryStr += "and role is null ";	
+            }
+            queryStr += " and id not in (select id from corporationmenu where corporation= "+userSession.getFilter().getCorporationId().intValue()+" and enable is false) ";
+            
+            queryStr += " order by ordermenu  ";
+           
+            Query query = session.createSQLQuery(queryStr)
+            .addScalar("id", Hibernate.INTEGER)
+			.addScalar("parentid", Hibernate.INTEGER)
+			.addScalar("labelkey", Hibernate.STRING)
+			.addScalar("urloption", Hibernate.STRING)
+            .addScalar("ordermenu", Hibernate.INTEGER)
+            .addScalar("country", Hibernate.STRING)
+            .addScalar("language", Hibernate.STRING);
+            List userColl = query.list();
+            Iterator iter = userColl.iterator();
+            Collection items= new LinkedList();
+            Collection ids = new LinkedList();
+            while(userColl.size()>0){
+            	queryStr = "SELECT Distinct id, parentid, labelkey, urloption,ordermenu,country,language FROM menuoption where id in (";
+            	String queryin="";
+            	while(iter.hasNext()) {
+            		Object[] menu = (Object[]) iter.next();
+            		MenuOptionData menuItem= new MenuOptionData( (Integer)menu[0],(Integer)menu[1],(String)menu[2],(String)menu[3],null,null,(String)menu[5],(String)menu[6],(Integer)menu[4]);
+            		items.add(menuItem);
+            		ids.add((Integer)menu[0]);
+            		if (!queryin.equals("")){
+            			queryin += ","+(Integer)menu[1];
+            		}else{
+            			queryin += (Integer)menu[1];
+            		}
+            	}
+            	queryStr+=queryin+") and id not in(";
+            	Iterator iterids = ids.iterator();
+            	queryin="";
+            	while(iterids.hasNext()) {
+            		Integer idItem = (Integer) iterids.next();
+            		if (!queryin.equals("")){
+            			queryin += ","+(Integer)idItem;
+            		}else{
+            			queryin += (Integer)idItem;
+            		}
+            	}
+            	queryStr+=queryin+")";
+            	
+            	query = session.createSQLQuery(queryStr)
+            	.addScalar("id", Hibernate.INTEGER)
+    			.addScalar("parentid", Hibernate.INTEGER)
+    			.addScalar("labelkey", Hibernate.STRING)
+    			.addScalar("urloption", Hibernate.STRING)
+                .addScalar("ordermenu", Hibernate.INTEGER)
+                .addScalar("country", Hibernate.STRING)
+                .addScalar("language", Hibernate.STRING);
+            	userColl = query.list();
+                iter = userColl.iterator();
+            }
+    		return items;
+    		
+    	}catch (Exception e) {
+			Object[] parameters = {driver};
+    		handler.getException(e,"findAllMenuOption",userSession,parameters);
+    	}
+        return null;
+	}
+	
+	private Collection<MenuOptionData> getMenuOption(HashMap<Integer, Collection<MenuOptionData>> optionList, Integer parent) {
+		Collection<MenuOptionData> options = new LinkedList<MenuOptionData>();
+    	Iterator<MenuOptionData> it = optionList.get(parent).iterator();
+    	while(it.hasNext()) {
+    		MenuOptionData optionData = it.next();
+    		if(optionList.containsKey(optionData.getId())) {
+    			optionData.setChildren(getMenuOption(optionList,optionData.getId()));
+    		}
+			options.add(optionData);
+    	}
+		return options;
+	}
+	
+	 /**
+     * Returns menu options.
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator"
+	 * @throws Exception
+	 */
+	public Collection<MenuOptionData> getMenuOption(UserSessionData userSessionData) throws Exception {
+		HashMap<Integer,Collection<MenuOptionData>> options = new HashMap<Integer,Collection<MenuOptionData>>();
+		try {
+            Session session = HibernateUtil.currentSession();
+            String queryStr = "SELECT mo FROM MenuOption mo WHERE mo.language IS NULL OR mo.language = '"+userSessionData.getLenguage()+"'";
+            Query q = session.createQuery(queryStr);
+            List l = q.list();
+            if(l.size() > 0) {
+            	Iterator<MenuOption> it = q.iterate();
+            	while(it.hasNext()) {
+            		MenuOptionData optionData = it.next().getMenuOptionData(); 
+            		if(options.containsKey(optionData.getParentId())) {
+            			options.get(optionData.getParentId()).add(optionData);
+            		}else {
+            			Collection<MenuOptionData> collection = new LinkedList<MenuOptionData>();
+            			collection.add(optionData);
+            			options.put(optionData.getParentId(), collection);
+            		}
+            	}
+            }
+            return getMenuOption(options, 0);
+    	}catch (Exception e) {
+			Object[] parameters = {};
+    		handler.getException(e,"getMenuOption",userSessionData,parameters);
+    	}
+		return new LinkedList();
+	}
+
+	/**
+     * Returns menu options.
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess"
+	 * @throws Exception
+	 */
+	public Collection findNoSelectedOption(UserSessionData userSession,boolean enable) throws Exception {
+        try{	
+            Session session = HibernateUtil.currentSession();
+            String queryStr = "SELECT id FROM menuoption mo ";
+            queryStr += " Where id not in (select Distinct parentid from menuoption) ";
+            queryStr += " and id not in (select id from corporationmenu where corporation= "+userSession.getFilter().getCorporationId().intValue()+") ";
+            
+            Query query = session.createSQLQuery(queryStr)
+            .addScalar("id", Hibernate.INTEGER);
+            
+            List userColl = query.list();
+            Iterator iter = userColl.iterator();
+            Collection ids = new LinkedList();
+           while(iter.hasNext()) {
+            	Integer item = (Integer) iter.next();
+            	ids.add(item);
+            }
+    	return ids;
+    		
+    	}catch (Exception e) {
+			Object[] parameters = {};
+    		handler.getException(e,"findNoSelectedOption",userSession,parameters);
+    	}
+        return null;
+	}
+	
+	/**
+     * Returns menu options.
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess"
+	 * @throws Exception
+	 */
+	public Collection allMenuItems(UserSessionData userSession,boolean enable) throws Exception {
+        try{	
+            Session session = HibernateUtil.currentSession();
+            String language=userSession.getLenguage();
+            Collection permissions= new LinkedList();
+            String queryStr = "SELECT id FROM menuoption mo ";
+            queryStr += " Where id not in (select Distinct parentid from menuoption) ";
+            queryStr += " and id not in (select id from corporationmenu where corporation= "+userSession.getFilter().getCorporationId().intValue()+" and enable is false) ";
+          
+            queryStr += " order by ordermenu  ";
+           
+            Query query = session.createSQLQuery(queryStr)
+            .addScalar("id", Hibernate.INTEGER);
+            
+            List userColl = query.list();
+            Iterator iter = userColl.iterator();
+            Collection ids = new LinkedList();
+            
+            while(iter.hasNext()) {
+        		Integer itemId = (Integer) iter.next();
+        		ids.add(itemId);
+        	}
+           
+    		return ids;
+    		
+    	}catch (Exception e) {
+			Object[] parameters = {enable};
+    		handler.getException(e,"allMenuItems",userSession,parameters);
+    	}
+        return null;
+	}
+
+	/**
+     * Returns menu options.
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,addreport"
+	 * @throws Exception
+	 */
+	public Collection<AppFileData> getAppFiles(UserSessionData userSession) throws Exception {
+		Collection<AppFileData> files = new LinkedList<AppFileData>();
+        try{	
+            Session session = HibernateUtil.currentSession();
+            Query query = session.createQuery("SELECT a FROM AppFile AS a WHERE a.corporation = "+userSession.getCorporationId()+" ORDER BY category, fileorder");
+            Iterator it = query.list().iterator();
+            while(it.hasNext()) {
+            	files.add(((AppFile)it.next()).getFileData());
+            }
+    	}catch (Exception e) {
+			Object[] parameters = {};
+    		handler.getException(e,"getAppFiles",userSession,parameters);
+    	}
+        return files;
+	}
+	
+	/**
+     * Returns menu options.
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,addreport"
+	 * @throws Exception
+	 */
+	public AppFileData getAppFile(Integer id, UserSessionData userSession) throws Exception {
+		Collection<AppFileData> files = new LinkedList<AppFileData>();
+        try{	
+            Session session = HibernateUtil.currentSession();
+            AppFile file = (AppFile)session.load(AppFile.class, id);
+            if(file != null) {
+            	return file.getFileData();
+            }
+    	}catch (Exception e) {
+			Object[] parameters = {id};
+    		handler.getException(e,"getAppFile",userSession,parameters);
+    	}
+        return null;
+	}
+
+	/**
+     * Returns menu options.
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,addreport"
+	 * @throws Exception
+	 */
+	public Collection<String> getAppDevices(UserSessionData userSession, String appId) throws Exception {
+		Collection<String> files = new LinkedList<String>();
+        try{	
+            Session session = HibernateUtil.currentSession();
+            Query query = session.createSQLQuery("SELECT DISTINCT devicetoken FROM appdevices WHERE appid = '"+appId+"' status = 1 AND devicetoken IS NOT NULL");
+            Iterator it = query.list().iterator();
+            while(it.hasNext()) {
+            	files.add((String)it.next());
+            }
+    	}catch (Exception e) {
+			Object[] parameters = {};
+    		handler.getException(e,"getAppFiles",userSession,parameters);
+    	}
+        return files;
+	}
+	
+
+	/**
+     * 
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,cepascheduleactivitycreate,cdactivitycreate,vehiclechecklist,dpachecklist,vehicleview,driverview"
+	 * @throws Exception
+	 */
+	public UnconformityDPAData findUnconformityDPAById(UserSessionData userSession, Integer id) throws Exception {
+		
+        try{	
+            Session session = HibernateUtil.currentSession();
+            UnconformityDPA unconformity=(UnconformityDPA)session.load(UnconformityDPA.class, id);
+            return unconformity.getUnconformityDPAData(userSession,true);
+    	}catch (Exception e) {
+			Object[] parameters = {};
+    		handler.getException(e,"findUnconformityDPAById",userSession,parameters);
+    	}
+        return null;
+	}
+	
+	/**
+     *  
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,cepascheduleactivitycreate,cdactivitycreate,vehiclechecklist,dpachecklist,vehicleview"
+	 * @throws Exception
+	 */
+	public UnconformityDPAData findUnconformityDPAByCheckId(UserSessionData userSession, Integer id) throws Exception {
+		
+        try{	
+            Session session = HibernateUtil.currentSession();
+            
+            Query query=session.createQuery("select id from UnconformityDPA where check="+id);
+            List aux=query.list();
+            Iterator iter= aux.iterator();
+            if(aux.size()==0){
+            	return null;
+            }
+            UnconformityDPA unconformity=(UnconformityDPA)session.load(UnconformityDPA.class, (Integer)iter.next());
+            
+            return unconformity.getUnconformityDPAData(userSession,false);
+    	}catch (Exception e) {
+			Object[] parameters = {};
+    		handler.getException(e,"findUnconformityDPAByCheckId",userSession,parameters);
+    	}
+        return null;
+	}
+	
+	/**
+     *  
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driveredit,driverupdate"
+	 * @throws Exception
+	 */
+	public ArrayList<UnconformityDPAData> findUnconformityDPAByDriverId(UserSessionData userSession, Integer id) throws Exception {
+		ArrayList<UnconformityDPAData> res=new ArrayList<UnconformityDPAData>();
+        try{	
+            Session session = HibernateUtil.currentSession();
+            
+            Query query=session.createQuery("select u from UnconformityDPA as u where u.driverId="+id);
+            List aux=query.list();
+            Iterator iter= aux.iterator();
+            while(iter.hasNext()){
+            	UnconformityDPA un=(UnconformityDPA)iter.next();
+            	res.add(un.getUnconformityDPAData(userSession, true));
+            }
+           
+    	}catch (Exception e) {
+			Object[] parameters = {};
+    		handler.getException(e,"findUnconformityDPAByDriverId",userSession,parameters);
+    	}
+        return res;
+	}
+	
+	/**
+     * 
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,cepascheduleactivitycreate,cdactivitycreate,vehiclechecklist,dpachecklist,vehicleview"
+	 * @throws Exception
+	 */
+	public UnconformityDPAData findUnconformityDPAByTelematicControlId(UserSessionData userSession, Integer id) throws Exception {
+		
+        try{	
+            Session session = HibernateUtil.currentSession();
+            
+            Query query=session.createQuery("select id from UnconformityDPA where telematicControl.id="+id);
+            List aux=query.list();
+            Iterator iter= aux.iterator();
+            if(aux.size()==0){
+            	return null;
+            }
+            UnconformityDPA unconformity=(UnconformityDPA)session.load(UnconformityDPA.class, (Integer)iter.next());
+            
+            return unconformity.getUnconformityDPAData(userSession,false);
+    	}catch (Exception e) {
+			Object[] parameters = {};
+    		handler.getException(e,"findUnconformityDPAByTelematicControlId",userSession,parameters);
+    	}
+        return null;
+	}
+	
+	/**  
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,cepascheduleactivitycreate,cdactivitycreate,vehiclechecklist,vehicleview,dpachecklist"
+	 * @throws Exception
+	 */
+	public ListResult findUnconformityDPAByFilter(UserSessionData userSession,DPAUnconformityFilter filter) throws Exception {
+		
+        try{	
+            Session session = HibernateUtil.currentSession();
+            
+            String queryStr="";
+            String queryCountStr="";
+            
+            if(filter.getType().endsWith(UnconformityTypeDPADataType.TYPE_DRIVER)){
+            	queryStr="select Un from UnconformityDPA as Un,Driver as d "+UtilityQuery.corporationDivisionsRestictions("d",userSession)+" and  Un.corpId="+userSession.getCorporationId()+" and  Un.driverId=d.id and Un.type.resourceBundleId='"+filter.getType()+"' and ( lower(d.firstName) like (:text) or lower(d.lastName) like (:text))  ";
+            	queryCountStr="select count(*) from UnconformityDPA as Un,Driver as d "+UtilityQuery.corporationDivisionsRestictions("d",userSession)+" and Un.corpId="+userSession.getCorporationId()+" and Un.driverId=d.id and Un.type.resourceBundleId='"+filter.getType()+"' and ( lower(d.firstName) like (:text) or lower(d.lastName) like (:text)) ";
+                	
+            }else if(filter.getType().endsWith(UnconformityTypeDPADataType.TYPE_VEHICLE_CHECK)){
+            	queryStr="select Un from UnconformityDPA as Un, VehicleCheck as c,Vehicle v "+UtilityQuery.corporationDivisionsRestictions("v",userSession)+" and v.id=c.vehicle.id and  Un.corpId="+userSession.getCorporationId()+" and c.vehicleCheckId=Un.check and lower(c.vehicle.matricula) like (:text) and Un.type.resourceBundleId='"+filter.getType()+"' ";
+            	queryCountStr="select count(*) from UnconformityDPA as Un , VehicleCheck as c,Vehicle v "+UtilityQuery.corporationDivisionsRestictions("v",userSession)+"and v.id=c.vehicle.id and Un.corpId="+userSession.getCorporationId()+" and  c.vehicleCheckId=Un.check and lower(c.vehicle.matricula) like (:text) and Un.type.resourceBundleId='"+filter.getType()+"' ";
+            }
+            
+            if(filter.getStart()!=null){
+            	queryStr+=" and Un.date >=(:start) ";
+            	queryCountStr+=" and Un.date >=(:start) ";
+            }
+            if(filter.getEnd()!=null){
+            	queryStr+=" and Un.date <=(:end) ";
+            	queryCountStr+=" and  Un.date <=(:end) ";
+            }
+            Query query = session.createQuery(queryStr);
+            Query queryCount = session.createQuery(queryCountStr);
+            
+        	query.setParameter("text", filter.getText()!=null?"%"+filter.getText().toLowerCase()+"%":"%%");
+        	queryCount.setParameter("text", filter.getText()!=null?"%"+filter.getText().toLowerCase()+"%":"%%");
+        
+            if(filter.getStart()!=null){
+            	query.setParameter("start", Util.floorDate(filter.getStart()));
+            	queryCount.setParameter("start", Util.floorDate(filter.getStart()));
+            }
+            if(filter.getEnd()!=null){
+            	query.setParameter("end", Util.topDate(filter.getEnd()));
+            	queryCount.setParameter("end", Util.topDate(filter.getEnd()));
+            }
+            
+            List list2=queryCount.list();
+            Integer total=0;
+            if (list2 != null && list2.size() > 0) {
+				Iterator iter2 = list2.iterator();
+				total = (iter2.hasNext()) ? new Integer(((Long) iter2.next())
+						.intValue()) : new Integer(0);
+			}
+            
+            if(!filter.getAll()){
+            	
+            	int first=filter.getMaxResult()*filter.getPageNum()-filter.getMaxResult();  
+            	if (total.intValue() < first) {
+					first = (total.intValue() % filter.getMaxResult() == 0) ? total.intValue()
+							- filter.getMaxResult() : total.intValue()
+							- (total.intValue() % filter.getMaxResult());
+				}         	
+            	query.setFirstResult(first);
+            	query.setMaxResults(filter.getMaxResult());
+            }
+            
+            
+            List aux=query.list();
+            Iterator iter= aux.iterator();
+            Collection result=new ArrayList();
+            while(iter.hasNext()){
+            	UnconformityDPA unconformity=(UnconformityDPA) iter.next();
+            	result.add(unconformity.getUnconformityDPAData(userSession,true));
+            }
+            
+            return new ListResult(result,total);
+    	}catch (Exception e) {
+			Object[] parameters = {};
+    		handler.getException(e,"findUnconformityDPAByFilter",userSession,parameters);
+    	}
+        return null;
+	}
+	
+	/**
+     * 
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,cepascheduleactivitycreate,cdactivitycreate,vehiclechecklist,dpachecklist,vehicleview"
+	 * @throws Exception
+	 */
+	public Collection findCorrectiveActionsByUnconformityId(UserSessionData userSession, Integer id) throws Exception {
+		
+        try{	
+            Session session = HibernateUtil.currentSession();
+            
+            Query query=session.createQuery("select c from CorrectiveActionDPA as c where c.unconformityDPA.id="+id);
+            List aux=query.list();
+            Iterator iter= aux.iterator();
+            Collection result=new ArrayList();
+            while(iter.hasNext()){
+            	CorrectiveActionDPA corrective=(CorrectiveActionDPA)iter.next();
+            	result.add(corrective.getCorrectiveActionDPAData(userSession));
+            }
+            
+            return result;
+    	}catch (Exception e) {
+			Object[] parameters = {};
+    		handler.getException(e,"findCorrectiveActionsByUnconformityId",userSession,parameters);
+    	}
+        return null;
+	}
+	
+	/**
+     * 
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,cepascheduleactivitycreate,cdactivitycreate,vehiclechecklist,dpachecklist,vehicleview"
+	 * @throws Exception
+	 */
+	public CorrectiveActionDPAData findCorrectiveActionById(UserSessionData userSession, Integer id) throws Exception {
+		
+        try{	
+            Session session = HibernateUtil.currentSession();
+            
+            Query query=session.createQuery("select c from CorrectiveActionDPA as c where c.id="+id);
+            List aux=query.list();
+            Iterator iter= aux.iterator();
+            Collection result=new ArrayList();
+            while(iter.hasNext()){
+            	CorrectiveActionDPA corrective=(CorrectiveActionDPA)iter.next();
+            	return corrective.getCorrectiveActionDPAData(userSession);
+            }
+            
+            
+    	}catch (Exception e) {
+			Object[] parameters = {};
+    		handler.getException(e,"findCorrectiveActionById",userSession,parameters);
+    	}
+        return null;
+	}
+	
+	/**
+     * 
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,driverdelete,drivercreate"
+	 * @throws Exception
+	 */
+	public LevelOfServiceDriverDPAData findLevelOfServiceDriverDPAByDriverId(UserSessionData userSession, Integer id) throws Exception {
+		
+        try{	
+            Session session = HibernateUtil.currentSession();
+            
+            Query query=session.createQuery("select c from LevelOfServiceDriverDPA as c where c.driverId="+id+" order by c.date desc");
+            List aux=query.list();
+            Iterator iter= aux.iterator();
+            Collection result=new ArrayList();
+            if(iter.hasNext()){
+            	LevelOfServiceDriverDPA level=(LevelOfServiceDriverDPA)iter.next();
+            	return level.getLevelOfServiceDriverDPAData(userSession);
+            }
+            
+            
+    	}catch (Exception e) {
+			Object[] parameters = {id};
+    		handler.getException(e,"findLevelOfServiceDriverDPAByDriverId",userSession,parameters);
+    	}
+        return null;
+	}
+	
+	/**
+     * 
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,driverdelete,drivercreate"
+	 * @throws Exception
+	 */
+	public LevelOfServiceDriverDPAData findLevelOfServiceDriverDPAById(UserSessionData userSession, Integer id) throws Exception {
+		
+        try{	
+            Session session = HibernateUtil.currentSession();
+            LevelOfServiceDriverDPA level=(LevelOfServiceDriverDPA)session.load(LevelOfServiceDriverDPA.class,id);
+            
+            return level.getLevelOfServiceDriverDPAData(userSession);
+            
+    	}catch (Exception e) {
+			Object[] parameters = {id};
+    		handler.getException(e,"findLevelOfServiceDriverDPAById",userSession,parameters);
+    	}
+        return null;
+	}
+	
+	/**
+     * 
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,driverdelete,drivercreate"
+	 * @throws Exception
+	 */
+	public Collection findLevelOfServiceDriversDPAByDriverId(UserSessionData userSession, Integer id) throws Exception {
+		
+		try{	
+            Session session = HibernateUtil.currentSession();
+            
+            Query query=session.createQuery("select c from LevelOfServiceDriverDPA as c where c.driverId="+id+" order by c.date desc");
+            List aux=query.list();
+            Iterator iter= aux.iterator();
+            Collection result=new ArrayList();
+            while(iter.hasNext()){
+            	LevelOfServiceDriverDPA level=(LevelOfServiceDriverDPA)iter.next();
+            	result.add(level.getLevelOfServiceDriverDPAData(userSession));
+            }
+            
+            return result;
+            
+    	}catch (Exception e) {
+			Object[] parameters = {id};
+    		handler.getException(e,"findLevelOfServiceDriversDPAByDriverId",userSession,parameters);
+    	}
+		
+        return new ArrayList();
+     }
+	
+	
+    /**
+    *
+    * @ejb.interface-method
+    * @ejb.permission role-name = "administrator,driverupdate,driverdelete,drivercreate,driverview"
+    * @throws Exception
+    */
+   public void exportLevelOfServiceDriversDPA(UserSessionData userSession,Text messages, OutputStream output,String divOrgs,Date date,String active) throws Exception {
+      
+       try{
+            ArrayList<ArrayList<String>> book=new ArrayList<ArrayList<String>>();
+           Session session = HibernateUtil.currentSession();
+           Query query=session.createQuery("select c from LevelOfServiceDriverDPA as c, Driver as d where d.exclusionDate is null and c.driverId=d.id and to_date(to_char(c.date, 'DD-MON-YY'), 'DD-MON-YY') in(select max( to_date(to_char(c2.date, 'DD-MON-YY'), 'DD-MON-YY'))  from LevelOfServiceDriverDPA as c2 where c2.driverId=c.driverId and c.date <=(:date) ) and d.divOrg1 in("+divOrgs+") order by d.id, c.id asc  ");
+           query.setParameter("date", Util.topDate(date) );
+          
+           List aux=query.list();
+           Iterator iter= aux.iterator();
+           String[] headarray=LevelOfServiceDriverDPA.getHeaderToExport(messages).split("\t");
+          
+           ArrayList<String> headers=new ArrayList<String>(Arrays.asList(headarray));
+           book.add(headers);
+           int maxCheck=0;
+           HashMap<Integer, ArrayList<String>> map=new HashMap<Integer, ArrayList<String>>();
+           while(iter.hasNext()){
+               LevelOfServiceDriverDPA level=(LevelOfServiceDriverDPA)iter.next();
+              
+               String[] values=level.getRowToExport(messages).split("\t");
+               ArrayList<String> row=new ArrayList<String>(Arrays.asList(values));
+               query=session.createSQLQuery("select t.date,t.type,t.point from telematiccontrols as t where "+(active.equalsIgnoreCase("ativo")||active.equalsIgnoreCase("inativo")?" lower(t.status)='"+active.toLowerCase()+"' and ":"")+" t.driver="+level.getDriverId()+" and t.date <=(:date) order by t.date desc");
+               query.setParameter("date", date);
+               List aux2=query.list();
+               Iterator iter2=aux2.iterator();
+               Integer countCheck=0;
+               while(iter2.hasNext()){
+                   Object[] rowCV=(Object[])iter2.next();
+                   ++countCheck;
+                   if(countCheck>maxCheck){
+                       maxCheck=countCheck;
+                       headers.add("DATA TC.");
+                       headers.add("TIPO");
+                       headers.add("PONTOS");
+                   }
+                  
+                   row.add( Util.formatDate((Date)rowCV[0]) );
+                   row.add(messages.getText(TelematicControlData.getTypeString((Integer)rowCV[1])));
+                   row.add(TelematicControlData.getDPAPointLabel((String)rowCV[2]));
+                  
+               }
+              
+               //Cuando se crean niveles en la misma fecha este codigo lo que hace es mantener el orden en el
+               //resultado y dejar solo el nivel con id mas grande que es el ultimo
+               if(map.containsKey(level.getDriverId())){
+                   book.remove(book.size()-1);
+               }
+              
+               book.add(row);
+               map.put(level.getDriverId(), row);
+              
+           }
+          
+           //Agrego los cursos
+           Integer countCheckCursos=0;
+           Iterator iter3= map.keySet().iterator();
+           while(iter3.hasNext()){
+               Integer driverid=(Integer)iter3.next();
+               ArrayList<String> row= map.get(driverid);
+               query=session.createSQLQuery("select c.course,c.date,c.comment from levelofservicedrivercoursedpa as c where c.levelofservicedriver="+driverid+" order by c.date");
+              
+               //Completo con blancos
+               for(int i=row.size();i<headarray.length+maxCheck;i++){
+                   row.add("");
+               }
+              
+               List aux2=query.list();
+               Iterator iter2=aux2.iterator();
+               while(iter2.hasNext()){
+              
+                   Object[] rowCV=(Object[])iter2.next();
+                  
+                   ++countCheckCursos;
+                   if(countCheckCursos>maxCheck){
+                       maxCheck=countCheckCursos;
+                       headers.add("CURSO.");
+                       headers.add("DATA");
+                       headers.add("OBS.");
+                   }
+                  
+                  
+                   row.add(messages.getText((String)rowCV[0]));
+                   row.add( Util.formatDate((Date)rowCV[1]) );
+                   row.add((String)rowCV[2]);
+               }
+           }
+          
+          
+
+          
+           //Drivers sin nivel de servicio
+           query=session.createSQLQuery("select d.id," +
+                                               " d.firstname, d.lastname, d.birthdate, d.licenseexpiry , d.stateorregion, " +
+                                               " d.iddallas,  d.bpsregistry, d.superviser, d.exclusiondate, d.divOrg1 " +
+                                        " from drivers as d " +
+                                        " where d.divOrg1 in("+divOrgs+") and " +
+                                                "d.id not in (select distinct l.driverId from levelofservicedriverdpa as l where l.date <=(:date) ) " +
+                                        " order by d.firstName,d.lastName");
+           query.setParameter("date", date);
+          
+           ArrayList<ArrayList<String>> bookDrivers=new ArrayList<ArrayList<String>>();
+           ArrayList<String> headersDrivers=new ArrayList<String>(Arrays.asList(LevelOfServiceDriverDPA.getHeaderToExport(messages).split("\t")));
+           bookDrivers.add(headersDrivers);
+          
+           iter=query.list().iterator();
+           maxCheck=0;
+           boolean colMore=false;
+           while(iter.hasNext()){
+               Object[] row=(Object[]) iter.next();
+               LevelOfServiceDriverDPA dataAux=new LevelOfServiceDriverDPA();
+               dataAux.setDriverId((Integer)row[0]);
+               dataAux.setFirstName((String)row[1]);
+               dataAux.setLastName((String)row[2]);
+               dataAux.setBirthDate((Date)row[3]);
+               dataAux.setVcnh((Date)row[4]);
+               dataAux.setUf((String)row[5]);
+               dataAux.setCpf((String)row[6]);
+               dataAux.setRg((String)row[7]);
+               dataAux.setCelular((String)row[8]);
+               dataAux.setStatus(row[9]!=null ? "I":"A");
+               dataAux.setFleet((Integer)row[10]);
+              
+              
+               String[] values=dataAux.getRowToExport(messages).split("\t");
+               ArrayList<String> rows=new ArrayList<String>(Arrays.asList(values));
+               query=session.createSQLQuery("select t.date,t.type,t.point from telematiccontrols as t where "+(active.equalsIgnoreCase("ativo")||active.equalsIgnoreCase("inativo")?" lower(t.status)='"+active.toLowerCase()+"' and ":"")+" t.driver="+dataAux.getDriverId()+" and t.date <=(:date) order by t.date desc");
+               query.setParameter("date", date);
+               List aux2=query.list();
+               Iterator iter2=aux2.iterator();
+               Integer countCheck=0;
+              
+               while(iter2.hasNext()){
+                   Object[] rowCV=(Object[])iter2.next();
+                   ++countCheck;
+                   if(countCheck>maxCheck){
+                       maxCheck=countCheck;
+                       headersDrivers.add("DATA TC.");
+                       headersDrivers.add("TIPO");
+                       headersDrivers.add("PONTOS");
+                   }
+                  
+                   rows.add( Util.formatDate((Date)rowCV[0]) );
+                   rows.add(messages.getText(TelematicControlData.getTypeString((Integer)rowCV[1])));
+                   rows.add(TelematicControlData.getDPAPointLabel((String)rowCV[2]));
+                  
+                   //No se permite mas de 20 controles por el máximo de columnas de excel que es 255.
+                   if(countCheck>19){
+                       if(!colMore){
+                           colMore=true;
+                           headersDrivers.add(messages.getText("generic.dpa.moretcinfo"));
+                       }
+                       rows.add("Sim");
+                       break;
+                   }
+               }
+               bookDrivers.add(rows);
+         }
+         
+          
+          
+          
+           ExcelGenerator.generatorXLS(book,messages.getText("generic.dpa.levelofservicedriver"),bookDrivers,messages.getText("generic.dpa.nolevelofservice"), output);
+          
+          
+       }catch (Exception e) {
+           Object[] parameters = {};
+           handler.getException(e,"exportLevelOfServiceDriversDPA",userSession,parameters);
+       }
+      
+    }
+  
+   /**
+    *
+    * @ejb.interface-method
+    * @ejb.permission role-name = "administrator,vehicleupdate,vehicledelete,vehiclecreate"
+    * @throws Exception
+    */
+   public void exportLevelOfServiceVehiclesDPA(UserSessionData userSession,Text messages, OutputStream output,String divOrgs,Date date) throws Exception {
+      
+       try{
+            ArrayList<ArrayList<String>> book=new ArrayList<ArrayList<String>>();
+           Session session = HibernateUtil.currentSession();
+           Query query=session.createQuery("select c from LevelOfServiceVehicleDPA as c, Vehicle as d where d.exclusionDate is null and c.vehicleId=d.id and to_date(to_char(c.date, 'DD-MON-YY'), 'DD-MON-YY') in(select max( to_date(to_char(c2.date, 'DD-MON-YY'), 'DD-MON-YY'))   from LevelOfServiceVehicleDPA as c2 where c2.vehicleId=c.vehicleId and c2.date<=(:date)  ) and d.divOrg1 in("+divOrgs+") order by c.id asc, c.matricula ");
+           query.setParameter("date", date);
+           List aux=query.list();
+           Iterator iter= aux.iterator();
+           ArrayList<String> headers=new ArrayList<String>(Arrays.asList(LevelOfServiceVehicleDPA.getHeaderToExport(messages)));
+           book.add(headers);
+           int maxCheck=0;
+           HashMap<Integer, ArrayList<String>> hashRows=new HashMap<Integer, ArrayList<String>>();
+           HashMap<Integer,LevelOfServiceVehicleDPA> hashRowsLevel=new HashMap<Integer,LevelOfServiceVehicleDPA >();
+           while(iter.hasNext()){
+               LevelOfServiceVehicleDPA level=(LevelOfServiceVehicleDPA)iter.next();
+              
+               String[] values=level.getRowToExport(messages);
+               ArrayList<String> row=new ArrayList<String>(Arrays.asList(values));
+               query=session.createSQLQuery("select vc.date,vc.result from vehiclecheck as vc where vc.vehicle="+level.getVehicleId()+" and vc.date <=(:date) order by vc.date desc");
+               query.setParameter("date", date);
+               List aux2=query.list();
+               Iterator iter2=aux2.iterator();
+               Integer countCheck=0;
+               while(iter2.hasNext()){
+                   Object[] rowCV=(Object[])iter2.next();
+                   ++countCheck;
+                   if(countCheck>maxCheck){
+                       maxCheck=countCheck;
+                       headers.add("DATA CHECKLIST");
+                       headers.add("RESULTADO");
+                   }
+                  
+                   row.add(Util.formatDate((Date)rowCV[0]));
+                   row.add( (((Integer)rowCV[1]).intValue() == 1) ? messages.getText("generic.messages.approved").toUpperCase() : messages.getText("generic.messages.notapproved").toUpperCase());
+                   //Se mapea por ID
+               }
+
+              
+               //Cuando se crean niveles en la misma fecha este codigo lo que hace es mantener el orden en el
+               //resultado y dejar solo el nivel con id mas grande que es el ultimo
+               if(hashRows.containsKey(level.getVehicleId())){
+                   book.remove(book.size()-1);
+               }
+              
+               book.add(row);
+               hashRows.put(level.getVehicleId(),row);
+               hashRowsLevel.put(level.getVehicleId(),level);
+              
+           }
+          
+           Iterator<LevelOfServiceVehicleDPA> iterRow=hashRowsLevel.values().iterator();
+           int maxTC=0;
+           int base=headers.size();
+           while(iterRow.hasNext()){
+               LevelOfServiceVehicleDPA level=iterRow.next();
+               ArrayList<String> row=hashRows.get(level.getVehicleId());
+               while(row.size()<base){
+                   row.add("------");
+               }
+               query=session.createSQLQuery("select tc.date,tc.type from telematiccontrols as tc where tc.vehicle="+level.getVehicleId()+" and tc.driver is null and  tc.date <=(:date) order by tc.date desc");
+               query.setParameter("date", date);
+               List aux2=query.list();
+               Iterator iter2=aux2.iterator();
+               Integer countCheck=0;
+               while(iter2.hasNext()){
+                   Object[] rowCV=(Object[])iter2.next();
+                   ++countCheck;
+                   if(countCheck>maxTC){
+                       maxTC=countCheck;
+                       headers.add("DATA TELEMATIC CONTROL");
+                       headers.add("TIPO");
+                   }
+                  
+                   row.add(Util.formatDate((Date)rowCV[0]));
+                   row.add(messages.getText(TelematicControlData.getTypeString(((Integer)rowCV[1]))));
+               }
+           }
+          
+           iterRow=hashRowsLevel.values().iterator();
+           base=headers.size();
+           while(iterRow.hasNext()){
+               LevelOfServiceVehicleDPA level=iterRow.next();
+               ArrayList<String> row=hashRows.get(level.getVehicleId());
+               while(row.size()<base){
+                   row.add("------");
+               }
+          
+               //book.add(row);
+           }
+          
+          
+           //Vehiculos que no tienen nivel de servicio
+           ArrayList<ArrayList<String>> bookVehicle=new ArrayList<ArrayList<String>>();
+           ArrayList<String> headersVehicles=new ArrayList<String>(Arrays.asList(LevelOfServiceVehicleDPA.getHeaderToExport(messages)));
+           bookVehicle.add(headersVehicles);
+          
+           query=session.createSQLQuery( " select v.id,v.divOrg1,v.matricula,v.chasisNumber,v.year,v.model,v.permissionNumber,v.exclusionDate  "+
+                                         " from vehicles as v "+
+                                         " where  v.divOrg1 in("+divOrgs+") and v.id not in (select distinct l.vehicleId from levelofservicevehicledpa as l where l.vehicleId is not null and  l.date <=(:date) )"+
+                                            "          order by v.matricula ");
+
+           query.setParameter("date", date);
+          
+           iter=query.list().iterator();
+           maxCheck=0;
+           boolean colMore=false;
+           while(iter.hasNext()){
+               Object[] row=(Object[]) iter.next();
+               LevelOfServiceVehicleDPA dataAux=new LevelOfServiceVehicleDPA();
+               dataAux.setVehicleId((Integer)row[0]);
+               dataAux.setFleet((Integer)row[1]);
+               dataAux.setMatricula((String)row[2]);
+               dataAux.setChassi((String)row[3]);
+               dataAux.setYearModel(((Integer)row[4]).toString());
+               dataAux.setModel((String)row[5]);
+               dataAux.setRenavan((String)row[6]);
+               dataAux.setStatus(row[7]!=null ? "I":"A");
+             
+               String[] values=dataAux.getRowToExport(messages);
+               ArrayList<String> rows=new ArrayList<String>(Arrays.asList(values));
+               query=session.createSQLQuery("select t.date,t.type,t.point from telematiccontrols as t where t.driver is null and  t.vehicle="+dataAux.getVehicleId()+" and t.date <=(:date) order by t.date desc");
+               query.setParameter("date", date);
+               List aux2=query.list();
+               Iterator iter2=aux2.iterator();
+               Integer countCheck=0;
+              
+               while(iter2.hasNext()){
+                   Object[] rowCV=(Object[])iter2.next();
+                   ++countCheck;
+                   if(countCheck>maxCheck){
+                       maxCheck=countCheck;
+                       headersVehicles.add("DATA TC.");
+                       headersVehicles.add("TIPO");
+                       headersVehicles.add("PONTOS");
+                   }
+                  
+                   rows.add( Util.formatDate((Date)rowCV[0]) );
+                   rows.add(messages.getText(TelematicControlData.getTypeString((Integer)rowCV[1])));
+                   rows.add(TelematicControlData.getDPAPointLabel((String)rowCV[2]));
+                  
+                   //No se permite mas de 20 controles por el máximo de columnas de excel que es 255.
+                   if(countCheck>19){
+                       if(!colMore){
+                           colMore=true;
+                           headersVehicles.add(messages.getText("generic.dpa.moretcinfo"));
+                       }
+                       rows.add("Sim");
+                       break;
+                   }
+               }
+               bookVehicle.add(rows);
+         }
+         
+          
+         ExcelGenerator.generatorXLS(book,"Equipamiento",bookVehicle,messages.getText("generic.dpa.nolevelofservice"), output);
+          
+          
+       }catch (Exception e) {
+           Object[] parameters = {};
+           handler.getException(e,"exportLevelOfServiceVehiclesDPA",userSession,parameters);
+       }
+      
+    }
+	
+	/**
+     * 
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate,vehicledelete,vehiclecreate"
+	 * @throws Exception
+	 */
+	public LevelOfServiceVehicleDPAData findLevelOfServiceVehicleDPAByVehicleId(UserSessionData userSession, Integer id) throws Exception {
+		
+        try{	
+            Session session = HibernateUtil.currentSession();
+            
+            Query query=session.createQuery("select c from LevelOfServiceVehicleDPA as c where c.vehicleId="+id+" order by c.date desc");
+            List aux=query.list();
+            Iterator iter= aux.iterator();
+            Collection result=new ArrayList();
+            while(iter.hasNext()){
+            	LevelOfServiceVehicleDPA level=(LevelOfServiceVehicleDPA)iter.next();
+            	return level.getLevelOfServiceVehicleDPAData(userSession);
+            }
+            
+            
+    	}catch (Exception e) {
+			Object[] parameters = {id};
+    		handler.getException(e,"findLevelOfServiceDriverDPAByVehicleId",userSession,parameters);
+    	}
+        return null;
+	}
+	
+	/**
+     * 
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate,vehicledelete,vehiclecreate"
+	 * @throws Exception
+	 */
+	public LevelOfServiceVehicleDPAData findLevelOfServiceVehicleDPAById(UserSessionData userSession, Integer id) throws Exception {
+		
+        try{	
+            Session session = HibernateUtil.currentSession();
+            LevelOfServiceVehicleDPA level=(LevelOfServiceVehicleDPA)session.load(LevelOfServiceVehicleDPA.class,id);
+            
+            return level.getLevelOfServiceVehicleDPAData(userSession);
+            
+    	}catch (Exception e) {
+			Object[] parameters = {id};
+    		handler.getException(e,"findLevelOfServiceVehicleDPAById",userSession,parameters);
+    	}
+        return null;
+	}
+	
+	
+	/**
+     * 
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate,vehicledelete,vehiclecreate"
+	 * @throws Exception
+	 */
+	public Collection findLevelOfServiceVehiclesDPAByVehicleId(UserSessionData userSession, Integer id) throws Exception {
+		
+		try{	
+            Session session = HibernateUtil.currentSession();
+            
+            Query query=session.createQuery("select c from LevelOfServiceVehicleDPA as c where c.vehicleId="+id+" order by c.date desc");
+            List aux=query.list();
+            Iterator iter= aux.iterator();
+            Collection result=new ArrayList();
+            while(iter.hasNext()){
+            	LevelOfServiceVehicleDPA level=(LevelOfServiceVehicleDPA)iter.next();
+            	result.add(level.getLevelOfServiceVehicleDPAData(userSession));
+            }
+            
+            return result;
+            
+    	}catch (Exception e) {
+			Object[] parameters = {id};
+    		handler.getException(e,"findLevelOfServiceVehiclesDPAByVehicleId",userSession,parameters);
+    	}
+		
+        return new ArrayList();
+     }
+	
+	/**
+     * 
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate,vehicledelete,vehiclecreate,vehicleview"
+	 * @throws Exception
+	 */
+	public void exportUnconformityItemsCheckListDPA(UserSessionData userSession,Text messages, OutputStream output,DPAUnconformityItemFilter filter) throws Exception {
+		try{
+			String where=""+UtilityQuery.corporationDivisionsRestictionsSQL("v", userSession);
+		
+			String dateFilter = (filter.getDateType() == null || filter.getDateType().intValue() == DPAUnconformityItemFilter.EXPIRY) ? "i.expirity" : "u.date";
+			
+			if(filter.getStart()!=null || filter.getEnd()!=null){
+				where+=" and "+(filter.getStart()!=null ? dateFilter+" >=(:start)":"1=1");
+				where+=" and ";
+				where+=filter.getEnd()!=null ? dateFilter+" <=(:end)":"1=1";
+			}
+			ArrayList<ArrayList<String>> book=new ArrayList<ArrayList<String>>();
+            Session session = HibernateUtil.currentSession();
+            Query query=session.createSQLQuery("select u.id,u.date,i.type,i.comment as iComment,i.expirity ,v.matricula,i.correctiveactiondpa, a.comment as aComment, a.date as aDate, v.divOrg1,v.divOrg3"+ 
+            		" from unconformityitemdpa as i INNER JOIN unconformitydpa as u on (i.unconformitydpa=u.id and u.corpId="+userSession.getCorporationId()+") "+ 
+            		" INNER JOIN vehiclecheck as vc on vc.vehiclecheckid=u.vehiclecheckid "+
+            		" LEFT OUTER JOIN  correctiveactiondpa as a ON a.id=i.correctiveactiondpa "+ 
+            		" INNER JOIN vehicles as v on vc.vehicle=v.id "+where+" ORDER BY u.date");
+            
+            if(filter.getStart()!=null){
+            	query.setParameter("start", Util.floorDate(filter.getStart()));
+            }
+            if(filter.getEnd()!=null){
+            	query.setParameter("end", Util.topDate(filter.getEnd()));
+            }
+            
+            List aux=query.list();
+            Iterator iter= aux.iterator();
+            ArrayList<String> xlsHeader=new ArrayList<String>();
+            xlsHeader.add("Link");
+            if(userSession.getCorporationId()==CorporationData.WEYERHAEUSER ||userSession.getCorporationId()==CorporationData.FORESTALORIENTAL ||userSession.getCorporationId()==CorporationData.MONTES_DE_PLATA){
+            	 xlsHeader.add( "Transportista");
+            }
+            xlsHeader.add( messages.getText("generic.vehicle.vehicledata.plate"));
+            xlsHeader.add( messages.getText("generic.activity.date"));
+            xlsHeader.add(messages.getText("generic.dpa.unconformity.items"));
+            xlsHeader.add(messages.getText("generic.dpa.unconformity.termdate"));
+            xlsHeader.add(messages.getText("generic.dpa.unconformity.items")+" - "+messages.getText("generic.dpa.uncnformity.comment"));
+            xlsHeader.add(messages.getText("generic.dpa.correctiveaction.title"));
+            xlsHeader.add(messages.getText("generic.dpa.correctiveaction.title")+"-"+messages.getText("generic.activity.date"));
+            xlsHeader.add(messages.getText("generic.dpa.correctiveaction.title")+" - "+messages.getText("generic.dpa.uncnformity.comment"));
+            book.add(xlsHeader);
+            
+            while(iter.hasNext()){
+            	Object[] row=(Object[])iter.next();
+            	Integer uId=(Integer) row[0];
+            	Date uDate=(Date)row[1];
+            	String iType=(String) row[2];
+            	String iComment=(String) row[3];
+            	Date iExpirity=(Date)row[4];
+            	String matricula =(String)row[5];
+            	Integer caId=(Integer)row[6];
+            	String caComment=(String)row[7];
+            	Date aDate=(Date)row[8];
+            	Integer divOrg1=(Integer)row[9];
+            	Integer divOrg3=(Integer)row[10];
+            	
+            	ArrayList<String> xlsRow=new ArrayList<String>();
+            	xlsRow.add("https://fdmpro.cepasafedrive.com/datacenter/home.jsp?refer=/dpa/DPAUnconformityView.jsp?id="+uId+"&href=/dpa/DPAUnconformityList.jsp");
+            	if(userSession.getCorporationId()==CorporationData.WEYERHAEUSER){
+            		DivOrgItemLevel1 item1=(DivOrgItemLevel1) session.load(DivOrgItemLevel1.class, divOrg3);
+            		xlsRow.add( item1.getResourceKey());
+            	}else{
+            		DivOrgItemLevel1 item1=(DivOrgItemLevel1) session.load(DivOrgItemLevel1.class, divOrg1);
+            		xlsRow.add( item1.getResourceKey());
+                }
+            	
+            	xlsRow.add(matricula);
+            	xlsRow.add(Util.formatDate(uDate));
+            	xlsRow.add(messages.getText(iType));
+            	Calendar cal =Calendar.getInstance();
+            	cal.setTime(Util.floorDate(uDate));
+            	Calendar cal2 =Calendar.getInstance();
+            	cal2.setTime(Util.floorDate(iExpirity));
+            	if(cal2.compareTo(cal)>=0){
+            		//Si se marca S/P la fecha de expiración es igual o mayor
+            		xlsRow.add(Util.formatDate(iExpirity));
+            	}else{
+            		xlsRow.add("S/P");
+            	}
+            	
+            	xlsRow.add(iComment!=null?iComment:"");
+            	xlsRow.add(caId!=null?"S":"N");
+            	xlsRow.add(Util.formatDate(aDate));
+            	xlsRow.add(caComment!=null?caComment:"");
+            	
+            	
+            	book.add(xlsRow);
+            }
+            
+            ExcelGenerator.generatorXLS(book, messages.getText("generic.dpa.unconformity.list"), output);
+            
+            
+    	}catch (Exception e) {
+			Object[] parameters = {};
+    		handler.getException(e,"exportUnconformityItemsCheckListDPA",userSession,parameters);
+    	}
+		
+     }
+	
+	/**
+     * 
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate,vehicledelete,vehiclecreate,vehicleview"
+	 * @throws Exception
+	 */
+	public ArrayList<ArrayList<String>> exportUnconformityItemsCheckList(UserSessionData userSession,Text messages, OutputStream output,DPAUnconformityItemFilter filter) throws Exception {
+		
+	try{
+			String where=""+UtilityQuery.corporationDivisionsRestictionsSQL("v", userSession);
+			if(filter!=null && (filter.getStart()!=null || filter.getEnd()!=null || filter.getId()!=null)){
+				where+=" and "+(filter.getStart()!=null?"i.expirity >=(:start)":"1=1");
+				where+=" and ";
+				where+=(filter.getEnd()!=null?"i.expirity <=(:end)":"1=1");
+				where+=" and ";
+				where+=filter.getId()!=null?"v.id =(:vid)":"1=1";
+			}
+			where+=" order by i.expirity ";
+			ArrayList<ArrayList<String>> book=new ArrayList<ArrayList<String>>();
+            Session session = HibernateUtil.currentSession();
+            Query query=session.createSQLQuery("select u.id,u.date,i.type,i.comment as iComment,i.expirity ,v.matricula,i.correctiveactiondpa, a.comment as aComment, a.date as aDate"+ 
+            		" from unconformityitemdpa as i INNER JOIN unconformitydpa as u on (i.unconformitydpa=u.id and u.corpId="+userSession.getCorporationId()+") "+ 
+            		" INNER JOIN vehiclecheck as vc on vc.vehiclecheckid=u.vehiclecheckid "+
+            		" LEFT OUTER JOIN  correctiveactiondpa as a ON a.id=i.correctiveactiondpa "+ 
+            		" INNER JOIN vehicles as v on vc.vehicle=v.id "+where);
+            
+            if(filter!=null &&  filter.getStart()!=null){
+            	query.setParameter("start",  filter.getStart());
+            }
+            if(filter!=null && filter.getEnd()!=null){
+            	query.setParameter("end", filter.getEnd());
+            }
+            if(filter!=null && filter.getId()!=null){
+            	query.setParameter("vid", filter.getId());
+            }
+            List aux=query.list();
+            Iterator iter= aux.iterator();
+            
+            
+            while(iter.hasNext()){
+            	Object[] row=(Object[])iter.next();
+            	Integer uId=(Integer) row[0];
+            	Date uDate=(Date)row[1];
+            	String iType=(String) row[2];
+            	String iComment=(String) row[3];
+            	Date iExpirity=(Date)row[4];
+            	String matricula =(String)row[5];
+            	Integer caId=(Integer)row[6];
+            	String caComment=(String)row[7];
+            	Date aDate=(Date)row[8];
+            	
+            	if(caId==null){
+	            	ArrayList<String> xlsRow=new ArrayList<String>();
+	            	xlsRow.add("https://fdmpro.cepasafedrive.com/datacenter/home.jsp?refer=/dpa/DPAUnconformityView.jsp?id="+uId+"&href=/vehicle/VehicleView.jsp");
+	            	xlsRow.add(matricula);
+	            	xlsRow.add(Util.formatDate(uDate));
+	            	xlsRow.add(messages.getText(iType));
+	            	Calendar cal =Calendar.getInstance();
+	            	cal.setTime(Util.floorDate(uDate));
+	            	Calendar cal2 =Calendar.getInstance();
+	            	cal.setTime(Util.floorDate(iExpirity));
+	            	if(cal2.compareTo(cal)>=0){
+	            		//Si se marca S/P la fecha de expiración es igual o mayor
+	            		xlsRow.add(Util.formatDate(iExpirity));
+	            	}else{
+	            		xlsRow.add("S/P");
+	            	}
+	            	
+	            	
+	            	xlsRow.add(iComment!=null?iComment:"");
+	            	if(cal2.compareTo(cal)>=0){
+	            		//Si se marca S/P la fecha de expiración es igual o mayor
+	            		xlsRow.add(iExpirity.compareTo(new Date())<0?"V":"N");
+	            	}else{
+	            		xlsRow.add("N");
+	            	}
+	            	book.add(xlsRow);	
+            	}
+            	
+            	
+            }
+            
+           return book;
+            
+            
+    	}catch (Exception e) {
+			Object[] parameters = {};
+    		handler.getException(e,"exportUnconformityItemsCheckListDPA",userSession,parameters);
+    	}
+	
+		
+		return new ArrayList<ArrayList<String>>();
+		
+     }
+	
+	/**
+     * 
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate,vehicledelete,vehiclecreate,vehicleview"
+	 * @throws Exception
+	 */
+	public ArrayList<ArrayList<String>> findUnconformityItemsCheckListFORESTAL(UserSessionData userSession,Text messages, DPAUnconformityItemFilter filter) throws Exception {
+		
+	try{
+			String where=""+UtilityQuery.corporationDivisionsRestictionsSQL("v", userSession);
+			if(filter.getStart()!=null || filter.getEnd()!=null){
+				where+=" and "+(filter.getStart()!=null?"i.expirity >=(:start)":"1=1");
+				where+=" and ";
+				where+=" "+(filter.getEnd()!=null?"i.expirity <=(:end)":"1=1");
+			}
+			
+			if(filter.getId()!=null && filter.getId()>0){
+				where+=" and v.id="+filter.getId();
+			}
+			ArrayList<ArrayList<String>> book=new ArrayList<ArrayList<String>>();
+            Session session = HibernateUtil.currentSession();
+            Query query=session.createSQLQuery("select u.id,u.date,i.type,i.comment as iComment,i.expirity ,v.matricula,i.correctiveactiondpa, a.comment as aComment, a.date as aDate"+ 
+            		" from unconformityitemdpa as i INNER JOIN unconformitydpa as u on (i.unconformitydpa=u.id and u.corpId="+userSession.getCorporationId()+") "+ 
+            		" INNER JOIN vehiclecheck as vc on vc.vehiclecheckid=u.vehiclecheckid "+
+            		" LEFT OUTER JOIN  correctiveactiondpa as a ON a.id=i.correctiveactiondpa "+ 
+            		" INNER JOIN vehicles as v on vc.vehicle=v.id "+where);
+            
+            if(filter.getStart()!=null){
+            	query.setParameter("start", filter.getStart());
+            }
+            if(filter.getEnd()!=null){
+            	query.setParameter("end", filter.getEnd());
+            }
+            ArrayList<String> xlsHeader=new ArrayList<String>();
+            xlsHeader.add("#");
+            xlsHeader.add( messages.getText("generic.vehicle.vehicledata.plate"));
+            xlsHeader.add( messages.getText("generic.activity.date"));
+            xlsHeader.add(messages.getText("generic.dpa.unconformity.items"));
+            xlsHeader.add(messages.getText("generic.dpa.unconformity.termdate"));
+            xlsHeader.add(messages.getText("generic.dpa.unconformity.items")+" - "+messages.getText("generic.dpa.uncnformity.comment"));
+            xlsHeader.add(messages.getText("generic.dpa.correctiveaction.title"));
+            xlsHeader.add(messages.getText("generic.dpa.correctiveaction.title")+"-"+messages.getText("generic.activity.date"));
+            xlsHeader.add(messages.getText("generic.dpa.correctiveaction.title")+" - "+messages.getText("generic.dpa.uncnformity.comment"));
+            book.add(xlsHeader);
+          
+            List aux=query.list();
+            Iterator iter= aux.iterator();
+            
+            while(iter.hasNext()){
+            	Object[] row=(Object[])iter.next();
+            	Integer uId=(Integer) row[0];
+            	Date uDate=(Date)row[1];
+            	String iType=(String) row[2];
+            	String iComment=(String) row[3];
+            	Date iExpirity=(Date)row[4];
+            	String matricula =(String)row[5];
+            	Integer caId=(Integer)row[6];
+            	String caComment=(String)row[7];
+            	Date aDate=(Date)row[8];
+            	
+            	ArrayList<String> xlsRow=new ArrayList<String>();
+            	xlsRow.add(uId.toString());
+            	xlsRow.add(matricula);
+            	xlsRow.add(Util.formatDate(uDate));
+            	xlsRow.add(messages.getText(iType));
+            	xlsRow.add(Util.formatDate(iExpirity));
+            	xlsRow.add(iComment!=null?iComment:"");
+            	xlsRow.add(caId!=null?"S":"N");
+            	xlsRow.add(Util.formatDate(aDate));
+            	xlsRow.add(caComment!=null?caComment:"");
+            	
+            	
+            	book.add(xlsRow);
+            }
+            
+            return book;
+            
+    	}catch (Exception e) {
+			Object[] parameters = {};
+    		handler.getException(e,"findUnconformityItemsCheckListFORESTAL",userSession,parameters);
+    	}
+	
+		return new ArrayList<ArrayList<String>>(); 
+		
+     }
+	
+	/**
+     * 
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,driverdelete,drivercreate,driverview"
+	 * @throws Exception
+	 */
+	public void exportUnconformityItemsDriverDPA(UserSessionData userSession,Text messages, OutputStream output,DPAUnconformityItemFilter filter) throws Exception {
+		
+		try{
+			
+			String where=UtilityQuery.corporationDivisionsRestictionsSQL("d", userSession);;
+			if(filter.getStart()!=null || filter.getEnd()!=null){
+				where+=" and "+(filter.getStart()!=null?"i.expirity >=(:start)":"1=1");
+				where+=" and ";
+				where+=filter.getEnd()!=null?"i.expirity <=(:end)":"1=1";
+			}
+			
+			ArrayList<ArrayList<String>> book=new ArrayList<ArrayList<String>>();
+            Session session = HibernateUtil.currentSession();
+            Query query=session.createSQLQuery("select u.id,u.date,i.type as iType,i.comment,i.expirity ,d.firstname,d.lastname,i.correctiveactiondpa, a.comment as aComment, a.date as aDate "+
+											" from unconformityitemdpa as i INNER JOIN unconformitydpa as u on ( i.unconformitydpa=u.id  and u.corpId="+userSession.getCorporationId()+" ) "+
+											" LEFT OUTER JOIN  correctiveactiondpa as a ON a.id=i.correctiveactiondpa "+
+											" INNER JOIN drivers as d on d.id=u.driverId "+where
+											);
+            if(filter.getStart()!=null){
+            	query.setParameter("start", Util.floorDate(filter.getStart()));
+            }
+            if(filter.getEnd()!=null){
+            	query.setParameter("end", Util.topDate(filter.getEnd()));
+            }
+    	
+            List aux=query.list();
+            Iterator iter= aux.iterator();
+            
+            ArrayList<String> xlsHeader=new ArrayList<String>();
+            xlsHeader.add("Link");
+            xlsHeader.add( messages.getText("generic.driver.driverdata.firstname"));
+            xlsHeader.add( messages.getText("generic.driver.driverdata.lastname"));
+            xlsHeader.add( messages.getText("generic.activity.date"));
+            xlsHeader.add(messages.getText("generic.dpa.unconformity.items"));
+            xlsHeader.add(messages.getText("generic.dpa.unconformity.termdate"));
+            xlsHeader.add(messages.getText("generic.dpa.uncnformity.comment"));
+            xlsHeader.add(messages.getText("generic.dpa.unconformity.items")+" - "+messages.getText("generic.dpa.uncnformity.comment"));
+            xlsHeader.add(messages.getText("generic.dpa.correctiveaction.title"));
+            xlsHeader.add(messages.getText("generic.dpa.correctiveaction.title")+"-"+messages.getText("generic.activity.date"));
+            xlsHeader.add(messages.getText("generic.dpa.correctiveaction.title")+" - "+messages.getText("generic.dpa.uncnformity.comment"));
+            book.add(xlsHeader);
+            
+            while(iter.hasNext()){
+            	Object[] row=(Object[])iter.next();
+            	Integer uId=(Integer) row[0];
+            	Date uDate=(Date)row[1];
+            	String iType=(String) row[2];
+            	String iComment=(String) row[3];
+            	Date iExpirity=(Date)row[4];
+            	String firstname =(String)row[5];
+            	String lastname =(String)row[6];
+            	Integer caId=(Integer)row[7];
+            	String caComment=(String)row[8];
+            	Date aDate=(Date)row[9];
+            	
+            	ArrayList<String> xlsRow=new ArrayList<String>();
+            	xlsRow.add("https://fdmpro.cepasafedrive.com/datacenter/layout.jsp?refer=/dpa/DPAUnconformityView.jsp?id="+uId+"&href=/dpa/DPAUnconformityList.jsp");
+            	xlsRow.add(firstname);
+            	xlsRow.add(lastname);
+            	xlsRow.add(Util.formatDate(uDate));
+            	xlsRow.add(iComment);
+            	xlsRow.add(messages.getText(iType));
+            	xlsRow.add(Util.formatDate(iExpirity));
+            	xlsRow.add(caId!=null?"S":"N");
+            	xlsRow.add(Util.formatDate(aDate));
+            	xlsRow.add(caComment!=null?caComment:"");
+            	            	
+            	book.add(xlsRow);
+            }
+            
+            ExcelGenerator.generatorXLS(book,"Não Conformidade", output);
+            
+            
+    	}catch (Exception e) {
+			Object[] parameters = {};
+    		handler.getException(e,"exportUnconformityItemsDriverDPA",userSession,parameters);
+    	}
+		
+     }
+
+	/**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,drivercreate"
+	 * @param data
+	 * @throws Exception 
+	 */
+	public Integer[] getTransporterLink(Integer transporter,UserSessionData userSession) throws Exception {
+		try{
+            Session session = HibernateUtil.currentSession();
+            TransporterLink link = (TransporterLink) session.load(TransporterLink.class, transporter);
+            return link.getIds();
+    	}catch (Exception e) {
+    		return null;
+    	}
+	}
+	
+	/**
+	 * @ejb.interface-method view-type = "remote"
+	 * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,drivercreate"
+	 * @param data
+	 * @throws Exception 
+	 */
+	public Integer[] getTransporterLinkDriver(Integer driver,UserSessionData userSession) throws Exception {
+		try{
+            Session session = HibernateUtil.currentSession();
+            Query q = session.createSQLQuery("select fosa,weyerhauser,mdp from transporterlinks where id in (select divorg1 from drivers where id = "+driver+")").addScalar("fosa",Hibernate.INTEGER).addScalar("weyerhauser",Hibernate.INTEGER).addScalar("mdp",Hibernate.INTEGER);
+            List list = q.list();
+            if(list != null && list.size() > 0) {
+       			Object[] data = (Object[]) list.iterator().next();
+    			Integer[] values = new Integer[3];
+    			for(int i = 0; i < 3; i++) {
+    				values[i] = (Integer)data[i];
+    			}
+    			return values;
+            }
+    	}catch (Exception e) {
+			Object[] parameters = {driver};
+    		handler.getException(e,"getTransporterLink",userSession,parameters);
+    	}
+		return null;
+	}
+	
+	/**
+	 * @ejb.interface-method view-type = "remote"
+	 * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,systemaccess,dpachecklist,driverview"
+	 * @param data
+	 * @throws Exception 
+	 */
+	public String getContractorDataMail(Integer divOrg1,UserSessionData userSession) throws Exception {
+		try{
+			String queryStr = " select contractorData from ContractorData as contractorData " +
+					"where contractorData.state = 1 and contractorData.id="+divOrg1;
+			//" and contractorData.id in (330219)";
+			Session session = HibernateUtil.currentSession();
+			Query query = session.createQuery(queryStr);
+			ContractorData c=(ContractorData)query.uniqueResult();
+			return c.getMail();
+    	}catch (Exception e) {
+			Object[] parameters = {divOrg1};
+    		handler.getException(e,"getContractorDataMail",userSession,parameters);
+    	}
+		return "";
+	}
+	
+	
+	  /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleview"
+	 * @throws Exception
+	 */
+    public ArrayList<InstructorRegistryData> listInstructorRegistry(Date startDate, Date endDate,UserSessionData userSessionData) throws Exception {
+    	try{
+    		Session session = HibernateUtil.currentSession();
+    		
+    		Query query=session.createQuery("select i from InstructorRegistry as i where i.loginname=(:lg) and date>=(:sd) and date<=(:ed)");
+    		query.setParameter("lg", userSessionData.getFilter().getLoginName());
+    		query.setParameter("sd", startDate);
+    		query.setParameter("ed", endDate);
+    		
+    		ArrayList<InstructorRegistryData> res=new ArrayList<InstructorRegistryData>();
+    		Iterator iter=query.list().iterator();
+    		while(iter.hasNext()){
+    			InstructorRegistry ir=(InstructorRegistry)iter.next();
+    			res.add(ir.getData());
+    		}
+    		return res;
+    	} catch (Exception e) {
+			Object[] parameters = {userSessionData};
+    		handler.getException(e,"listInstructorRegistry",userSessionData,parameters);
+    	}
+    	
+    	return new ArrayList<InstructorRegistryData>();
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleview"
+	 * @throws Exception
+	 */
+    public ArrayList<InstructorRegistryData> listAllInstructorRegistry(Date startDate, Date endDate,UserSessionData userSessionData) throws Exception {
+    	try{
+    		Session session = HibernateUtil.currentSession();
+    		
+    		Query query=session.createQuery("select i from InstructorRegistry as i where date>=(:sd) and date<=(:ed) ");
+    		query.setParameter("sd", startDate);
+    		query.setParameter("ed", endDate);
+    		
+    		ArrayList<InstructorRegistryData> res=new ArrayList<InstructorRegistryData>();
+    		Iterator iter=query.list().iterator();
+    		while(iter.hasNext()){
+    			InstructorRegistry ir=(InstructorRegistry)iter.next();
+    			res.add(ir.getData());
+    		}
+    		return res;
+    	} catch (Exception e) {
+			Object[] parameters = {userSessionData};
+    		handler.getException(e,"listAllInstructorRegistry",userSessionData,parameters);
+    	}
+    	
+    	return new ArrayList<InstructorRegistryData>();
+    }
+   
+    /**
+     * Returns menu options.
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleview,driverview,cepascheduleactivitycreate,cdactivitycreate,vehicleview,driverview,vehiclechecklist,dpachecklist"
+	 * @throws Exception
+	 */
+    public UnconformityItemDPAData getUnconformityItemDPA(Integer id, UserSessionData userSessionData) throws Exception {
+    	try{       
+    		Session session = HibernateUtil.currentSession();
+    		return ((UnconformityItemDPA) session.load(UnconformityItemDPA.class, id)).getUnconformityItemDPAData(userSessionData);
+       	} catch (Exception e) {
+			Object[] parameters = {id};
+    		handler.getException(e,"getUnconformityItemDPA",userSessionData,parameters);
+    	}
+    	
+    	return null;
+
+    }
+    
+    /**
+     * Returns menu options.
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleview,driverview,cepascheduleactivitycreate,cdactivitycreate,vehicleview,driverview,vehiclechecklist,dpachecklist"
+	 * @throws Exception
+	 */
+    public Object[] getUnconformityDPAInfo(Integer idItem, UserSessionData userSessionData) throws Exception {
+    	try{       
+    		Session session = HibernateUtil.currentSession();
+    		Query query=session.createSQLQuery(" select vc.vehicle,v.matricula,u.date,d.resourcekey "+ 
+												" from UnconformityDPA as u " +
+												" inner join UnconformityItemDPA as i on (i.id="+idItem+" and i.unconformitydpa=u.id)" + 
+												" inner join vehiclecheck as vc on (vc.vehiclecheckid=u.vehicleCheckId)" +
+												" inner join vehicles as v on (v.id=vc.vehicle)" +
+												"inner join divorgitemlevel1s as d on (d.id=v.divOrg1)" ); 
+		    return (Object[])query.uniqueResult(); 		
+       	} catch (Exception e) {
+			Object[] parameters = {idItem};
+    		handler.getException(e,"getUnconformityDPAInfo",userSessionData,parameters);
+    	}
+    	
+    	return null;
+
+    }
+    
+    /**
+   	 * @ejb.interface-method
+        * @ejb.permission role-name = "administrator,corporationmodify,pointconfupdate,dpachecklist,systemaccess,vehiclechecklist"
+   	 * Modify a corporation
+   	 * @param data - Data with the change of the corporationmenuItems
+   	 * @param userRequest - Logged user
+        * @throws Exception
+   	 */
+   	public HashMap<String, CorporationConfigData> getCorporationConfig(Integer corporationId,UserSessionData userSession) throws Exception {
+   	
+           if (userSession == null) {
+               throw new DeslogedException("getCorporationConfig","userRequest = null");
+           }
+
+           HashMap<String, CorporationConfigData> values=new HashMap<String, CorporationConfigData>();
+   		
+   		try {
+               Session session = HibernateUtil.currentSession();
+               Query query=null;
+               
+               if(corporationId!=null){
+            	   query=session.createQuery("select c from CorporationConfig as c where c.corporationId="+corporationId+" order by c.id");
+               }else{
+            	   query=session.createQuery("select c from CorporationConfig as c where c.corporationId="+userSession.getCorporationId()+" order by c.id");
+               }
+               
+               List<CorporationConfig> list=query.list();
+               Iterator<CorporationConfig> iter=list.iterator();
+               while(iter.hasNext()){
+               		CorporationConfig conf=iter.next();
+               		values.put(conf.getKey(), conf.getData());
+               }
+               
+               
+   		}catch (Exception e) {
+   			Object[] parameters = {corporationId};
+               handler.getException(e,"getCorporationConfig",userSession,parameters);
+   		}
+   		
+   		return values;
+       }
+   	
+   	/**
+   	 * @ejb.interface-method
+        * @ejb.permission role-name = "administrator,systemaccess,corporationmodify,pointconfupdate, drivercreate,dpachecklist"
+   	 * Modify a corporation
+   	 * @param data - Data with the change of the corporationmenuItems
+   	 * @param userRequest - Logged user
+        * @throws Exception
+   	 */
+   	public ArrayList<PointsDefinitionData> getPointsDefinitions(UserSessionData userSession) throws Exception {
+   		return getPointsDefinitions(new Integer(userSession.getCorporationId()),userSession);
+   	}
+
+	/**
+   	 * @ejb.interface-method
+        * @ejb.permission role-name = "administrator,systemaccess,corporationmodify,pointconfupdate, drivercreate,dpachecklist"
+   	 * Modify a corporation
+   	 * @param data - Data with the change of the corporationmenuItems
+   	 * @param userRequest - Logged user
+        * @throws Exception
+   	 */
+   	public ArrayList<PointsDefinitionData> getPointsDefinitions(Integer corporation, UserSessionData userSession) throws Exception {
+   		if (userSession == null) {
+   			throw new DeslogedException("getPointsDefinitions","userRequest = null");
+   		}
+
+   		ArrayList<PointsDefinitionData>  values=new ArrayList<PointsDefinitionData>();
+		
+		try {
+	         Session session = HibernateUtil.currentSession();
+	         Query query=session.createQuery("select p from PointsDefinition as p where p.corporationId="+corporation);
+	         List<PointsDefinition> list=query.list();
+	         Iterator<PointsDefinition> iter=list.iterator();
+	         while(iter.hasNext()){
+	        	 PointsDefinition def=iter.next();
+	        	 values.add(def.getData());
+	         }
+         
+		}catch (Exception e) {
+			Object[] parameters = {};
+         handler.getException(e,"getPointsDefinitions",userSession,parameters);
+		}
+		
+		return values;
+   	}
+   	
+   	/**
+   	 * @ejb.interface-method
+        * @ejb.permission role-name = "administrator,systemaccess,corporationmodify, pointconfupdate,drivercreate,dpachecklist"
+   	 * Modify a corporation
+   	 * @param data - Data with the change of the corporationmenuItems
+   	 * @param userRequest - Logged user
+        * @throws Exception
+   	 */
+   	public PointsDefinitionData getPointsDefinitions(String type,String ref,UserSessionData userSession) throws Exception {
+   		return getPointsDefinitions(type, ref, new Integer(userSession.getCorporationId()), null, userSession);
+   	}
+
+   	/**
+   	 * @ejb.interface-method
+        * @ejb.permission role-name = "administrator,systemaccess,corporationmodify, pointconfupdate,drivercreate,dpachecklist"
+   	 * Modify a corporation
+   	 * @param data - Data with the change of the corporationmenuItems
+   	 * @param userRequest - Logged user
+        * @throws Exception
+   	 */
+   	public PointsDefinitionData getPointsDefinitions(String type,String ref,Integer corporation,String condition,UserSessionData userSession) throws Exception {
+   		if (userSession == null) {
+   			throw new DeslogedException("getPointsDefinitions","userRequest = null");
+   		}
+   		try {
+   			Session session = HibernateUtil.currentSession();
+   			String sql = "select p from PointsDefinition as p where p.corporationId="+corporation+" AND p.type=(:type) and p.reference=(:ref)";
+   			if(condition != null) {
+   				sql += " and p.condition=(:condition)";
+   			}
+   			Query query=session.createQuery(sql);
+	        query.setParameter("type", type);
+	        query.setParameter("ref", ref);
+   			if(condition != null) {
+   		        query.setParameter("condition", condition);
+   			}
+   			
+	        List<PointsDefinition> list=query.list();
+	        Iterator<PointsDefinition> iter=list.iterator();
+	        if(iter.hasNext()){
+	        	PointsDefinition def=iter.next();
+	        	return def.getData();
+	        }
+		}catch (Exception e) {
+			Object[] parameters = {};
+			handler.getException(e,"getPointsDefinitions",userSession,parameters);
+		}
+		return null;
+   	}
+   	
+   	/**
+   	 * @ejb.interface-method
+        * @ejb.permission role-name = "administrator,systemaccess,corporationmodify, pointconfupdate,drivercreate,cepascheduleactivityupdate,dpachecklist"
+   	 * Modify a corporation
+   	 * @param data - Data with the change of the corporationmenuItems
+   	 * @param userRequest - Logged user
+        * @throws Exception
+   	 */
+   	public ArrayList<PointsDefinitionData> getPointsDefinitions(String type,UserSessionData userSession) throws Exception {
+   		return getPointsDefinitions(type, userSession.getCorporationId(), userSession);
+   	}
+
+   	/**
+   	 * @ejb.interface-method
+        * @ejb.permission role-name = "administrator,systemaccess,corporationmodify, pointconfupdate,drivercreate,cepascheduleactivityupdate,dpachecklist"
+   	 * Modify a corporation
+   	 * @param data - Data with the change of the corporationmenuItems
+   	 * @param userRequest - Logged user
+        * @throws Exception
+   	 */
+   	public ArrayList<PointsDefinitionData> getPointsDefinitions(String type,Integer corporation,UserSessionData userSession) throws Exception {
+   		if (userSession == null) {
+   			throw new DeslogedException("getPointsDefinitions","userRequest = null");
+   		}
+
+   		ArrayList<PointsDefinitionData>  values=new ArrayList<PointsDefinitionData>();
+		
+		try {
+	         Session session = HibernateUtil.currentSession();
+	         Query query=session.createQuery("select p from PointsDefinition as p where p.corporationId="+corporation+" AND p.type=(:type)");
+	         query.setParameter("type", type);
+	         
+	         List<PointsDefinition> list=query.list();
+	         Iterator<PointsDefinition> iter=list.iterator();
+	         while(iter.hasNext()){
+	        	 PointsDefinition def=iter.next();
+	        	 values.add(def.getData());
+	         }
+	         
+		}catch (Exception e) {
+			Object[] parameters = {};
+         handler.getException(e,"getPointsDefinitions",userSession,parameters);
+		}
+		
+		return values;
+   	}
+
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess,corporationmodify, pointconfupdate,drivercreate,dpachecklist"
+   	 * Modify a corporation
+   	 * @param data - Data with the change of the corporationmenuItems
+   	 * @param userRequest - Logged user
+     * @throws Exception
+   	 */
+   	public HashMap<String,PointsDefinitionData> getPointsDefinition(String[] keys, UserSessionData userSession) throws Exception {
+   		return getPointsDefinition(keys, new Integer(userSession.getCorporationId()), userSession);
+   	}
+   	
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess,corporationmodify, pointconfupdate,drivercreate,dpachecklist"
+   	 * Modify a corporation
+   	 * @param data - Data with the change of the corporationmenuItems
+   	 * @param userRequest - Logged user
+     * @throws Exception
+   	 */
+   	public HashMap<String,PointsDefinitionData> getPointsDefinition(String[] keys, Integer corporation, UserSessionData userSession) throws Exception {
+   		HashMap<String,PointsDefinitionData> map = new HashMap<String,PointsDefinitionData>();
+   		if (userSession == null) {
+   			throw new DeslogedException("getCorporationConfig","userRequest = null");
+   		}
+   		try {
+   			Session session = HibernateUtil.currentSession();
+   			String key = "";
+   			for(int i = 0; i < keys.length; i++) {
+   				key += "'"+keys[i]+"'";
+   				if(i+1 < keys.length)
+   					key += ",";
+   			}
+   			Query query=session.createQuery("SELECT p FROM PointsDefinition AS p WHERE p.corporationId="+corporation+" AND p.type IN ("+key+")");
+            List<PointsDefinition> list=query.list();
+            if(list != null) {
+            	Iterator<PointsDefinition> iter=list.iterator();
+            	while(iter.hasNext()){
+            		PointsDefinition def=iter.next();
+            		map.put(def.getType(),def.getData());
+            	}
+            }
+   		}catch (Exception e) {
+			Object[] parameters = {keys};
+			handler.getException(e,"getPointsDefinition",userSession,parameters);
+		}
+		return map;
+   	}
+   	
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,corporationmodify,pointconfupdate,dpachecklist, drivercreate,query,systemaccess,jjreporter,driverviewowndata"
+   	 * Modify a corporation
+   	 * @param data - Data with the change of the corporationmenuItems
+   	 * @param userRequest - Logged user
+        * @throws Exception
+   	 */
+   	public PointAccountData getPointAccount(Integer type,Integer refID, UserSessionData userSession) throws Exception {
+   		return getPointAccount(type,refID, userSession.getCorporationId(), userSession);
+   	}
+   	
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,corporationmodify,pointconfupdate,dpachecklist, drivercreate,query,systemaccess,jjreporter"
+   	 * Modify a corporation
+   	 * @param data - Data with the change of the corporationmenuItems
+   	 * @param userRequest - Logged user
+        * @throws Exception
+   	 */
+   	public PointAccountData getPointAccount(Integer type,Integer refID, Integer corporation, UserSessionData userSession) throws Exception {
+   		try{
+   			
+   			Session session= HibernateUtil.currentSession();
+	   		   		
+   			Query query =session.createSQLQuery("select id,type,reference,total,created from PointAccount where type=(:type) and reference=(:refID)");
+   			query.setParameter("type", type);
+   			query.setParameter("refID", refID);
+   			
+   			List list=query.list();
+   			
+   			if(list.size()==0){
+   				
+   				CorporationABM corporationABM=CorporationABMUtil.getHome().create();
+   	   			switch (type) {
+					case 1://Driver
+						return corporationABM.saveDriverAccount(refID, corporation, userSession);
+					case 2://Vehicle
+						return corporationABM.saveVehicleAccount(refID, userSession);
+				}
+   			}else{
+   				Object[] row=(Object[])list.iterator().next();
+   				PointAccountData data =new PointAccountData();
+   				data.setId((Integer)row[0]);
+   				data.setType((Integer)row[1]);
+   				data.setReference((Integer)row[2]);
+   			    data.setTotal((Double)row[3]);
+   			    data.setCreated((Date)row[4]);
+   			    
+   				return data;
+   			}
+   			
+   			
+   		}catch (Exception e) {
+			Object[] parameters = {type,refID};
+			handler.getException(e,"getPointAccount",userSession,parameters);
+		}
+   		
+   		return null;
+   	}
+   	
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,corporationmodify,dpachecklist, drivercreate,pointconfupdate,vehicleview,query,systemaccess"
+   	 * Modify a corporation
+   	 * @param data - Data with the change of the corporationmenuItems
+   	 * @param userRequest - Logged user
+        * @throws Exception
+   	 */
+   	public PointAccountData getPointAccount(Integer id, UserSessionData userSession) throws Exception {
+   		try{
+   			
+   			Session session= HibernateUtil.currentSession();
+	   		   		
+   			Query query =session.createSQLQuery("select id,type,reference,total,created from PointAccount where id=(:id)");
+   			query.setParameter("id", id);
+   			
+   			List list=query.list();
+   			
+			Object[] row=(Object[])list.iterator().next();
+			PointAccountData data =new PointAccountData();
+			data.setId((Integer)row[0]);
+			data.setType((Integer)row[1]);
+			data.setReference((Integer)row[2]);
+		    data.setTotal((Double)row[3]);
+		    data.setCreated((Date)row[4]);
+		    
+			return data;
+   			
+   			
+   		}catch (Exception e) {
+			Object[] parameters = {id};
+			handler.getException(e,"getPointAccount",userSession,parameters);
+		}
+   		
+   		return null;
+   	}
+
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess,corporationmodify,dpachecklist, drivercreate,pointconfupdate,vehicleview,query"
+   	 *
+   	 * @param data - Data with the change of the corporationmenuItems
+   	 * @param userRequest - Logged user
+        * @throws Exception
+   	 */
+   	public ArrayList<FringeData> getFringes(UserSessionData userSession) throws Exception {
+   		ArrayList<FringeData> res=new ArrayList<FringeData>();
+   		try{
+   			HashMap<String,CorporationConfigData> configs=getCorporationConfig(null, userSession);
+   			Integer levels=Integer.valueOf(configs.get("points_levels").getValue());
+   			
+   			for(Integer i=1;i<=levels;i++){
+   				CorporationConfigData confFringe=configs.get("points_level_"+i+"_f");
+   				CorporationConfigData confTime=configs.get("points_level_"+i+"_t");
+   				FringeData data=new FringeData();
+   				data.setTime(confTime.getValue());
+   				data.setAmount(Integer.valueOf(confFringe.getValue()));
+   				res.add(data);
+   			}
+   			
+   			CorporationConfigData confFringe=configs.get("points_level_0_f");
+			CorporationConfigData confTime=configs.get("points_level_0_t");
+			for(int i=1;i<11;i++){
+   				FringeData data=new FringeData();
+   				data.setTime(confTime.getValue());
+   				data.setAmount(-i*Integer.valueOf(confFringe.getValue()));
+   				res.add(data);
+   			}
+   		 		
+   			Collections.sort(res,new Comparator<FringeData>(){
+
+				@Override
+				public int compare(FringeData o1, FringeData o2) {
+					// TODO Auto-generated method stub
+					return o1.getAmount().compareTo(o2.getAmount());
+				}
+   					
+   			});
+   		}catch (Exception e) {
+			Object[] parameters = { };
+			handler.getException(e,"getPointAccount",userSession,parameters);
+		}
+   		
+   		return res;
+   	}
+
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,corporationmodify,dpachecklist, drivercreate,query,pointconfupdate,vehicleview,query,jjreporter"
+     * @throws Exception
+   	 */
+   	public PointMoveData getPointMove(Integer account,String reference,Integer definition,UserSessionData userSessionData) throws Exception {
+   		try{
+   			
+   			Session session= HibernateUtil.currentSession();
+	   		   		
+   			String queryStr = "SELECT move FROM PointMove move WHERE account = "+account+" AND reference = '"+reference+"'";
+   			if(definition != null) 
+   				queryStr += " AND definition = "+definition;
+   			Query query =session.createQuery(queryStr);
+   			List list = query.list();
+   			if(list != null && list.size() > 0) {
+   				return ((PointMove)list.iterator().next()).getData();
+   			}
+   		}catch (Exception e) {
+			Object[] parameters = {account,reference,definition};
+			handler.getException(e,"getPointMove",userSessionData,parameters);
+		}
+   		return null;
+   	}
+
+	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,corporationmodify,dpachecklist, driverview,pointconfupdate,vehicleview,query,jjreporter"
+     * @throws Exception
+   	 */
+   	public PointMoveData getPointMove(Integer id,UserSessionData userSessionData) throws Exception {
+   		try{
+   			
+   			Session session= HibernateUtil.currentSession();
+	   		PointMove move = (PointMove)session.load(PointMove.class, id);
+	   		if(move != null) {
+	   			return move.getData();
+	   		}
+   		}catch (Exception e) {
+			Object[] parameters = {id};
+			handler.getException(e,"getPointMove",userSessionData,parameters);
+		}
+   		return null;
+   	}
+
+	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverview,dpachecklist,pointconfupdate,vehicleview,query"
+     * @throws Exception
+   	 */
+   	public Integer getMoveCount(Integer driver, Calendar from, Integer category, UserSessionData userSessionData) throws Exception {
+   		try{
+   			Session session= HibernateUtil.currentSession();
+   			String sql = "SELECT COUNT(*) AS c " +
+   					"FROM pointmoves pm " +
+   					"JOIN pointaccount pa ON pa.id = pm.account " +
+   					"JOIN pointsdefinitions pd ON pd.id = pm.definition " +
+   					"WHERE pa.type = 1 AND pa.reference = " + driver + " " +
+   					"AND pm.date >= " + Util.formatSQL(from) +
+   					"AND pd.category = "+category;
+   			SQLQuery query = session.createSQLQuery(sql).addScalar("c", Hibernate.INTEGER);
+   			return (Integer) query.uniqueResult();
+   		}catch (Exception e) {
+			Object[] parameters = {driver, from, category};
+			handler.getException(e,"getMoveCount",userSessionData,parameters);
+		}
+   		return 0;
+   	}
+   	
+	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverview,dpachecklist,pointconfupdate,vehicleview,query,jjreporter"
+     * @throws Exception
+   	 */
+   	public Collection<PointMoveData> getPointMoves(Integer account,UserSessionData userSessionData) throws Exception {
+   		Collection<PointMoveData> values = new LinkedList<PointMoveData>();
+   		try{
+   			
+   			Session session= HibernateUtil.currentSession();
+   			SQLQuery query = session.createSQLQuery("SELECT m.id,m.amount,m.date,m.time,m.definition,m.reference as mreference,d.type,d.reference as dreference, d.description as defdesc FROM pointmoves m LEFT OUTER JOIN pointsdefinitions d ON m.definition = d.id WHERE m.account = "+account);
+   			query.addScalar("id",Hibernate.INTEGER);
+   			query.addScalar("amount",Hibernate.DOUBLE);
+   			query.addScalar("date",Hibernate.DATE);
+   			query.addScalar("time",Hibernate.TIME);
+   			query.addScalar("definition",Hibernate.INTEGER);
+   			query.addScalar("mreference",Hibernate.STRING);
+   			query.addScalar("type",Hibernate.STRING);
+   			query.addScalar("dreference",Hibernate.STRING);
+   			query.addScalar("defdesc",Hibernate.STRING);
+   			List list = query.list();
+   			if(list != null && list.size() > 0) {
+   				Iterator it = list.iterator();
+   				while (it.hasNext()) {
+   					Object[] moveValues = (Object[]) it.next();
+   					PointMoveData move = new PointMoveData();
+   					move.setId((Integer)moveValues[0]);
+   					move.setAmount((Double)moveValues[1]);
+   					Calendar cal=Calendar.getInstance();
+   					cal.setTime((Date)moveValues[2]);
+   					Time hour = (Time)moveValues[3];
+   					cal.set(Calendar.HOUR,hour.getHours());
+   					cal.set(Calendar.MINUTE,hour.getMinutes());
+   					cal.set(Calendar.SECOND,hour.getSeconds());
+   					move.setDate(cal);
+   					move.setDefinition((Integer)moveValues[4]);
+   					move.setReference((String)moveValues[5]);
+   					move.setDefitionName((String)moveValues[6]);
+   					move.setDefinitionReference((String)moveValues[7]);
+   					move.setDefitionDescription((String)moveValues[8]);
+   					values.add(move);
+   				}
+   			}
+   		}catch (Exception e) {
+			Object[] parameters = {account};
+			handler.getException(e,"getPointMoves",userSessionData,parameters);
+		}
+   		return values;
+   	}
+   	
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverview,dpachecklist,pointconfupdate,vehicleview,query,jjreporter"
+     * @throws Exception
+   	 */
+   	public Collection<PointMoveData> getPointMoves(Integer account,Integer maxResult,boolean first,UserSessionData userSessionData) throws Exception {
+   		Collection<PointMoveData> values = new LinkedList<PointMoveData>();
+   		try{
+   			
+   			Session session= HibernateUtil.currentSession();
+   			SQLQuery query = session.createSQLQuery("SELECT m.id,m.amount,m.date,m.time,m.definition,m.reference as mreference,d.type,d.reference as dreference, d.description as defdesc , m.description as movedesc,m.actualTotal as actualTotal FROM pointmoves m LEFT OUTER JOIN pointsdefinitions d ON m.definition = d.id WHERE m.account = "+account+" ORDER BY m.date "+(first?"asc":"desc")+" ,m.time "+(first?"asc":"desc")+",m.actualTotal asc LIMIT "+ maxResult);
+   			query.addScalar("id",Hibernate.INTEGER);
+   			query.addScalar("amount",Hibernate.DOUBLE);
+   			query.addScalar("date",Hibernate.DATE);
+   			query.addScalar("time",Hibernate.TIME);
+   			query.addScalar("definition",Hibernate.INTEGER);
+   			query.addScalar("mreference",Hibernate.STRING);
+   			query.addScalar("type",Hibernate.STRING);
+   			query.addScalar("dreference",Hibernate.STRING);
+   			query.addScalar("defdesc",Hibernate.STRING);
+   			query.addScalar("movedesc",Hibernate.STRING);
+   			query.addScalar("actualTotal",Hibernate.DOUBLE);
+   			
+   			List list = query.list();
+   			if(list != null && list.size() > 0) {
+   				Iterator it = list.iterator();
+   				while (it.hasNext()) {
+   					Object[] moveValues = (Object[]) it.next();
+   					PointMoveData move = new PointMoveData();
+   					move.setId((Integer)moveValues[0]);
+   					move.setAmount((Double)moveValues[1]);
+   					Calendar cal=Calendar.getInstance();
+   					cal.setTime((Date)moveValues[2]);
+   					Time hour = (Time)moveValues[3];
+   					cal.set(Calendar.HOUR,hour.getHours());
+   					cal.set(Calendar.MINUTE,hour.getMinutes());
+   					cal.set(Calendar.SECOND,hour.getSeconds());
+   					move.setDate(cal);
+   					move.setDefinition((Integer)moveValues[4]);
+   					move.setReference((String)moveValues[5]);
+   					move.setDefitionName((String)moveValues[6]);
+   					move.setDefinitionReference((String)moveValues[7]);
+  					move.setDefitionDescription((String)moveValues[8]);
+   					move.setDescription((String)moveValues[9]);
+   					move.setActualTotal((Double)moveValues[10]);
+   					values.add(move);
+   				}
+   			}
+   		}catch (Exception e) {
+			Object[] parameters = {account};
+			handler.getException(e,"getPointMoves",userSessionData,parameters);
+		}
+   		return values;
+   	}
+
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     * @throws Exception
+   	 */
+   	public Collection getDriverPoints(String firstName, String lastName, int status, Integer[][] divOrgs, Integer[][] divGeos, String operation, UserSessionData userSessionData, boolean resumed) throws Exception {
+   		try {
+   			String[] s = {"","","",""};
+   			if(!userSessionData.isCorporation(CorporationData.BAYER_MX)) 
+   				s = userSessionData.getFilter().getFields("d");
+   			String sql = getPointQuery(firstName, lastName, status, divOrgs, divGeos, operation, userSessionData, resumed, s, true);
+			if(resumed) {
+				sql += " GROUP BY d.id,d.firstname, d.lastname, d.director, c.resourcekey, category, total, "+s[3];
+				if(userSessionData.isCorporation(CorporationData.BAYER_MX)) {
+					sql += "d.corporationid, divB.resourcekey";
+				}
+				if(userSessionData.isCorporation(CorporationData.MONTES_DE_PLATA)) {
+					sql += ", d.corporationid";
+				}
+			}
+   			sql += " UNION ("+getPointQuery(firstName, lastName, status, divOrgs, divGeos, operation, userSessionData, resumed, s, false)+") ";
+			if(resumed) {
+				sql += " ORDER BY total, firstname, lastname";
+			}else {
+				sql += " ORDER BY firstname, lastname, date";
+			}
+			SQLQuery query = HibernateUtil.currentSession().createSQLQuery(sql);
+			query.addScalar("id", Hibernate.INTEGER);
+			query.addScalar("firstname", Hibernate.STRING);
+			query.addScalar("lastname", Hibernate.STRING);
+			query.addScalar("director", Hibernate.BOOLEAN);
+			query.addScalar("country", Hibernate.STRING);
+			if(resumed) {
+				query.addScalar("category", Hibernate.INTEGER);
+				query.addScalar("total", Hibernate.INTEGER);
+				query.addScalar("sum", Hibernate.INTEGER);
+			}else {
+				query.addScalar("amount", Hibernate.DOUBLE);
+				query.addScalar("total", Hibernate.INTEGER);
+				query.addScalar("date", Hibernate.DATE);
+				query.addScalar("type", Hibernate.STRING);
+				query.addScalar("reference", Hibernate.STRING);
+			}
+			StringTokenizer token = new StringTokenizer(s[3], ",");
+			while (token.hasMoreTokens()) {
+				query.addScalar(token.nextToken(), Hibernate.STRING);
+			}
+			if(userSessionData.isCorporation(CorporationData.BAYER_MX)) {
+				query.addScalar("corporationid", Hibernate.STRING);
+				query.addScalar("manager", Hibernate.STRING);
+			}
+			if(userSessionData.isCorporation(CorporationData.MONTES_DE_PLATA)) {
+				query.addScalar("corporationid", Hibernate.STRING);
+			}
+			return query.list();
+   		}catch (Exception e) {
+			Object[] parameters = {firstName,lastName,status,divOrgs,divGeos,operation};
+			handler.getException(e,"getDriverPoints",userSessionData,parameters);
+   		}
+   		return null;
+   	}
+
+
+	private String getPointQuery(String firstName, String lastName, int status, Integer[][] divOrgs, Integer[][] divGeos, String operation, UserSessionData userSessionData, boolean resumed, String[] s, boolean includePoints) {
+		String sql = "SELECT d.id,d.firstname, d.lastname, d.director, c.resourcekey as country, pa.total "+s[0];
+		if(resumed) {
+			if(includePoints)
+				sql += ", pd.category, sum(pm.amount) AS sum";
+			else
+				sql += ", 0 AS category, 0 AS sum";
+		}else {
+			if(includePoints)
+				sql += ", pm.amount, pm.date, pd.type, pd.reference";
+			else
+				sql += ", 0 AS amount, NOW() as date,' ' AS type, ' ' AS reference";
+		}
+		if(userSessionData.isCorporation(CorporationData.BAYER_MX)) {
+			sql += ", d.corporationid, divB.resourcekey AS manager ";
+		}
+		if(userSessionData.isCorporation(CorporationData.MONTES_DE_PLATA)) {
+			sql += ", d.corporationid ";
+		}
+		if(includePoints)
+			sql += " FROM pointmoves pm," +
+				"pointaccount pa, " +
+				"pointsdefinitions pd, ";
+		else
+			sql +=" FROM pointaccount pa, ";
+		
+		sql += "drivers d, " +
+				"country c" 
+				+ s[1];
+		if(userSessionData.isCorporation(CorporationData.BAYER_MX)) {
+			sql += ", divorgitemlevel1s divB ";
+		}
+		sql += UtilityQuery.corporationRestrictionsSQL(divOrgs, divGeos[0], "d", userSessionData)+s[2]+
+				" AND pa.reference = d.id " +
+				" AND pa.type = 1" +
+				" AND d.country = c.id";
+		if(userSessionData.isCorporation(CorporationData.BAYER_MX)) {
+			sql += " AND divB.id = d.divorg3 AND d.divorg1 != 531409 ";
+		}
+		if(includePoints && userSessionData.isCorporation(CorporationData.BAYER_MX)) {
+			sql += " AND pd.id NOT IN (191,192) AND pd.reference NOT IN ('datatype.scheduledactivitytype.ebtwtheoric','datatype.scheduledactivitytype.assessment') ";
+		}
+		if(includePoints)
+			sql += " AND pa.id = pm.account " +
+				" AND pd.id = pm.definition" ;
+		if(!Util.empty(firstName)) {
+			sql += " AND LOWER(TRIM(d.firstname)) LIKE '%"+firstName.toLowerCase()+"%' ";
+		}
+		if(!Util.empty(lastName)) {
+			sql += " AND LOWER(TRIM(d.lastname)) LIKE '%"+lastName.toLowerCase()+"%' ";
+		}
+		switch(status) {
+			case DriverData.ACTIVE:
+				sql += " AND d.exclusiondate IS NULL ";
+				break;
+			case DriverData.EXCLUDED:
+				sql += " AND d.exclusiondate IS NOT NULL ";
+				break;
+		}
+		if(operation != null) {
+			sql += " AND total " + operation;
+		}
+		return sql;
+	}
+
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     * @throws Exception
+   	 */
+	public HashMap getElectroincs(UserSessionData userSessionData) throws Exception {
+		HashMap<Integer,Integer[]> values = new HashMap<Integer,Integer[]>();
+		Session session = HibernateUtil.currentSession();
+    	try {
+    		String sql = "SELECT d.id, pd.reference, SUM(pm.amount) AS sum, pd.id AS def  FROM pointmoves pm " +
+				"JOIN pointsdefinitions pd ON pm.definition = pd.id " +
+				"JOIN pointaccount pa ON pm.account = pa.id " +
+				"JOIN drivers d ON pa.reference = d.id " +
+				"WHERE d.corporation = "+userSessionData.getCorporationId() +
+				" AND pa.type = 1 " +
+				" AND (pd.reference IN ('datatype.scheduledactivitytype.ebtwtheoric','datatype.scheduledactivitytype.assessment') OR pd.id IN (191,192))" +
+				" GROUP BY d.id, pd.reference, pd.id";
+    		SQLQuery query = session.createSQLQuery(sql).addScalar("id",Hibernate.INTEGER).addScalar("reference",Hibernate.STRING).addScalar("sum",Hibernate.INTEGER).addScalar("def",Hibernate.INTEGER);
+    		List list = query.list();
+    		if(list.size() > 0) {
+    			Iterator it = list.iterator();
+    			while(it.hasNext()) {
+    				Object[] data = (Object[])it.next();
+    				int index = (data[1].equals("datatype.scheduledactivitytype.ebtwtheoric") || ((Integer)data[3]).intValue() == 191) ? 0 : 1;
+    				if(values.containsKey(data[0])) {
+    					values.get(data[0])[index] += (Integer)data[2];
+    				}else {
+    					Integer[] newValues = {0,0};
+    					newValues[index] += (Integer)data[2];
+    					values.put((Integer)data[0], newValues);
+    				}
+    			}
+    		}
+    	}catch (Exception e) {
+        	Object[] p = {};
+            handler.getException(e,"getPointRanges", userSessionData, p);
+		}
+    	return values;
+	}
+
+	/**
+     * @throws Exception
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+   	public FleetBayerData getPointRanges(UserSessionData userSessionData) throws Exception {
+   		FleetBayerData data = new FleetBayerData();
+		Session session = HibernateUtil.currentSession();
+    	try {
+    		String sql = "select d1.id AS divorg1,d1.resourcekey AS d1," +
+    				"d2.id AS divorg2,d2.resourcekey AS d2," +
+    				"d3.id AS divorg3,d3.resourcekey AS d3," +
+    				"d4.id AS divorg4,d4.resourcekey AS d4," +
+    				"d5.id AS divorg5,d5.resourcekey AS d5, " +
+    				"d6.id AS divorg6,d6.resourcekey AS d6, " +
+    				"CASE " +
+    				"WHEN pa.total > 50 THEN 0 " +
+    				"WHEN pa.total > 30 AND pa.total <= 50 THEN 1 " +
+    				"WHEN pa.total > 20 AND pa.total <= 30 THEN 2 " +
+    				"ELSE 3 " +
+    				"END AS valor, COUNT(*) AS c " +
+    				"FROM pointaccount pa " +
+    				"JOIN drivers d ON pa.reference = d.id " +
+    				"JOIN divorgitemlevel1s d3 ON d3.id = d.divorg1 " +
+    				"JOIN divorgitemlevel2s d2 ON d2.id = d3.divorgitemlevel2 " +
+    				"JOIN divorgitemlevel3s d1 ON d1.id = d2.divorgitemlevel3 " +
+    				"JOIN divorgitemlevel1s d6 ON d6.id = d.divorg2 " +
+    				"JOIN divorgitemlevel2s d5 ON d5.id = d6.divorgitemlevel2 " +
+    				"JOIN divorgitemlevel3s d4 ON d4.id = d5.divorgitemlevel3 " +
+    				UtilityQuery.corporationDivisionsRestictionsSQL("d", userSessionData) + " AND d.exclusiondate IS NULL " +
+    				"GROUP BY d1.id,d1.resourcekey,d2.id,d2.resourcekey,d3.id,d3.resourcekey,d4.id,d4.resourcekey,d5.id,d5.resourcekey,d6.id,d6.resourcekey,valor";
+    		SQLQuery query = session.createSQLQuery(sql);
+    		String[] s = {"d1","d2","d3","d4","d5","d6","valor","c","divorg1","divorg2","divorg3","divorg4","divorg5","divorg6"};
+    		for(int i = 0; i < s.length; i++) {
+    			if(i < 6) {
+    	    		query.addScalar(s[i], Hibernate.STRING);
+    			}else {
+    	    		query.addScalar(s[i], Hibernate.INTEGER);    				
+    			}
+    		}
+    		List list = query.list();
+    		if(list.size() > 0) {
+    			Iterator it = list.iterator();
+    			while(it.hasNext()) {
+    				data.addRangeData((Object[])it.next());
+    			}
+    		}
+
+    		sql = "select d1.id AS divorg1," +
+    				"d2.id AS divorg2," +
+    				"d3.id AS divorg3," +
+    				"d4.id AS divorg4," +
+    				"d5.id AS divorg5," +
+    				"d6.id AS divorg6," +
+    				"CASE " +
+    				"WHEN pa.total > 50 THEN 0 " +
+    				"WHEN pa.total > 30 AND pa.total <= 50 THEN 1 " +
+    				"WHEN pa.total > 20 AND pa.total <= 30 THEN 2 " +
+    				"ELSE 3 " +
+    				"END AS valor, mpa.done, COUNT(*) AS c " +
+    				"FROM pointaccount pa " +
+    				"JOIN drivers d ON pa.reference = d.id " +
+    				"JOIN divorgitemlevel1s d3 ON d3.id = d.divorg1 " +
+    				"JOIN divorgitemlevel2s d2 ON d2.id = d3.divorgitemlevel2 " +
+    				"JOIN divorgitemlevel3s d1 ON d1.id = d2.divorgitemlevel3 " +
+    				"JOIN divorgitemlevel1s d6 ON d6.id = d.divorg2 " +
+    				"JOIN divorgitemlevel2s d5 ON d5.id = d6.divorgitemlevel2 " +
+    				"JOIN divorgitemlevel3s d4 ON d4.id = d5.divorgitemlevel3 " +
+    				"JOIN mitigationplans mp on mp.driver = d.id " +
+    				"JOIN mitigationplanactivities mpa on mpa.id = mp.id " +
+    				UtilityQuery.corporationDivisionsRestictionsSQL("d", userSessionData) + " AND d.exclusiondate IS NULL AND mp.status = " + MitigationPlanData.PENDING+
+    				" GROUP BY d1.id,d2.id,d3.id,d4.id,d5.id,d6.id,valor,done";
+    		query = session.createSQLQuery(sql);
+    		s = new String[]{"divorg1","divorg2","divorg3","divorg4","divorg5","divorg6","valor","c","done"};
+    		for(int i = 0; i < s.length; i++) {
+    			if(i < s.length-1) {
+    	    		query.addScalar(s[i], Hibernate.INTEGER);
+    			}else {
+    	    		query.addScalar(s[i], Hibernate.BOOLEAN);    				
+    			}
+    		}
+    		list = query.list();
+    		if(list.size() > 0) {
+    			Iterator it = list.iterator();
+    			while(it.hasNext()) {
+    				data.addMitigationPlanData((Object[])it.next(),0,0);
+    			}
+    		}
+
+    	}catch (Exception e) {
+        	Object[] p = {};
+            handler.getException(e,"getPointRanges", userSessionData, p);
+		}
+   		return data;
+   	}
+
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,drivercreate,finecreate,drivercreatefine,cepascheduleactivityupdate,jjreporter"
+   	 * Create driver account
+     * @throws Exception
+   	 */
+   	public boolean existPointMove(PointMoveData point, UserSessionData userSessionData) throws Exception {
+		Session session = HibernateUtil.currentSession();
+   		try {
+   			String sql = "SELECT COUNT(*) AS c FROM pointmoves WHERE account = "+point.getAccount()+" AND definition = "+point.getDefinition()+" AND reference = '"+point.getReference()+"'";
+   			Query q = session.createSQLQuery(sql).addScalar("c",Hibernate.INTEGER);
+   			return ((Integer)q.uniqueResult()).intValue() > 0;
+   		}catch (Exception e) {
+        	Object[] p = {point};
+            handler.getException(e,"existPointMove", userSessionData, p);
+   		}
+   		return false;
+   	}
+
+    /**
+     * @throws Exception
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+   	public Collection[] getPointDetail(UserSessionData userSessionData) throws Exception {
+		Session session = HibernateUtil.currentSession();
+		HashMap[] values = new HashMap[5];
+		Collection[] finalValues = new LinkedList[5];
+		for(int i = 0; i < 5; i++)
+			values[i] = new HashMap();
+    	try {
+    		String sql = "SELECT pd.id, pd.category, pd.type, pd.value, count(*) AS count, sum(pm.amount) AS sum," +
+    				"CASE " +
+    				"WHEN pa.total > 50 THEN 0 " +
+    				"WHEN pa.total > 30 AND pa.total <= 50 THEN 1 " +
+    				"WHEN pa.total > 20 AND pa.total <= 30 THEN 2 " +
+    				"ELSE 3 " +
+    				"END AS index, pd.reference " +
+    				"FROM pointmoves pm " +
+    				"JOIN pointsdefinitions pd ON pd.id = pm.definition " +
+    				"JOIN pointaccount pa ON pa.id = pm.account " +
+    				"WHERE pd.corporationid = 73 "+
+    				"GROUP BY pd.id, pd.category, pd.type, pd.reference, pd.value, index";
+    	    SQLQuery query = session.createSQLQuery(sql);
+    	    query.addScalar("id",Hibernate.INTEGER);
+    	    query.addScalar("category",Hibernate.INTEGER);
+    	    query.addScalar("type",Hibernate.STRING);
+    	    query.addScalar("value",Hibernate.INTEGER);
+    	    query.addScalar("count",Hibernate.INTEGER);
+    	    query.addScalar("sum",Hibernate.INTEGER);
+    	    query.addScalar("index",Hibernate.INTEGER);
+    	    query.addScalar("reference",Hibernate.STRING);
+    		List list = query.list();
+    		if(list.size() > 0) {
+    			Iterator it = list.iterator();
+    			while(it.hasNext()) {
+    				Object[] data = (Object[])it.next();
+    				HashMap category = values[((Integer)data[1]).intValue()];
+    				String key = (String)data[2]+"-"+(String)data[7];
+    				if(!category.containsKey(key)) {
+    					PointDetailBayerData pointDetail = new PointDetailBayerData((String)data[2], ((Integer)data[3]).intValue(), (String)data[7]);
+    					category.put(key, pointDetail); 
+    				}
+    				PointDetailBayerData detail = (PointDetailBayerData) category.get(key); 
+    				detail.addData(data);
+    			}
+    		}
+    	}catch (Exception e) {
+        	Object[] p = {};
+            handler.getException(e,"getPointRanges", userSessionData, p);
+		}
+    	for(int i = 0; i < 5; i++) {
+    		finalValues[i] = new LinkedList(); 
+    		finalValues[i].addAll(values[i].values());
+    	}
+   		return finalValues;
+   	}
+
+	 /**
+     * Returns menu options.
+     * @ejb.interface-method
+     * @ejb.permission role-name = "systemaccess"
+	 * @throws Exception
+	 */
+	public boolean isCepaPoints(Integer corporationId, UserSessionData userSessionData) throws Exception {
+		try {
+            Session session = HibernateUtil.currentSession();
+            Query query = session.createSQLQuery("SELECT COUNT(*) AS c FROM corporationconfig WHERE corporationId="+corporationId+" AND name IN ('Puntos CEPA','Puntos CEPA Modificado')").addScalar("c",Hibernate.INTEGER);
+            
+            return ((Integer) query.uniqueResult()).intValue() > 0;
+            
+		}catch (Exception e) {
+			Object[] parameters = {corporationId};
+            handler.getException(e,"isCepaPoints",userSessionData,parameters);
+		}
+		
+		return false;	
+	}
+
+	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventcreate"
+   	 * Create driver account
+     * @throws Exception
+   	 */
+	public PointMoveData eventAward(Date eventDate, Integer account, UserSessionData userSessionData) throws Exception {
+		try {
+            Session session = HibernateUtil.currentSession();
+            
+            Calendar c = Calendar.getInstance();
+            c.setTime(eventDate);
+            int month = c.get(Calendar.MONTH);
+            int year = c.get(Calendar.YEAR);
+            
+            String dateStr = "";
+            if(month < 3) {
+            	dateStr = year+"-07-01";
+            } else if(month < 6) {
+            	dateStr = year+"-10-01";
+            } else if(month < 9) {
+            	dateStr = String.valueOf(year+1)+"-01-01";
+            } else {
+            	dateStr = String.valueOf(year+1)+"-04-01";
+            }
+            Query query = session.createQuery("SELECT pm FROM PointMove pm WHERE pm.definition = 60863 AND date = '"+dateStr+"' AND pm.account = "+account);
+            List l = query.list();
+            if(l.size() == 1) {
+            	PointMoveData pm = ((PointMove)l.iterator().next()).getData();
+            	pm.setId(null);
+            	double total = pm.getActualTotal();
+            	double amount = pm.getAmount()*-1;
+        		pm.setAmount(amount);
+        		pm.setActualTotal(total-amount);
+            	pm.setReference("Se eliminan los puntos de premio por ingreso de evento.");
+            	pm.getDate().add(Calendar.MINUTE, 1);
+            	return pm;
+            }
+		}catch (Exception e) {
+			Object[] parameters = {eventDate, account};
+            handler.getException(e,"eventAward",userSessionData,parameters);
+		}
+		return null;
+	}
+
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,pointconfupdate"
+   	 *
+     * @throws Exception
+     *
+   	 */
+	public Object[] getLastFosaMessage(String plate, UserSessionData userSessionData) throws Exception {
+		return getLastFosaMessage(plate, userSessionData.getCorporationId(), userSessionData);
+	}
+
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,pointconfupdate"
+   	 *
+     * @throws Exception
+     *
+   	 */
+	public Object[] getLastFosaMessage(String plate, int corporation, UserSessionData userSessionData) throws Exception {
+		try {
+            Session session = HibernateUtil.currentSession();
+            String table = (corporation == CorporationData.FORESTALORIENTAL) ? "asynccallfosa" : "asynccallcelulosa";
+            String sql = "SELECT hours, datehourstartpenalty, accounttotal FROM asynccallfosa WHERE reasondescription = 'Sistema de puntos' AND status IN (0,2) AND UPPER(plate) = '"+plate.trim().toUpperCase()+"' ORDER BY calldate DESC";
+            Query q = session.createSQLQuery(sql).addScalar("hours", Hibernate.INTEGER).addScalar("datehourstartpenalty", Hibernate.STRING).addScalar("accounttotal", Hibernate.DOUBLE);
+            List list = q.list();
+            if(list.size()>0) {
+            	return (Object[])list.iterator().next();
+            }
+		}catch (Exception e) {
+			Object[] parameters = {plate};
+            handler.getException(e,"eventAward",userSessionData,parameters);
+		}
+		return null;
+	}
+}

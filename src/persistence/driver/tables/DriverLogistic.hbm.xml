@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.driver.tables">
+    <class name="DriverLogistic" table="driverlogistic">
+
+       <composite-id class="DriverLogisticPK" name="pk" >
+       		<key-many-to-one
+       			 name="driver"
+       			 column="driver"
+       			 class="persistence.driver.tables.Driver"
+       	 	/>
+       	 	<key-many-to-one
+       	 		 name="activity"
+       	 		 column="activity"
+       	 		 class="persistence.datatype.tables.CEPAActivityType"
+       	 	/>
+       </composite-id>
+        
+        <property	name="dateLastSchedule"	type="java.util.Date"		column="dateLastSchedule"	/>
+		<property	name="city"	type="java.lang.String"		column="city"/>
+		<property	name="observations"	type="text"		column="observations"/>
+		<property	name="status"	type="java.lang.Integer"		column="status"/>
+        
+    </class>
+</hibernate-mapping>

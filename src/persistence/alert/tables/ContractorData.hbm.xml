@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.alert.tables">
+    <class name="ContractorData" table="contractordata">
+
+        <id	column="id"	name="id"	type="java.lang.Integer">
+        
+        </id>
+        <property	name="corporation"	type="java.lang.Integer"		column="corporation"		not-null="true" />
+        <property	name="mail"		type="java.lang.String"		column="mail" />
+        <property	name="mail2"		type="java.lang.String"		column="mail2" />
+        <property	name="state"	type="java.lang.Integer"		column="state"		not-null="true" />
+    	<property 	name="sendResume" type="java.lang.Integer" column="sendresume"  />
+        
+	
+    </class>
+</hibernate-mapping>

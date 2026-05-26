@@ -1,0 +1,220 @@
+<%@page import="communication.driver.tables.DriverData"%>
+<%@page import="presentation.translator.web.driver.DriverUtil"%>
+<%@page import="java.text.SimpleDateFormat"%>
+<%@page import="communication.driver.tables.MitigationPlanActivityData"%>
+<%@page import="communication.driver.tables.AnualPlanData"%>
+<%@page import="communication.driver.tables.MitigationPlanData"%>
+<%@page import="communication.driver.tables.ReportPlanData"%>
+<%@page import="communication.administration.corporation.tables.CorporationData"%>
+<%@page import="persistence.vehicle.tables.VehicleCheck"%>
+<%@page import="presentation.translator.web.dpa.DPAUnconformityCheckListForm"%>
+<%@page import="communication.administration.dpa.UnconformityDPAData"%>
+<%@page import="communication.administration.dpa.UnconformityItemTypeDPADataType"%>
+<%@page import="communication.datatype.DataTypeConstants"%>
+<%@page import="communication.driver.tables.TelematicControlData"%>
+<%@page import="persistence.driver.tables.TelematicControl"%>
+<%@page import="communication.administration.dpa.UnconformityTypeDPADataType"%>
+<%@page import="presentation.translator.web.dpa.DPAUnconformityForm"%>
+<%@page language="java" 
+	errorPage="../exception.jsp" 
+	import="business.*"
+	import="business.activity.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.activity.schedule.*" 	
+ 	import="presentation.translator.web.vehicle.*"
+ 	import="communication.administration.user.*" 	
+ 	import="communication.datatype.tables.ActivityTypeDataType"
+	import="business.vehicle.VehicleReportFacade"
+	import="java.util.*"	
+	import="org.apache.struts.action.DynaActionForm"
+	import="communication.activity.tables.*"
+%>
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+<%!
+	RequestDispatcher dispatcher; 
+	Text messages; SystemAccess sys;
+	UserSessionData userSessionData; 
+	
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	userSessionData=sys.getUserSessionData();	
+
+	
+	
+	String check = Util.checkPermission(sys,SecurityConstants.VIEW_DRIVER_LIST);
+	
+	
+	if (check!=null) { 
+		response.sendRedirect(request.getContextPath()+check);	
+	}else {
+		messages=sys.getText();
+	
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+
+		String id = (String)request.getParameter("id");
+		if(id==null && sys.getUserSessionData().getDriverData()!=null){
+	id=sys.getUserSessionData().getDriverData().getId().toString();
+		}
+		
+		
+		
+		
+		ReportPlanData report=sys.getDriverReportFacade().getReportPlan(new Integer(id), sys.getUserSessionData());
+		MitigationPlanData plan=report.getMitigationPlan();
+		ArrayList<AnualPlanData> anualPlans=report.getAnualPlans();
+%>	
+
+<html:html>
+
+<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+
+<body>
+	 
+	<center>
+	<form>
+		<table width="768" border="0" cellspacing="0" cellpadding="0">  
+			<tr class="guide1">
+			<%
+				String page14 = "../component/titlecomponent.jsp?title="+"Planes";
+			%>
+				<jsp:include  page='<%=page14%>' />
+  			</tr>
+      		<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+  			</tr>
+		<tr> 
+			<td height="40" colspan="3" valign="middle">
+				<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.mitigationplan")%>' />
+				<table width="100%" height="100%" cellpadding="0" cellspacing="0">
+<%
+	if(plan == null) {
+%>					<tr>
+						<td><span class="linetwo">No hay planes de mitigación asociados.</td>
+					</tr>
+<%
+	} else {
+%>					<tr>
+						<td colspan="2">
+							<table width="100%" cellpadding="0" cellspacing="0">
+								<tr  class="linetwo"> 
+									<th align="left" width="15%">Tipo:</th>
+									<td align="left" width="15%"><%=messages.getText("driver.mitigation.plan"+plan.getType())%></td>
+									<td rowspan="4" width="70%" align="right">
+										<img src='<%="/datacenter/menu/imgs/mitigationlevels"+plan.getType()+".png"%>' width="400">&nbsp;
+									</td>
+								</tr>
+								<tr  class="linetwo"> 
+									<th align="left">Estado:</th>
+									<td align="left"><%=messages.getText("driver.mitigationplan.status"+plan.getStatus())%></td>
+								</tr>
+								<tr  class="linetwo"> 
+									<th align="left">Avance:</th>
+									<td align="left"><%=plan.getAdvance()+"%"%></td>
+								</tr>
+								<tr  class="linetwo"> 
+									<th align="left">Vencimiento (dd/mm/aaaa):</th>
+									<td align="left"><%=Util.formatDate(plan.getExpiry())%></td>
+								</tr>
+							</table>
+						</td>
+					</tr>
+			   		<tr>
+						<jsp:include  page="../component/spaceline.jsp" />
+			  		</tr>
+					<tr>
+						<td width='80%' class="guide2" align="left">Actividad</td>
+						<td width='20%' class="guide2" align="center">Realizado</td>
+					</tr>
+<%				Iterator<MitigationPlanActivityData> activities = plan.getActivityIterator();
+				boolean linetwo = true;
+				while(activities.hasNext()) {
+					MitigationPlanActivityData activity = activities.next();
+					int activityType = activity.getActivity().intValue();
+%>					<tr class='<%=(linetwo) ? "linetwo" : "lineone"%>'>
+						<td align="left" ><%=messages.getText("driver.mitigationplan.activity"+activityType) %></td>
+						<td align="center">
+							<%=(activity.isDone()) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no") %>
+						</td>
+					</tr>
+<%					linetwo = !linetwo;
+				}
+			}
+%>				</table>	
+				<jsp:include page="../component/utilityboxbottom.jsp"/>
+			</td>
+		</tr>  
+      	<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+		<tr>	
+			<td width="100%" valign="top" colspan="3">
+				<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.anualplan")%>' />
+				<table width="100%" height="100%" cellpadding="0" cellspacing="0">
+<%			if(anualPlans == null || anualPlans.size()==0) {
+%>					<tr>
+						<td><span class="linetwo"><%=messages.getText("driver.anualplan.nodata") %></td>
+					</tr>
+<%			} else {
+%>				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+		  		</tr>
+				<tr>
+					<td width='30%' class="guide2" align="left"><%=messages.getText("module.activity.name") %></td>
+					<td width='15%' class="guide2" align="left"><%=messages.getText("generic.messages.start")%></td>
+					<td width='15%' class="guide2" align="left"><%=messages.getText("generic.activity.activitydata.activityexpiry")%></td>
+					<td width='15%' class="guide2" align="left">Fecha Realizado</td>
+					<td width='10%' class="guide2" align="center">Realizado</td>
+				</tr>
+<%				Iterator<AnualPlanData> activities = anualPlans.iterator();
+				boolean linetwo = true;
+				while(activities.hasNext()) {
+					AnualPlanData activity = activities.next();
+					SimpleDateFormat formatAnualPlan=new SimpleDateFormat("dd/MM/yyyy");
+%>				<tr class='<%=(linetwo) ? "linetwo" : "lineone"%>'>
+					<td align="left"><%=messages.getText("driver.anualplan.activity"+activity.getType()) %></td>
+					<td align="left"><%=formatAnualPlan.format(activity.getDateStart()) %></td>
+					<td align="left"><%=formatAnualPlan.format(activity.getExpiry()) %></td>
+					<td align="left"><%=(activity.getDate()!=null) ? formatAnualPlan.format(activity.getDate()):"--/--/---" %></td>
+					<td align="center">
+						<%=(activity.isDone()) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no") %>
+					</td>
+				</tr>
+<%					linetwo = !linetwo;
+				}
+			}
+%>				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+		  		</tr>
+			</table>	
+			<jsp:include page="../component/utilityboxbottom.jsp"/>
+		</td>
+	</tr>	
+		<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+		</tr>
+			</td>
+		</tr>  
+       
+	</table>
+	</form>
+	</center>
+	</body>
+	
+</html:html>
+<%
+	}
+%>

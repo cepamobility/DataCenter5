@@ -1,0 +1,182 @@
+/**
+ * Created on 24-jul-2006
+ * CEPA
+ * DataCenter 5
+ */
+package communication.fleet.tables;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+
+import persistence.util.Util;
+
+import communication.vehicle.tables.VehicleData;
+
+/**
+ * @author gbenaderet
+ *
+ */
+public class FleetData extends FleetMainAttributes implements Serializable {
+
+    public static final int INDIVIDUAL = 1;
+    public static final int COLECTIVE = 2;
+    
+    public static final int ACTIVE = 0;
+    public static final int EXCLUDED = 1;
+    public static final int ALL = 2;
+
+    public static final Integer MONSANTO_FYFLEET_2012 = 9405;
+	public static final Integer MONSANTO_FYFLEET_2013 = 9483;
+	public static final Integer MONSANTO_FYFLEET_2015 = 9508;
+	public static final Integer ALLERGAN_FLEET_2014 = 9522;
+    
+    protected Collection divisions;
+    private Collection vehicles;
+    
+    public FleetData() {
+        super();
+    }
+
+    public FleetData(Integer id, String name, String description, 
+    		boolean active, Integer period, Integer type, 
+    		Collection divisions, Date exclusionDate, Integer monthBlock, Integer yearBlock) {
+        super(id,name,description,active,period,type,exclusionDate, monthBlock, yearBlock);
+        this.divisions = divisions; 
+    }
+    
+    public FleetData(Integer id) {
+        this.id = id;
+    }
+
+    /**
+     * @return Returns the divisions.
+     */
+    public Collection getDivisions() {
+        return divisions;
+    }
+    
+    /*
+     * Agrega una division en la colección de divisiones
+     * de la Flota.
+     * @param division  : FleetDivisionData a agregar a la coleccion.
+     */
+    public void addDivision(FleetDivisionData division)
+    {
+    	if (divisions == null) divisions = new ArrayList();
+    	if (!divisions.contains(division))
+    	{
+    		divisions.add(division);
+    	}
+    }
+    
+    
+    /**
+     * Genera un Set a partir de la coleccion de Divisiones
+     * de la Flota.
+     * @return HashSet de las Divisiones
+     */
+    public HashSet getDivisionsSet(){
+    	HashSet divisionSet = new HashSet();
+    	Iterator it = divisions.iterator();
+    	FleetDivisionData fleetDivisionData;
+    	while (it.hasNext())
+    	{
+    		fleetDivisionData = (FleetDivisionData) it.next();
+    		divisionSet.add(fleetDivisionData);
+    	}
+    	return divisionSet;
+    }
+    
+    /*
+     * Devuelve una coleccion con todos los ids de las FleetDivisionData
+     * de la Flota.
+     */
+    public Collection getDivisionsIds()
+    {
+    	Collection ids = new ArrayList();
+    	Iterator it = divisions.iterator();
+    	FleetDivisionData fleetDivisionData;
+    	while (it.hasNext())
+    	{
+    		fleetDivisionData  = (FleetDivisionData)it.next();
+    		ids.add(fleetDivisionData.getId());
+    	}
+    	return ids;    	
+    }
+    
+
+    /**
+     * @param divisions The divisions to set.
+     */
+    public void setDivisions(Collection divisions) {
+        this.divisions = divisions;
+    }
+
+    public String validate() {
+        if(Util.empty(name)) {
+            return "fleet.error.emptyname";
+        }
+        if(Util.empty(description)) {
+            return "fleet.error.emptydescription";
+        }
+        if(period == null) {
+            return "fleet.error.emptyperiod";
+        }
+        return null;
+    }
+
+    /**
+     * @return Returns the vehicles.
+     */
+    public Collection getVehicles() {
+        return vehicles;
+    }
+    
+    /*
+     * Retona la lista de ids de los vehiculos de la flota.
+     */
+    public Collection getVehiclesIds()
+    {
+    	Collection ids = new ArrayList();
+    	VehicleData vd;
+    	Iterator it = vehicles.iterator();
+
+    	while (it.hasNext())
+    	{
+    		vd = (VehicleData)it.next();
+    		ids.add(vd.getId());    		
+    	}
+    	return ids;
+    }
+
+    /**
+     * @param vehicles The vehicles to set.
+     */
+    public void setVehicles(Collection vehicles) {
+        this.vehicles = vehicles;
+    }
+
+    public Iterator getDivisionsIterator() {
+    	if (divisions == null) return null;
+    	
+    	Collections.sort((List)divisions);
+        return divisions.iterator();
+    }
+
+    public String getDivisionKey(Integer id) {
+    	Iterator it = divisions.iterator();
+    	while(it.hasNext()) {
+    		FleetDivisionData division = (FleetDivisionData)it.next();
+    		if(division.getId().equals(id)) {
+    			return division.getKey(1);
+    		}
+    	}
+    	return null;
+    }
+}

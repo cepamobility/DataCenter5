@@ -1,0 +1,69 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.event.tables" >
+	<class name="Travel" table="travels">
+        
+		<id column="id" name="id">
+            <generator class="sequence">
+            	<param name="sequence">Travel_Sequence</param>
+            </generator>
+        </id>		 
+		
+	   	<many-to-one class="persistence.driver.tables.Driver" name="driver" not-null="true"/>
+        <property 	name="mobile"	type="java.lang.String"		column="mobile"/>
+
+        <many-to-one name="divOrg1" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="divorg1" />
+        <many-to-one name="divOrg2" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="divorg2" />
+        <many-to-one name="divOrg3" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="divorg3" />
+
+	   	<many-to-one name="corporation" class="persistence.administration.corporation.tables.Corporation" column="corporation" not-null="true" />
+        <property 	name="state"	type="java.lang.Integer"		column="state"/>
+
+       	<property 	name="charge" 		type="java.lang.String"	column="charge"/>
+        <property 	name="radio"	type="java.lang.String"		column="radio"/>
+        <property 	name="other"	type="java.lang.String"		column="other"/>
+
+	   	<many-to-one class="persistence.vehicle.tables.Vehicle" name="vehicle"/>
+
+        <property 	name="plate"	type="java.lang.String"		column="plate"/>
+        <property 	name="trade"	type="java.lang.String"		column="trade"/>
+        <property 	name="model"	type="java.lang.String"		column="model"/>
+        <property 	name="color"		type="java.lang.String"		column="color"/>
+
+        <property 	name="localLeave"	type="java.lang.String"		column="localleave"/>
+        <property 	name="localArrive"	type="java.lang.String"		column="localarrive"/>
+   		<property 	name="dateLeave" 	type="java.sql.Date" column="dateleave" 	/>
+   		<property 	name="hourLeave" 	type="java.sql.Time" column="hourleave"		/>
+   		<property 	name="stops"  type="java.lang.Integer" column="stops" />
+   		<property 	name="distance"  type="java.lang.String" column="distance" />
+   		<property 	name="hourArrive" 	type="java.sql.Time" column="hourarrive"	/>
+
+	    <property 	name="rotogram"		type="text"		column="rotogram" />
+	    <property 	name="localNames"	type="text"		column="localnames" />
+	    <property 	name="comment"		type="text"		column="comment" />
+    	
+		<property 	name="confirmedLeave" 	type="java.sql.Date" column="confirmedleave"		/>
+		<property 	name="confirmedLeaveHour" 	type="java.sql.Time" column="confirmedleavehour"		/>
+		<property 	name="communicationLeave"  type="java.lang.String" column="communicationleave" />
+		<property 	name="monitor"	type="java.lang.String"		column="monitor"/>
+		<property 	name="leaveComment"		type="text"		column="leavecomment" />
+
+		<property 	name="closeDate" 	type="java.sql.Date" column="closedate"		/>
+		<property 	name="closeHour" 	type="java.sql.Time" column="closehour"		/>
+		<property 	name="closeLocal"  type="java.lang.String" column="closelocal" />
+		<property 	name="closeWay"	type="java.lang.String"		column="closeway"/>
+		<property 	name="travelResult" />
+		<property 	name="closeCommunication"	type="java.lang.String"		column="closecommunication"/>
+		<property 	name="closeComment"		type="text"		column="closecomment" />
+
+		<property 	name="registryDate" 	type="java.sql.Date" column="registrydate"		/>
+		<property 	name="registryHour" 	type="java.sql.Time" column="registryhour"		/>
+		<property 	name="registryLocal"  type="java.lang.String" column="registrylocal" />
+		<property 	name="registryMonitor"	type="java.lang.String"		column="registrymonitor"/>
+		<property 	name="registryComment"		type="text"		column="registrycomment" />
+
+    </class>
+</hibernate-mapping>

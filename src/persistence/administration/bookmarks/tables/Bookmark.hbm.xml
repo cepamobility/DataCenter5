@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.administration.bookmarks.tables" >
+	<class name="Bookmark" table="bookmarkitems">
+		<id column="id" name="id" type="java.lang.Integer">
+            <generator class="sequence">
+            	<param name="sequence">Bookmark_Sequence</param>
+            </generator>
+		</id>
+	    <many-to-one name="userId" class="persistence.administration.user.tables.User" column="userid" not-null="true"/>
+	    <many-to-one name="corporation" class="persistence.administration.corporation.tables.Corporation" column="corporation" not-null="true"/>
+	    <property name="name" column="name" type="java.lang.String" not-null="true"	/>
+	    <property name="action" column="action" type="java.lang.Integer" not-null="true" />
+	    <property name="start" />
+		<set inverse="true" name="parameters"  cascade="all-delete-orphan">
+			<key column="bookmark" not-null="true"/>
+			<one-to-many class="BookmarkParameter" />
+		</set>
+  	</class>
+</hibernate-mapping>

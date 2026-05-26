@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.log.vehicle">
+    <class name="VehicleOptionalInfoLog" table="vehiclesoptionalinfolog">
+
+       <composite-id class="VehicleOptionalInfoLogPK" name="pk" >
+	        <key-property	name="optionalInfo"	type="java.lang.Integer"	column="optionalInfo"/>
+	        <key-property	name="userId"	type="java.lang.String"	column="userid"/>
+	        <key-property	name="date"	type="java.util.Date"	column="date"/>
+       </composite-id>        
+       
+        <property	name="action"	type="java.lang.Integer"		column="action"		not-null="true" />
+        <property	name="comment"			type="java.lang.String"		column="comment"	not-null="true" />        
+	    <property	name="prefix"	type="java.lang.String"		column="prefix"	not-null="true" />        
+	    <property	name="totalGrossWeight"	type="java.lang.Integer" column="totalGrossWeight"/>        
+	    <property	name="totalCombinedGrossWeight"	type="java.lang.Integer" column="totalCombinedGrossWeight"/>        
+	    <property	name="monitoringSystem"	type="java.lang.String" column="monitoringSystem"/>        
+        <property	name="tachograph"	type="java.lang.String" column="tachograph"/>        
+        <property	name="renavan"	type="java.lang.String" column="renavan"/>        
+        <property	name="limitLoad"	type="java.lang.Integer" column="limitLoad"/>        
+        <property	name="asr"	type="java.lang.Boolean" column="asr"/>                                
+        <property	name="currentKm"	type="java.lang.Integer" column="currentKm"/>        
+        <property	name="dateCurrentKm"	type="java.util.Date" 	column="dateCurrentKm"/>
+        <property	name="anttExpiry"	type="java.util.Date" 	column="anttExpiry"/>
+        <property	name="citvExpiry"	type="java.util.Date" 	column="citvExpiry"/>
+      
+
+    </class>
+</hibernate-mapping>

@@ -1,0 +1,2293 @@
+package communication.event.tables;
+
+import java.io.Serializable;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Set;
+
+import persistence.datatype.tables.AccidentFactors;
+import persistence.event.tables.EventDamage;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.CountryData;
+import communication.administration.corporation.tables.DivOrgData;
+import communication.administration.corporation.tables.GeoItemData;
+import communication.administration.corporation.tables.GeoLabelData;
+import communication.administration.corporation.tables.ItemData;
+import communication.administration.corporation.tables.LabelItemData;
+import communication.administration.corporation.util.Util;
+import communication.datatype.tables.AccidentClasificationDataType;
+import communication.datatype.tables.AccidentClasificationLevel1DataType;
+import communication.datatype.tables.AccidentClasificationLevel2DataType;
+import communication.datatype.tables.AccidentClasificationLevel3DataType;
+import communication.datatype.tables.AccidentClasificationLevel4DataType;
+import communication.datatype.tables.AccidentFactorsDataType;
+import communication.datatype.tables.CirculationDirectionDataType;
+import communication.datatype.tables.ClimateDataType;
+import communication.datatype.tables.CollisionClasificationDataType;
+import communication.datatype.tables.ConditionRoutDataType;
+import communication.datatype.tables.IncidentClasificationDataType;
+import communication.datatype.tables.LightingDataType;
+import communication.datatype.tables.PavementDataType;
+import communication.datatype.tables.TrafficControlDataType;
+import communication.datatype.tables.VehicleBehaviourDataType;
+import communication.datatype.tables.WayDataType;
+import communication.datatype.tables.ZoneDataType;
+import communication.driver.tables.DriverData;
+import communication.util.DateValue;
+
+public class EventDataType extends EventMainAttributes implements Serializable,DateValue,Comparable {
+	
+    private static final long serialVersionUID = 1L;
+
+    public static final int NO_CELLULAR = 0;
+    public static final int NORMAL_CELLULAR = 1;
+    public static final int FREE_HAND_CELLULAR = 2;
+    
+    public static final int INCIDENT = 1; 
+    public static final int ACCIDENT = 2; 
+    public static final int FINE = 3;
+    public static final int NEARMISS = 4;
+
+    public static final int SUPERVISE = 0;
+    public static final int UPDATE = 1;
+    public static final int CREATE = 2;
+
+	
+    private CorporationData corporation;  
+    private GeoLabelData country;  
+    private Collection divOrgs;
+    
+    private Time hour;
+    
+    private String city;
+
+    private ZoneDataType zone;
+    
+    private boolean damage;
+        
+    private String story;
+    
+    private CollisionClasificationDataType collision;
+    
+    private AccidentClasificationDataType accident;   
+    private IncidentClasificationDataType incident;
+    private AccidentClasificationDataType nearmiss;
+    private AccidentClasificationLevel1DataType clasification1;
+	private AccidentClasificationLevel2DataType clasification2;
+	private AccidentClasificationLevel3DataType clasification3;
+	private AccidentClasificationLevel4DataType clasification4;
+	private String clasificationText;
+	
+	private AccidentClasificationLevel1DataType clasificationCEPA1;
+	private AccidentClasificationLevel2DataType clasificationCEPA2;
+	private AccidentClasificationLevel3DataType clasificationCEPA3;
+	private AccidentClasificationLevel4DataType clasificationCEPA4;
+	private String clasificationCEPAText;
+	
+    private VehicleBehaviourDataType handle;
+    private String handleText;
+    private String hitrun;
+    
+    private AccidentFactorsDataType principalFactor;
+    private String principalFactorText;
+    private String distractor; // Distractor para Pepsico
+    
+    private boolean factor1;
+    private boolean factor2;
+    private boolean factor3;
+    private boolean factor4;
+    private boolean factor5;
+    private boolean factor6;
+    private boolean factor7;
+    private boolean factor8;
+    private boolean factor9;
+    private boolean factor10;
+    private boolean factor11;
+    private boolean factor12;
+    private boolean factor13;
+    private boolean factor14;
+    private boolean factor15;
+    private boolean factor16;
+    private boolean factor17;
+    private boolean factor18;
+    private boolean factor19;
+    private boolean factor20;
+    private boolean factor21;
+    private boolean factor22;
+
+    private String collisionAngle;
+    
+    private String driverstate;
+    private Integer dayslost;
+    private Integer otherpartydayslost;
+    private Integer fatalitiesothercount;
+    private Integer injuredothercount;
+    private Integer fatalitiesfunccount;
+    private Integer injuredfunccount;
+    private Integer safefunccount;
+    private Integer safeothercount;
+    
+    private boolean damage1;
+    private boolean damage2;
+    private boolean damage3;
+    private boolean damage4;
+    private boolean damage5;
+    private boolean damage6;
+    private boolean damage7;
+    private boolean damage8;
+    private boolean damage9;
+    private boolean damage10;
+    private boolean damage11=false;
+    private boolean damage12=false;
+    private boolean damage13=false;
+    private boolean damage14=false;
+    private boolean damage15=false;
+    private boolean damage16=false;
+    
+    /* Forestales */
+    private Set eventDamages;
+    
+     /* Fin forestales */
+    
+    private String selfbelt;
+    private String alcohol;
+    private String othervehicles;
+    private String cellular;
+    
+    private Integer maxSpeed;
+    private Integer vehicleSpeed;
+    private Integer collisionSpeed;
+    private Integer reportedSpeed;
+    private String speedUnit;
+    
+    
+    private ClimateDataType climate;
+    private LightingDataType lighting;
+    private WayDataType way;
+    private CirculationDirectionDataType direction;
+    private TrafficControlDataType control;
+    private String controlMultiple;
+    
+    private PavementDataType pavement;
+    private ConditionRoutDataType condition;
+    
+    private Integer pedestrianCount;
+    private String pedestrian1;
+    private String pedestrianComment1;
+    private String pedestrian2;
+    private String pedestrianComment2;
+    private String pedestrian3;
+    private String pedestrianComment3;
+    
+    private Collection vehiclesInvolved;
+
+    private String working;
+    private Integer workingHours;
+    private String policereport;
+    private Integer cost;
+
+    private String state;
+
+    private String evitability;
+    private String recomendation;
+
+    private CollisionClasificationDataType supervisedCollision;
+    private AccidentClasificationDataType supervisedAccident;
+    private IncidentClasificationDataType supervisedIncident;
+
+    private String superivisionObservations;
+    private String comment;
+
+    private Integer carCost;
+
+    private Integer severity;
+
+	private String charged;
+	private String whoDrives;
+
+	private String damageCharge;
+	private boolean realCost = false; // CIMSA
+
+    private String alcoholBreath;
+    private String stoppedVehicle;
+   		
+   	private Integer extraCost1;
+   	private Integer extraCost2;
+   	private Integer extraCost3;
+   	private Integer extraCost4;
+   	private Integer extraCost5;
+   	private Integer extraCost6;
+   	private Integer extraCost7;
+   	private Integer extraCost8;
+   		
+   	private Date ensuranceDate;
+   	private Integer companyAmount;
+   	private Integer driverAmount;
+   	private Integer thirdAmount;
+   	
+   	private Integer folioNumber; // para CIMSA
+   	private Integer sapNumber;  // para CIMSA
+   	private boolean doubleCabin; // cimsa
+
+   	public EventDataType() {
+        super();
+        this.eventDamages = new HashSet();   
+
+    }
+
+   	
+   	
+   	
+    public AccidentClasificationLevel1DataType getClasificationCEPA1() {
+		return clasificationCEPA1;
+	}
+
+
+
+
+	public void setClasificationCEPA1(
+			AccidentClasificationLevel1DataType clasificationCEPA1) {
+		this.clasificationCEPA1 = clasificationCEPA1;
+	}
+
+
+
+
+	public AccidentClasificationLevel2DataType getClasificationCEPA2() {
+		return clasificationCEPA2;
+	}
+
+
+
+
+	public void setClasificationCEPA2(
+			AccidentClasificationLevel2DataType clasificationCEPA2) {
+		this.clasificationCEPA2 = clasificationCEPA2;
+	}
+
+
+
+
+	public AccidentClasificationLevel3DataType getClasificationCEPA3() {
+		return clasificationCEPA3;
+	}
+
+
+
+
+	public void setClasificationCEPA3(
+			AccidentClasificationLevel3DataType clasificationCEPA3) {
+		this.clasificationCEPA3 = clasificationCEPA3;
+	}
+
+
+
+
+	public AccidentClasificationLevel4DataType getClasificationCEPA4() {
+		return clasificationCEPA4;
+	}
+
+
+
+
+	public void setClasificationCEPA4(
+			AccidentClasificationLevel4DataType clasificationCEPA4) {
+		this.clasificationCEPA4 = clasificationCEPA4;
+	}
+
+
+
+
+	public String getClasificationCEPAText() {
+		return clasificationCEPAText;
+	}
+
+
+
+
+	public void setClasificationCEPAText(String clasificationCEPAText) {
+		this.clasificationCEPAText = clasificationCEPAText;
+	}
+
+
+
+
+	public boolean isDamage13() {
+		return damage13;
+	}
+
+
+
+
+	public void setDamage13(boolean damage13) {
+		this.damage13 = damage13;
+	}
+
+
+
+
+	public boolean isDamage14() {
+		return damage14;
+	}
+
+
+
+
+	public void setDamage14(boolean damage14) {
+		this.damage14 = damage14;
+	}
+
+
+
+
+	public boolean isDamage11() {
+		return damage11;
+	}
+
+
+
+
+	public void setDamage11(boolean damage11) {
+		this.damage11 = damage11;
+	}
+
+
+
+
+	public boolean isDamage12() {
+		return damage12;
+	}
+
+
+
+
+	public void setDamage12(boolean damage12) {
+		this.damage12 = damage12;
+	}
+
+
+
+
+	public String getHandleText() {
+		return handleText;
+	}
+
+
+
+
+	public void setHandleText(String handleText) {
+		this.handleText = handleText;
+	}
+
+
+
+
+	public String getPrincipalFactorText() {
+		return principalFactorText;
+	}
+
+
+
+
+	public void setPrincipalFactorText(String principalFactorText) {
+		this.principalFactorText = principalFactorText;
+	}
+
+
+
+
+	public AccidentClasificationLevel4DataType getClasification4() {
+		return clasification4;
+	}
+
+
+
+
+	public void setClasification4(AccidentClasificationLevel4DataType clasification4) {
+		this.clasification4 = clasification4;
+	}
+
+
+
+
+	public String getClasificationText() {
+		return clasificationText;
+	}
+
+
+
+
+	public void setClasificationText(String clasificationText) {
+		this.clasificationText = clasificationText;
+	}
+
+
+
+
+	public AccidentClasificationLevel1DataType getClasification1() {
+		return clasification1;
+	}
+
+	public String getClasificationName(int i) {
+		switch(i) {
+			case 1:
+				return (clasification1 != null) ? clasification1.getResourceBundleId() : "";
+			case 2:
+				return (clasification2 != null) ? clasification2.getResourceBundleId() : "";
+			case 3:
+				return (clasification3 != null) ? clasification3.getResourceBundleId() : "";
+			case 4:
+				return (clasification4 != null) ? clasification4.getResourceBundleId() : "";
+		}
+		return "";
+	}
+
+	public String getClasificationCEPAName(int i) {
+		switch(i) {
+			case 1:
+				return (clasificationCEPA1 != null) ? clasificationCEPA1.getResourceBundleId() : "";
+			case 2:
+				return (clasificationCEPA2 != null) ? clasificationCEPA2.getResourceBundleId() : "";
+			case 3:
+				return (clasificationCEPA3 != null) ? clasificationCEPA3.getResourceBundleId() : "";
+			case 4:
+				return (clasificationCEPA4 != null) ? clasificationCEPA4.getResourceBundleId() : "";
+		}
+		return "";
+	}
+	
+	public void setClasification1(AccidentClasificationLevel1DataType clasification1) {
+		this.clasification1 = clasification1;
+	}
+
+
+
+
+	public AccidentClasificationLevel2DataType getClasification2() {
+		return clasification2;
+	}
+
+
+
+
+	public void setClasification2(AccidentClasificationLevel2DataType clasification2) {
+		this.clasification2 = clasification2;
+	}
+
+
+
+
+	public AccidentClasificationLevel3DataType getClasification3() {
+		return clasification3;
+	}
+
+
+
+
+	public void setClasification3(AccidentClasificationLevel3DataType clasification3) {
+		this.clasification3 = clasification3;
+	}
+
+
+
+
+	/**
+     * @return Returns the accident.
+     */
+    public AccidentClasificationDataType getAccident() {
+        return accident;
+    }
+
+    /**
+     * @return Returns the alcohol.
+     */
+    public String getAlcohol() {
+        return alcohol;
+    }
+
+    /**
+     * @return Returns the cellular.
+     */
+    public String getCellular() {
+        return cellular;
+    }
+
+    /**
+     * @return Returns the city.
+     */
+    public String getCity() {
+        return city;
+    }
+
+    /**
+     * @return Returns the climate.
+     */
+    public ClimateDataType getClimate() {
+        return climate;
+    }
+
+    /**
+     * @return Returns the collision.
+     */
+    public CollisionClasificationDataType getCollision() {
+        return collision;
+    }
+
+    /**
+     * @return Returns the collisionangle.
+     */
+    public String getCollisionAngle() {
+        return collisionAngle;
+    }
+
+    /**
+     * @return Returns the collisionspeed.
+     */
+    public Integer getCollisionSpeed() {
+        return collisionSpeed;
+    }
+
+    /**
+     * @return Returns the condition.
+     */
+    public ConditionRoutDataType getCondition() {
+        return condition;
+    }
+
+    /**
+     * @return Returns the control.
+     */
+    public TrafficControlDataType getControl() {
+        return control;
+    }
+
+    /**
+     * @return Returns the corporation.
+     */
+    public CorporationData getCorporation() {
+        return corporation;
+    }
+
+    /**
+     * @return Returns the country.
+     */
+    public GeoLabelData getCountry() {
+        return country;
+    }
+
+    /**
+     * @return Returns the damage.
+     */
+    public boolean isDamage() {
+        return damage;
+    }
+
+    /**
+     * @return Returns the damage1.
+     */
+    public boolean isDamage1() {
+        return damage1;
+    }
+
+    /**
+     * @return Returns the damage10.
+     */
+    public boolean isDamage10() {
+        return damage10;
+    }
+
+    /**
+     * @return Returns the damage2.
+     */
+    public boolean isDamage2() {
+        return damage2;
+    }
+
+    /**
+     * @return Returns the damage3.
+     */
+    public boolean isDamage3() {
+        return damage3;
+    }
+
+    /**
+     * @return Returns the damage4.
+     */
+    public boolean isDamage4() {
+        return damage4;
+    }
+
+    /**
+     * @return Returns the damage5.
+     */
+    public boolean isDamage5() {
+        return damage5;
+    }
+
+    /**
+     * @return Returns the damage6.
+     */
+    public boolean isDamage6() {
+        return damage6;
+    }
+
+    /**
+     * @return Returns the damage7.
+     */
+    public boolean isDamage7() {
+        return damage7;
+    }
+
+    /**
+     * @return Returns the damage8.
+     */
+    public boolean isDamage8() {
+        return damage8;
+    }
+
+    /**
+     * @return Returns the damage9.
+     */
+    public boolean isDamage9() {
+        return damage9;
+    }
+
+    /**
+     * @return Returns the dayslost.
+     */
+    public Integer getDayslost() {
+        return dayslost;
+    }
+
+    /**
+     * @return Returns the direction.
+     */
+    public CirculationDirectionDataType getDirection() {
+        return direction;
+    }
+
+    /**
+     * @return Returns the divOrgs.
+     */
+    public Collection getDivOrgs() {
+        return divOrgs;
+    }
+
+    /**
+     * @return Returns the driverstate.
+     */
+    public String getDriverstate() {
+        return driverstate;
+    }
+
+
+    /**
+     * @return Returns the handle.
+     */
+    public VehicleBehaviourDataType getHandle() {
+        return handle;
+    }
+
+    /**
+     * @return Returns the hitrun.
+     */
+    public String getHitrun() {
+        return hitrun;
+    }
+
+    /**
+     * @return Returns the hour.
+     */
+    public Time getHour() {
+        return hour;
+    }
+
+    /**
+     * @return Returns the incident.
+     */
+    public IncidentClasificationDataType getIncident() {
+        return incident;
+    }
+
+    /**
+     * @return Returns the injuredfunccount.
+     */
+    public Integer getInjuredfunccount() {
+        return injuredfunccount;
+    }
+
+    /**
+     * @return Returns the injuredothercount.
+     */
+    public Integer getInjuredothercount() {
+        return injuredothercount;
+    }
+    
+    /**
+     * @return Returns the safefunccount.
+     */
+    public Integer getSafefunccount() {
+        return safefunccount;
+    }
+
+    /**
+     * @return Returns the safeothercount.
+     */
+    public Integer getSafeothercount() {
+        return safeothercount;
+    }
+
+    /**
+     * @return Returns the lighting.
+     */
+    public LightingDataType getLighting() {
+        return lighting;
+    }
+
+    /**
+     * @return Returns the maxspeed.
+     */
+    public Integer getMaxSpeed() {
+        return maxSpeed;
+    }
+
+    /**
+     * @return Returns the othervehicles.
+     */
+    public String getOthervehicles() {
+        return othervehicles;
+    }
+
+    /**
+     * @return Returns the pavement.
+     */
+    public PavementDataType getPavement() {
+        return pavement;
+    }
+
+    /**
+     * @return Returns the pedestrian1.
+     */
+    public String getPedestrian1() {
+        return pedestrian1;
+    }
+
+    /**
+     * @return Returns the pedestrian2.
+     */
+    public String getPedestrian2() {
+        return pedestrian2;
+    }
+
+    /**
+     * @return Returns the pedestrian3.
+     */
+    public String getPedestrian3() {
+        return pedestrian3;
+    }
+
+    /**
+     * @return Returns the pedestrianComment1.
+     */
+    public String getPedestrianComment1() {
+        return pedestrianComment1;
+    }
+
+    /**
+     * @return Returns the pedestrianComment2.
+     */
+    public String getPedestrianComment2() {
+        return pedestrianComment2;
+    }
+
+    /**
+     * @return Returns the pedestrianComment3.
+     */
+    public String getPedestrianComment3() {
+        return pedestrianComment3;
+    }
+
+    /**
+     * @return Returns the pedestrianCount.
+     */
+    public Integer getPedestrianCount() {
+        return pedestrianCount;
+    }
+
+    /**
+     * @return Returns the principalFactor.
+     */
+    public AccidentFactorsDataType getPrincipalFactor() {
+        return principalFactor;
+    }
+
+    /**
+     * @return Returns the reportedspeed.
+     */
+    public Integer getReportedSpeed() {
+        return reportedSpeed;
+    }
+
+    /**
+     * @return Returns the selfbelt.
+     */
+    public String getSelfbelt() {
+        return selfbelt;
+    }
+
+    /**
+     * @return Returns the speedunit.
+     */
+    public String getSpeedUnit() {
+        return speedUnit;
+    }
+
+    /**
+     * @return Returns the story.
+     */
+    public String getStory() {
+        return story;
+    }
+
+    /**
+     * @return Returns the vehiclesInvolved.
+     */
+    public Collection getVehiclesInvolved() {
+        return vehiclesInvolved;
+    }
+
+    /**
+     * @return Returns the vehiclespeed.
+     */
+    public Integer getVehicleSpeed() {
+        return vehicleSpeed;
+    }
+
+    /**
+     * @return Returns the way.
+     */
+    public WayDataType getWay() {
+        return way;
+    }
+
+    /**
+     * @return Returns the working.
+     */
+    public String getWorking() {
+        return working;
+    }
+    
+
+    
+    /**
+	 * @return the workingHours
+	 */
+	public Integer getWorkingHours() {
+		return workingHours;
+	}
+
+    /**
+     * @return Returns the policereport.
+     */
+    public String getPoliceReport() {
+        return policereport;
+    }
+    
+    /**
+     * @return Returns the zone.
+     */
+    public ZoneDataType getZone() {
+        return zone;
+    }
+
+    /**
+     * @param accident The accident to set.
+     */
+    public void setAccident(AccidentClasificationDataType accident) {
+        this.accident = accident;
+    }
+
+    /**
+     * @param alcohol The alcohol to set.
+     */
+    public void setAlcohol(String alcohol) {
+        this.alcohol = alcohol;
+    }
+
+    /**
+     * @param cellular The cellular to set.
+     */
+    public void setCellular(String cellular) {
+        this.cellular = cellular;
+    }
+
+    /**
+     * @param city The city to set.
+     */
+    public void setCity(String city) {
+        this.city = city;
+    }
+
+    /**
+     * @param climate The climate to set.
+     */
+    public void setClimate(ClimateDataType climate) {
+        this.climate = climate;
+    }
+
+    /**
+     * @param collision The collision to set.
+     */
+    public void setCollision(CollisionClasificationDataType collision) {
+        this.collision = collision;
+    }
+
+    /**
+     * @param collisionangle The collisionangle to set.
+     */
+    public void setCollisionAngle(String collisionAngle) {
+        this.collisionAngle = collisionAngle;
+    }
+
+    /**
+     * @param collisionspeed The collisionspeed to set.
+     */
+    public void setCollisionSpeed(Integer collisionSpeed) {
+        this.collisionSpeed = collisionSpeed;
+    }
+
+    /**
+     * @param condition The condition to set.
+     */
+    public void setCondition(ConditionRoutDataType condition) {
+        this.condition = condition;
+    }
+
+    /**
+     * @param control The control to set.
+     */
+    public void setControl(TrafficControlDataType control) {
+        this.control = control;
+    }
+
+    /**
+     * @param corporation The corporation to set.
+     */
+    public void setCorporation(CorporationData corporation) {
+        this.corporation = corporation;
+    }
+
+    /**
+     * @param country The country to set.
+     */
+    public void setCountry(GeoLabelData country) {
+        this.country = country;
+    }
+
+    /**
+     * @param damage The damage to set.
+     */
+    public void setDamage(boolean damage) {
+        this.damage = damage;
+    }
+
+    /**
+     * @param damage1 The damage1 to set.
+     */
+    public void setDamage1(boolean damage1) {
+        this.damage1 = damage1;
+    }
+
+    /**
+     * @param damage10 The damage10 to set.
+     */
+    public void setDamage10(boolean damage10) {
+        this.damage10 = damage10;
+    }
+
+    /**
+     * @param damage2 The damage2 to set.
+     */
+    public void setDamage2(boolean damage2) {
+        this.damage2 = damage2;
+    }
+
+    /**
+     * @param damage3 The damage3 to set.
+     */
+    public void setDamage3(boolean damage3) {
+        this.damage3 = damage3;
+    }
+
+    /**
+     * @param damage4 The damage4 to set.
+     */
+    public void setDamage4(boolean damage4) {
+        this.damage4 = damage4;
+    }
+
+    /**
+     * @param damage5 The damage5 to set.
+     */
+    public void setDamage5(boolean damage5) {
+        this.damage5 = damage5;
+    }
+
+    /**
+     * @param damage6 The damage6 to set.
+     */
+    public void setDamage6(boolean damage6) {
+        this.damage6 = damage6;
+    }
+
+    /**
+     * @param damage7 The damage7 to set.
+     */
+    public void setDamage7(boolean damage7) {
+        this.damage7 = damage7;
+    }
+
+    /**
+     * @param damage8 The damage8 to set.
+     */
+    public void setDamage8(boolean damage8) {
+        this.damage8 = damage8;
+    }
+
+    /**
+     * @param damage9 The damage9 to set.
+     */
+    public void setDamage9(boolean damage9) {
+        this.damage9 = damage9;
+    }
+
+    /**
+     * @param dayslost The dayslost to set.
+     */
+    public void setDayslost(Integer dayslost) {
+        this.dayslost = dayslost;
+    }
+
+    /**
+     * @param direction The direction to set.
+     */
+    public void setDirection(CirculationDirectionDataType direction) {
+        this.direction = direction;
+    }
+
+    /**
+     * @param divOrgs The divOrgs to set.
+     */
+    public void setDivOrgs(Collection divOrgs) {
+        this.divOrgs = divOrgs;
+    }
+
+    /**
+     * @param driverstate The driverstate to set.
+     */
+    public void setDriverstate(String driverstate) {
+        this.driverstate = driverstate;
+    }
+
+
+    /**
+     * @param fatalitiesfunccount The fatalitiesfunccount to set.
+     */
+    public void setFatalitiesfunccount(Integer fatalitiesfunccount) {
+        this.fatalitiesfunccount = fatalitiesfunccount;
+    }
+
+    /**
+     * @param fatalitiesothercount The fatalitiesothercount to set.
+     */
+    public void setFatalitiesothercount(Integer fatalitiesothercount) {
+        this.fatalitiesothercount = fatalitiesothercount;
+    }
+
+    /**
+     * @param handle The handle to set.
+     */
+    public void setHandle(VehicleBehaviourDataType handle) {
+        this.handle = handle;
+    }
+
+    /**
+     * @param hitrun The hitrun to set.
+     */
+    public void setHitrun(String hitrun) {
+        this.hitrun = hitrun;
+    }
+
+    /**
+     * @param hour The hour to set.
+     */
+    public void setHour(Time hour) {
+        this.hour = hour;
+    }
+
+    /**
+     * @param incident The incident to set.
+     */
+    public void setIncident(IncidentClasificationDataType incident) {
+        this.incident = incident;
+    }
+
+
+    /**
+     * @param injuredfunccount The injuredfunccount to set.
+     */
+    public void setInjuredfunccount(Integer injuredfunccount) {
+        this.injuredfunccount = injuredfunccount;
+    }
+
+    /**
+     * @param injuredothercount The injuredothercount to set.
+     */
+    public void setInjuredothercount(Integer injuredothercount) {
+        this.injuredothercount = injuredothercount;
+    }
+    
+    /**
+     * @param safefunccount The safefunccount to set.
+     */
+    public void setSafefunccount(Integer safefunccount) {
+        this.safefunccount = safefunccount;
+    }
+
+    /**
+     * @param safeothercount The safeothercount to set.
+     */
+    public void setSafeothercount(Integer safeothercount) {
+        this.safeothercount = safeothercount;
+    }
+    
+
+    /**
+     * @param lighting The lighting to set.
+     */
+    public void setLighting(LightingDataType lighting) {
+        this.lighting = lighting;
+    }
+
+    /**
+     * @param maxspeed The maxspeed to set.
+     */
+    public void setMaxSpeed(Integer maxSpeed) {
+        this.maxSpeed = maxSpeed;
+    }
+
+    /**
+     * @param othervehicles The othervehicles to set.
+     */
+    public void setOthervehicles(String othervehicles) {
+        this.othervehicles = othervehicles;
+    }
+
+    /**
+     * @param pavement The pavement to set.
+     */
+    public void setPavement(PavementDataType pavement) {
+        this.pavement = pavement;
+    }
+
+    /**
+     * @param pedestrian1 The pedestrian1 to set.
+     */
+    public void setPedestrian1(String pedestrian1) {
+        this.pedestrian1 = pedestrian1;
+    }
+
+    /**
+     * @param pedestrian2 The pedestrian2 to set.
+     */
+    public void setPedestrian2(String pedestrian2) {
+        this.pedestrian2 = pedestrian2;
+    }
+
+    /**
+     * @param pedestrian3 The pedestrian3 to set.
+     */
+    public void setPedestrian3(String pedestrian3) {
+        this.pedestrian3 = pedestrian3;
+    }
+
+    /**
+     * @param pedestrianComment1 The pedestrianComment1 to set.
+     */
+    public void setPedestrianComment1(String pedestrianComment1) {
+        this.pedestrianComment1 = pedestrianComment1;
+    }
+
+    /**
+     * @param pedestrianComment2 The pedestrianComment2 to set.
+     */
+    public void setPedestrianComment2(String pedestrianComment2) {
+        this.pedestrianComment2 = pedestrianComment2;
+    }
+
+    /**
+     * @param pedestrianComment3 The pedestrianComment3 to set.
+     */
+    public void setPedestrianComment3(String pedestrianComment3) {
+        this.pedestrianComment3 = pedestrianComment3;
+    }
+
+    /**
+     * @param pedestrianCount The pedestrianCount to set.
+     */
+    public void setPedestrianCount(Integer pedestrianCount) {
+        this.pedestrianCount = pedestrianCount;
+    }
+
+    /**
+     * @param principalFactor The principalFactor to set.
+     */
+    public void setPrincipalFactor(AccidentFactorsDataType principalFactor) {
+        this.principalFactor = principalFactor;
+    }
+
+    /**
+     * @param reportedspeed The reportedspeed to set.
+     */
+    public void setReportedSpeed(Integer reportedSpeed) {
+        this.reportedSpeed = reportedSpeed;
+    }
+
+    /**
+     * @param selfbelt The selfbelt to set.
+     */
+    public void setSelfbelt(String selfbelt) {
+        this.selfbelt = selfbelt;
+    }
+
+    /**
+     * @param speedunit The speedunit to set.
+     */
+    public void setSpeedUnit(String speedUnit) {
+        this.speedUnit = speedUnit;
+    }
+
+    /**
+     * @param story The story to set.
+     */
+    public void setStory(String story) {
+        this.story = story;
+    }
+
+    /**
+     * @param vehiclesInvolved The vehiclesInvolved to set.
+     */
+    public void setVehiclesInvolved(Collection vehiclesInvolved) {
+        this.vehiclesInvolved = vehiclesInvolved;
+    }
+
+    /**
+     * @param vehiclespeed The vehiclespeed to set.
+     */
+    public void setVehicleSpeed(Integer vehicleSpeed) {
+        this.vehicleSpeed = vehicleSpeed;
+    }
+
+    /**
+     * @param way The way to set.
+     */
+    public void setWay(WayDataType way) {
+        this.way = way;
+    }
+
+    /**
+     * @param working The working to set.
+     */
+    public void setWorking(String working) {
+        this.working = working;
+    }
+    
+    
+	/**
+	 * @param workingHours the workingHours to set
+	 */
+	public void setWorkingHours(Integer workingHours) {
+		this.workingHours = workingHours;
+	}
+
+	/**
+     * @param policereport The policereport to set.
+     */
+    public void setPoliceReport(String policereport) {
+        this.policereport = policereport;
+    }
+    
+
+    /**
+     * @param zone The zone to set.
+     */
+    public void setZone(ZoneDataType zone) {
+        this.zone = zone;
+    }
+
+    public String getData(int type, int index, int j) {
+        if(type == DriverData.DIV_ORG) {
+            Iterator it = getDivOrgs().iterator();
+            DivOrgData data = null;
+            for(int i = 0; i < index; i++) {
+                data = (DivOrgData)it.next();
+            }
+            LabelItemData label = data.getDivOrgLevels(); 
+            for(int i = 1; i < j; i++) {
+                label = ((ItemData)label.getItemIterator().next()).getSubItems();
+            }
+            return ((ItemData)label.getItemIterator().next()).getName();
+        }else {
+            GeoLabelData label = getCountry(); 
+            for(int i = 1; i < j; i++) {
+                label = ((GeoItemData)label.getItemIterator().next()).getSubItems();
+            }
+            return ((GeoItemData)label.getItemIterator().next()).getName();
+        }
+	}
+
+    public void setCost(Integer cost) {
+        this.cost = cost;
+    }
+    
+    public Integer getCost() {
+        return cost;
+    }
+
+    public VehicleInvolvedDataType getVehicle(int i) {
+        Iterator it = vehiclesInvolved.iterator();
+        while(it.hasNext()) {
+            VehicleInvolvedDataType v = (VehicleInvolvedDataType)it.next();
+            if(v.getNumber().intValue() == i) {
+                return v;
+            }
+        } 
+        return null;
+    }
+
+    public String getPedestrian(int i,int j) {
+        switch(i) {
+            case 1:
+                switch(j) {
+                    case 1:
+                        return pedestrian1;
+                    case 2:
+                        return pedestrian2;
+                    case 3:
+                        return pedestrian3;
+                }
+            case 2:
+                switch(j) {
+                    case 1:
+                        return pedestrianComment1;
+                    case 2:
+                        return pedestrianComment2;
+                    case 3:
+                        return pedestrianComment3;
+                }
+        }
+        return null;
+    }
+    
+    public Iterator getDivOrgsIterator() {
+        Collections.sort((List) divOrgs);
+        return divOrgs.iterator();
+    }
+
+    public String getState() {
+        return state;
+    }
+
+    public String getEvitability() {
+        return evitability;
+    }
+
+    public String getRecomendation() {
+        return recomendation;
+    }
+
+    public void setEvitability(String evitability) {
+        this.evitability = evitability;
+    }
+
+    public void setRecomendation(String recomendation) {
+        this.recomendation = recomendation;
+    }
+
+    public void setState(String state) {
+        this.state = state;
+    }
+
+    public Integer getOtherpartydayslost() {
+        return otherpartydayslost;
+    }
+
+    public void setOtherpartydayslost(Integer otherpartydayslost) {
+        this.otherpartydayslost = otherpartydayslost;
+    }
+    
+    public int compareTo(Object anotherobject){
+    	DateValue another = (DateValue)anotherobject;
+    	Date element1=another.getDate();
+    	Date element2=this.getDate();
+    	if (element1 instanceof Timestamp)
+    		element1= new Date(element1.getTime());
+    	if (element2 instanceof Timestamp)
+    		element2= new Date(element2.getTime());
+        return element1.compareTo(element2);    
+      }
+
+    public AccidentClasificationDataType getSupervisedAccident() {
+        return supervisedAccident;
+    }
+
+    public CollisionClasificationDataType getSupervisedCollision() {
+        return supervisedCollision;
+    }
+
+    public IncidentClasificationDataType getSupervisedIncident() {
+        return supervisedIncident;
+    }
+
+    public void setSupervisedAccident(
+            AccidentClasificationDataType supervisedAccident) {
+        this.supervisedAccident = supervisedAccident;
+    }
+
+    public void setSupervisedCollision(
+            CollisionClasificationDataType supervisedCollision) {
+        this.supervisedCollision = supervisedCollision;
+    }
+
+    public void setSupervisedIncident(
+            IncidentClasificationDataType supervisedIncident) {
+        this.supervisedIncident = supervisedIncident;
+    }
+		
+	/**
+	 * @return Returns the eventDamages.
+	 */
+	public Set getEventDamages() {
+		return eventDamages;
+	}
+
+	/**
+	 * @param eventDamages The eventDamages to set.
+	 */
+	public void setEventDamages(Set eventDamages) {
+		this.eventDamages = eventDamages;
+	}
+
+	/**
+	 * Devuelve el valor del Damage del entero i
+	 * @param i: entero que indica que Damage se refiere
+	 * @return boolean
+	 */
+	public boolean isDamage(int i){
+		if (this.eventDamages != null && this.eventDamages.size() > 0)
+		{
+			Iterator it = this.eventDamages.iterator();
+			while (it.hasNext()){
+				EventDamage ed = (EventDamage)it.next();
+				if (ed.getDamage().equals(new Integer(i))){
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Setea el valor del Damage del entero i al valor value.
+	 * @param i: entero que indica que Damage se refiere
+	 * @param value: valor a setear
+	 */
+	public void setDamage(int i, boolean value){
+		EventDamage ed = new EventDamage(new Integer(i));
+		if (value && !isDamage(i)) {
+			this.eventDamages.add(ed);
+		}else if (!value){
+			Iterator it = this.eventDamages.iterator();
+			while (it.hasNext()){
+				ed = (EventDamage)it.next();
+				if (ed.getDamage().equals(new Integer(i))){
+					it.remove();
+				}
+			}
+		}			
+	}
+
+	/**
+	 * @return Returns the policereport.
+	 */
+	public String getPolicereport() {
+		return policereport;
+	}
+
+	/**
+	 * @param policereport The policereport to set.
+	 */
+	public void setPolicereport(String policereport) {
+		this.policereport = policereport;
+	}
+
+    public String getSuperivisionObservations() {
+        return superivisionObservations;
+    }
+
+    public void setSuperivisionObservations(String superivisionObservations) {
+        this.superivisionObservations = superivisionObservations;
+    }
+
+    public String getCountryName() {
+        GeoItemData itemData1 = (GeoItemData)country.getItemIterator().next();
+        while(itemData1.getSubItems() != null) {
+            itemData1 = (GeoItemData)itemData1.getSubItems().getItemIterator().next();
+        }
+        return itemData1.getName();
+    }
+
+    public Integer getCountryId() {
+        GeoItemData itemData1 = (GeoItemData)country.getItemIterator().next();
+        while(itemData1.getSubItems() != null) {
+            itemData1 = (GeoItemData)itemData1.getSubItems().getItemIterator().next();
+        }
+        return itemData1.getId();
+    }
+
+    public Integer getCarCost() {
+        return carCost;
+    }
+
+    public Integer getSeverity() {
+        return severity;
+    }
+
+    public void setCarCost(Integer carCost) {
+        this.carCost = carCost;
+    }
+
+    public void setSeverity(Integer severity) {
+        this.severity = severity;
+    }
+    
+    public int getSeverityIndex() {
+        double eventCarCost = 0; 
+        if(vehicle != null) {
+            if(vehicle.getCost() != null) {
+                eventCarCost = vehicle.getCost().doubleValue();
+            }
+        }else if(carCost != null) {
+            eventCarCost = carCost.doubleValue();
+        }
+        if(eventCarCost <= 0) {
+            return 0;
+        }
+        double damageType = cost.doubleValue() * 100.0 / eventCarCost;
+        if(fatalitiesothercount > 0 || fatalitiesfunccount > 0 || driverstate.equals("datatype.driverstate.dead")) {
+            return 5;
+        }else if(driverstate.equals("datatype.driverstate.injured") || injuredothercount > 0 || injuredfunccount > 0){
+            if((dayslost > 2 || otherpartydayslost > 2) && damageType > 50) {
+                return 4;
+            }else {
+                return 3;
+            }
+        }else {
+            if(damageType > 50) {
+                return 3;
+            }else if(damageType >= 25  && damageType < 50) {
+                return 2;
+            }else {
+                return 1;
+            }
+        }
+    }
+
+	public String getCharged() {
+		return charged;
+	}
+
+	public String getDamageCharge() {
+		return damageCharge;
+	}
+
+	public void setCharged(String charged) {
+		this.charged = charged;
+	}
+
+	public void setDamageCharge(String damageCharge) {
+		this.damageCharge = damageCharge;
+	}
+
+	public String getAlcoholBreath() {
+		return alcoholBreath;
+	}
+
+	public void setAlcoholBreath(String alcoholBreath) {
+		this.alcoholBreath = alcoholBreath;
+	}
+
+	public String getStoppedVehicle() {
+		return stoppedVehicle;
+	}
+
+	public void setStoppedVehicle(String stoppedVehicle) {
+		this.stoppedVehicle = stoppedVehicle;
+	}
+
+	public Integer getExtraCost1() {
+		return extraCost1;
+	}
+
+	public void setExtraCost1(Integer extraCost1) {
+		this.extraCost1 = extraCost1;
+	}
+
+	public Integer getExtraCost2() {
+		return extraCost2;
+	}
+
+	public void setExtraCost2(Integer extraCost2) {
+		this.extraCost2 = extraCost2;
+	}
+
+	public Integer getExtraCost3() {
+		return extraCost3;
+	}
+
+	public void setExtraCost3(Integer extraCost3) {
+		this.extraCost3 = extraCost3;
+	}
+
+	public Integer getExtraCost4() {
+		return extraCost4;
+	}
+
+	public void setExtraCost4(Integer extraCost4) {
+		this.extraCost4 = extraCost4;
+	}
+
+	public Integer getExtraCost5() {
+		return extraCost5;
+	}
+
+	public void setExtraCost5(Integer extraCost5) {
+		this.extraCost5 = extraCost5;
+	}
+
+	public Integer getExtraCost6() {
+		return extraCost6;
+	}
+
+	public void setExtraCost6(Integer extraCost6) {
+		this.extraCost6 = extraCost6;
+	}
+
+	public Integer getExtraCost7() {
+		return extraCost7;
+	}
+
+	public void setExtraCost7(Integer extraCost7) {
+		this.extraCost7 = extraCost7;
+	}
+
+	public Integer getExtraCost8() {
+		return extraCost8;
+	}
+
+	public void setExtraCost8(Integer extraCost8) {
+		this.extraCost8 = extraCost8;
+	}
+
+	public Date getEnsuranceDate() {
+		return ensuranceDate;
+	}
+
+	public void setEnsuranceDate(Date ensuranceDate) {
+		this.ensuranceDate = ensuranceDate;
+	}
+
+	public Integer getCompanyAmount() {
+		return companyAmount;
+	}
+
+	public void setCompanyAmount(Integer companyAmount) {
+		this.companyAmount = companyAmount;
+	}
+
+	public Integer getDriverAmount() {
+		return driverAmount;
+	}
+
+	public void setDriverAmount(Integer driverAmount) {
+		this.driverAmount = driverAmount;
+	}
+
+	public Integer getThirdAmount() {
+		return thirdAmount;
+	}
+
+	public void setThirdAmount(Integer thirdAmount) {
+		this.thirdAmount = thirdAmount;
+	}
+
+	/**
+	 * @return the isRealCost
+	 */
+	public boolean isRealCost() {
+		return realCost;
+	}
+
+	/**
+	 * @param isRealCost the isRealCost to set
+	 */
+	public void setRealCost(boolean realCost) {
+		this.realCost = realCost;
+	}
+
+	/**
+	 * @return the folioNumber
+	 */
+	public Integer getFolioNumber() {
+		return folioNumber;
+	}
+
+	/**
+	 * @param folioNumber the folioNumber to set
+	 */
+	public void setFolioNumber(Integer folioNumber) {
+		this.folioNumber = folioNumber;
+	}
+
+	/**
+	 * @return the sapNumber
+	 */
+	public Integer getSapNumber() {
+		return sapNumber;
+	}
+
+	/**
+	 * @param sapNumber the sapNumber to set
+	 */
+	public void setSapNumber(Integer sapNumber) {
+		this.sapNumber = sapNumber;
+	}
+
+	/**
+	 * @return the comment
+	 */
+	public String getComment() {
+		return comment;
+	}
+
+	/**
+	 * @param comment the comment to set
+	 */
+	public void setComment(String comment) {
+		this.comment = comment;
+	}
+
+	public String getWhoDrives() {
+		// TODO Auto-generated method stub
+		return whoDrives;
+	}
+
+	public void setWhoDrives(String whoDrives) {
+		this.whoDrives = whoDrives;
+	}
+
+	/**
+	 * @return the doubleCabin
+	 */
+	public boolean isDoubleCabin() {
+		return doubleCabin;
+	}
+
+	/**
+	 * @param doubleCabin the doubleCabin to set
+	 */
+	public void setDoubleCabin(boolean doubleCabin) {
+		this.doubleCabin = doubleCabin;
+	}
+
+	public AccidentClasificationDataType getNearmiss() {
+		return nearmiss;
+	}
+
+	public void setNearmiss(AccidentClasificationDataType nearmiss) {
+		this.nearmiss = nearmiss;
+	}
+	
+	/**
+	 * @return the distractor
+	 */
+	public String getDistractor() {
+		return distractor;
+	}
+
+	/**
+	 * @param distractor the distractor to set
+	 */
+	public void setDistractor(String distractor) {
+		this.distractor = distractor;
+	}
+
+	/**
+	 * @return the controlMultiple
+	 */
+	public String getControlMultiple() {
+		return controlMultiple;
+	}
+
+	/**
+	 * @param controlMultiple the controlMultiple to set
+	 */
+	public void setControlMultiple(String controlMultiple) {
+		this.controlMultiple = controlMultiple;
+	}
+	
+	public String getCorporationName() {
+		switch(corporation.getId()) {
+			case CorporationData.FORESTALORIENTAL:
+				return "UPM";
+			case CorporationData.WEYERHAEUSER:
+				return "WY";
+			case CorporationData.MONTES_DE_PLATA:
+				return "MDP";
+		}
+		return "---";
+	}
+
+	public boolean hasDeceased() {
+		return (driverstate != null && driverstate.equals("datatype.driverstate.dead"))
+				|| (fatalitiesfunccount != null && fatalitiesfunccount.intValue() > 0)
+				|| (fatalitiesothercount != null && fatalitiesothercount.intValue() > 0);
+	}
+
+	public boolean hasInjured() {
+		return (driverstate != null && driverstate.equals("datatype.driverstate.injured"))
+				|| (injuredfunccount != null && injuredfunccount.intValue() > 0)
+				|| (injuredothercount != null && injuredothercount.intValue() > 0);
+	}
+
+	public boolean hasDaysLost() {
+		return (dayslost != null && dayslost.intValue() > 0) || (otherpartydayslost != null && otherpartydayslost.intValue() > 0);
+	}
+
+	public int getAge() {
+		return Util.getAge(date);
+	}
+
+	public boolean isSupervised() {
+		return status.intValue() == SUPERVISED;
+	}
+
+	public boolean isMercosur() {
+		Integer countryId = getCountryId();
+		return (countryId.equals(CountryData.URUGUAY_ID) || countryId.equals(CountryData.PARAGUAY_ID) || countryId.equals(CountryData.ARGENTINA_ID));
+	}
+
+	public boolean isDamage15() {
+		return damage15;
+	}
+
+	public void setDamage15(boolean damage15) {
+		this.damage15 = damage15;
+	}
+
+	public boolean isDamage16() {
+		return damage16;
+	}
+
+	public void setDamage16(boolean damage16) {
+		this.damage16 = damage16;
+	}
+
+
+
+
+	public boolean isFactor1() {
+		return factor1;
+	}
+
+
+
+
+	public void setFactor1(boolean factor1) {
+		this.factor1 = factor1;
+	}
+
+
+
+
+	public boolean isFactor2() {
+		return factor2;
+	}
+
+
+
+
+	public void setFactor2(boolean factor2) {
+		this.factor2 = factor2;
+	}
+
+
+
+
+	public boolean isFactor3() {
+		return factor3;
+	}
+
+
+
+
+	public void setFactor3(boolean factor3) {
+		this.factor3 = factor3;
+	}
+
+
+
+
+	public boolean isFactor4() {
+		return factor4;
+	}
+
+
+
+
+	public void setFactor4(boolean factor4) {
+		this.factor4 = factor4;
+	}
+
+
+
+
+	public boolean isFactor5() {
+		return factor5;
+	}
+
+
+
+
+	public void setFactor5(boolean factor5) {
+		this.factor5 = factor5;
+	}
+
+
+
+
+	public boolean isFactor6() {
+		return factor6;
+	}
+
+
+
+
+	public void setFactor6(boolean factor6) {
+		this.factor6 = factor6;
+	}
+
+
+
+
+	public boolean isFactor7() {
+		return factor7;
+	}
+
+
+
+
+	public void setFactor7(boolean factor7) {
+		this.factor7 = factor7;
+	}
+
+
+
+
+	public boolean isFactor8() {
+		return factor8;
+	}
+
+
+
+
+	public void setFactor8(boolean factor8) {
+		this.factor8 = factor8;
+	}
+
+
+
+
+	public boolean isFactor9() {
+		return factor9;
+	}
+
+
+
+
+	public void setFactor9(boolean factor9) {
+		this.factor9 = factor9;
+	}
+
+
+
+
+	public boolean isFactor10() {
+		return factor10;
+	}
+
+
+
+
+	public void setFactor10(boolean factor10) {
+		this.factor10 = factor10;
+	}
+
+
+
+
+	public boolean isFactor11() {
+		return factor11;
+	}
+
+
+
+
+	public void setFactor11(boolean factor11) {
+		this.factor11 = factor11;
+	}
+
+
+
+
+	public boolean isFactor12() {
+		return factor12;
+	}
+
+
+
+
+	public void setFactor12(boolean factor12) {
+		this.factor12 = factor12;
+	}
+
+
+
+
+	public boolean isFactor13() {
+		return factor13;
+	}
+
+
+
+
+	public void setFactor13(boolean factor13) {
+		this.factor13 = factor13;
+	}
+
+
+
+
+	public boolean isFactor14() {
+		return factor14;
+	}
+
+
+
+
+	public void setFactor14(boolean factor14) {
+		this.factor14 = factor14;
+	}
+
+
+
+
+	public boolean isFactor15() {
+		return factor15;
+	}
+
+
+
+
+	public void setFactor15(boolean factor15) {
+		this.factor15 = factor15;
+	}
+
+
+
+
+	public boolean isFactor16() {
+		return factor16;
+	}
+
+
+
+
+	public void setFactor16(boolean factor16) {
+		this.factor16 = factor16;
+	}
+
+
+
+
+	public boolean isFactor17() {
+		return factor17;
+	}
+
+
+
+
+	public void setFactor17(boolean factor17) {
+		this.factor17 = factor17;
+	}
+
+
+
+
+	public boolean isFactor18() {
+		return factor18;
+	}
+
+
+
+
+	public void setFactor18(boolean factor18) {
+		this.factor18 = factor18;
+	}
+
+
+
+
+	public boolean isFactor19() {
+		return factor19;
+	}
+
+
+
+
+	public void setFactor19(boolean factor19) {
+		this.factor19 = factor19;
+	}
+
+
+
+
+	public boolean isFactor20() {
+		return factor20;
+	}
+
+
+
+
+	public void setFactor20(boolean factor20) {
+		this.factor20 = factor20;
+	}
+
+
+
+
+	public boolean isFactor21() {
+		return factor21;
+	}
+
+
+
+
+	public void setFactor21(boolean factor21) {
+		this.factor21 = factor21;
+	}
+
+
+
+
+	public boolean isFactor22() {
+		return factor22;
+	}
+
+
+
+
+	public void setFactor22(boolean factor22) {
+		this.factor22 = factor22;
+	}
+
+
+
+
+	public Integer getFatalitiesothercount() {
+		return fatalitiesothercount;
+	}
+
+
+
+
+	public Integer getFatalitiesfunccount() {
+		return fatalitiesfunccount;
+	}
+
+	public boolean isFactor(int i) {
+		switch(i) {
+			case 1:
+				return factor1;
+			case 2:
+				return factor2;
+			case 3:
+				return factor3;
+			case 4:
+				return factor4;
+			case 5:
+				return factor5;
+			case 6:
+				return factor6;
+			case 7:
+				return factor7;
+			case 8:
+				return factor8;
+			case 9:
+				return factor9;
+			case 10:
+				return factor10;
+			case 11:
+				return factor11;
+			case 12:
+				return factor12;
+			case 13:
+				return factor13;
+			case 14:
+				return factor14;
+			case 15:
+				return factor15;
+			case 16:
+				return factor16;
+			case 17:
+				return factor17;
+			case 18:
+				return factor18;
+			case 19:
+				return factor19;
+			case 20:
+				return factor20;
+			case 21:
+				return factor21;
+			case 22:
+				return factor22;
+		}
+		return false;
+	}
+
+
+
+	public void cleanIds() {
+		this.id = null;
+		Iterator it = vehiclesInvolved.iterator();
+		while(it.hasNext()) {
+			((VehicleInvolvedDataType)it.next()).setInvolvedid(null);
+		}
+	}
+}

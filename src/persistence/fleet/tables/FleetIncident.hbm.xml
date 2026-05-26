@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.fleet.tables" >
+	<class name="FleetIncident" table="fleetincidents">
+        
+		<id column="id" name="id">
+            <generator class="sequence">
+            	<param name="sequence">FleetIncident_Sequence</param>
+            </generator>
+        </id>
+
+        <many-to-one name="fleet" class="persistence.fleet.tables.ColectiveFleet" column="fleet" not-null="true" />
+
+        <property 	name="period"	type="java.lang.Integer"	column="period" not-null="true" />
+        <property 	name="year"		type="java.lang.Integer"	column="year" not-null="true" />
+
+        <many-to-one name="corporation" class="persistence.administration.corporation.tables.Corporation" column="corporation" not-null="true" />
+        <many-to-one name="country" class="persistence.administration.corporation.tables.Country" column="country"  not-null="true" />
+        <many-to-one name="divOrg1" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="divorg1" />
+        <many-to-one name="divOrg2" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="divorg2" />
+        <many-to-one name="divOrg3" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="divorg3" />
+		
+	    <many-to-one name="clasification" class="persistence.datatype.tables.IncidentClasification"	column="clasification"/>
+
+        <property 	name="number"	type="java.lang.Integer"		column="number"/>
+        <property 	name="cost"		type="java.lang.Integer"		column="cost"/>
+
+    </class>
+</hibernate-mapping>

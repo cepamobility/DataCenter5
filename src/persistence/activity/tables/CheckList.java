@@ -1,0 +1,142 @@
+package persistence.activity.tables;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Set;
+
+import communication.activity.tables.CheckListData;
+import communication.activity.tables.PointData;
+import communication.administration.corporation.tables.CorporationData;
+
+public class CheckList implements Serializable {
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+	private Integer id;
+	private Integer version;
+	
+	private String goals;
+	private String scope; 
+	//private Collection points;
+	private Set<Point> points;
+	
+	// Referencia a la definición del curso
+	//private Activity activity;
+	private CEPAActivityDefinition activity;
+	
+	public Integer getVersion() {
+		return version;
+	}
+	public void setVersion(Integer version) {
+		this.version = version;
+	}
+	/**
+	 * @return Returns the goals.
+	 */
+	public String getGoals() {
+		return goals;
+	}
+	/**
+	 * @param goals The goals to set.
+	 */
+	public void setGoals(String goals) {
+		this.goals = goals;
+	}
+	/**
+	 * @return Returns the points.
+	 */
+	public Set<Point> getPoints() {
+		return points;
+	}
+	/**
+	 * @param points The points to set.
+	 */
+	public void setPoints(Set<Point> points) {
+		this.points = points;
+	}
+	/**
+	 * @return Returns the scope.
+	 */
+	public String getScope() {
+		return scope;
+	}
+	/**
+	 * @param scope The scope to set.
+	 */
+	public void setScope(String scope) {
+		this.scope = scope;
+	}
+	/**
+	 * @return Returns the activity.
+	 */
+	public CEPAActivityDefinition getActivity() {
+		return activity;
+	}
+	/**
+	 * @param activity The activity to set.
+	 */
+	public void setActivity(CEPAActivityDefinition activity) {
+		this.activity = activity;
+	}
+	/**
+	 * @return Returns the id.
+	 */
+	public Integer getId() {
+		return id;
+	}
+	/**
+	 * @param id The id to set.
+	 */
+	public void setId(Integer id) {
+		this.id = id;
+	} 
+	
+	/* Obtiene la lista de Puntos ordenados por el orden del punto
+	 * dentro del checklist
+	 */
+	public ArrayList<Point> getOrderedPoints(){
+		// Creo una lista a partir del Set:
+		if (this.points == null || this.points.size() == 0) return null;
+		ArrayList<Point> orderedPoints = new ArrayList<Point>();
+		Iterator<Point> it = this.points.iterator();
+		while (it.hasNext())
+		{
+			Point pc = (Point) it.next();
+			orderedPoints.add(pc);
+		}
+				
+		// ordeno la lista por orden de los puntos
+		java.util.Collections.sort(orderedPoints,
+				new Comparator(){
+					public int compare(Object pc1, Object pc2) 
+					{
+						return ((Point)pc1).getPointOrder() - 
+							((Point)pc2).getPointOrder();
+					}
+	    		}
+		);		
+		return orderedPoints;
+	}
+    
+    public CheckListData getCheckListData(int corporation) {
+    	long b = System.currentTimeMillis();
+        Collection<PointData> pointCollection = new LinkedList<PointData>();
+        Iterator<Point> it = points.iterator();
+        while(it.hasNext()) { 
+            Point point = it.next();
+            if(point.isValid(id, corporation)) {
+        		pointCollection.add(point.getPointData());
+            }
+        }   
+        CheckListData chl = new CheckListData(id,goals,scope,pointCollection);
+        System.out.println("GET CHECKLISTDATA: "+String.valueOf(System.currentTimeMillis() - b));
+        return chl;
+    }
+
+}

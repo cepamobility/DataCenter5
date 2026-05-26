@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.driver.tables">
+	<class name="TelematicControl" table="telematiccontrols">
+		
+       <id	column="id"	name="id"	type="java.lang.Integer">
+            <generator class="sequence">
+            	<param name="sequence">Telematic_Sequence</param>
+            </generator>
+        </id>
+        <many-to-one 	name="driver"  class="persistence.driver.tables.Driver"	column="driver"/>
+        <many-to-one 	name="vehicle"  class="persistence.vehicle.tables.Vehicle"	column="vehicle" />
+        <property		name="date"	   type="java.util.Date"		column="date"		not-null="true" />
+        <property		name="type"	   type="java.lang.Integer"		column="type"		not-null="true" />
+        <property		name="recomendation"	   type="java.lang.Integer"		column="recomendation"		not-null="true" />
+        <property		name="observations"	   type="text"		column="observations" />
+        
+        <property		name="occurrences" type="java.lang.Integer" column="occurrences" />
+        <property		name="speed" type="java.lang.Integer" column="speed" /> 
+    	
+    	 
+    	<property		name="limitExceeded" type="java.lang.Integer" not-null="true">
+    		<column name="limitexceeded" default="0" />
+    	</property>
+    	
+    	 
+    	<property		name="limitExceededRain" type="java.lang.Integer" not-null="true">
+    		<column name="limitexceededRain"  default="0" />
+    	</property>  
+    	
+    	<property		name="time" type="java.lang.String" column="time" />
+    	<property 		name="duration"  type="java.lang.String" column="duration" />
+    	<property		name="totalDuration" type="java.lang.String" column="totalduration" /> 
+    	<property		name="distance" type="java.lang.Float" column="distance" /> 
+    	<property		name="averageVelocity" type="java.lang.Float" column="averageVelocity" />
+
+		<property		name="image" type="java.lang.String" column="image" />
+    	<property		name="color" type="java.lang.String" column="color" />
+    	<property		name="garage" type="java.lang.String" column="garage" />
+    	<property		name="point" type="java.lang.String" column="point" />
+    	<property		name="status" type="java.lang.String" column="status" />
+    	<property		name="statusComment" type="java.lang.String" length="500" column="statusComment" />
+    			
+        <property		name="date2"	   type="java.util.Date"		column="date2" />
+    	<property		name="date3"	   type="java.util.Date"		column="date3" />
+   	</class>
+</hibernate-mapping>

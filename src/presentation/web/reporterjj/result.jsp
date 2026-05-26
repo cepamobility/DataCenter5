@@ -1,0 +1,271 @@
+<%@page language="java" 
+	errorPage="exception.jsp" 
+	import="java.util.*"
+	import="business.*"
+	import="business.vehicle.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.activity.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.vehicle.*" 	
+ 	import="communication.administration.user.*" 	
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<%@page import="communication.administration.corporation.tables.CorporationData"%>
+<%@page import="communication.driver.tables.DriverData"%>
+<%@page import="communication.administration.corporation.tables.CountryData"%>
+<%@page import="business.activity.ActivityReportFacade"%><html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	 	<title> CEPA International</title>
+		<META http-equiv="Cache-Control" content="no-cache">
+		<META http-equiv="Pragma" content="no-cache">
+		<style type="text/css">
+<!--	body {
+			margin-left: 0px;
+			margin-top: 0px;
+			margin-right: 0px;
+			margin-bottom: 0px;
+		}
+		.contain {
+			width: 100%; 
+			height: 100%;
+		}
+ -->
+		</style>
+	</head>
+
+<%!
+	Text messages; 
+	SystemAccess sys;
+	String attribute; 
+	String value;
+	UserSessionData userSessionData; 
+%>
+<%
+	sys=(SystemAccess)session.getAttribute("SystemAccess");
+	int corporationId = sys.getCorporationId();
+	userSessionData=sys.getUserSessionData();
+	String check = Util.checkPermission(sys,SecurityConstants.JJ_REPORTER);
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		session.setAttribute("url","reporter.jsp");
+		messages=sys.getText();
+
+		CheckListData checkList = sys.getActivityReportFacade().findCheckList(new Integer(62),userSessionData);	
+		Collection points = checkList.getPoints();
+		Iterator pointIt = points.iterator();
+		
+		DriverData driver = userSessionData.getDriverData();
+		ActivityReportFacade activityReport = sys.getActivityReportFacade();
+		CEPAActivityScheduleRegistryData registryData = activityReport.getCompleteResult((Integer)userSessionData.getValue(),driver.getId(),sys.getUserSessionData());		
+		
+		PointData point = (PointData)pointIt.next();
+%>	
+	<body>
+	 	<table width="100%" height="90" border="0" cellpadding="0" cellspacing="0" class="default">
+		 	<form name="logout" action="../login.jsp" method="post">
+	 		</form>
+		 	<form name="start" action="forms.jsp" method="post">
+	 		</form>
+		 	<form name="change" action="reporter.jsp" method="post">
+				<input type="hidden" name="change" value="1"></input>
+	 		</form>
+  			<tr>
+    			<td colspan="2">
+					<table width="100%" border="0" cellspacing="0" cellpadding="0" valign="top">
+      					<tr>
+        					<td><jsp:include  page='<%="../topMenu.jsp?home=true&reporter=true" %>'/></td>
+      					</tr>
+    				</table>	
+    			</td><!--end the topï¿½s table -->
+  			</tr>
+  		</table>
+  		<br>
+  		<br>	
+  		<html:form action="/reporterjj/ReporterJJRegistry">
+		<table width="800" border="0" align="center" cellpadding="0" cellspacing="0">
+			<tr class="guide1"> 
+		    	<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText("activity.reporterjj.points")%>' />
+			</tr>
+		  	<tr> 
+	  			<jsp:include  page="../component/spaceline.jsp" />
+		  	</tr>
+			<tr> 
+	  			<td colspan="3"> 
+		    		<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.data.driver")%>' /> 
+					<table width="100%" border="0" align='center' cellpadding="0" cellspacing="0">
+   						<tr  class="linetwo">
+       						<th align="left"> <%=messages.getText("generic.driver.driverdata.firstname")%></th>
+       						<td align="right"><%=driver.getFirstName()+" "+driver.getLastName()%></td>
+    					</tr>
+   						<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+						<tr class="linetwo">
+	        				<th align="left" > <%=messages.getText("generic.driver.driverdata.wwid")%></th>
+       						<td align="right"><%=driver.getCorporationId()%></td>
+	      				</tr>
+					</table>			
+	    			<jsp:include page="../component/utilityboxbottom.jsp"/>
+		      	</td>	
+		  	</tr>
+		  	<tr> 
+		    	<jsp:include  page="../component/spaceline.jsp" />
+		  	</tr>
+			<tr> 
+	  			<td colspan="3"> 
+		    		<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("activity.reporterjj.interpretation")%>' /> 
+		    		<table width="100%" border="0" align='center' cellpadding="0" cellspacing="0">
+		    			<tr class="lineone">
+		    				<td class="red" width="10%" valign="top"><%=messages.getText("activity.reporterjj.pointio")%></td>
+		    				<td class="lineone" width="90%"><%=messages.getText("activity.reporterjj.iodescription")%></td>
+		    			</tr>
+		    			<tr class="lineone" height="35" valign="middle">
+		    				<td colspan="2" width="100%">
+		    					<table width="100%">
+		    						<tr>
+		    							<td width="33%" align="center" class="green"><%=messages.getText("activity.reporterjj.pointrangegreen")%></td>
+		    							<td width="33%" align="center" class="yellow"><%=messages.getText("activity.reporterjj.pointrangeyellow")%></td>
+		    							<td width="33%" align="center" class="red"><%=messages.getText("activity.reporterjj.pointrangered")%></td>
+		    						</tr>
+		    					</table>
+		    				</td>
+			    		</tr>
+		    		</table>
+	    			<jsp:include page="../component/utilitybox2bottom.jsp"/>
+		      	</td>	
+		  	</tr>
+		  	<tr> 
+		    	<jsp:include  page="../component/spaceline.jsp" />
+		  	</tr>
+			<tr> 
+	  			<td colspan="3"> 
+<%				Collection items = point.getItems();
+				Collections.sort((List)items);
+				Iterator itemIt = items.iterator();
+				double count = 0;
+				double total = 0;
+				while(itemIt.hasNext()) {
+					count++;
+					ItemData item = (ItemData)itemIt.next();
+					Integer valueItem = registryData.getValueFromItem(item);
+					double value = 0;
+					int i = item.getItemOrder().intValue();
+					switch(i){
+						case 1: case 2: case 8: case 9: case 14: case 15: case 16:
+						case 19: case 24: case 27: case 28: case 31: case 38:
+						case 39: case 48: case 49:
+							value = valueItem.floatValue() * 10.0 / 4.0;						
+							break;
+						case 3: case 29: case 30: case 40: case 50:
+							value = (5.0 - valueItem.floatValue()) * 10.0 / 4.0;						
+							break;
+						case 4: case 5: case 7: case 18: case 20: case 21: case 32:
+						case 41:
+							value = (5.0 - valueItem.floatValue()) * 9.0 / 4.0;						
+							break;
+						case 6: case 10: case 11: case 12: case 17: case 25: case 26:
+						case 33: case 34: case 35: case 36: case 37: case 42: case 43:
+						case 44: case 45: case 46: case 47: case 51:
+							value = valueItem.floatValue() * 9.0 / 4.0;						
+							break;
+						case 13: case 22: case 23: case 52: case 53:
+							value = valueItem.floatValue() * 8.0 / 4.0;						
+							break;
+					}
+					total += value;
+					if(i == 1 || i == 8 || i == 14 || i == 19 || i == 24 || i == 27 || i == 38 || i == 48) {
+%>
+		    		<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("reportjj.selfevaluation.item"+i)%>' /> 
+					<table width="100%" border="0" align='center' cellpadding="0" cellspacing="0">
+   						<tr>
+				            <td class="lineone" colspan="2">
+				            </td>
+				      	</tr>
+   						<tr class="guide2">
+				            <td align="center" width="3%">
+				            </td>
+				            <td align="center" width="10%">
+			            		Suas Respostas
+				            </td>
+				            <td align="center" width="10%">
+				            	Pontuação do Item
+				            </td>
+				            <td align="left" width="77%">
+				            </td>
+						</tr>		
+<%					}
+%>
+   						<tr class="lineone">
+				            <td align="center">
+			            		<%=i%>
+				            </td>
+				            <td align="center">
+			            		<%=valueItem%>
+				            </td>
+				            <td align="center">
+				            	<%=value%>
+				            </td>
+				            <td align="left">
+			            		<%=messages.getText(item.getText())%>
+				            </td>
+						</tr>		
+<%					if(i == 7  || i == 13 || i == 18 || i == 23 || i == 26 || i == 37 || i == 47 || i == 53 ) {
+						double avg = total / count;
+						String color = "";
+						avg = Math.round(avg * Math.pow(10,2)) / Math.pow(10,2);
+						if(avg <= 4.25) {
+							color = "greenBig";
+						} else if(avg <= 6.5) {
+							color = "yellowBig";
+						} else {
+							color = "redBig";
+						}
+						total = 0;
+						count = 0;
+%>						<tr>
+							<td class="lineone" colspan="4" align="right">
+								<span class='<%=color%>'><%=messages.getText("activity.reporterjj.pointio")+avg%></span>
+							</td>
+						</tr>
+					</table>
+		    		<jsp:include  page='../component/utilitybox2bottom.jsp' /> 
+		    		<br>
+<%					}
+				}
+%>
+   						<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					  	<tr> 
+					    	<jsp:include  page="../component/spaceline.jsp" />
+					  	</tr>
+						<tr>
+							<td colspan="3" align="right">
+				    			<jsp:include  page='../component/utilitybox2top.jsp' />
+				    			<table width="100%" cellpadding="0" cellspacing="0">
+			   						<tr  class="lineone">
+										<td width="100%" colspan="2" align="right" class="lineone">
+											<input type="button" value='<%=messages.getText("reporterjj.commentarydrive.forms")%>' onclick="document.forms['start'].submit();" />
+					    				</td>   					
+					    			</tr>
+								</table>			
+				    			<jsp:include page="../component/utilitybox2bottom.jsp"/>
+					      	</td>	
+					  	</tr>
+					</table>			
+		      	</td>	
+		  	</tr>
+		</html:form>
+	</body>
+<%					
+	}
+%>		
+</html>

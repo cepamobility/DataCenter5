@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es" dir="ltr">
+
+    <head>
+        <meta charset="utf-8">
+        <title>JnjSite.com: Javascript Geolocation</title>
+    </head>
+
+    <body>
+        <h1>JnjSite.com: Javascript Geolocation</h1>
+        <p>Your current location is latitude <span id="spanLatitude"></span> degrees and longitude <span id="spanLongitude"></span> degrees.</p>
+        <p id="theError"></p>
+        <script type="text/javascript">
+            function positionSuccess(position) {
+                alert('SUCCESS');
+                document.getElementById('spanLatitude').innerHTML = position.coords.latitude;
+                document.getElementById('spanLongitude').innerHTML = position.coords.longitude;
+                console.log(position);
+            }
+
+            function positionError(error) {
+                alert('ERROR');
+                switch (error.code) {
+                    case error.PERMISSION_DENIED:
+                        document.getElementById('theError').innerHTML = "User denied the request for Geolocation."
+                        break;
+                    case error.POSITION_UNAVAILABLE:
+                        document.getElementById('theError').innerHTML = "Location information is unavailable."
+                        break;
+                    case error.TIMEOUT:
+                        document.getElementById('theError').innerHTML = "The request to get user location timed out."
+                        break;
+                    case error.UNKNOWN_ERROR:
+                        document.getElementById('theError').innerHTML = "An unknown error occurred."
+                        break;
+                }
+            }
+            window.onload = () => {
+                if (navigator.geolocation) {
+                    alert('Browser has Geolocation');
+                    navigator.geolocation.getCurrentPosition(positionSuccess, positionError);
+                } else {
+                    alert('Browser do not support Geoloation');
+                }
+            };
+        </script>
+    </body>
+
+</html>

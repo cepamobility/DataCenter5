@@ -1,0 +1,184 @@
+package presentation.translator.web.user;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+
+import presentation.translator.web.util.AbstractAction;
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+
+import communication.administration.user.tables.UserAttributes;
+import communication.alert.AlertConstants;
+import communication.driver.tables.DriverData;
+import communication.util.MailSender;
+
+/**
+ * @author fcarriquiry
+ */
+public class ResetPasswordAction extends AbstractAction {
+
+    public ActionForward cancel(HttpSession session,ActionMapping mapping, ActionForm form) {
+        return mapping.findForward("cancel");
+    }
+
+    public ActionForward action(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response) throws Throwable {
+        HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+
+        ResetPasswordForm resetForm = (ResetPasswordForm)form;
+        String email = resetForm.getEmail();
+        String language = resetForm.getLanguage();
+        if(Util.empty(email) || email.equals("resetpassword")) {
+            return mapping.findForward("back");
+        }
+        UserAttributes userData = sys.getUserReportFacade().findUserByEmail(email,sys.getUserSessionData());
+        MailSender sender = new MailSender();
+        String forward = "nouser";
+        
+        if(userData != null) {
+            
+        	sys.reloadFilter(userData.getCorporationId().intValue());
+            
+            int passwordType = sys.getUserReportFacade().getPasswordType(userData.getLoginName(),sys.getUserSessionData());
+            String password = getMessage1(language,userData.getLoginName(),passwordType)+sys.getUserABMFacade().resetPassword(userData,sys.getUserSessionData(),passwordType);
+            if(passwordType == UserAttributes.DIFFICULT) {
+                password += getMessage3(language);
+            }
+            
+            String title = getTitle1(language) ;
+            sender.send(email,
+            		AlertConstants.FROMNAME_DC,
+            		AlertConstants.FROM_DC,
+            		title,password);
+            forward = "reset";
+        }else {
+            DriverData driver = sys.getDriverReportFacade().findDriverByEmail(email,sys.getUserSessionData());
+            
+            if(driver != null) {
+        
+            	sys.reloadFilter(driver.getCorporation().getId().intValue());
+                String password = getMessage2(language,driver.getEmail())+sys.getUserABMFacade().createDriverUser(driver,sys.getUserSessionData(),language);
+                String title = getTitle2(language) ;
+                
+                sender.send(email,
+                		AlertConstants.FROMNAME_DC,
+                		AlertConstants.FROM_DC,
+                		title,password);
+                forward = "newuser";
+            }
+        }
+        return mapping.findForward(forward);
+    }
+    
+    private String getTitle1(String language) {
+        if(language.equals("es")) {
+            return "Contraseña actualizada";
+        }else if(language.equals("pt")) {
+            return "Senha atualizada";
+        }else {
+            return "Reset Password";
+        }
+    }
+    
+    private String getMessage1(String language, String loginname, int passwordType) {
+        String message = "";
+        if(language.equals("es")) {
+            if(passwordType == UserAttributes.SIMPLE) {
+                message += "<strong>Por su pedido, su contrase&ntilde;a ha sido actualizada.</strong><br />";
+            }else {
+                message += "<strong>Su password ha sido reseteada.</strong><br />";
+            }
+            message += "<strong>url:</strong> <a href='https://"+AlertConstants.DC_DOMAIN+"'>"+AlertConstants.DC_DOMAIN + "</a><br />";
+            message += "<strong>Login:</strong> "+loginname;
+            message += "<br />";
+            message += "<strong>Password: </strong>";
+        }else if(language.equals("pt")) {
+            if(passwordType == UserAttributes.SIMPLE) {
+                message += "<strong>Segundo Solicita&ccedil;&atilde;o, sua senha foi atualizada.</strong><br />";
+            }else {
+                message += "<strong>Sua password foi resseteada.</strong><br />";
+            }
+            message += "<strong>url:</strong> <a href='https://"+AlertConstants.DC_DOMAIN+"'>"+AlertConstants.DC_DOMAIN+"</a><br />";
+            message += "<strong>Login:</strong> "+loginname;
+            message += "<br />";
+            message += "<strong>Password: </strong>";        
+        }else {
+            if(passwordType == UserAttributes.SIMPLE) {
+                message += "<strong>For your asking your password has been reseted.</strong><br />";
+            }else {
+                message += "<strong>Your password has been reset.</strong><br />";
+            }
+            message += "<strong>url:</strong> <a href='https://"+AlertConstants.DC_DOMAIN+"'>"+AlertConstants.DC_DOMAIN+"</a><br />";
+            message += "<strong>Login:</strong> "+loginname;
+            message += "<br />";
+            message += "<strong>Password: </strong>";
+        }
+        return Util.emailTranslation(message);
+    }
+
+    private String getTitle2(String language) {
+        if(language.equals("es")) {
+            return "Nuevo Usuario Data Center";
+        }else if(language.equals("pt")) {
+            return "New Data Center User ";
+        }else {
+            return "Novo Usuario Data Center";
+        }
+    }
+    
+    private String getMessage2(String language, String loginname) {
+        String message = "";
+        if(language.equals("es")) {
+            message += Util.emailTranslation("<strong>Un usuario ha sido creado con sus datos.</strong><br />");
+            message += "<strong>url:</strong> <a href='https://"+AlertConstants.DC_DOMAIN+"'>"+AlertConstants.DC_DOMAIN+"</a><br />";
+            message += "<strong>Login: </strong>"+loginname+"<br /> "+"<strong>Password: </strong>";
+        }else if(language.equals("pt")) {
+            message += Util.emailTranslation("<strong>Usu&aacute;rio foi criado com seus dados.</strong><br />");
+            message += "<strong>url:</strong> <a href='https://"+AlertConstants.DC_DOMAIN+"'>"+AlertConstants.DC_DOMAIN+"</a><br />";
+            message += "<strong>Login:</strong> "+loginname+"<br /> "+"<strong>Password: </strong>";
+        }else {
+            message += Util.emailTranslation("<strong>A user has been created with your data.</strong><br />");
+            message += "<strong>url:</strong> <a href='https://"+AlertConstants.DC_DOMAIN+"'>"+AlertConstants.DC_DOMAIN+"</a><br />";
+            message += "<strong>Login: </strong>"+loginname+"<br /> "+"<strong>Password: </strong>";
+        }
+        return message;
+    }
+
+    private String getMessage3(String language) {
+        String message = "";
+        if(language.equals("es")) {
+            message += "<br /><br />Recuerde que al ingresar al sistema la primera vez, &eacute;ste le solicitar&aacute; modificar su password, por razones de seguridad, de acuerdo con las pol&iacute;ticas de seguridad en el tratamiento de los datos de car&aacute;cter personal de Johnson & Johnson." +
+                    "<br /><br />Siguiendo con las recomendaciones resultantes del J&J Risk Assessment, las pol&iacute;ticas de password del Data Center fueron alineadas con J&J&#8217;s Worldwide Policies on Information Asset Protection (WWIAPs)." +
+                    "<br /><br />Estas pol&iacute;ticas exigen que su password: " +
+                    "<br /><br /><strong>- </strong>Contenga 3 niveles de complejidad (Letras may&uacute;sculas, min&uacute;sculas, numerales y/o caracteres no alfanum&eacute;ricos ((@#$%^&+=))" +
+                    "<br /><strong>- </strong>Contenga al menos 6 caracteres " +
+                    "<br /><strong>- </strong>Expire cada 90 d&iacute;as m&aacute;ximo " +
+                    "<br /><strong>- </strong>Expire luego del primer logon (password inicial)" +
+                    "<br /><br /><br />Saludos";
+        }else if(language.equals("pt")) {
+            message += "<br /><br />Lembre-se que ao ingressar ao sistema pela primeira vez, o mesmo lhe solicitar&aacute; modificar sua password, por raz&otilde;es de seguran&ccedil;a, de acordo com as pol&iacute;ticas de seguran&ccedil;a no tratamento dos dados de car&aacute;ter pessoal de Johnson & Johnson." +
+                    "<br /><br />Atendendo as recomenda&ccedil;&otilde;es resultantes de J&J Risk Assessment, as pol&iacute;ticas de passwords do Data Center foram alinhadas com J&J&#8217;s Worldwide Policies on Information Asset Protection (WWIAPs)." +
+                    "<br /><br />Estas pol&iacute;ticas exigem que sua password:" +
+                    "<br /><br /><strong>- </strong>Contenha 3 n&iacute;veis de complexidade (letras mai&uacute;sculas, min&uacute;sculas, n&uacute;meros e/ou caracteres n&atilde;o alfas-num&eacute;ricos ((@#$%^&+=))" +
+                    "<br /><strong>- </strong>Contenha ao menos 6 caracteres" +
+                    "<br /><strong>- </strong>Expire no m&aacute;ximo a cada 90 dias" +
+                    "<br /><strong>- </strong>Expire no primeiro login (password inicial)" +
+                    "<br /><br /><br />Atenciosamente,";
+        }else {
+            message += "<br /><br />Please, remember that after entering, the system will ask you to change the password that was assigned to you." +
+                    "<br /><br />Following recommendations resulting from a J&J Risk Assessment, Data Center password policies have been aligned with J&J&#8217;s Worldwide Policies on Information Asset Protection (WWIAPs)." +
+                    "<br /><br />This policies state that passwords should:" +
+                    "<br /><br /><strong>- </strong>have 3 levels of complexity (English Upper Case Letters, English Lower Case Letters, Westernized Arabic Numerals, and/or Non-alphanumeric (@#$%^&+=))" +
+                    "<br /><strong>- </strong>have a minimum of 6 characters" +
+                    "<br /><strong>- </strong>expire every 90 days at a minimum" +
+                    "<br /><strong>- </strong>expire upon first logon (Initial passwords)" +
+                    "<br /><br /><br />Best Regards.";
+        }
+        return message;
+    }
+}

@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.driver.tables">
+	<class name="TelematicControlSendMail" table="telematiccontrolsendmail">
+		
+       <id	column="id"	name="id"	type="java.lang.Integer">
+            <generator class="sequence">
+            	<param name="sequence">Telematic_SM_Sequence</param>
+            </generator>
+        </id>
+        <many-to-one 	name="telematicControl"  class="persistence.driver.tables.TelematicControl"	column="telematiccontrol" not-null="true"/>
+        <many-to-one 	name="user"  class="persistence.administration.user.tables.User"	column="userid"  not-null="true"/>
+        <property		name="date"	   type="java.util.Date"		column="date"		not-null="true" />
+        <property		name="subject"	   type="java.lang.String"		column="subject"		 />
+        <property		name="to"	   type="java.lang.String"		column="tomail"		 />
+        <property		name="body"	   type="java.lang.String"		column="body"		 />
+   	</class>
+</hibernate-mapping>

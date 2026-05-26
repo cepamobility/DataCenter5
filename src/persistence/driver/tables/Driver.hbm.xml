@@ -1,0 +1,127 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.driver.tables">
+    <class name="Driver" table="drivers">
+
+        <id	column="id"	name="id"	type="java.lang.Integer">
+            <generator class="sequence">
+            	<param name="sequence">Driver_Sequence</param>
+            </generator>
+        </id>
+        
+        <property	name="firstName"	type="java.lang.String"		column="firstName"		not-null="true" />
+        
+        <property	name="lastName"		type="java.lang.String"		column="lastName"		not-null="true" />
+        <property	name="birthDate"	type="java.util.Date"		column="birthDate"		not-null="true" />
+
+        <many-to-one name="sex" class="persistence.datatype.tables.Sex"	column="sex" not-null="true"/>
+        
+        <property	name="nationality"	type="java.lang.String"		column="nationality"	 />
+
+        <many-to-one name="divOrg1" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="divorg1" />
+        <many-to-one name="divOrg2" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="divorg2" />
+        <many-to-one name="divOrg3" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="divorg3" />
+
+        <many-to-one name="geoLevel1" class="persistence.administration.corporation.tables.GeoLevel1" column="geolevel1" />
+        
+        <many-to-one name="corpCountry" class="persistence.administration.corporation.tables.CorporationCountry" not-null="true">
+	        <column name="corporation"></column>
+	        <column name="country"></column>
+	    </many-to-one>
+
+        <property	name="city"				type="java.lang.String"		column="city"			/>
+        <property	name="stateOrRegion"				type="java.lang.String"		column="stateorregion"	/>
+        
+        <property	name="licenseExpiry"	type="java.util.Date"		column="licenseExpiry" />
+
+		<property name="licenseNotExpiry" type="boolean">
+        	<column name="licensenotexpiry" default="false" />
+        </property>	
+		
+        <property	name="licenseCategory"	type="java.lang.String"	column="licenseCategory"/>
+        <property	name="licenseGet"		type="java.util.Date"		column="licenseGet" />
+        <property	name="licenseObs"	type="text"		column="licenseObs" />
+        
+        <many-to-one 	name="vehicleAllowed"	class="persistence.datatype.tables.TypeVehicle"	column="vehicleAllowed" />
+        <property	name="officeAddress"	type="java.lang.String"		column="officeAddress"	/>
+        <property	name="email"			type="java.lang.String"		column="email"			/>
+        <property	name="personalAddress"	type="java.lang.String"		column="personalAddress"/>
+
+        <property	name="corporationId"	type="java.lang.String"	column="corporationId"	/>
+        <property	name="licenseNumber"	type="java.lang.String"	column="licenseNumber"	/>
+        <property	name="phoneNumber"	type="java.lang.String"	column="phoneNumber"	/>
+        <property	name="inclusionDate"	type="java.util.Date"	column="inclusionDate"	/>
+        <property	name="exclusionDate"	type="java.util.Date"	column="exclusionDate"	/>
+
+		<property name="drives" type="boolean">
+        	<column name="drives" default="false" />
+        </property>	
+        
+        <property name="employee" type="boolean">
+        	<column name="employee" default="true" />
+        </property>	
+
+        <many-to-one name="contract" class="persistence.datatype.tables.Contract" column="contract" />
+
+        <property	name="bpsregistry"		type="java.lang.String"		column="bpsregistry" />
+        <property	name="healthExpiry"		type="java.util.Date"		column="healthExpiry"	/>
+
+        <property	name="points"			type="java.lang.Integer"	column="points"	/>
+
+        <property	name="superviser"		type="java.lang.String"		column="superviser"	/>
+        <property	name="manager"			type="java.lang.String"		column="manager"	/>
+
+		<set inverse="true" name="aptitudTestSet"  cascade="all-delete-orphan">
+			<key column="id" not-null="true"/>
+			<one-to-many class="AptitudTest" />
+		</set>
+		<set inverse="true" name="alcoholControlSet"  cascade="all-delete-orphan">
+			<key column="id" not-null="true"/>
+			<one-to-many class="AlcoholControl" />
+		</set>
+		<set inverse="true" name="prizeSet"  cascade="all-delete-orphan">
+			<key column="id" not-null="true"/>
+			<one-to-many class="DriverPrize" />
+		</set>
+		
+		
+		<property	name="alertDate"	type="java.util.Date"	column="alertDate"	/>
+        <many-to-one 	name="assignedVehicle"	class="persistence.datatype.tables.AssignedVehicle"	column="assignedvehicle" />
+        
+        <!-- Agregado para Cimsa 03/08/2011 -->
+        <many-to-one name="maritalStatus" class="persistence.datatype.tables.MaritalStatus"	
+        	column="maritalstatus"  />
+        <many-to-one name="educationLevel" class="persistence.datatype.tables.EducationLevel"	
+        	column="educationlevel"  />
+        	
+        <!--  Agregado para Pepsico 16/08/2011 -->
+        <many-to-one name="puesto" class="persistence.datatype.tables.PuestoPepsico"	
+        	column="puesto"  />
+		<property name="licenseCoverage"  type="java.lang.String"		column="licensecoverage" />
+    	<property name="federativeEntity"  type="java.lang.String"		column="federativeentity" />
+    	<property name="authorizateWho"  type="java.lang.String"		column="authorizatewho" />
+    	<property name="authorizateDate"  type="java.util.Date"		column="authorizatedate" />
+    	
+    	<!--  Telematic, este campo concuerda con el sistema de telematic -->
+		<property 	name="idDallas"	type="java.lang.String"	column="iddallas"/>
+		
+		<!--  Agregado para Byer 19/05/2014  -->
+		<property 	name="noHrd"	type="java.lang.Boolean"	column="nohrd"/>
+		<property 	name="noHrdComment"	type="java.lang.String"	column="nohrdcomment"/>
+		
+		
+		<property name="temporal" type="boolean">
+        	<column name="temporal" default="false" />
+        </property>	
+        <property name="createdFromTablet" type="boolean">
+        	<column name="createdfromtablet" default="false" />
+        </property>	
+        <property name="director" type="boolean">
+        	<column name="director" default="false" />
+        </property>	
+        
+    </class>
+</hibernate-mapping>

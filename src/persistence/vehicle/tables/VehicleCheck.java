@@ -1,0 +1,451 @@
+package persistence.vehicle.tables;
+
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Set;
+
+import org.hibernate.HibernateException;
+import org.hibernate.Session;
+
+import persistence.activity.tables.Item;
+import persistence.activity.tables.ItemValueStr;
+import persistence.activity.tables.Point;
+import persistence.hibernate.HibernateUtil;
+
+import communication.activity.tables.ItemValueStrData;
+import communication.activity.tables.PointCommentData;
+import communication.vehicle.tables.VehicleCheckData;
+
+public class VehicleCheck implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+
+	private Integer vehicleCheckId;
+	
+	// Contiene el Set de pares (item,valor):
+	// 1,2,3 segun corresponda o NULL
+	// 1 es correcto, 2 es Falta limpieza/orden y 3 es Con ,arcas,raspones 
+	protected Set itemValueSet = null;
+	
+	protected Date date;
+	
+	protected String name;
+	
+	protected String obs;
+
+	protected String serie;	
+	
+	protected Integer vehicleKm;
+	
+	protected Vehicle vehicle;
+	
+	protected String licenseNumber;
+	
+	protected Date dateLicenseExpiry;
+	
+	protected Integer result;
+	
+	private Integer vehicleType;
+	private Integer chargeType;
+	private Integer checkPlace;
+
+	// Para Nalco
+	protected String inspectedby;
+	protected String distrito;
+	protected String grupo;
+
+	protected Set<persistence.vehicle.tables.PointComment> pointCommentSet;
+	protected Set<persistence.vehicle.tables.VehicleCheckListImage> pointImageSet;
+	
+	
+	/**
+	 * 
+	 * @param data
+	 */
+	public void updateData(VehicleCheckData data){
+		this.vehicleCheckId = data.getVehicleCheckId();
+		
+		Session session = HibernateUtil.currentSession();
+		// itemValueSet
+		itemValueSet = new HashSet();
+		if (data.getItemValueSet() != null) {
+			Iterator it = data.getItemValueSet().iterator();
+	    	while(it.hasNext()){
+	    		ItemValueStrData itemValueData = (ItemValueStrData)it.next();    		
+	    		Item item = (Item)session.load(Item.class,itemValueData.getItem().getId());
+	    		String value = itemValueData.getItemValue();
+	    		ItemValueStr itemValue = new ItemValueStr(item,value,itemValueData.getItemTag());
+	    		itemValueSet.add(itemValue);	    	
+	    	}
+		}
+		// pointCommentValueSet
+		pointCommentSet = new HashSet();
+		if (data.getPointCommentSet() != null) {
+			Iterator it = data.getPointCommentSet().iterator();
+	    	while(it.hasNext()){
+	    		PointCommentData pointValueData = (PointCommentData)it.next();    		
+	    		Point point = (Point)session.load(Point.class,pointValueData.getPoint().getId());
+	    		String value = pointValueData.getComment();
+	    		PointComment pointValue = new PointComment(point,value);
+	    		pointCommentSet.add(pointValue);	    	
+	    	}
+		}
+		
+		
+		this.date = data.getDate();
+		this.name = data.getName();
+		this.obs = data.getObs();
+		this.serie = data.getSerie();
+		this.vehicleKm = data.getVehicleKm();
+		this.vehicle = new Vehicle(data.getVehicle());
+		this.result = data.getResult();
+		this.licenseNumber = data.getLicenseNumber();
+		this.dateLicenseExpiry = data.getDateLicenseExpiry();	
+		
+		// Para Nalco;
+		this.inspectedby = data.getInspectedby();
+		this.distrito = data.getDistrito();
+		this.grupo = data.getGrupo();
+		
+		this.vehicleType = data.getVehicleType();
+		this.chargeType = data.getChargeType();
+		this.checkPlace = data.getCheckPlace();
+	}
+	
+	public VehicleCheck() {
+
+	}
+	
+	public Integer getVehicleCheckId() {
+		return vehicleCheckId;
+	}
+
+	public void setVehicleCheckId(Integer vehicleCheckId) {
+		this.vehicleCheckId = vehicleCheckId;
+	}
+
+	// Devuelve una CEPAActivityData con los items sin cargar
+	public VehicleCheckData getVehicleCheckData() { 
+		VehicleCheckData vcd = new VehicleCheckData();
+		vcd.setVehicleCheckId(this.getVehicleCheckId());
+		vcd.setVehicle(this.vehicle.getVehicleData());
+		vcd.setDate(this.date);
+		vcd.setName(this.getName());
+		vcd.setVehicleKm(this.vehicleKm);
+		vcd.setObs(this.obs);
+		vcd.setSerie(this.serie);
+		vcd.setResult(result);
+        Iterator it = itemValueSet.iterator();
+        Collection items = new LinkedList();
+        while(it.hasNext()) {
+            items.add(((ItemValueStr)it.next()).getData());
+        }
+		vcd.setItemValueSet(items);
+		
+		Collection points = new LinkedList();
+        if(pointCommentSet!=null){
+        	it = pointCommentSet.iterator();
+            while(it.hasNext()) {
+                points.add(((persistence.vehicle.tables.PointComment)it.next()).getPointCommentData());
+            }
+	
+		}
+        vcd.setPointCommentSet(points);
+
+		Collection pointImages = new LinkedList();
+		if(pointImageSet!=null){
+			it = pointImageSet.iterator();
+	        while(it.hasNext()) {
+	        	pointImages.add(((persistence.vehicle.tables.VehicleCheckListImage)it.next()).getData());
+	        }	
+		}
+		
+		vcd.setPointImageSet(pointImages);
+		
+		vcd.setLicenseNumber(this.licenseNumber);
+		vcd.setDateLicenseExpiry(this.dateLicenseExpiry);
+		
+		// Para Nalco
+		vcd.setDistrito(this.distrito);
+		vcd.setInspectedby(this.inspectedby);
+		vcd.setGrupo(this.grupo);
+		
+		vcd.setVehicleType(vehicleType);
+		vcd.setChargeType(chargeType);
+		vcd.setCheckPlace(checkPlace);
+		
+		return vcd;
+	}	
+	
+	public VehicleCheck(VehicleCheckData data)
+		throws HibernateException,Exception {
+		
+		Session session = HibernateUtil.currentSession();
+
+		this.date = data.getDate();	
+		this.name = data.getName();	
+		this.vehicleKm = data.getVehicleKm();
+		this.obs = data.getObs();
+		this.serie = data.getSerie();		
+		this.vehicle = (Vehicle)session.load(Vehicle.class ,data.getVehicle().getId());
+		
+		this.licenseNumber = data.getLicenseNumber();
+		this.result = data.getResult();
+		
+		this.dateLicenseExpiry = data.getDateLicenseExpiry();
+
+				
+		// itemValueSet
+		itemValueSet = new HashSet();
+		if (data.getItemValueSet() != null) {
+			Iterator it = data.getItemValueSet().iterator();
+	    	while(it.hasNext()){
+	    		ItemValueStrData itemValueData = (ItemValueStrData)it.next();    		
+	    		Item item = (Item)session.load(Item.class,itemValueData.getItem().getId());
+	    		String value = itemValueData.getItemValue();
+	    		ItemValueStr itemValue = new ItemValueStr(item,value,itemValueData.getItemTag());
+	    		itemValueSet.add(itemValue);	    	
+	    	}
+		}
+		else
+			itemValueSet = null;	
+		
+		// Para Nalco:;
+		this.inspectedby = data.getInspectedby();
+		this.distrito = data.getDistrito();
+		this.grupo = data.getGrupo();
+
+		this.vehicleType = data.getVehicleType();
+		this.chargeType = data.getChargeType();
+		this.checkPlace = data.getCheckPlace();
+
+		pointCommentSet = new HashSet();
+		if (data.getPointCommentSet() != null) {
+			Iterator it = data.getPointCommentSet().iterator();
+	    	while(it.hasNext()){
+	    		PointCommentData pointValueData = (PointCommentData)it.next();    		
+	    		Point point = (Point)session.load(Point.class,pointValueData.getPoint().getId());
+	    		String value = pointValueData.getComment();
+	    		persistence.vehicle.tables.PointComment pointValue = new persistence.vehicle.tables.PointComment(point,value);
+	    		pointCommentSet.add(pointValue);	    	
+	    	}
+		}
+	}
+
+
+	/**
+	 * @return Returns the itemValueSet.
+	 */
+	public Set getItemValueSet() {
+		return itemValueSet;
+	}
+
+	public Date getDate() {
+		return date;
+	}
+
+	public void setDate(Date date) {
+		this.date = date;
+	}
+
+	public String getName() {
+		return name;
+	}
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	public Integer getVehicleKm() {
+		return vehicleKm;
+	}
+
+	public void setVehicleKm(Integer vehicleKm) {
+		this.vehicleKm = vehicleKm;
+	}
+
+	/**
+	 * @param itemValueSet The itemValueSet to set.
+	 */
+	public void setItemValueSet(Set itemValueSet) {
+		this.itemValueSet = itemValueSet;
+	}
+
+	public Vehicle getVehicle() {
+		return vehicle;
+	}
+
+	public void setVehicle(Vehicle vehicle) {
+		this.vehicle = vehicle;
+	}
+
+	public String getObs() {
+		return obs;
+	}
+
+	public void setObs(String obs) {
+		this.obs = obs;
+	}
+
+	public String getSerie() {
+		return serie;
+	}
+
+	public void setSerie(String serie) {
+		this.serie = serie;
+	}
+	
+	public String getValue(int idItem) {
+		String value = "";
+		Iterator it = itemValueSet.iterator();
+		boolean encontre = false;
+		ItemValueStr itemValue = null;
+		while (it.hasNext() && !encontre) {
+			itemValue = (ItemValueStr) it.next();
+			encontre = (itemValue.getItem().getId().intValue() == idItem);
+			if (encontre) {
+				value = itemValue.getItemValue();
+			}
+		}
+		return value;
+	}
+
+	public Date getDateLicenseExpiry() {
+		return dateLicenseExpiry;
+	}
+
+	public void setDateLicenseExpiry(Date dateLicenseExpiry) {
+		this.dateLicenseExpiry = dateLicenseExpiry;
+	}
+
+	public String getLicenseNumber() {
+		return licenseNumber;
+	}
+
+	public void setLicenseNumber(String licenseNumber) {
+		this.licenseNumber = licenseNumber;
+	}
+
+	public Integer getResult() {
+		return result;
+	}
+
+	public void setResult(Integer result) {
+		this.result = result;
+	}
+
+	/**
+	 * @return the inspectedby
+	 */
+	public String getInspectedby() {
+		return inspectedby;
+	}
+
+	/**
+	 * @param inspectedby the inspectedby to set
+	 */
+	public void setInspectedby(String inspectedby) {
+		this.inspectedby = inspectedby;
+	}
+
+	/**
+	 * @return the distrito
+	 */
+	public String getDistrito() {
+		return distrito;
+	}
+
+	/**
+	 * @param distrito the distrito to set
+	 */
+	public void setDistrito(String distrito) {
+		this.distrito = distrito;
+	}
+
+	/**
+	 * @return the grupo
+	 */
+	public String getGrupo() {
+		return grupo;
+	}
+
+	/**
+	 * @param grupo the grupo to set
+	 */
+	public void setGrupo(String grupo) {
+		this.grupo = grupo;
+	}
+	
+		public Set<PointComment> getPointCommentSet() {
+		return pointCommentSet;
+	}
+
+	public void setPointCommentSet(Set<PointComment> pointCommentSet) {
+		this.pointCommentSet = pointCommentSet;
+	}
+
+	public Set<persistence.vehicle.tables.VehicleCheckListImage> getPointImageSet() {
+		if(pointImageSet==null){
+			pointImageSet=new HashSet<VehicleCheckListImage>();
+		}
+		return pointImageSet;
+	}
+
+	public void setPointImageSet(
+			Set<persistence.vehicle.tables.VehicleCheckListImage> pointImageSet) {
+		this.pointImageSet = pointImageSet;
+	}
+
+	public String getDescription() {
+		String description = "";
+		description += "[";
+		Iterator it = itemValueSet.iterator();
+		while(it.hasNext()) {
+			ItemValueStr itemValueData = (ItemValueStr)it.next();
+    		description += itemValueData.getItem().getId()+":"+itemValueData.getItemValue();
+    		if(it.hasNext()) {
+    			description += ",";
+    		}
+		}
+		description += "]";
+		description += ",[";
+		it = pointCommentSet.iterator();
+		while(it.hasNext()) {
+    		PointComment pointComment = (PointComment)it.next();
+    		description += pointComment.getPoint().getId()+":"+pointComment.getComment();
+    		if(it.hasNext()) {
+    			description += ",";
+    		}
+		}
+		description += "]";
+		return description;
+	}
+
+	public Integer getVehicleType() {
+		return vehicleType;
+	}
+
+	public void setVehicleType(Integer vehicleType) {
+		this.vehicleType = vehicleType;
+	}
+
+	public Integer getChargeType() {
+		return chargeType;
+	}
+
+	public void setChargeType(Integer chargeType) {
+		this.chargeType = chargeType;
+	}
+
+	public Integer getCheckPlace() {
+		return checkPlace;
+	}
+
+	public void setCheckPlace(Integer checkPlace) {
+		this.checkPlace = checkPlace;
+	}
+}

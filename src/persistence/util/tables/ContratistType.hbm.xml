@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.util.tables" >
+    <class name="ContratistType" table="contratisttype">		
+		 <id column="contratist" name="contratist">
+            <generator class="assigned">
+            </generator>
+        </id>        
+        <property	name="type" type="java.lang.Integer" column="type"/>    	
+        <property	name="emails" type="java.lang.String" column="emails"/>    	
+	 </class>
+</hibernate-mapping>

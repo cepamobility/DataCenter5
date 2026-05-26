@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.activity.tables">
+    <class name="CEPAActivitySubFamily" table="cepaactivitysubfamily">
+       
+        <id	column="id"	name="id" type="java.lang.Integer">
+            <generator class="assigned" />
+        </id>
+        
+        <property name="name" column="name"
+        	not-null="true" unique="true" type="java.lang.String">
+        </property>
+       
+        <many-to-one name="family" column="family"
+        	class="persistence.activity.tables.CEPAActivityFamily">
+        </many-to-one>
+            
+        <property name="isTheoretical" not-null="true" >
+        	<column name="isTheoretical" default="false" />
+        </property>
+        
+        <property name="isPractical" not-null="true" >
+        	<column name="isPractical" default="false" />
+        </property>
+        
+        <property name="enabled" not-null="true" >
+        	<column name="enabled" default="false" />
+        </property>
+                
+    
+    </class>
+</hibernate-mapping>

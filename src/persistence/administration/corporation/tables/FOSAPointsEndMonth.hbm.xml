@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.administration.corporation.tables">
+       <class name="FOSAPointsEndMonth" table="fosapointsendmonth">
+    
+	        <id	column="id"	name="id"	type="java.lang.Integer">
+	            <generator class="sequence">
+					<param name="sequence">FOSAPointsEndMonth_Sequence</param>
+				</generator>
+	        </id>
+	        
+	        <property	name="dateExecute"	type="java.sql.Timestamp"		column="dateExecute"	not-null="true" />   
+	        <property	name="month"	type="java.lang.Integer"		column="month"	not-null="true" />  
+	        <property	name="year"	type="java.lang.Integer"		column="year"	not-null="true" />
+	        <property	name="contractorName"	type="java.lang.String"		column="contractorName"	not-null="true" />
+	        <property	name="contractorId"	type="java.lang.Integer"		column="contractorId"	not-null="true" />
+	        <property	name="sumLessPoints"	type="java.lang.Integer"		column="sumLessPoints"	not-null="true" />
+	        <property	name="sumTotalPoints"	type="java.lang.Integer"		column="sumTotalPoints"	not-null="true" />
+	        <property	name="maxLessPointsWithNoSuspended"	type="java.lang.Integer"		column="maxLessPointsWithNoSuspended"	not-null="true" />
+	        <property	name="totalContractVehicles"	type="java.lang.Integer"		column="totalContractVehicles"	not-null="true" />
+	        <property	name="totalSuspendedVehicles"	type="java.lang.Integer"		column="totalSuspendedVehicles"	not-null="true" />
+	        <property	name="totalMinimumSuspendedVehicles"	type="java.lang.Integer"		column="totalMinimumSuspendedVehicles"	not-null="true" />
+    	</class>
+</hibernate-mapping>

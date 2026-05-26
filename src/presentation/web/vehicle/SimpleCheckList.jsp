@@ -1,0 +1,224 @@
+<%@page language="java"
+	errorPage="../exception.jsp"
+	import="java.util.*"
+	import="java.util.LinkedList"
+	import="business.*"
+	import="business.driver.*" 
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.util.*"
+	import="communication.administration.corporation.tables.*"			
+	import="communication.administration.user.tables.*"
+	import="communication.driver.tables.*"
+	import="communication.event.tables.*"
+	import="communication.activity.tables.*"
+	import="communication.vehicle.tables.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.driver.*"
+ 	import="communication.util.DateValue"
+ %>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<html:html>
+<%! RequestDispatcher dispatcher; String context;String pathView; 
+	String pathMsg; String pathSearch; 
+	Text messages; String pathLanguage;
+	SystemAccess sys; DriverData data; 
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	
+	String checkPermission = Util.checkPermission(sys,SecurityConstants.MODIFY_VEHICLE);
+	
+	if(checkPermission != null) {
+		response.sendRedirect(request.getContextPath()+checkPermission);
+	}else {
+		messages=sys.getText();
+
+		pathLanguage="/util/jsp/language.jsp";
+	
+
+		dispatcher=request.getRequestDispatcher(pathLanguage);
+		dispatcher.include(request,response);
+	
+		context=request.getContextPath();
+		pathMsg="/util/jsp/message.jsp";
+	
+		dispatcher=request.getRequestDispatcher(pathMsg);
+		dispatcher.include(request,response);
+
+		String id = request.getParameter("id");
+		String plate = request.getParameter("plate");
+		if(id==null){
+	id=(String)request.getAttribute("id");
+	plate=(String)request.getAttribute("plate");
+	request.removeAttribute("id");
+	request.removeAttribute("plate");
+		}
+		pathView="./VehicleView.jsp?id="+id;
+%>
+
+	<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	<script>
+		function deleteTest(checksForm,form){
+			var elements=checksForm.elements;
+			for(i=0;i<elements.length;i++){
+				var element=elements[i];
+				if(element.type.toLowerCase()=="checkbox"){
+					if(element.checked){
+						if(form.list.value == ""){
+							form.list.value=element.value;
+						}else{
+							form.list.value=form.list.value+"<"+element.value;
+						}	
+					}	
+				} 
+			}
+			if(element.value.length>0){
+				form.submit();
+			}
+		}
+	</script>
+	<head/>
+	<html:form action="/DeleteVehicleCheck">
+		<html:hidden property="list"/>
+		<html:hidden property="vehicle" value='<%=id%>'/>
+	</html:form>
+	<body bgcolor="#FFFFFF">
+		<table width="500" align='center' cellpadding="0" cellspacing="0">
+			<tr class="guide1">
+				<jsp:include  page='<%="../component/titlecomponent.jsp?colspan=5&title="+messages.getText("generic.data.vehicle")+"  "+plate%>' />
+		</tr>
+		<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+		<tr>
+			<td width="100%" colspan="5">
+				<form name="checks">
+				<table width="100%" cellpadding="0" cellspacing="0">
+					<tr>
+						<td valign="top">
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.aptitudtest")%>' />
+							<table width="100%" cellpadding="0" cellspacing="0">
+								<tr>
+									<td width='5%' class="guide2" align="center">&nbsp;</td>
+									<td width='20%' class="guide2" align="center">
+										<%=messages.getText("generic.messages.date")%>
+									</td>
+   									<td width='20%'	class="guide2" align="center">
+   										<%=messages.getText("vehicle.checklist.apt")%>
+   									</td>
+				    				<td width='55%'	class="guide2" align="center">
+				    					<%=messages.getText("vehicle.checklist.observations")%>
+				    				</td>
+								</tr>
+<%
+	Collection tests = sys.getVehicleReportFacade().findVehicleChecks(new Integer(id),sys.getUserSessionData());
+	if(tests.size() == 0) {
+%>								<tr>
+									<td colspan="5">
+										<span class="linetwo"><%=messages.getText("driver.aptitudtest.nodata")%></span>
+									</td>								
+								</tr>
+<%
+	}else {
+    			Iterator itTests = tests.iterator();
+    			boolean lineone = false;
+    			while(itTests.hasNext()) {
+    			    Object[] check = (Object[])itTests.next();
+%>								<tr align=center align="rigth" class='<%=(lineone) ? "lineone" : "linetwo"%>'>
+									<td width='5%' class='<%=(lineone) ? "lineone" : "linetwo"%>' align="center">
+										<input type="checkbox" value='<%=String.valueOf(check[0])%>'>
+									</td>
+						            <td width='20%' class='<%=(lineone) ? "lineone" : "linetwo"%>' align="rigth"><%=Util.formatDate((Date)check[1])%> </td>
+<%					String isApt = (((Integer)check[4]).intValue() == 1) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no");
+%>					                <td width='20%' class='<%=(lineone) ? "lineone" : "linetwo"%>' align="rigth"><%=isApt%> </td>
+						            <td width='55%' class='<%=(lineone) ? "lineone" : "linetwo"%>' align="rigth"><%=String.valueOf(check[3])%> </td>						                
+								</tr>
+<%    				lineone = !lineone;
+	   			}
+%>								<tr>
+									<td colspan="4" class="linetwo" align="right">
+										<input type="button" value='<%=messages.getText("generic.messages.delete")%>' class="input" onclick="javascript:deleteTest(document.forms['checks'],document.forms['DeleteSimpleVehicleCheckForm']);"/>
+									</td>
+								</tr>	
+<%			}
+%>							</table>
+							<jsp:include page="../component/utilityboxbottom.jsp"/>	
+						</td>
+			   		</tr>
+			   	</table>
+			   	</form>
+			</td>
+		</tr>			
+		<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+		<tr>
+			<td width="100%" colspan="5">
+				<html:form action="/AddSimpleCheck">
+					<html:hidden property="vehicle" value='<%=id%>'/>
+					<html:hidden property="plate" value='<%=plate%>'/>
+					<table width="100%" cellpadding="0" cellspacing="0">
+						<tr>
+							<td valign="top">
+								<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("driver.aptitudtest.new")%>' />
+								<table width="100%" cellpadding="0" cellspacing="0">
+									<tr>
+										<th class="linetwo" align="left"><%=messages.getText("generic.messages.date")+" ( "+messages.getText("generic.supportmaterial.reports.format")+": dd/mm/aaaa )"%></th>
+										<td class="linetwo">&nbsp;</td>
+										<td class="linetwo" align="right">
+	            							<html:text property="checkDate" style="width:20;" styleClass="input"/>&nbsp;/&nbsp;
+	            							<html:text property="checkMonth" style="width:20;" styleClass="input"/>&nbsp;/&nbsp;
+	            							<html:text property="checkYear" style="width:40;" styleClass="input"/>
+		          						</td>
+									</tr>
+									<tr>
+										<jsp:include  page="../component/spaceline.jsp" />
+							  		</tr>
+									<tr>
+										<th class="linetwo" align="left"><%=messages.getText("vehicle.checklist.apt")%></th>
+										<td class="linetwo">&nbsp;</td>
+										<td class="linetwo" align="right">
+											<html:select property="result" styleClass="input">
+												<html:option value="-1"><%=messages.getText("generic.messages.select")%></html:option>
+												<html:option value="1"><%=messages.getText("generic.messages.yes")%></html:option>
+												<html:option value="0"><%=messages.getText("generic.messages.no")%></html:option>
+											</html:select>
+		          						</td>
+									</tr>									
+									<tr>
+										<jsp:include  page="../component/spaceline.jsp" />
+							  		</tr>
+									<tr>
+										<th class="linetwo" align="left" colspan="3"><%=messages.getText("vehicle.checklist.observations")%></th>
+									</tr>
+									<tr>
+										<td class="linetwo" align="left" colspan="3">
+											<html:textarea property="obs" cols="60" rows="3"></html:textarea>
+										</td>
+									</tr>
+									<tr>
+										<jsp:include  page="../component/spaceline.jsp" />
+							  		</tr>
+									<tr>
+										<td colspan="3" class="linetwo" align="right">
+											<html:submit value='<%=messages.getText("generic.messages.save")%>' styleClass="input"/>
+											<html:cancel value='<%=messages.getText("generic.messages.cancel")%>' styleClass="input"/>
+										</td>
+									</tr>	
+								</table>
+								<jsp:include page="../component/utilityboxbottom.jsp"/>	
+							</td>
+				   		</tr>
+				   	</table>
+			   	</html:form>
+			</td>
+		</tr>			
+<%	}
+%>		</table>
+	</body>
+</html:html>

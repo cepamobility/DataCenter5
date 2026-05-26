@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.administration.corporation.tables" >
+    <class name="CorporationCountry" table="corporationcountries">
+
+       <composite-id class="CorporationCountryPK" name="pk" >
+       		<key-many-to-one
+       			 name="corporation"
+       			 column="id"
+       			 class="persistence.administration.corporation.tables.Corporation"
+       	 	/>
+       	 	<key-many-to-one
+       	 		 name="country"
+       	 		 column="country"
+       	 		 class="persistence.administration.corporation.tables.Country"
+       	 	/>
+       </composite-id>
+       
+        <property name="active" not-null="true" />
+		
+    	<set name="geoLevel1Set" table="CountryLevel1s" cascade="all">
+        	<key>
+         		<column name="id"></column>
+         		<column name="country"></column>
+         	</key>
+        	<many-to-many column="geoLevel1" class="GeoLevel1"/>
+    	</set>
+
+	</class>
+
+</hibernate-mapping>

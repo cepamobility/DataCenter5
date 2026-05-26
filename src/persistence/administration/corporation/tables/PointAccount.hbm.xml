@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.administration.corporation.tables" >
+
+	<class name="PointAccount" table="pointaccount">
+		<id column="id" name="id" type="java.lang.Integer">
+            <generator class="sequence">
+            	<param name="sequence">PointsAccount_Sequence</param>
+            </generator>
+		</id>
+	  
+	    <property name="type"	column="type" type="java.lang.Integer" not-null="true" />
+	    <property name="reference"	column="reference" type="java.lang.Integer" not-null="true" />
+	   	<property name="total"	column="total" type="java.lang.Double" not-null="true" />
+		<property name="created"	column="created" type="java.util.Date"/>
+		
+ 
+		
+  	</class>
+</hibernate-mapping>

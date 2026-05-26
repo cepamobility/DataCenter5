@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.administration.corporation.tables" >
+
+	<class name="PointMoveLog" table="pointmovelog">
+		<id column="id" name="id" type="java.lang.Integer">
+            <generator class="sequence">
+            	<param name="sequence">PointsMoveLog_Sequence</param>
+            </generator>
+		</id>
+	    <property	name="userId"	type="java.lang.String"		column="userid"	not-null="true"/>
+        <property	name="actionDate"		type="java.util.Date"		column="actiondate"	not-null="true"/>        
+        <property	name="action"			type="java.lang.Integer"		column="action"		not-null="true" />
+        <property	name="comment"			type="java.lang.String"		column="comment" />
+	    <property 	name="move"		column="move" type="java.lang.Integer" not-null="true" />
+		<property 	name="amount"	column="amount" type="java.lang.Double" not-null="true" />
+	   	<property 	name="actualTotal"	column="actualTotal" type="java.lang.Double" />
+   		<property 	name="moveDate" 	type="java.sql.Date" column="moveDate"	not-null="true"/>
+   		<property 	name="hour" 	type="java.sql.Time" column="time"	/>
+   		<property 	name="definition" 	type="java.lang.Integer" column="definition" />
+   		<property 	name="reference" 	type="java.lang.String" column="reference" />
+   		<property 	name="description" 	type="java.lang.String" column="description" />
+   		<property name="account"	column="account" type="java.lang.Integer" not-null="true" />
+   		
+  	</class>
+</hibernate-mapping>

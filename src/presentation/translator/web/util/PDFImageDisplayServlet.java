@@ -1,0 +1,93 @@
+package presentation.translator.web.util;
+
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
+
+import javax.imageio.ImageIO;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+import net.sf.jasperreports.engine.JRException;
+import net.sf.jasperreports.engine.JRExporterParameter;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.export.JRPdfExporter;
+import net.sf.jasperreports.engine.util.JRLoader;
+
+import persistence.util.UtilBase64;
+
+import communication.alert.AlertConstants;
+import communication.security.SecurityConstants;
+import communication.util.EmptyDataSource;
+import communication.vehicle.report.ContractComodatoDataSource;
+import communication.vehicle.tables.VehicleData;
+
+public class PDFImageDisplayServlet extends HttpServlet {
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	
+    protected void doGet(HttpServletRequest req, HttpServletResponse response)	throws ServletException, IOException{
+    	
+    	String fileImage="tmp.png";
+    	
+    	File fileDelete=new File(AlertConstants.TEMP_DIRECTORY_IMAGE_DPA+fileImage);
+        if(fileDelete.exists()){
+        	fileDelete.delete();
+        }
+        HashMap<String,ArrayList<String>> hashImage=(HashMap)req.getSession().getAttribute("imagesCheckList");
+        req.getSession().removeAttribute("imagesCheckList");
+        
+        
+		ImageIO.write(UtilBase64.decodeToImage(hashImage.get("0").get(0).replaceAll("data:image/png;base64,","")), "png", new File(AlertConstants.TEMP_DIRECTORY_IMAGE_DPA+fileImage));
+		
+    	
+            
+        try {
+        	 HashMap<String,Object> parameters = new HashMap<String,Object>();
+        	 parameters.put("image", AlertConstants.TEMP_DIRECTORY_IMAGE_DPA+fileImage);
+
+        	//JasperCompileManager.compileReportToFile(AlertConstants.TEMP_DIRECTORY_DPA+"jasper/ImagePDF.jrxml", AlertConstants.TEMP_DIRECTORY_DPA+"jasper/ImagePDF.jasper");
+             FileInputStream input2 = new FileInputStream(new File(AlertConstants.TEMP_DIRECTORY_DPA+"jasper/ImagePDF.jasper"));
+
+
+             JasperReport jasperReport = (JasperReport)JRLoader.loadObject(input2);
+             response.setHeader("Content-Type", "application/pdf");
+       	 	 response.setHeader("Content-Disposition", "inline; filename=\"Screen.pdf\"");  
+             OutputStream out = response.getOutputStream();
+             JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, new EmptyDataSource());
+             
+             JRPdfExporter exporter = new JRPdfExporter();
+             exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
+             exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, out);
+             exporter.exportReport();       
+             out.flush();
+             out.close();
+
+	        //out.flush();
+	        //out.close();
+	        
+		} catch (JRException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+           
+        
+         
+    }
+
+}

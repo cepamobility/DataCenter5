@@ -1,0 +1,3209 @@
+package presentation.translator.web.event;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
+import java.sql.Time;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.StringTokenizer;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.upload.FormFile;
+
+import presentation.translator.web.util.AbstractAction;
+import presentation.translator.web.util.DataTypeUtil;
+import presentation.translator.web.util.OptionItem;
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+import business.datatype.DataTypeReportFacade;
+import business.event.EventABMFacade;
+
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.GeoLabelData;
+import communication.datatype.DataTypeConstants;
+import communication.datatype.tables.AccidentClasificationDataType;
+import communication.datatype.tables.AccidentFactorsDataType;
+import communication.datatype.tables.CirculationDirectionDataType;
+import communication.datatype.tables.ClimateDataType;
+import communication.datatype.tables.CollisionClasificationDataType;
+import communication.datatype.tables.ConditionRoutDataType;
+import communication.datatype.tables.IncidentClasificationDataType;
+import communication.datatype.tables.LightingDataType;
+import communication.datatype.tables.PavementDataType;
+import communication.datatype.tables.TrafficControlDataType;
+import communication.datatype.tables.TypeVehicleDataType;
+import communication.datatype.tables.VehicleBehaviourDataType;
+import communication.datatype.tables.WayDataType;
+import communication.datatype.tables.ZoneDataType;
+import communication.driver.tables.DriverData;
+import communication.event.tables.EventDataType;
+import communication.event.tables.EventMainAttributes;
+import communication.event.tables.VehicleInvolvedDataType;
+import communication.language.Text;
+import communication.security.SecurityConstants;
+import communication.util.ListResult;
+import communication.vehicle.tables.VehicleData;
+
+public class UploadEventAction extends AbstractAction {
+
+
+	static final int EOF = 65535;
+	private String errorMessage = null;
+	private SystemAccess sys;
+	
+	/**
+	 * 
+	 */	
+	public ActionForward action(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		HttpSession session = request.getSession();
+        sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        Text messages = sys.getText();
+        
+        // String directory = "/tmp/datacenter/images";
+        String directory = SecurityConstants.IMAGES_WAR_DIRECTORY;
+    	String fileName = "events"+sys.getUserSessionData().getFilter().getCorporationId()+".csv";			   			
+		    
+		try {
+		
+			UploadEventForm uploadForm = (UploadEventForm) form;
+			FormFile file = (FormFile)uploadForm.getFile();		
+			
+			// Valido archivo de CepaTips vacio o nulo
+			if (file == null || file.getFileName() == null || file.getFileName().equals("")){
+				session.setAttribute("Msg", messages.getText("generic.supportmaterial.cepatips.nofile"));
+				sys.getUserSessionData().setUrl("events/UploadEvents.jsp");
+		  	    return mapping.findForward("success");	
+			}
+			
+			// Valido Nombre de Archivo
+			if (!this.validarString(file.getFileName())){
+				session.setAttribute("Msg", 
+						messages.getText("generic.supportmaterial.cepatips.badfile"));
+		  	    return mapping.findForward("error");	
+			}
+			// Fin Valido Nombre de Archivo
+									
+			InputStream reportStream = file.getInputStream();
+			FileOutputStream fout;
+			
+			fout = new FileOutputStream(directory+"/"+fileName);
+			
+			int c = 0;
+			while ( (c=reportStream.read()) != -1){
+				fout.write(c);
+			}			
+			fout.flush();
+			fout.close();				
+			
+			System.out.println("Guarde el archivo. Voy a insertar eventos:");	
+			
+			if(sys.isCorporation(CorporationData.BAYER_MX)) {
+				return insertBayerMxEvents(mapping,form,request,response);
+			}else {
+				return insertEvents(mapping,form,request,response);
+			}
+	    }
+		catch (IOException io){
+			session.setAttribute("Msg", messages.getText("generic.supportmaterial.cepatips.badpermissions"));
+	    	io.printStackTrace();
+	  	    return mapping.findForward("error");	
+		}
+	    catch(Exception e) {
+	    	session.setAttribute("Msg", messages.getText("generic.supportmaterial.cepatips.error"));
+	    	e.printStackTrace();
+	  	    return mapping.findForward("error");	
+	    }
+       
+	}
+	
+	/**
+     * 
+     * @param mapping
+     * @param form
+     * @param request
+     * @param response
+     * @return
+     * @throws Throwable
+     */
+    public ActionForward insertEvents(ActionMapping mapping, ActionForm form,
+    		HttpServletRequest request, HttpServletResponse response) throws Exception {
+    	
+    	HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        // String directory = "/tmp/datacenter/images";
+        String directory = SecurityConstants.IMAGES_WAR_DIRECTORY;
+        Text messages = sys.getText();
+        String fileName = "events"+sys.getUserSessionData().getFilter().getCorporationId()+".csv";
+        int lineNumber = 1;
+        int total = 0;
+        LinkedList<String> notInsertedEvents = new LinkedList<String>();
+        ListResult result = null;
+        StringBuffer word = new StringBuffer();
+        
+        try {
+        	
+        	
+        	FileInputStream input = new FileInputStream(new File(directory + "/" + fileName));
+        	// Reader in = new InputStreamReader(input, "UTF-8");        	
+        	Reader in = new InputStreamReader(input, "ISO-8859-1"); 
+
+            Collection<EventDataType> events = new LinkedList<EventDataType>();
+            
+            char car;
+            car = 0;
+            System.out.println("Inserto eventos:");    
+            
+            // Asumo que en el archivo hay 3 lineas explicativas de los diferentes
+            // campos a ingresar.
+            int lineasExplicativas = 0;
+            while (car != EOF && lineasExplicativas < 3){
+            	  while(car != '\n' && car != EOF) {
+                      // car = (char)input.read();                   
+            		  car = (char)in.read(); // para compatibilidad con utf8
+            	  }
+            	  car = 0;
+                  lineasExplicativas ++;
+                  lineNumber ++;
+            }
+           
+            // Ingreso los diferentes eventos
+            while(car != EOF && lineNumber <= 110 ) {
+            	int index = 0;
+                car = 0;
+                
+                // campos a utilizar:
+                // Datos del Conductor
+                String firstName = "", lastName = "";
+                Date birthdate = Calendar.getInstance().getTime();
+                
+                
+                // Datos del Vehiculo
+                String plate = "";
+               
+                @SuppressWarnings("unused")
+				int vehicleCount = 0;
+                
+                String clasification;
+                String incident;
+                String colisionClasification;
+               
+                String vehicleInvolvedId1 = null;
+
+                String vehicleType1 = null;
+                
+                String behaviourType1 = null;
+                
+                String hitrun1 = null;
+
+                String principalFactor1 = null;
+
+                boolean factortooclose1 = false;
+                boolean factorhighspeed1 = false;
+                boolean factorsigns1 = false;
+                boolean factorturn1 = false;
+                boolean factorlight1 = false;
+                boolean factorstop1 = false;
+                boolean factorother1 = false;
+                boolean factorchangelane1 = false;
+                boolean factoralcohol1 = false;
+                boolean factorovertaking1 = false;
+                boolean factorConcience1 = false;
+                boolean factorsleep1 = false;
+                boolean factordistraction1 = false;
+                boolean factorOtherParking1 = false;
+                boolean factorOtherCrossing1 = false;
+                boolean factorOtherStanding1 = false;
+
+                
+                @SuppressWarnings("unused")
+				boolean factorMecanicFail1 = false;
+                
+                String contact1 = null;
+                
+                String comment = null;
+               
+                EventDataType event = new EventDataType();
+                // Leo la linea:
+                while(car != '\n' && car != EOF) {
+                	errorMessage = null;
+                	car = (char)in.read();
+                    if(car == '\t' || car == '\n') {
+                    	String data = word.toString().trim();
+                        switch(index) {
+
+                        	// Datos del Conductor
+                            case 0: firstName = firstNameData(data,messages); break;
+                            case 1: lastName = lastNameData(data,messages); break;
+                            case 2: birthdate = birthdateData(data,messages); 
+                            break;
+                            
+                            // Ubicación del Evento
+                            case 3: // Estado/Provincia del Evento
+                            		event.setState(eventLocation1Data(data,messages));
+                            		break;
+                            		
+                            case 4:  // Ciudad/Localidad del Evento
+                            		event.setCity(eventLocation2Data(data,messages));
+                            		break;
+                            
+                            // Datos del Vehiculo
+                            case 5: plate = plateData(data,messages);break;
+                            
+                            // Datos del Evento
+                            case 6: event.setDate(eventDateData(data,messages));
+                            		break;
+                            case 7: event.setHour(eventHourData(data,messages));
+                            		break;
+                            case 8: event.setWorking(eventWorkingData(data,messages));
+                            		break;
+                            case 9: event.setDamage(materialsdamageData(data,messages));
+                            		break;
+                            case 10: event.setZone(new ZoneDataType(zoneData(data,messages)));
+                            		break;
+                            case 11: event.setPoliceReport(policeReportData(data,messages));
+                            		break;
+                            
+                            // Consecuencias
+                            case 12: event.setDriverstate(driverstateData(data,messages)) ; break;
+                            case 13: event.setDayslost(dayslostData(data,messages));break;
+                            
+                            case 14: event.setSafefunccount(safefunccountData(data,messages));break; 
+                            case 15: event.setInjuredfunccount(injuredfunccountData(data,messages));break;
+                            case 16: event.setFatalitiesfunccount(fatalitiesfunccountData(data,messages));break;
+                            case 17: event.setOtherpartydayslost(otherpartydayslostData(data,messages));break;
+                            
+                            case 18: event.setSafeothercount(safeothercountData(data,messages));break;
+                            case 19: event.setInjuredothercount(injuredothercountData(data,messages));break;
+                            case 20: event.setFatalitiesothercount(fatalitiesothercountData(data,messages));break;
+                             
+                        	// Relato
+                            case 21: event.setStory(storyData(data,messages));break;
+                            
+                            // Clasificacion
+                            case 22:
+                            		clasification = clasificationData(data,messages);
+                            		if (clasification != null){
+                            			event.setAccident(new AccidentClasificationDataType(clasification));
+                            		}
+                            		break;
+                            case 23:
+                            		incident = incidentData(data,messages);
+                            		if (incident != null){
+                            			event.setIncident(new IncidentClasificationDataType(incident));
+                            		}
+                            		break;
+                            case 24: 
+                            		colisionClasification = colisionClasificationData(data,messages);
+                            		if (colisionClasification != null){
+                            			event.setCollision(new CollisionClasificationDataType(colisionClasification));
+                            			if ( !colisionClasification.equalsIgnoreCase(messages.getText("datatype.collisionclasification.incident"))){
+                            				// Si la clasificacion de colision no es un incidente, entonces incidente es null
+                            				event.setIncident(null);
+                            			}
+                            		}
+                            		break;
+                            			
+                            
+                            // Company Car
+                            case 25: event.setHandle(new VehicleBehaviourDataType(handleData(data,messages))); 
+                            		break;
+                            case 26: event.setHitrun(hitrunData(data,messages,null)); break;
+                            case 27: event.setPrincipalFactor(new AccidentFactorsDataType(
+                            			principalFactorData(data,messages,null))); 
+                            		break;
+                            
+                            
+                            // Angulo de colision
+                            case 45: event.setCollisionAngle(collisionAngleData(data,messages)); break;
+                            
+                            // Velocidad
+                            case 46: event.setMaxSpeed(maxSpeedData(data,messages)); break;
+                            case 47: event.setCollisionSpeed(collisionSpeedData(data,messages));break;
+                            case 48: event.setVehicleSpeed(vehicleSpeedData(data,messages)); break;
+                            case 49: event.setReportedSpeed(reportedSpeedData(data,messages)); break;
+                            case 50: event.setSpeedUnit(speedUnitData(data,messages)); break;
+                            
+                            case 51: event.setSelfbelt(selfbeltData(data,messages)); break;
+                            case 52: event.setAlcohol(alcoholData(data,messages)); break;
+                            case 53: event.setOthervehicles(othervehiclesData(data,messages)); break;
+                            case 54: event.setCellular(cellularData(data,messages));break;
+                            
+                            // Otros vehiculos involucrados, se asume 0 o 1
+                            // case 55: vehiclecount = vehicleCountData(data,messages); break; 
+                            
+                            case 55: vehicleType1 = vehicleTypeData(data,messages, 1);break;
+                            case 56: behaviourType1 = behaviourTypeData(data,messages,1); break;
+                            case 57: principalFactor1 = principalFactorData(data,messages,1); break;
+                           
+                        
+                           
+                            case 58: factorovertaking1 = factorovertakingData(data,messages,1);break;
+                            case 59: factorchangelane1 = factorchangelaneData(data,messages,1); break;
+                            case 60: factorturn1 = factorturnData(data,messages,1); break;
+                            case 61: factorother1 = factorotherData(data,messages,1); break;
+                            case 62: factorhighspeed1 = factorhighspeedData(data,messages,1); break;
+                            case 63: factorstop1 = factorstopData(data,messages,1); break;
+                            case 64: factorConcience1 = factorConcienceData(data,messages,1); break;
+                            case 65: factorOtherCrossing1 = factorOtherCrossingData(data,messages,1); break;
+                            case 66: factorMecanicFail1 = factorMecanicFailData(data,messages,1); break;
+                            case 67: factoralcohol1 = factoralcoholData(data, messages,1); break;
+                            case 68: factorsleep1 = factorsleepData(data,messages,1); break;
+                            case 69: factortooclose1 = factortoocloseData(data,messages,1); break;
+                            case 70: factorlight1 = factorlightData(data,messages, 1); break;
+                            case 71: factorsigns1 = factorsignsData(data,messages, 1); break;
+                            case 72: factordistraction1 = factordistractionData(data,messages,1); break;
+                            case 73: factorOtherParking1 = factorOtherParkingData(data,messages,1); break;
+                            case 74: factorOtherStanding1 = factorOtherStandingData(data,messages,1);break;
+                            
+                            case 75: hitrun1 = hitrunData(data, messages,1); break;
+                            case 76: contact1 = contactData(data,messages,1); break;
+                            
+                            // Medio Ambiente - Via de Circulacion
+                            case 77: event.setWay(new WayDataType(wayData(data,messages)));break;
+                            case 78: event.setDirection(new CirculationDirectionDataType(directionData(data,messages))); break;
+                            case 79: event.setControl(new TrafficControlDataType(controlData(data,messages))); break;
+                            
+                            // Medio ambiente  - Pavimento
+                            case 80: event.setClimate(new ClimateDataType(climateData(data,messages))); break;
+                            case 81: event.setPavement(new PavementDataType(pavementData(data,messages))); break;
+                            case 82: event.setCondition(new ConditionRoutDataType(conditionData(data,messages))); break;
+                            case 83: event.setLighting(new LightingDataType(lightingData(data,messages))); break;
+                            
+                            // Peatones
+                            case 84: event.setPedestrianCount(pedestriancountData(data,messages)); break;
+                            case 85: event.setCost(costData(data,messages)); break;
+                            case 86: event.setSuperivisionObservations(observationsData(data,messages));break;
+                            case 87: comment = commentData(data,messages); break;
+                            	
+                            	
+                            
+                            
+                        }
+                        word = new StringBuffer();	                        
+                        index++;
+                    }else {
+                        word.append(car);
+                    }
+                    
+                   
+                    if (errorMessage != null){
+                    	break;
+                    }
+                    
+                } // Termine de leer toda la linea
+                
+               
+                // solo tengo en cuenta las lineas que tengan firstName y Lastname, las demas las ignoro:
+                if (! Util.empty(firstName) && ! Util.empty(lastName)){
+                	
+
+                    /*
+                     * Si hubo un error en algun campo salgo y muestro mensaje al usuario.
+                     */
+                    if (errorMessage != null){
+                    	// Agreo número de linea al errorMessage:
+                    	errorMessage += "\\n"+messages.getText("driver.messages.upload.linenumber")
+        						  +": " + lineNumber;
+                    	
+                    	System.out.println("Error en el Upload de Eventos: "+errorMessage);
+                    	
+                    	session.setAttribute("Msg",errorMessage); 
+                    	return mapping.findForward("error"); 
+                    }
+                    
+                	System.out.println("FirstName: "+firstName+" LastName: "+lastName
+                     		+" Birthdate: " + birthdate);
+                     
+                
+	                // Creo el evento:
+	                // TODO: Le seteo todos los valores
+	                
+	                // ------------------
+	                // 1. Busco el Driver 
+	                // ------------------
+	                
+	                DriverData driver = getDriver(firstName, lastName, null, messages);
+	                if (driver == null){
+	                	errorMessage += "\\n"+messages.getText("driver.messages.upload.linenumber")
+	      					  +": "+lineNumber;
+	                	session.setAttribute("Msg",errorMessage); 
+	                	return mapping.findForward("error");
+	                }                
+	                
+	                
+	                // -----------------------
+	                // 2. Busco el Vehiculo
+	                // -----------------------
+	                
+	                VehicleData vehicle = getVehicle(plate,messages);
+	                if (vehicle == null){
+//	                	errorMessage += "\\n"+messages.getText("driver.messages.upload.linenumber")
+//	  						  +": "+lineNumber;
+//	                	session.setAttribute("Msg",errorMessage); 
+//	                	return mapping.findForward("error");
+	                	
+	                	// Si el vehiculo es null cargo los datos basicos del vehiculo
+	                	event.setPlate(plate);
+	                	event.setModel("No Data"); // No Data
+	                	event.setTrade("No Data"); // No Data
+	                	event.setYear("No Data"); // No Data
+	                	event.setVehicle(null);
+	                	
+	                }else{
+	                	event.setVehicle(vehicle);
+	                }
+	                
+	                
+	                // ----------------------------------
+	                // 3. Seteo los valores en el evento.
+	                // ----------------------------------
+	                event.setDriver(driver);	                
+	                event.setDivOrgs(driver.getDivOrgs());
+	                CorporationData corporation = sys.getCorporationReportFacade().findCorporationByPrimaryKey(
+	                		sys.getUserSessionData().getFilter().getCorporationId(), 
+	                		sys.getUserSessionData());
+	                event.setCorporation(corporation);
+	                GeoLabelData country = driver.getCountry();
+	                event.setCountry(country);
+	                
+	                /**
+	                 * Otros vehiculos, en principio solo un vehiculo involucrado
+	                 */
+	                Collection vehiclesInvolved = new LinkedList();
+	                if(vehicleType1 != null && behaviourType1 != null && principalFactor1 != null) {
+	                    vehiclesInvolved.add(getVehicle(vehicleInvolvedId1, vehicleType1, behaviourType1, hitrun1,principalFactor1,factortooclose1,factorhighspeed1,factorsigns1
+	                            ,factorturn1,factorlight1,factorstop1,factorother1,factorchangelane1,factoralcohol1,factorovertaking1,
+	                            factorsleep1,factordistraction1,factorConcience1,factorOtherParking1,
+	                            factorOtherCrossing1,factorOtherStanding1,contact1,1,factorsleep1));            
+	                }
+	                event.setVehiclesInvolved(vehiclesInvolved);
+	                
+	                /**
+	                 * Peatones:
+	                 */
+	                if (event.getPedestrianCount() != null && event.getPedestrianCount() > 0){
+	                	// Seteo la accion del peaton por defecto y los comentarios en vacio.
+	                	switch (event.getPedestrianCount().intValue()){
+	                		case 3: event.setPedestrian3("driver.pedestrian.cross.other");
+	                		case 2: event.setPedestrian2("driver.pedestrian.cross.other");
+	                		case 1: event.setPedestrian1("driver.pedestrian.cross.other");
+	                		default:
+	                			break;
+	                	}
+	                }
+	                
+	                // TODO: Coloco el evento en la coleccion de eventos para insertar en la base de datos
+	                // Antes de insertarlo valido que no exista ese evento: fecha y conductor  en la base de datos
+	                EventMainAttributes eventExist = sys.getEventReportFacade().
+	                	existEvent(sys.getUserSessionData(), driver.getId(),
+	                		event.getDate());
+	                
+	                if (eventExist != null){
+	                	// Ya existe un evento cargado para ese conductor en esa fecha.
+	                	// errorMessage = messages.getText("event.exist.forthatdriveranddate");
+	                	// errorMessage.concat("\\n"+messages.getText("driver.messages.upload.linenumber")
+	    				//	  +": "+lineNumber);
+	                  	// session.setAttribute("Msg",errorMessage); 
+	                  	// return mapping.findForward("error");
+	                	
+	                	// Si existe el evento le indico al usuario que no se va a insertar de nuevo.
+	                	// Texto a mostrar: 
+	                	String msg =  messages.getText("event.exist.forthatdriveranddate") + 
+	                			": "+firstName+" "+lastName+" - "+
+	                			messages.getText("driver.messages.upload.linenumber") +
+	                			": "+lineNumber;
+	                	
+	                	notInsertedEvents.add(msg);
+	                }else{
+	                	// Si los eventos no existen los agrego:  
+	                
+	                	events.add(event);
+	                	
+	                }
+                } // fin if nombre y apellido diferentes de vacio.
+                
+                System.out.println("Linea: "+lineNumber);
+                lineNumber++; // incremento numero de linea del archivo 
+            }       
+            
+            if (events != null && events.size() > 0){
+            	Iterator<EventDataType> it = events.iterator();
+            	while (it.hasNext()){
+            		EventDataType event = it.next();
+            		EventABMFacade eventABM = sys.getEventABMFacade();
+            		eventABM.eventCreate(event,sys.getUserSessionData(),null);
+/*                	Integer id = eventABM.eventCreate(event,sys.getUserSessionData(),null);
+                	event.setId(id);
+                    eventABM.eventUpdate(event, EventDataType.SUPERVISED ,sys.getUserSessionData(),"SUPERVISION");
+*/            	}            	
+            }
+                 
+            // Total eventos insertados:
+            total = events.size();
+            
+            // eventos no insertados:
+            result = new ListResult(notInsertedEvents,notInsertedEvents.size());
+              
+            System.out.println("Inserte "+total+" Eventos.....");
+            
+
+        }catch(Exception e){
+        	e.printStackTrace();
+        }
+    	
+        session.setAttribute("notupload",result);
+        session.setAttribute("total", (new Integer(total)).toString());        		  
+        session.setAttribute("entity","event.messages.upload");
+        return mapping.findForward("success");	
+    }
+	
+
+	/**
+     * 
+     * @param mapping
+     * @param form
+     * @param request
+     * @param response
+     * @return
+     * @throws Throwable
+     */
+    public ActionForward insertBayerMxEvents(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response) throws Exception {
+    	
+    	HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        // String directory = "/tmp/datacenter/images";
+        String directory = SecurityConstants.IMAGES_WAR_DIRECTORY;
+        Text messages = sys.getText();
+        String fileName = "events"+sys.getUserSessionData().getFilter().getCorporationId()+".csv";
+        int lineNumber = 1;
+        int total = 0;
+        LinkedList<String> notInsertedEvents = new LinkedList<String>();
+        ListResult result = null;
+        StringBuffer word = new StringBuffer();
+        
+        try {
+        	
+        	
+        	FileInputStream input = new FileInputStream(new File(directory + "/" + fileName));
+        	// Reader in = new InputStreamReader(input, "UTF-8");        	
+        	Reader in = new InputStreamReader(input, "ISO-8859-1"); 
+
+            Collection<EventDataType> events = new LinkedList<EventDataType>();
+            
+            char car;
+            car = 0;
+            System.out.println("Inserto eventos:");    
+            
+            // Asumo que en el archivo hay 3 lineas explicativas de los diferentes
+            // campos a ingresar.
+            int lineasExplicativas = 0;
+            while (car != EOF && lineasExplicativas < 3){
+            	  while(car != '\n' && car != EOF) {
+                      // car = (char)input.read();                   
+            		  car = (char)in.read(); // para compatibilidad con utf8
+            	  }
+            	  car = 0;
+                  lineasExplicativas ++;
+                  lineNumber ++;
+            }
+           
+            // Ingreso los diferentes eventos
+            while(car != EOF && lineNumber <= 110 ) {
+            	int index = 0;
+                car = 0;
+                
+                // Datos del Vehiculo
+                String plate = "";
+               
+				int vehicleCount = 0;
+                
+                String clasification;
+                String incident;
+                String colisionClasification;
+                String contact1 = null;
+                String comment = null;
+               
+                EventDataType event = new EventDataType();
+                String corporationId = null;
+                // Leo la linea:
+                while(car != '\n' && car != EOF) {
+                	errorMessage = null;
+                	car = (char)in.read();
+                    if(car == '\t' || car == '\n') {
+                    	String data = word.toString().trim();
+                        switch(index) {
+                        	// Datos del Conductor
+                            case 0: 
+                            	corporationId = firstNameData(data,messages); 
+                            	break;
+                            // Ubicación del Evento
+                            case 1: // Estado/Provincia del Evento
+                            	event.setState(eventLocation1Data(data,messages));
+                            	break;
+                            case 2:  // Ciudad/Localidad del Evento
+                            	event.setCity(eventLocation2Data(data,messages));
+                            	break;
+                            		// Datos del Vehiculo
+                            case 3: 
+                            	plate = plateData(data,messages);
+                            	break;
+                            // Datos del Evento
+                            case 4: 
+                            	event.setDate(eventDateData(data,messages));
+                            	break;
+                            case 5: 
+                            	event.setHour(eventHourData(data,messages));
+                            	break;
+                            case 6: 
+                            	event.setWorking(eventWorkingData(data,messages));
+                            	break;
+                            case 7: 
+                            	event.setDamage(materialsdamageData(data,messages));
+                            	break;
+                            case 8: 
+                            	event.setZone(new ZoneDataType(zoneData(data,messages)));
+                            	break;
+                            // Consecuencias
+                            case 9: 
+                            	event.setDriverstate(driverstateData(data,messages)) ; 
+                            	break;
+                            case 10: 
+                            	event.setDayslost(dayslostData(data,messages));
+                            	break;
+                            case 11: 
+                            	event.setSafefunccount(safefunccountData(data,messages));
+                            	break; 
+                            case 12: 
+                            	event.setInjuredfunccount(injuredfunccountData(data,messages));
+                            	break;
+                            case 13: 
+                            	event.setFatalitiesfunccount(fatalitiesfunccountData(data,messages));
+                            	break;
+                            case 14: 
+                            	event.setOtherpartydayslost(otherpartydayslostData(data,messages));
+                            	break;
+                            case 15: 
+                            	event.setSafeothercount(safeothercountData(data,messages));
+                            	break;
+                            case 16: 
+                            	event.setInjuredothercount(injuredothercountData(data,messages));
+                            	break;
+                            case 17: 
+                            	event.setFatalitiesothercount(fatalitiesothercountData(data,messages));
+                            	break;
+                        	// Relato
+                            case 18: 
+                            	event.setStory(storyData(data,messages));
+                            	break;
+                            // Clasificacion
+                            case 19:
+                           		clasification = clasificationData(data,messages);
+                           		if (clasification != null){
+                           			event.setAccident(new AccidentClasificationDataType(clasification));
+                           		}
+                           		break;
+                            case 20:
+                           		incident = incidentData(data,messages);
+                           		if (incident != null){
+                           			event.setIncident(new IncidentClasificationDataType(incident));
+                           		}
+                           		break;
+                            case 21: 
+                           		colisionClasification = colisionClasificationData(data,messages);
+                           		if (colisionClasification != null){
+                           			event.setCollision(new CollisionClasificationDataType(colisionClasification));
+                           			if ( !colisionClasification.equalsIgnoreCase("datatype.collisionclasification.incident")) {
+                           				// Si la clasificacion de colision no es un incidente, entonces incidente es null
+                           				event.setIncident(null);
+                           			}
+                           		}
+                           		break;
+                            // Company Car
+                            case 22: 
+                            	event.setHandle(new VehicleBehaviourDataType(handleData(data,messages))); 
+                            	break;
+                            case 23: 
+                            	event.setHitrun(hitrunData(data,messages,null)); 
+                            	break;
+                            case 24: 
+                            	event.setPrincipalFactor(new AccidentFactorsDataType(principalFactorData(data,messages,null))); 
+                            	break;                            
+                            // Angulo de colision
+                            case 25: 
+                            	event.setCollisionAngle(collisionAngleData(data,messages)); 
+                            	break;
+                            case 26: 
+                            	event.setSelfbelt(selfbeltData(data,messages)); 
+                            	break;
+                            case 27: 
+                            	event.setAlcohol(alcoholData(data,messages)); 
+                            	break;
+                            case 28: 
+                            	event.setOthervehicles(othervehiclesData(data,messages)); 
+                            	break;
+                            // Medio Ambiente - Via de Circulacion
+                            case 29: 
+                            	event.setWay(new WayDataType(wayData(data,messages)));
+                            	break;
+                            case 30: 
+                            	event.setDirection(new CirculationDirectionDataType(directionData(data,messages))); 
+                            	break;
+                            case 31: 
+                            	event.setControl(new TrafficControlDataType(controlData(data,messages))); 
+                            	break;
+                            // Medio ambiente  - Pavimento
+                            case 32: 
+                            	event.setClimate(new ClimateDataType(climateData(data,messages))); 
+                            	break;
+                            case 33: 
+                            	event.setPavement(new PavementDataType(pavementData(data,messages))); 
+                            	break;
+                            case 34: 
+                            	event.setCondition(new ConditionRoutDataType(conditionData(data,messages))); 
+                            	break;
+                            case 35: 
+                            	event.setLighting(new LightingDataType(lightingData(data,messages))); 
+                            	break;
+                            // Peatones
+                            case 36: 
+                            	event.setPedestrianCount(pedestriancountData(data,messages)); 
+                            	break;
+                            case 37: 
+                            	event.setCost(costData(data,messages)); 
+                            	break;
+                            case 38: 
+                            	comment = commentData(data,messages); 
+                            	break;
+                        }
+                        word = new StringBuffer();	                        
+                        index++;
+                    }else {
+                        word.append(car);
+                    }
+                    if (errorMessage != null){
+                    	break;
+                    }
+                } // Termine de leer toda la linea
+                
+               
+                // solo tengo en cuenta las lineas que tengan firstName y Lastname, las demas las ignoro:
+                if (!Util.empty(corporationId)){
+                	// Si hubo un error en algun campo salgo y muestro mensaje al usuario.
+                    if (errorMessage != null){
+                    	// Agreo número de linea al errorMessage:
+                    	errorMessage += "\\n"+messages.getText("driver.messages.upload.linenumber") + ": " + lineNumber;
+                    	session.setAttribute("Msg",errorMessage); 
+                    	return mapping.findForward("error"); 
+                    }
+	                
+	                DriverData driver = getDriver(corporationId, messages);
+	                if (driver == null){
+	                	errorMessage += "\\n"+messages.getText("driver.messages.upload.linenumber") + ": " + lineNumber;
+	                	session.setAttribute("Msg",errorMessage); 
+	                	return mapping.findForward("error");
+	                }                
+	                event.setDriver(driver);
+	                
+	                
+	                // -----------------------
+	                // 2. Busco el Vehiculo
+	                // -----------------------
+	                
+	                VehicleData vehicle = getVehicle(plate,messages);
+	                if (vehicle == null){
+//	                	errorMessage += "\\n"+messages.getText("driver.messages.upload.linenumber")
+//	  						  +": "+lineNumber;
+//	                	session.setAttribute("Msg",errorMessage); 
+//	                	return mapping.findForward("error");
+	                	
+	                	// Si el vehiculo es null cargo los datos basicos del vehiculo
+	                	event.setPlate(plate);
+	                	event.setModel("No Data"); // No Data
+	                	event.setTrade("generic.messages.nodata"); // No Data
+	                	event.setYear("generic.messages.nodata"); // No Data
+	                	event.setVehicle(null);
+	                	
+	                }else{
+	                	event.setVehicle(vehicle);
+	                }
+	                
+	                
+	                event.setDivOrgs(driver.getDivOrgs());
+	                CorporationData corporation = sys.getCorporationReportFacade().findCorporationByPrimaryKey(sys.getUserSessionData().getFilter().getCorporationId(), sys.getUserSessionData());
+	                event.setCorporation(corporation);
+	                GeoLabelData country = driver.getCountry();
+	                event.setCountry(country);
+	                event.setVehiclesInvolved(new LinkedList());
+	                
+	                // TODO: Coloco el evento en la coleccion de eventos para insertar en la base de datos
+	                // Antes de insertarlo valido que no exista ese evento: fecha y conductor  en la base de datos
+	                EventMainAttributes eventExist = sys.getEventReportFacade().
+	                	existEvent(sys.getUserSessionData(), driver.getId(),
+	                		event.getDate());
+	                
+	                if (eventExist != null){
+	                	// Ya existe un evento cargado para ese conductor en esa fecha.
+	                	// errorMessage = messages.getText("event.exist.forthatdriveranddate");
+	                	// errorMessage.concat("\\n"+messages.getText("driver.messages.upload.linenumber")
+	    				//	  +": "+lineNumber);
+	                  	// session.setAttribute("Msg",errorMessage); 
+	                  	// return mapping.findForward("error");
+	                	
+	                	// Si existe el evento le indico al usuario que no se va a insertar de nuevo.
+	                	// Texto a mostrar: 
+	                	String msg =  messages.getText("event.exist.forthatdriveranddate") + 
+	                			": "+corporationId+" - "+
+	                			messages.getText("driver.messages.upload.linenumber") +
+	                			": "+lineNumber;
+	                	
+	                	notInsertedEvents.add(msg);
+	                }else{
+	                	// Si los eventos no existen los agrego:  
+	                
+	                	events.add(event);
+	                	
+	                }
+                } // fin if nombre y apellido diferentes de vacio.
+                
+                System.out.println("Linea: "+lineNumber);
+                lineNumber++; // incremento numero de linea del archivo 
+            }       
+            
+            if (events != null && events.size() > 0){
+            	Iterator<EventDataType> it = events.iterator();
+            	while (it.hasNext()){
+            		EventDataType event = it.next();
+            		EventABMFacade eventABM = sys.getEventABMFacade();
+            		eventABM.eventCreate(event,sys.getUserSessionData(),null);
+/*                	Integer id = eventABM.eventCreate(event,sys.getUserSessionData(),null);
+                	event.setId(id);
+                    eventABM.eventUpdate(event, EventDataType.SUPERVISED ,sys.getUserSessionData(),"SUPERVISION");
+*/            	}            	
+            }
+                 
+            // Total eventos insertados:
+            total = events.size();
+            
+            // eventos no insertados:
+            result = new ListResult(notInsertedEvents,notInsertedEvents.size());
+              
+            System.out.println("Inserte "+total+" Eventos.....");
+            
+
+        }catch(Exception e){
+        	e.printStackTrace();
+        }
+    	
+        session.setAttribute("notupload",result);
+        session.setAttribute("total", (new Integer(total)).toString());        		  
+        session.setAttribute("entity","event.messages.upload");
+        return mapping.findForward("success");	
+    }
+	
+
+	
+	
+
+
+
+
+
+	
+
+	/**
+     * Nombre: CAMPO OBLIGATORIO
+     */
+    public String firstNameData(String data,Text messages){    	
+    	System.out.println("Nombre Conductor: "+data);
+    	if (!Util.empty(data)){
+  	  		return data;
+  	  	}else{  	  		
+  	  		errorMessage = messages.getText("driver.messages.upload.wrongname")+". ";
+  	  		return null;
+  	  	} 
+    }
+
+    /**
+     * Apellido: CAMPO OBLIGATORIO
+     */
+    public String lastNameData(String data, Text messages){
+    	System.out.println("Apellido Conductor: "+data);
+      if (!Util.empty(data)){
+  		  return data;
+  		  
+  	  }else{
+  		  errorMessage = messages.getText("driver.messages.upload.wronglastname")+". ";
+  		  return null;
+  	  }
+    }
+    
+    /**
+     * Fecha de Nacimiento: dd/mm/yyyy CAMPO NO OBLIGATORIO
+     * @param data
+     * @param messages
+     * @param date
+     * @return
+     */
+    public Date birthdateData(String data, Text messages){
+    	try{
+  		  if (!Util.empty(data)){                            			  
+  			  return Util.getDate(data).getTime();
+  			  
+  		  }else{
+      		  // errorMessage = messages.getText("driver.messages.upload.wrongbirthday") +". ";
+      		  return null;
+  		  }
+        } catch (Exception e) {
+            System.out.println("Sin Fecha de Nacimiento. ");
+            errorMessage = messages.getText("driver.messages.upload.wrongbirthday")+". ";
+            return null;
+        }
+        
+    }
+    
+    /**
+     * Ubicacion del Evento 1
+     * @param data
+     * @param messages
+     * @return
+     */
+    public String eventLocation1Data(String data, Text messages){
+    	try{
+		  if (!Util.empty(data)){                            			  
+			  return data;			  
+		  }else{
+    		  return null;
+		  }
+      	} catch (Exception e) {
+      		e.printStackTrace();
+      		return null;
+      	}
+    }  
+    /**
+     * Ubicacion del Evento 2
+     * @param data
+     * @param messages
+     * @return
+     */
+    public String eventLocation2Data(String data, Text messages){
+    	try{
+  		  if (!Util.empty(data)){                            			  
+  			  return data;			  
+  		  }else{
+      		  return null;
+  		  }
+    	} catch (Exception e) {
+    		e.printStackTrace();
+    		return null;
+    	}
+    }
+    
+    /**
+     * Matricula del Vehiculo, CAMPO OBLIGATORIO
+     * @param data
+     * @param messages
+     * @return
+     */
+    public String plateData(String data,Text messages){
+    	try{
+		  if (!Util.empty(data)){                            			  
+			  return data;
+			  
+		  }else{
+    		  errorMessage = messages.getText("vehicle.messages.upload.wrongplate") +". ";
+    		  return null;
+		  }
+      } catch (Exception e) {
+          System.out.println("Sin Matricula. ");
+          errorMessage = messages.getText("vehicle.messages.upload.wrongplate")+". ";
+          return null;
+      }
+  
+    }
+    
+    /**
+     * Fecha del Evento, CAMPO OBLIGATORIO
+     * @param data
+     * @param messages
+     * @return
+     */
+    public Date eventDateData(String data, Text messages){
+    	try{
+    		if (!Util.empty(data)){                            			  
+    			return Util.getDate(data).getTime();			  
+    		}else{
+    			errorMessage = messages.getText("generic.event.eventdata.dateEmpty") +". ";
+    			return null;
+    		}
+    	} catch (Exception e) {
+    		System.out.println("Sin Fecha de Evento o Fecha Invalida. ");
+    		errorMessage = messages.getText("generic.event.eventdata.dateInvalid")+". ";
+    		return null;
+    	}
+    }
+    
+    /**
+     * Hora del Evento, CAMPO OBLIGATORIO
+     * @param data
+     * @param messages
+     * @return
+     *
+    public Time eventHourData(String data, Text messages){
+    	try {
+    		if (!Util.empty(data) && data.length() >= 5){    
+    			String hour = data.substring(0,2); //hh:mm
+    			String minute = data.substring(3,5);
+    			Time time = Util.getTime(hour,minute);
+    			if(time == null) {
+    				errorMessage = messages.getText("generic.event.eventdata.timeEmpty");
+    				return null;
+    			}
+    			if(!Util.checkHour(Integer.parseInt(hour),Integer.parseInt(minute))) {
+    				errorMessage = messages.getText("generic.event.eventdata.hourInvalid");
+    				return null;
+    			}
+    			return time;
+    		}else{
+    			errorMessage = messages.getText("generic.event.eventdata.timeEmpty");
+				return null;
+    		}
+        }catch(Exception e) {
+        	System.out.println("Sin Hora del Evento o Hora Invalida. ");
+    		errorMessage = messages.getText("generic.event.eventdata.hourInvalid")+". ";
+    		return null;
+        }
+    }*/
+
+    public Time eventHourData(String data, Text messages){
+    	try {
+    		if (!Util.empty(data)){    
+        		StringTokenizer tokenizer = new StringTokenizer(data,":");
+        		if(tokenizer.countTokens() < 2) {
+    				errorMessage = messages.getText("generic.event.eventdata.hourInvalid");
+    				return null;
+        		}
+    			String hour = tokenizer.nextToken();
+    			String minute = tokenizer.nextToken();
+    			Time time = Util.getTime(hour,minute);
+    			if(time == null) {
+    				errorMessage = messages.getText("generic.event.eventdata.timeEmpty");
+    				return null;
+    			}
+    			if(!Util.checkHour(Integer.parseInt(hour),Integer.parseInt(minute))) {
+    				errorMessage = messages.getText("generic.event.eventdata.hourInvalid");
+    				return null;
+    			}
+    			return time;
+    		}else{
+    			errorMessage = messages.getText("generic.event.eventdata.timeEmpty");
+				return null;
+    		}
+        }catch(Exception e) {
+        	System.out.println("Sin Hora del Evento o Hora Invalida. ");
+    		errorMessage = messages.getText("generic.event.eventdata.hourInvalid")+". ";
+    		return null;
+        }
+    }
+
+    /**
+     * Trabajando (SI, No, No Data), Campo Obligatorio    
+     * @param data
+     * @param messages
+     * @return
+     */
+    public String eventWorkingData(String data, Text messages){
+    	try{
+    		if (!Util.empty(data)){
+    			Collection<String> values = this.getGenericCollection();
+    			if (values != null && values.size() > 0){
+    				Iterator<String> it = values.iterator();
+    				while (it.hasNext()){
+    					String value = it.next();
+    					if (data.equalsIgnoreCase(messages.getText(value))){
+    						return value;
+    					}
+    				}
+    			}
+    		}else{
+    			errorMessage = messages.getText("generic.event.eventdata.workingEmpty");
+				return null;
+    		}
+    	}catch(Exception e){
+    		System.out.println("Trabajando (Si,No,NoData) Invalido o Vacio.");
+    		errorMessage = messages.getText("generic.event.eventdata.workinginvalid")+". ";
+    		return null;
+    	}
+    	errorMessage = messages.getText("generic.event.eventdata.workinginvalid");
+    	return null;
+    }
+    
+    /**
+     * Daños materiales (Si,No o vacio) , campo NO obligatorio
+     * @param data
+     * @param messages
+     * @return
+     */
+    public boolean materialsdamageData(String data, Text messages){
+    	try{
+    		if (!Util.empty(data)){
+    			if (data.equalsIgnoreCase(messages.getText("generic.messages.yes"))){
+    				return true;
+    			}    	
+    		}
+    	}catch(Exception e){
+    		System.out.println("Daños Materiales Invalido.");
+    		errorMessage = messages.getText("generic.event.eventdata.materialsdamageinvalid")+". ";
+    		return false;
+    	}
+    	return false;
+    	
+    }
+    
+    /**
+     * Zona, CAMPO OBLIGATORIO
+     * @param data
+     * @param messages
+     * @return
+     */
+    public String zoneData(String data, Text messages){
+    	try{
+    		if (!Util.empty(data)){
+    			Collection<String> values = this.getZones();
+    			if (values != null & values.size() > 0){
+    				Iterator<String> it = values.iterator();
+    				while (it.hasNext()){
+    					String value = it.next();
+    					if (data.equalsIgnoreCase(messages.getText(value))){
+    						return value;
+    					}
+    				}
+    			}
+    			errorMessage = messages.getText("generic.event.eventdata.zoneInvalid")+". ";
+        	    return null;
+    		
+    		}else{
+    			errorMessage = messages.getText("generic.event.eventdata.zoneEmpty");
+    			return null;
+    		}
+    	}catch(Exception e){
+    		System.out.println("Zona Invalida.");
+    		errorMessage = messages.getText("generic.event.eventdata.zoneInvalid")+". ";
+    		return null;
+    	}
+    }
+    
+    /**
+	 * Boletim de Ocurencia - Reporte Policial, Campo Obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	String policeReportData(String data, Text messages) {
+		try{
+    		if (!Util.empty(data)){
+    			Collection<String> values = this.getGenericCollection();
+    			if (values != null & values.size() > 0){
+    				Iterator<String> it = values.iterator();
+    				while (it.hasNext()){
+    					String value = it.next();
+    					if (data.equalsIgnoreCase(messages.getText(value))){
+    						return value;
+    					}
+    				}
+    			}
+    			errorMessage = messages.getText("generic.event.eventdata.policeReportInvalid")+". ";
+        	    return null;
+    		
+    		}else{
+    			errorMessage = messages.getText("generic.event.eventdata.policeReportEmpty");
+    			return null;
+    		}
+    	}catch(Exception e){
+    		System.out.println("Reporte Policial Invalido.");
+    		errorMessage = messages.getText("generic.event.eventdata.policeReportInvalid")+". ";
+    		return null;
+    	}
+	}
+    
+	
+
+	/**
+	 * Estado del conductor: ileso, herido o fallecido, campo no obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	String driverstateData(String data, Text messages) {
+		try{
+			if (!Util.empty(data)){
+				if (data.equalsIgnoreCase(messages.getText("datatype.driverstate.safe"))){
+					return "datatype.driverstate.safe";
+				}else if (data.equalsIgnoreCase(messages.getText("datatype.driverstate.injured"))){
+					return "datatype.driverstate.injured";
+				}else if (data.equalsIgnoreCase(messages.getText("datatype.driverstate.dead"))){
+					return "datatype.driverstate.dead";
+				}
+			}
+		}catch(Exception e){
+			errorMessage = messages.getText("generic.event.eventdata.driverstateInvalid")+". ";
+    		return null;
+		}
+		return null;
+	}
+	
+	/**
+	 * Funcionarios Ilessos, no obligatorio.
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private Integer safefunccountData(String data, Text messages) {
+		try{
+			if (Util.isNumber(data)){
+				return new Integer(data);
+			}else{
+				return null;
+			}
+		}catch(Exception e){
+			System.out.println("Funcionarios Ilesos Invalidos.");
+			errorMessage = messages.getText("generic.event.eventdata.safefunccountInvalid")+". ";
+			return null;
+		}
+	}
+	
+	/**
+	 * Funcionarios Lastimados, no obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private Integer injuredfunccountData(String data, Text messages) {
+		try{
+			if (Util.isNumber(data)){
+				return new Integer(data);
+			}else{
+				return null;
+			}
+		}catch(Exception e){
+			System.out.println("Funcionarios Lastimados Invalidos.");
+			errorMessage = messages.getText("generic.event.eventdata.injuredfunccountInvalid")+". ";
+			return null;
+		}
+	}
+	
+	/**
+	 * Muertes de Funcionarios, no obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private Integer fatalitiesfunccountData(String data, Text messages) {
+		try{
+			if (Util.isNumber(data)){
+				return new Integer(data);
+			}else{
+				return null;
+			}
+		}catch(Exception e){
+			System.out.println("Funcionarios Muertos Invalidos.");
+			errorMessage = messages.getText("generic.event.eventdata.fatalitiesfunccountInvalid")+". ";
+			return null;
+		}
+	}
+
+	/**
+	 * Dias de trabajo perdidos por los funcionarios
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private Integer dayslostData(String data, Text messages) {
+		try{
+			if (Util.isNumber(data)){
+				return new Integer(data);
+			}else{
+				return null;
+			}
+		}catch(Exception e){
+			System.out.println("dias perdidos Invalidos.");
+			errorMessage = messages.getText("generic.event.eventdata.dayslostInvalid")+". ";
+			return null;
+		}
+	}
+
+	/**
+	 * Otros personas ilesos, no obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private Integer safeothercountData(String data, Text messages) {
+		try{
+			if (Util.isNumber(data)){
+				return new Integer(data);
+			}else{
+				return null;
+			}
+		}catch(Exception e){
+			System.out.println("Otros funcionarios ilesos Invalidos.");
+			errorMessage = messages.getText("generic.event.eventdata.safeothercountInvalid")+". ";
+			return null;
+		}
+	}
+	
+	
+	/**
+	 * Otros personas lastimados, no obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private Integer injuredothercountData(String data, Text messages) {
+		try{
+			if (Util.isNumber(data)){
+				return new Integer(data);
+			}else{
+				return null;
+			}
+		}catch(Exception e){
+			System.out.println("Otros funcionarios lastimados Invalidos.");
+			errorMessage = messages.getText("generic.event.eventdata.injuredothercountInvalid")+". ";
+			return null;
+		}
+	}
+
+	/**
+	 * Otros personas muertos, no obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private Integer fatalitiesothercountData(String data, Text messages) {
+		try{
+			if (Util.isNumber(data)){
+				return new Integer(data);
+			}else{
+				return null;
+			}
+		}catch(Exception e){
+			System.out.println("Otros funcionarios muertos Invalidos.");
+			errorMessage = messages.getText("generic.event.eventdata.fatalitiesothercountInvalid")+". ";
+			return null;
+		}
+	}
+
+	/**
+	 * Dias perdidos de otros personas, no obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private Integer otherpartydayslostData(String data, Text messages) {
+		try{
+			if (Util.isNumber(data)){
+				return new Integer(data);
+			}else{
+				return null;
+			}
+		}catch(Exception e){
+			System.out.println("Dias perdidos de Otros funcionarios Invalidos.");
+			errorMessage = messages.getText("generic.event.eventdata.otherpartydayslostInvalid")+". ";
+			return null;
+		}
+	}
+	
+	
+
+	
+	
+	/**
+	 * Relato, campo obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	String storyData(String data, Text messages) {
+		try{
+			if (!Util.empty(data)){
+				return data;
+			}else{
+				errorMessage = messages.getText("generic.event.eventdata.storyEmpty")+". ";
+				return null;
+			}
+		}catch(Exception e){
+			System.out.println("Relato Invalidos.");
+			errorMessage = messages.getText("generic.event.eventdata.storyInvalid")+". ";
+			return null;
+		}
+	}
+	
+	/**
+	 * Clasificacion de colision, campo obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	String colisionClasificationData(String data, Text messages) {
+		try{
+			if (!Util.empty(data)){
+				System.out.println("Colision Clasification: "+data);
+				Collection<String> values = this.getCollisionClasificationCollection();
+    			if (values != null & values.size() > 0){
+    				Iterator<String> it = values.iterator();
+    				while (it.hasNext()){
+    					String value = it.next();
+    					
+    					System.out.println("__Colision Posible: "+messages.getText(value)+ " - " +value);
+    					
+    					if (data.equalsIgnoreCase(messages.getText(value))){
+    						return value;
+    					}
+    				}
+    			}
+    			errorMessage = messages.getText("generic.event.eventdata.colisionclasificationInvalid")+". ";
+        	    return null;
+    		
+    		}else{
+    			
+    			errorMessage = messages.getText("generic.event.eventdata.colisionclasificationEmpty");
+    			return null;
+    		}
+		}catch(Exception e){
+			System.out.println("Clasificacion de Colision Invalidos.");
+			errorMessage = messages.getText("generic.event.eventdata.colisionclasificationInvalid")+". ";
+			return null;
+		}
+	}
+
+	/**
+	 * Clasificacion de Incidente, campo obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	String incidentData(String data, Text messages) {
+		try{
+			if (!Util.empty(data)){
+				Collection<String> values = this.getIncidentCollection();
+    			if (values != null & values.size() > 0){
+    				Iterator<String> it = values.iterator();
+    				while (it.hasNext()){
+    					String value = it.next();
+    					if (data.equalsIgnoreCase(messages.getText(value))){
+    						return value;
+    					}
+    				}
+    			}
+    			errorMessage = messages.getText("generic.event.eventdata.incidentInvalid")+". ";
+        	    return null;
+    		
+    		}else{
+    			// Si se carga un accidente puede no estar mal no poner clasifiacion de incidente
+    			// errorMessage = messages.getText("generic.event.eventdata.incidentEmpty");
+    			return null;
+    		}
+		}catch(Exception e){
+			System.out.println("Clasificacion de Incidente Invalidos.");
+			errorMessage = messages.getText("generic.event.eventdata.incidentInvalid")+". ";
+			return null;
+		}
+	}
+
+	/**
+	 * Clasificacion de Accidente, campo obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	String clasificationData(String data, Text messages) {
+		try{
+			if (!Util.empty(data)){
+				System.out.println("Clasificacion ingresada: "+data);
+				Collection<String> values = this.getClasificationCollection();
+    			if (values != null & values.size() > 0){
+    				Iterator<String> it = values.iterator();
+    				while (it.hasNext()){
+    					String value = it.next();
+
+    					System.out.println("__Clasificacion valida: "+ value + " - "+messages.getText(value));
+    					
+    					if (data.equalsIgnoreCase(messages.getText(value))){
+    						return value;
+    					}
+    				}
+    			}
+    			errorMessage = messages.getText("generic.event.eventdata.clasificationInvalid")+". ";
+        	    return null;
+    		
+    		}else{
+    			// Si se carga un incidente puede no estar mal no poner clasifiacion de accidente
+    			// errorMessage = messages.getText("generic.event.eventdata.clasificationEmpty");
+    			System.out.println("Clasificacion vacía...");
+    			return null;
+    		}
+		}catch(Exception e){
+			System.out.println("Clasificacion de Accidente Invalidos.");
+			errorMessage = messages.getText("generic.event.eventdata.clasificationInvalid")+". ";
+			return null;
+		}
+	}
+	
+
+	/**
+	 * 
+	 * @param data
+	 * @param messages
+	 * @param i 
+	 * @return
+	 */
+	private boolean factorovertakingData(String data, Text messages, Integer vehiclei) {
+		try{
+    		if (!Util.empty(data)){
+    			if (data.equalsIgnoreCase(messages.getText("generic.messages.yes"))){
+    				return true;
+    			}    	
+    		}
+    	}catch(Exception e){
+    		errorMessage = messages.getText("generic.event.eventdata.factorovertakinginvalid")+
+    			((vehiclei != null)? messages.getText("generic.event.vehicle")+" "+vehiclei : "" ) + ". "; 
+    		return false;
+    	}
+    	return false;
+	}
+
+	/**
+	 * 
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private boolean factorstopData(String data, Text messages, Integer vehiclei) {
+		try{
+    		if (!Util.empty(data)){
+    			if (data.equalsIgnoreCase(messages.getText("generic.messages.yes"))){
+    				return true;
+    			}    	
+    		}
+    	}catch(Exception e){
+    		errorMessage = messages.getText("generic.event.eventdata.factorstopinvalid")+
+    		((vehiclei != null)? messages.getText("generic.event.vehicle")+" "+vehiclei : "" ) + ". "; 
+    		return false;
+    	}
+    	return false;
+	}
+
+	/**
+	 * 
+	 * @param data
+	 * @param messages
+	 * @param i 
+	 * @return
+	 */
+	private boolean factorhighspeedData(String data, Text messages, Integer vehiclei) {
+		try{
+    		if (!Util.empty(data)){
+    			if (data.equalsIgnoreCase(messages.getText("generic.messages.yes"))){
+    				return true;
+    			}    	
+    		}
+    	}catch(Exception e){
+    		errorMessage = messages.getText("generic.event.eventdata.factorhighspeedinvalid")+
+    		((vehiclei != null)? messages.getText("generic.event.vehicle")+" "+vehiclei : "" ) + ". "; 
+    		return false;
+    	}
+    	return false;
+	}
+
+	/**
+	 * 
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private boolean factorotherData(String data, Text messages, Integer vehiclei) {
+		try{
+    		if (!Util.empty(data)){
+    			if (data.equalsIgnoreCase(messages.getText("generic.messages.yes"))){
+    				return true;
+    			}    	
+    		}
+    	}catch(Exception e){
+    		errorMessage = messages.getText("generic.event.eventdata.factorotherinvalid")+
+    		((vehiclei != null)? messages.getText("generic.event.vehicle")+" "+vehiclei : "" ) + ". "; 
+    		return false;
+    	}
+    	return false;
+	}
+
+	/**
+	 * 
+	 * @param data
+	 * @param messages
+	 * @param vehiclei 
+	 * @return
+	 */
+	private boolean factorturnData(String data, Text messages, Integer vehiclei) {
+		try{
+    		if (!Util.empty(data)){
+    			if (data.equalsIgnoreCase(messages.getText("generic.messages.yes"))){
+    				return true;
+    			}    	
+    		}
+    	}catch(Exception e){
+    		errorMessage = messages.getText("generic.event.eventdata.factorturninvalid")+
+    			((vehiclei != null)? messages.getText("generic.event.vehicle")+" "+vehiclei : "" ) + ". "; 
+    		return false;
+    	}
+    	return false;
+	}
+	
+
+	/**
+	 * 
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private boolean factordistractionData(String data, Text messages, Integer vehiclei) {
+		try{
+    		if (!Util.empty(data)){
+    			if (data.equalsIgnoreCase(messages.getText("generic.messages.yes"))){
+    				return true;
+    			}    	
+    		}
+    	}catch(Exception e){
+    		errorMessage = messages.getText("generic.event.eventdata.factordistractioninvalid")+
+    		((vehiclei != null)? messages.getText("generic.event.vehicle")+" "+vehiclei : "" ) + ". "; 
+    		return false;
+    	}
+    	return false;
+	}
+
+	/**
+	 * 
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private boolean factorsignsData(String data, Text messages, Integer vehiclei) {
+		try{
+    		if (!Util.empty(data)){
+    			if (data.equalsIgnoreCase(messages.getText("generic.messages.yes"))){
+    				return true;
+    			}    	
+    		}
+    	}catch(Exception e){
+    		errorMessage = messages.getText("generic.event.eventdata.factorsignsinvalid")+
+    		((vehiclei != null)? messages.getText("generic.event.vehicle")+" "+vehiclei : "" ) + ". "; 
+    		return false;
+    	}
+    	return false;
+	}
+
+	/**
+	 * 
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private boolean factortoocloseData(String data, Text messages, Integer vehiclei) {
+		try{
+    		if (!Util.empty(data)){
+    			if (data.equalsIgnoreCase(messages.getText("generic.messages.yes"))){
+    				return true;
+    			}    	
+    		}
+    	}catch(Exception e){
+    		errorMessage = messages.getText("generic.event.eventdata.factortoocloseinvalid")+
+    		((vehiclei != null)? messages.getText("generic.event.vehicle")+" "+vehiclei : "" ) + ". "; 
+    		return false;
+    	}
+    	return false;
+	}
+
+	/**
+	 * 
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private boolean factorlightData(String data, Text messages, Integer vehiclei) {
+		try{
+    		if (!Util.empty(data)){
+    			if (data.equalsIgnoreCase(messages.getText("generic.messages.yes"))){
+    				return true;
+    			}    	
+    		}
+    	}catch(Exception e){
+    		errorMessage = messages.getText("generic.event.eventdata.factorlightinvalid")+
+    		((vehiclei != null)? messages.getText("generic.event.vehicle")+" "+vehiclei : "" ) + ". "; 
+    		return false;
+    	}
+    	return false;
+	}
+
+	/**
+	 * 
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private boolean factoralcoholData(String data, Text messages, Integer vehiclei) {
+		try{
+    		if (!Util.empty(data)){
+    			if (data.equalsIgnoreCase(messages.getText("generic.messages.yes"))){
+    				return true;
+    			}    	
+    		}
+    	}catch(Exception e){
+    		errorMessage = messages.getText("generic.event.eventdata.factoralcoholinvalid")+
+    		((vehiclei != null)? messages.getText("generic.event.vehicle")+" "+vehiclei : "" ) + ". "; 
+    		return false;
+    	}
+    	return false;
+	}
+
+	/**
+	 * 
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private boolean factorsleepData(String data, Text messages, Integer vehiclei) {
+		try{
+    		if (!Util.empty(data)){
+    			if (data.equalsIgnoreCase(messages.getText("generic.messages.yes"))){
+    				return true;
+    			}    	
+    		}
+    	}catch(Exception e){
+    		errorMessage = messages.getText("generic.event.eventdata.factorsleepinvalid")+
+    		((vehiclei != null)? messages.getText("generic.event.vehicle")+" "+vehiclei : "" ) + ". "; 
+    		return false;
+    	}
+    	return false;
+	}
+
+	/**
+	 * 
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private boolean factorOtherParkingData(String data, Text messages, Integer vehiclei) {
+		try{
+    		if (!Util.empty(data)){
+    			if (data.equalsIgnoreCase(messages.getText("generic.messages.yes"))){
+    				return true;
+    			}    	
+    		}
+    	}catch(Exception e){
+    		errorMessage = messages.getText("generic.event.eventdata.factorOtherParkinginvalid")+
+    		((vehiclei != null)? messages.getText("generic.event.vehicle")+" "+vehiclei : "" ) + ". "; 
+    		return false;
+    	}
+    	return false;
+	}
+
+	/**
+	 * 
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private boolean factorOtherStandingData(String data, Text messages, Integer vehiclei) {
+		try{
+    		if (!Util.empty(data)){
+    			if (data.equalsIgnoreCase(messages.getText("generic.messages.yes"))){
+    				return true;
+    			}    	
+    		}
+    	}catch(Exception e){
+    		errorMessage = messages.getText("generic.event.eventdata.factorOtherStandinginvalid")+
+    		((vehiclei != null)? messages.getText("generic.event.vehicle")+" "+vehiclei : "" ) + ". "; 
+    		return false;
+    	}
+    	return false;
+	}
+
+	/**
+	 * 
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private boolean factorMecanicFailData(String data, Text messages, Integer vehiclei) {
+		try{
+    		if (!Util.empty(data)){
+    			if (data.equalsIgnoreCase(messages.getText("generic.messages.yes"))){
+    				return true;
+    			}    	
+    		}
+    	}catch(Exception e){
+    		errorMessage = messages.getText("generic.event.eventdata.factorMecanicfailinvalid")+
+    		((vehiclei != null)? messages.getText("generic.event.vehicle")+" "+vehiclei : "" ) + ". "; 
+    		return false;
+    	}
+    	return false;
+	}
+
+	/**
+	 * 
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private boolean factorOtherCrossingData(String data, Text messages, Integer vehiclei) {
+		try{
+    		if (!Util.empty(data)){
+    			if (data.equalsIgnoreCase(messages.getText("generic.messages.yes"))){
+    				return true;
+    			}    	
+    		}
+    	}catch(Exception e){
+    		errorMessage = messages.getText("generic.event.eventdata.factorOtherCrossinginvalid")+
+    		((vehiclei != null)? messages.getText("generic.event.vehicle")+" "+vehiclei : "" ) + ". "; 
+    		return false;
+    	}
+    	return false;
+    	
+	}
+
+	/**
+	 * 
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private boolean factorConcienceData(String data, Text messages, Integer vehiclei) {
+		try{
+    		if (!Util.empty(data)){
+    			if (data.equalsIgnoreCase(messages.getText("generic.messages.yes"))){
+    				return true;
+    			}    	
+    		}
+    	}catch(Exception e){
+    		errorMessage = messages.getText("generic.event.eventdata.factorConcienceinvalid")+
+    		((vehiclei != null)? messages.getText("generic.event.vehicle")+" "+vehiclei : "" ) + ". "; 
+    		return false;
+    	}
+    	return false;
+	}
+
+
+	/**
+	 * 
+	 * @param data
+	 * @param messages
+	 * @param i 
+	 * @return
+	 */
+	private boolean factorchangelaneData(String data, Text messages, Integer vehiclei) {
+		try{
+    		if (!Util.empty(data)){
+    			if (data.equalsIgnoreCase(messages.getText("generic.messages.yes"))){
+    				return true;
+    			}    	
+    		}
+    	}catch(Exception e){
+    		errorMessage = messages.getText("generic.event.eventdata.factorchangelaneinvalid")+
+    		((vehiclei != null)? messages.getText("generic.event.vehicle")+" "+vehiclei : "" ) + ". "; 
+    		return false;
+    	}
+    	return false;
+	}
+	
+
+	/**
+	 * Facotr principal contribuyente, campo obligatorio
+	 * @param data
+	 * @param messages
+	 * @param vehiclei 
+	 * @return
+	 */
+	String principalFactorData(String data, Text messages, Integer vehiclei) {
+		
+		try{
+			if (!Util.empty(data)){
+				DataTypeUtil dataTypeUtil = new DataTypeUtil(sys);
+				System.out.println("Principal Factor Ingresado: "+data);
+				Collection<OptionItem> values = dataTypeUtil.getDataType(
+						DataTypeConstants.ACCIDENT_FACTORS,false,false,false);
+    			if (values != null & values.size() > 0){
+    				Iterator<OptionItem> it = values.iterator();
+    				while (it.hasNext()){
+    					OptionItem op = it.next();
+    					String value = op.getValue();
+    					
+    					System.out.println("__Principal Factor posible: "+value + " - "+messages.getText(value));
+    					
+    					if (data.equalsIgnoreCase(messages.getText(value))){
+    						return value;
+    					}
+    				}
+    			}
+    			errorMessage = messages.getText("generic.event.eventdata.principalFactorInvalid")+". ";
+        	    return null;
+    		
+    		}else if (vehiclei != null){
+    			// Los vehiculos involucrados puenden ser 0, en cuyo caso no tiene porque cargar este dato.
+    			return null;
+    		}else{
+    			errorMessage = messages.getText("generic.event.eventdata.principalFactorEmpty");
+    			return null;
+    		}
+		}catch(Exception e){
+			errorMessage = messages.getText("generic.event.eventdata.principalFactorInvalid")+". ";
+			return null;
+		}
+	}
+
+	/**
+	 * Choco y huyo? campo obligatorio
+	 * @param data
+	 * @param messages
+	 * @param i 
+	 * @return
+	 */
+	String hitrunData(String data, Text messages, Integer vehiclei) {
+		try{
+			if (!Util.empty(data)){
+				Collection<String> values = getGenericCollection();
+    			if (values != null & values.size() > 0){
+    				Iterator<String> it = values.iterator();
+    				while (it.hasNext()){
+    					String value = it.next();
+    					if (data.equalsIgnoreCase(messages.getText(value))){
+    						return value;
+    					}
+    				}
+    			}
+    			errorMessage = messages.getText("generic.event.eventdata.hitrunInvalid")+". ";
+        	    return null;
+    		
+    		}else if (vehiclei != null){
+    			// vehicle i puede no traer nada
+    			return null;
+    		}else{
+    			errorMessage = messages.getText("generic.event.eventdata.hitrunEmpty");
+    			return null;
+    		}
+		}catch(Exception e){
+			errorMessage = messages.getText("generic.event.eventdata.hitrunInvalid")+
+				((vehiclei != null)? messages.getText("generic.event.vehicle")+" "+vehiclei : "" ) + ". "; 
+			return null;
+		}
+	}
+
+	/**
+	 * Handle, Comportamiento, Manobra
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	String handleData(String data, Text messages) {
+		try{
+			if (!Util.empty(data)){
+				System.out.println("Comportamiento del Vehiculo: "+data);
+				// System.out.println(this.convertString(data));
+				
+				DataTypeUtil dataTypeUtil = new DataTypeUtil(sys);
+				Collection<OptionItem> values = dataTypeUtil.getDataType(DataTypeConstants.VEHICLE_BEHAVIOUR,
+						false,true,true);
+    			if (values != null & values.size() > 0){
+    				Iterator<OptionItem> it = values.iterator();
+    				while (it.hasNext()){
+    					OptionItem o = it.next();
+    					System.out.println("__Comportamiento posible: "+ o.getValue() + " - "+o.getLabel());
+    									
+    					if (data.equalsIgnoreCase(o.getLabel())){
+    						return o.getValue();
+    					}
+    				}
+    			}
+    			errorMessage = messages.getText("generic.event.eventdata.handleInvalid")+". ";
+        	    return null;
+    		
+    		}else{
+    			errorMessage = messages.getText("generic.event.eventdata.handleEmpty");
+    			return null;
+    		}
+		}catch(Exception e){
+			
+			errorMessage = messages.getText("generic.event.eventdata.handleInvalid")+". ";
+			return null;
+		}
+	}
+
+
+	/**
+	 * 
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	String collisionAngleData(String data, Text messages) {
+		try{
+			if (!Util.empty(data)){
+				if (data.equalsIgnoreCase(messages.getText("datatype.collisionangle.hitrear"))){
+					return "datatype.collisionangle.hitrear";
+				}
+				if (data.equalsIgnoreCase(messages.getText("datatype.collisionangle.otherpartyhitrear"))){
+					return "datatype.collisionangle.otherpartyhitrear";
+				}
+				if (data.equalsIgnoreCase(messages.getText("datatype.collisionangle.rectangle"))){
+					return "datatype.collisionangle.rectangle";
+				}
+				if (data.equalsIgnoreCase(messages.getText("datatype.collisionangle.leftturn"))){
+					return "datatype.collisionangle.leftturn";
+				}
+				if (data.equalsIgnoreCase(messages.getText("datatype.collisionangle.front"))){
+					return "datatype.collisionangle.front";
+				}
+				if (data.equalsIgnoreCase(messages.getText("datatype.collisionangle.lateral"))){
+					return "datatype.collisionangle.lateral";
+				}
+				if (data.equalsIgnoreCase(messages.getText("datatype.collisionangle.rightturn"))){
+					return "datatype.collisionangle.rightturn";
+				}
+				if (data.equalsIgnoreCase(messages.getText("datatype.collisionangle.other"))){
+					return "datatype.collisionangle.other";
+				}
+				
+			}
+		}catch(Exception e){
+			errorMessage = messages.getText("generic.event.eventdata.collisionAngleInvalid")+". ";
+			return null;
+		}
+		return null;
+	}
+
+	
+	
+	/**
+	 * 
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	String speedUnitData(String data, Text messages) {
+		try{
+			if (!Util.empty(data)){
+				if (data.equalsIgnoreCase(messages.getText("driver.speedunits.metres"))){
+					return "driver.speedunits.metres";
+				}
+				if (data.equalsIgnoreCase(messages.getText("driver.speedunits.milles"))){
+					return "driver.speedunits.milles";
+				}
+			}
+		}catch(Exception e){
+			errorMessage = messages.getText("generic.event.eventdata.speedUnitInvalid")+". ";
+			return null;
+		}
+		return null;
+		
+	}
+	
+	/**
+	 * Maxima velocidad, campo no obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private Integer maxSpeedData(String data, Text messages) {
+		try{
+			if (Util.isNumber(data)){
+				return new Integer(data);
+			}else{
+				return null;
+			}
+		}catch(Exception e){
+			errorMessage = messages.getText("generic.event.eventdata.maxSpeedInvalid")+". ";
+			return null;
+		}
+	}
+	
+	/**
+	 * Velocidad Reportada, campo no obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private Integer reportedSpeedData(String data, Text messages) {
+		try{
+			if (Util.isNumber(data)){
+				return new Integer(data);
+			}else{
+				return null;
+			}
+		}catch(Exception e){
+			errorMessage = messages.getText("generic.event.eventdata.reportedSpeedInvalid")+". ";
+			return null;
+		}
+	}
+
+	/**
+	 * Velocidad del vehiculo, no obligaotiro,
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private Integer vehicleSpeedData(String data, Text messages) {
+		try{
+			if (Util.isNumber(data)){
+				return new Integer(data);
+			}else{
+				return null;
+			}
+		}catch(Exception e){
+			errorMessage = messages.getText("generic.event.eventdata.vehicleSpeedInvalid")+". ";
+			return null;
+		}
+	}
+
+	/**
+	 * Velocidad de colision, no obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private Integer collisionSpeedData(String data, Text messages) {
+		try{
+			if (Util.isNumber(data)){
+				return new Integer(data);
+			}else{
+				return null;
+			}
+		}catch(Exception e){
+			errorMessage = messages.getText("generic.event.eventdata.collisionSpeedInvalid")+". ";
+			return null;
+		}
+	}
+
+
+	/**
+	 * Cellular, no obligatorio.
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private String cellularData(String data, Text messages) {
+		try{
+			
+			if (!Util.empty(data)){
+				if (data.equalsIgnoreCase(messages.getText("generic.messages.yes"))){
+					return "generic.messages.yes";
+				}				
+				if (data.equalsIgnoreCase(messages.getText("generic.messages.no"))){
+					return "generic.messages.no";
+				}
+				if (data.equalsIgnoreCase(messages.getText("driver.cellular.yes.freehand"))){
+					return "driver.cellular.yes.freehand";
+				}
+				if (data.equalsIgnoreCase(messages.getText("driver.cellular.yes.normal"))){
+					return "driver.cellular.yes.normal";
+				}
+				if (data.equalsIgnoreCase(messages.getText("generic.messages.nodata"))){
+					return "generic.messages.nodata";
+				}
+				if (data.equalsIgnoreCase(messages.getText("generic.messages.notapply"))){
+					return "generic.messages.notapply";
+				}
+			}
+			return null;
+			
+		}catch(Exception e){
+			errorMessage = messages.getText("generic.event.eventdata.cellularInvalid")+". ";
+			return null;
+		}
+	}
+
+	/**
+	 * Otros vehiculos, campo no obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private String othervehiclesData(String data, Text messages) {
+		try{
+			if (!Util.empty(data)){
+				Collection<String> values = getGenericCollection();
+    			if (values != null & values.size() > 0){
+    				Iterator<String> it = values.iterator();
+    				while (it.hasNext()){
+    					String value = it.next();
+    					if (data.equalsIgnoreCase(messages.getText(value))){
+    						return value;
+    					}
+    				}
+    			}
+    			errorMessage = messages.getText("generic.event.eventdata.othervehiclesInvalid")+". ";
+        	    return null;
+    		
+    		}
+			
+			return null;
+    		
+		}catch(Exception e){
+			errorMessage = messages.getText("generic.event.eventdata.othervehiclesInvalid")+". ";
+			return null;
+		}
+	}
+
+	/**
+	 * Nivel de alcholemia, campo no obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private String alcoholData(String data, Text messages) {
+		try{
+			if (!Util.empty(data)){
+				return data;
+			}else{
+				return null;
+			}
+		}catch(Exception e){
+			errorMessage = messages.getText("generic.event.eventdata.alcoholInvalid")+". ";
+			return null;
+		}
+	}
+
+	/**
+	 * Cinturon de seguridad, campo no obligaotiro.
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private String selfbeltData(String data, Text messages) {
+		try{
+			if (!Util.empty(data)){
+				if (data.equalsIgnoreCase(messages.getText("generic.messages.yes"))){
+					return "generic.messages.yes";
+				}				
+				if (data.equalsIgnoreCase(messages.getText("generic.messages.no"))){
+					return "generic.messages.no";
+				}
+				if (data.equalsIgnoreCase(messages.getText("generic.messages.missing"))){
+					return "generic.messages.missing";
+				}
+				if (data.equalsIgnoreCase(messages.getText("generic.messages.nodata"))){
+					return "generic.messages.nodata";
+				}
+				if (data.equalsIgnoreCase(messages.getText("generic.messages.notapply"))){
+					return "generic.messages.notapply";
+				}
+				if (data.equalsIgnoreCase(messages.getText("generic.messages.na"))){
+					return 	"generic.messages.na";
+				}
+			}
+			return null;
+		}catch(Exception e){
+			errorMessage = messages.getText("generic.event.eventdata.selfbeltInvalid")+". ";
+			return null;
+		}
+	}
+
+	/**
+	 * Comportamiento, campo no obligatorio
+	 * @param data
+	 * @param messages
+	 * @param i
+	 * @return
+	 */
+	private String behaviourTypeData(String data, Text messages, int i) {
+		try{
+			if (!Util.empty(data)){
+				DataTypeUtil dataTypeUtil = new DataTypeUtil(sys);
+				Collection<OptionItem> values = dataTypeUtil.getDataType(
+						DataTypeConstants.VEHICLE_BEHAVIOUR,
+						true,false,false);
+    			if (values != null & values.size() > 0){
+    				Iterator<OptionItem> it = values.iterator();
+    				while (it.hasNext()){
+    					OptionItem o = it.next();
+    					String value = o.getValue();
+    					if (data.equalsIgnoreCase(messages.getText(value))){
+    						return value;
+    					}
+    				}
+    			}
+    			errorMessage = messages.getText("generic.event.eventdata.behaviourTypeInvalid")+". ";
+        	    return null;
+    		
+    		}else{
+    			//errorMessage = messages.getText("generic.event.eventdata.behaviourTypeEmpty");
+    			return null;
+    		}
+		}catch(Exception e){
+			
+			errorMessage = messages.getText("generic.event.eventdata.behaviourTypeInvalid")+". ";
+			return null;
+		}
+	}
+
+	/**
+	 * Tipo de vehciluo, obligatorio solo si tiene vehiculos involucrados, sino no.
+	 * @param data
+	 * @param messages
+	 * @param i
+	 * @return
+	 */
+	private String vehicleTypeData(String data, Text messages, int i) {
+		try{
+			if (!Util.empty(data)){
+				DataTypeUtil dataTypeUtil = new DataTypeUtil(sys);
+				Collection<OptionItem> values = dataTypeUtil.getDataType(
+						DataTypeConstants.TYPEVEHICLE,false,true,true);
+				
+				if (values != null & values.size() > 0){
+    				Iterator<OptionItem> it = values.iterator();
+    				while (it.hasNext()){
+    					OptionItem o  = it.next();
+    					String value = o.getValue();
+    					if (data.equalsIgnoreCase(messages.getText(value))){
+    						return value;
+    					}
+    				}
+    			}
+    			errorMessage = messages.getText("generic.event.eventdata.vehicleTypeInvalid")+". ";
+        	    return null;
+    		
+    		}else{
+    			// errorMessage = messages.getText("generic.event.eventdata.vehicleTypeEmpty");
+    			return null;
+    		}
+		}catch(Exception e){			
+			errorMessage = messages.getText("generic.event.eventdata.vehicleTypeInvalid")+". ";
+			return null;
+		}
+	}
+	
+
+	/**
+	 * Contacto con el vehiculo involucrado, campo no obligatorio
+	 * @param data
+	 * @param messages
+	 * @param i
+	 * @return
+	 */
+	private String contactData(String data, Text messages, Integer vehiclei) {
+		try{
+			if (!Util.empty(data)){
+				Collection<String> values = getGenericCollection();
+    			if (values != null & values.size() > 0){
+    				Iterator<String> it = values.iterator();
+    				while (it.hasNext()){
+    					String value = it.next();
+    					if (data.equalsIgnoreCase(messages.getText(value))){
+    						return value;
+    					}
+    				}
+    			}
+    			errorMessage = messages.getText("generic.event.eventdata.contactInvalid")+". ";
+        	    return null;
+    		
+    		}
+			
+			return null;
+    		
+		}catch(Exception e){
+			errorMessage = messages.getText("generic.event.eventdata.contactInvalid")+". ";
+			return null;
+		}
+	}
+
+
+
+	/**
+	 * Via , campo obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private String wayData(String data, Text messages) {
+		try{
+			if (!Util.empty(data)){
+				DataTypeUtil dataTypeUtil = new DataTypeUtil(sys);
+				Collection<OptionItem> values = dataTypeUtil.getDataType(
+						DataTypeConstants.WAY,false,true,true);
+				
+				if (values != null & values.size() > 0){
+    				Iterator<OptionItem> it = values.iterator();
+    				while (it.hasNext()){
+    					OptionItem o = it.next();
+    					String value = o.getValue();
+    					if (data.equalsIgnoreCase(messages.getText(value))){
+    						return value;
+    					}
+    				}
+    			}
+    			errorMessage = messages.getText("generic.event.eventdata.wayInvalid")+". ";
+        	    return null;
+    		
+    		}else{
+    			errorMessage = messages.getText("generic.event.eventdata.wayEmpty");
+    			return null;
+    		}
+		}catch(Exception e){			
+			errorMessage = messages.getText("generic.event.eventdata.wayInvalid")+". ";
+			return null;
+		}
+	}
+	
+
+	/**
+	 * Direccion (sentido de circulacion) campo obligatorio 
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private String directionData(String data, Text messages) {
+		try{
+			if (!Util.empty(data)){
+				DataTypeUtil dataTypeUtil = new DataTypeUtil(sys);
+				Collection<OptionItem> values = dataTypeUtil.getDataType(
+						DataTypeConstants.CIRCULATIONDIRECTION,false,true,true);
+				
+				if (values != null & values.size() > 0){
+    				Iterator<OptionItem> it = values.iterator();
+    				while (it.hasNext()){
+    					OptionItem o = it.next();
+    					String value = o.getValue();
+    					if (data.equalsIgnoreCase(messages.getText(value))){
+    						return value;
+    					}
+    				}
+    			}
+    			errorMessage = messages.getText("generic.event.eventdata.directionInvalid")+". ";
+        	    return null;
+    		
+    		}else{
+    			errorMessage = messages.getText("generic.event.eventdata.directionEmpty");
+    			return null;
+    		}
+		}catch(Exception e){			
+			errorMessage = messages.getText("generic.event.eventdata.directionInvalid")+". ";
+			return null;
+		}
+	}
+	
+
+	/**
+	 * Conmtrol de transito, campo obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private String controlData(String data, Text messages) {
+		try{
+			if (!Util.empty(data)){
+				DataTypeUtil dataTypeUtil = new DataTypeUtil(sys);
+				Collection<OptionItem> values = dataTypeUtil.getDataType(DataTypeConstants.TRAFFIC_CONTROLS,false,true,true);
+				
+				if (values != null & values.size() > 0){
+    				Iterator<OptionItem> it = values.iterator();
+    				while (it.hasNext()){
+    					OptionItem o = it.next();
+    					String value = o.getValue();
+    					if (data.equalsIgnoreCase(messages.getText(value))){
+    						return value;
+    					}
+    				}
+    			}
+    			errorMessage = messages.getText("generic.event.eventdata.controlInvalid")+". ";
+        	    return null;
+    		
+    		}else{
+    			errorMessage = messages.getText("generic.event.eventdata.controlEmpty");
+    			return null;
+    		}
+		}catch(Exception e){			
+			errorMessage = messages.getText("generic.event.eventdata.controlInvalid")+". ";
+			return null;
+		}
+	}
+	
+	/**
+	 * Clima, campo obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private String climateData(String data, Text messages) {
+		
+		try{
+			if (!Util.empty(data)){
+				DataTypeUtil dataTypeUtil = new DataTypeUtil(sys);
+				Collection<OptionItem> values = dataTypeUtil.getDataType(DataTypeConstants.CLIMATE,false,true,true);
+				
+				if (values != null & values.size() > 0){
+    				Iterator<OptionItem> it = values.iterator();
+    				while (it.hasNext()){
+    					OptionItem o = it.next();
+    					String value = o.getValue();
+    					if (data.equalsIgnoreCase(messages.getText(value))){
+    						return value;
+    					}
+    				}
+    			}
+    			errorMessage = messages.getText("generic.event.eventdata.climateInvalid")+". ";
+        	    return null;
+    		
+    		}else{
+    			errorMessage = messages.getText("generic.event.eventdata.climateEmpty");
+    			return null;
+    		}
+		}catch(Exception e){			
+			errorMessage = messages.getText("generic.event.eventdata.climateInvalid")+". ";
+			return null;
+		}
+	}
+
+
+
+
+
+	/**
+	 * Comentarios
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private String commentData(String data, Text messages) {
+		try{
+			if (!Util.empty(data)){
+				return data;
+			}
+				
+		}catch(Exception e){
+			errorMessage = messages.getText("generic.event.eventdata.commentInvalid")+". ";
+			return null;
+		}
+		return null;
+	}
+
+	/**
+	 * Observaciones
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private String observationsData(String data, Text messages) {
+		try{
+			if (!Util.empty(data)){
+				return data;
+			}
+				
+		}catch(Exception e){
+			errorMessage = messages.getText("generic.event.eventdata.observationsInvalid")+". ";
+			return null;
+		}
+		return null;
+	}
+
+	/**
+	 * costo estimado de repacacion
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private Integer costData(String data, Text messages) {
+		try{
+			if(data != null && data.contains(".")) {
+				StringTokenizer tokenizer = new StringTokenizer(data,".");
+				data = tokenizer.nextToken();
+			}
+			if (Util.isNumber(data)){
+				return new Integer(data);
+			}else{
+				return null;
+			}
+		}catch(Exception e){
+			errorMessage = messages.getText("generic.event.eventdata.costInvalid")+". ";
+			return null;
+		}
+	}
+
+	/**
+	 * Cantidad de peatones
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private Integer pedestriancountData(String data, Text messages) {
+		try{
+			if (Util.isNumber(data)){
+				return new Integer(data);
+			}else{
+				return null;
+			}
+		}catch(Exception e){
+			errorMessage = messages.getText("generic.event.eventdata.pedestriancountInvalid")+". ";
+			return null;
+		}
+	}
+
+	/**
+	 * Iluminacion, campo obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private String lightingData(String data, Text messages) {		
+		try{	
+			if (!Util.empty(data)){
+				DataTypeUtil dataTypeUtil = new DataTypeUtil(sys);
+				Collection<OptionItem> values = dataTypeUtil.getDataType(DataTypeConstants.LIGHTING,false,true,true);
+				
+				if (values != null & values.size() > 0){
+					Iterator<OptionItem> it = values.iterator();
+					while (it.hasNext()){
+						OptionItem o = it.next();
+						String value = o.getValue();
+						if (data.equalsIgnoreCase(messages.getText(value))){
+							return value;
+						}
+					}
+				}
+				errorMessage = messages.getText("generic.event.eventdata.lightingInvalid")+". ";
+	    	    return null;
+			
+			}else{
+				errorMessage = messages.getText("generic.event.eventdata.lightingEmpty");
+				return null;
+			}
+		}catch(Exception e){			
+			errorMessage = messages.getText("generic.event.eventdata.lightingInvalid")+". ";
+			return null;
+		}
+	}
+
+	/**
+	 * Condicion del Pavimento, campo obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private String conditionData(String data, Text messages) {
+		
+		try{	
+			if (!Util.empty(data)){
+				DataTypeUtil dataTypeUtil = new DataTypeUtil(sys);
+				Collection<OptionItem> values = dataTypeUtil.getDataType(DataTypeConstants.CONDITIONROUT,false,true,true);
+				
+				if (values != null & values.size() > 0){
+					Iterator<OptionItem> it = values.iterator();
+					while (it.hasNext()){
+						OptionItem o = it.next();
+						String value = o.getValue();
+						if (data.equalsIgnoreCase(messages.getText(value))){
+							return value;
+						}
+					}
+				}
+				errorMessage = messages.getText("generic.event.eventdata.pavementconditionInvalid")+". ";
+	    	    return null;
+			
+			}else{
+				errorMessage = messages.getText("generic.event.eventdata.pavementconditionEmpty");
+				return null;
+			}
+		}catch(Exception e){			
+			errorMessage = messages.getText("generic.event.eventdata.pavementconditionInvalid")+". ";
+			return null;
+		}
+	}
+
+	/**
+	 * Pavimento, campo obligatorio
+	 * @param data
+	 * @param messages
+	 * @return
+	 */
+	private String pavementData(String data, Text messages) {
+		try{	
+			if (!Util.empty(data)){
+				System.out.println("Pavimento ingresado: "+data);
+				DataTypeUtil dataTypeUtil = new DataTypeUtil(sys);
+				Collection<OptionItem> values = dataTypeUtil.getDataType(DataTypeConstants.PAVEMENT,false,true,true);
+				
+				if (values != null & values.size() > 0){
+					Iterator<OptionItem> it = values.iterator();
+					while (it.hasNext()){
+						OptionItem o = it.next();
+						String value = o.getValue();
+						if (data.equalsIgnoreCase(messages.getText(value))){
+							return value;
+						}
+					}
+				}
+				errorMessage = messages.getText("generic.event.eventdata.pavementInvalid")+". ";
+	    	    return null;
+			
+			}else{
+				errorMessage = messages.getText("generic.event.eventdata.pavementEmpty");
+				return null;
+			}
+		}catch(Exception e){			
+			errorMessage = messages.getText("generic.event.eventdata.pavementInvalid")+". ";
+			return null;
+		}
+	}
+
+	
+	// TODO:
+	
+	// TODO: ACA
+	
+	/**
+	 * Devuelve lka coleccion de comportameitnos, maniobras
+	 */
+	public Collection<String> getBehaviourCollection(){
+		try{			
+			DataTypeReportFacade dataTypeReport = sys.getDataTypeReportFacade();
+			Collection<String> behaType = new LinkedList<String>();
+			Iterator iterV = dataTypeReport.findAll(DataTypeConstants.VEHICLE_BEHAVIOUR,sys.getUserSessionData()).iterator();
+			while(iterV.hasNext()) {
+				String value = ((VehicleBehaviourDataType)iterV.next()).getResourceBundleId();
+				behaType.add(value);
+			}
+			return behaType;
+		}catch(Exception e){			
+			e.printStackTrace();
+		}
+		return null;
+	}
+	
+	/**
+	 * Devuelve la coleccion de clasificaciones de colisiones
+	 */
+	public Collection<String> getCollisionClasificationCollection(){
+		try{
+			Collection<String> result = new LinkedList<String>();
+			DataTypeReportFacade dataTypeReport = sys.getDataTypeReportFacade();
+			Collection collisions = dataTypeReport.findAll(DataTypeConstants.COLLISION_CLASIFICATION,
+					sys.getUserSessionData());
+			if(collisions != null && collisions.size() > 0) {
+				Iterator it = collisions.iterator();
+				while (it.hasNext()){
+					CollisionClasificationDataType accident = (CollisionClasificationDataType)it.next();
+					result.add(accident.getResourceBundleId());
+				}
+			}
+			return result;
+		}catch (Exception e){
+			System.out.println("UploadEventAction: Error al traer las clasificaciones de colisiones: " +
+					"getCollisionClasificationCollection() ");
+			e.printStackTrace();
+		}
+		return null;
+		   		
+	}
+	
+	/**
+	 * Devuelve la coleccion de clasificaciones de incidentes.
+	 */
+	public Collection<String> getIncidentCollection(){
+		try{
+			Collection<String> result = new LinkedList<String>();
+			DataTypeReportFacade dataTypeReport = sys.getDataTypeReportFacade();
+			Collection incidents = dataTypeReport.findAll(DataTypeConstants.INCIDENT_CLASIFICATION,sys.getUserSessionData());
+			if(incidents != null && incidents.size() > 0) {
+				Iterator it = incidents.iterator();
+				while(it.hasNext()) {
+					IncidentClasificationDataType incident = (IncidentClasificationDataType)it.next();
+					result.add(incident.getResourceBundleId());
+				}
+			}
+				
+			return result;
+		}catch (Exception e){
+			System.out.println("UploadEventAction: Error al traer las clasificaciones de incidentes: getIncidentCollection() ");
+			e.printStackTrace();
+		}
+		return null;
+			
+	}
+	
+	/**
+	 * Devuelve la coleccion de clasificacion de accidentes
+	 */
+	public Collection<String> getClasificationCollection(){
+		try{
+			Collection<String> result = new LinkedList<String>();
+			DataTypeReportFacade dataTypeReport = sys.getDataTypeReportFacade();
+			Collection accidents = dataTypeReport.findAll(DataTypeConstants.ACCIDENT_CLASIFICATION,sys.getUserSessionData());
+			if(accidents != null && accidents.size() > 0) {
+			    Iterator it = accidents.iterator();
+			    while(it.hasNext()) {
+			        AccidentClasificationDataType accident = (AccidentClasificationDataType)it.next();
+			        result.add(accident.getResourceBundleId());
+			    }
+			}
+			return result;
+		}catch (Exception e){
+			System.out.println("UploadEventAction: Error al traer las clasificaciones de accidentes: getClasificationCollection() ");
+    		e.printStackTrace();
+		}
+		return null;
+	}
+	
+
+	
+	
+	/**
+	 * Devuelve false si tiene caracteres que no son digito, letra,
+	 * espacio en blanco o punto o subrayado o guion.
+	 * @param s : String a validar
+	 * @return boolean
+	 */
+	private boolean validarString(String s){
+		int count = 0;
+		char c [] = s.toCharArray();
+		while (count < s.length()){
+			if (!Character.isLetterOrDigit(c[count]) && 
+				c[count] != ' ' && c[count] != '.' 
+				&& c[count] != '_' && c[count] != '-' ){			
+				return false;
+			}
+			count ++;
+		}
+		return true;
+	}
+	
+	/**
+	 * Convierte caracteres raros a letras comunes.
+	 * @param s
+	 * @return
+	 */
+	@SuppressWarnings("unused")
+	private String convertString(String s){		
+		StringBuffer aux = new StringBuffer();
+    	int count = 0;
+    	aux.append(s.substring(0,0).toUpperCase());
+    	while (count < s.length())
+    	{
+    		// Por m�s codigos referise a:
+    		// http://webdesign.about.com/library/bl_htmlcodes.htm
+    		switch (s.charAt(count)){
+    			case (char)225: aux.append("a"); //'�' 
+    				break;
+    			case (char)233: aux.append("e"); //'�' 
+    				break;
+    			case (char)237: aux.append("i"); //'�'
+    				break;
+    			case (char)243: aux.append("o"); // '�'
+    				break;
+    			case (char)250: aux.append("u"); //'�'
+    				break;    			
+    			case (char)231: aux.append("c"); // '�'
+    				break;
+    			case (char)228: aux.append("a"); // '�'
+    				break;
+    			case (char)227: aux.append("a");
+    				break;
+    			case (char)226: aux.append("a");
+    				break;
+    			case (char)229: aux.append("a");
+    				break;
+    			case (char)196: aux.append("A");
+    				break;
+    			case (char)230: aux.append("a");
+    				break;
+    			// Masyusculas
+    			case (char)193: aux.append("A"); //�
+    				break;
+    			case (char)201: aux.append("E"); //�
+    			    break;
+    			case (char)205: aux.append("I"); //�
+    			    break;
+    			case (char)211: aux.append("O"); //�
+    				break;
+    			case (char)218: aux.append("U"); //�
+    				break;
+    			case (char)199: aux.append("C"); //�
+    				break;
+    			case (char)195: aux.append("A"); //�
+    				break;
+    			default: aux.append(String.valueOf(s.charAt(count)));
+    				break;
+   	    		// Por m�s codigos referise a:
+   	    		// http://webdesign.about.com/library/bl_htmlcodes.htm
+    		}
+    		count ++;
+    	}
+    	return aux.toString().replace(" ","_");
+		
+	}
+	
+	 /**
+     * Devuelve una coleccion de string con los messages
+     * No Data, Si, No 
+     * @return
+     */
+    private Collection<String> getGenericCollection(){
+    	Collection<String> generic = new LinkedList<String>();
+    	generic.add("generic.messages.nodata");
+		generic.add("generic.messages.yes");
+		generic.add("generic.messages.no");
+		return generic;
+    }
+    
+    /**
+     * Devuelve una coleccion de string con los messages
+     * Si, No 
+     * @return
+     */
+    @SuppressWarnings("unused")
+	private Collection<String> getYesNoCollection(){
+    	Collection<String> generic = new LinkedList<String>();
+		generic.add("generic.messages.yes");
+		generic.add("generic.messages.no");
+		return generic;
+    }
+    
+    /**
+     * Devuelve una coleccion de strings con las zonas
+     * @return
+     */
+    private Collection<String> getZones(){
+    	try{
+	    	Collection<String> zonesDT = new LinkedList<String>();
+			Collection zones = sys.getDataTypeReportFacade().findAll(DataTypeConstants.ZONE,sys.getUserSessionData());
+			Iterator zonesIt = zones.iterator();
+			while(zonesIt.hasNext()) {
+			    ZoneDataType zone = (ZoneDataType)zonesIt.next();
+			    zonesDT.add(zone.getResourceBundleId());
+			}
+			return zonesDT;
+    	}catch(Exception e){
+    		System.out.println("UploadEventAction: Error al traer las zonas: getZones() ");
+    		e.printStackTrace();
+    	}
+    	return null;
+    }
+    
+    /**
+     * Obtiene el driverData a partir del nombre, apellido y fecha de naciemiento
+     * Si existen mas de 1 driver retorna null (seteando el error)
+     * Si existe 0 driver retorna null.(seteando el error) 
+     * @param firstName
+     * @param lastName
+     * @param birthdate
+     * @param messages
+     */
+    private DriverData getDriver(String firstName, String lastName, Date birthdate, Text messages){
+    	try{
+	    	// Si hay mas de un driver es error, tiene que ingresar,
+	        // el evento a mano para coincidir bien el driver.
+	        ListResult drivers = sys.getDriverReportFacade().findDriverByNameCorporationAndBirthdate(
+	        		firstName, 
+	        		lastName, 
+	        		sys.getUserSessionData().getFilter().getCorporationId(),
+	        		birthdate, 
+	        		sys.getUserSessionData());
+	        
+	        
+	        // No se encontro el driver, error
+	        if (drivers == null || drivers.getTotal() <= 0){
+	        	errorMessage = messages.getText("driver.notfound");
+	        	return null;
+	        }
+	        
+	        // Si hay mas de un driver con ese nombre, apellido y fecha de nacimeinto en la 
+	        // corproacion no se puede agregar el evento:
+	        if (drivers.getTotal() > 1){
+	        	errorMessage = messages.getText("driver.repeatdata.canaddevent");
+	        	return null;
+	        }        
+	        
+	        
+	        Collection driversCol = drivers.getElements();
+	        Iterator it = driversCol.iterator();
+	        DriverData driver = (DriverData) it.next();
+	        return driver;
+	        
+    	}catch(Exception e){
+    		e.printStackTrace();
+    	}
+    	return null;
+    	
+    }
+
+    private DriverData getDriver(String corporationId, Text messages){
+    	try{
+            Hashtable<String,Object> parameters = new Hashtable<String,Object>();
+           	parameters.put("corporationid", corporationId);
+	        Collection drivers = sys.getDriverReportFacade().findDriverByCorporationId(corporationId, sys.getUserSessionData());
+	        
+	        // No se encontro el driver, error
+	        if (drivers == null || drivers.size() <= 0){
+	        	errorMessage = messages.getText("driver.notfound");
+	        	return null;
+	        }
+	        
+	        // Si hay mas de un driver no se puede agregar el evento:
+	        if (drivers.size() > 1){
+	        	errorMessage = messages.getText("driver.repeatdata.canaddevent");
+	        	return null;
+	        }        
+	        
+	        return (DriverData) drivers.iterator().next();
+    	}catch(Exception e){
+    		e.printStackTrace();
+    	}
+    	return null;
+    	
+    }
+
+    /**
+     * Obtiene el vehiculo a partir de la matricula.
+     * Si existen mas de 1 vehiculo retorna null (seteando el error)
+     * Si existe 0 vehiculo retorna null.(seteando el error)
+     * 
+     * @param plate
+     * @param messages
+     * @return
+     */
+    private VehicleData getVehicle(String plate, Text messages){
+    	try{
+    		ListResult vehicles = sys.getVehicleReportFacade().findVehicleByPlateWithRepeats(plate,sys.getUserSessionData());
+            // Si hay mas de un vehiculo con esa matricula en la 
+            // corproacion no se puede agregar el evento:
+            if (vehicles != null && vehicles.getTotal() > 1){
+            	errorMessage = messages.getText("vehicle.repeatdata.canaddevent");
+            	return null;
+            }
+            
+            // No se encontro el vehiculo, error
+            if (vehicles == null || vehicles.getTotal() <= 0){
+            	errorMessage = messages.getText("vehicle.notfound");
+            	return null;
+            }
+            
+            Collection vehiclesCol = vehicles.getElements();
+            Iterator it = vehiclesCol.iterator();
+            VehicleData vehicle = (VehicleData) it.next();
+            return vehicle;
+    	}catch(Exception e){
+    		System.out.println("UploadEventAction: Error al traer las zonas: getZones() ");
+    		e.printStackTrace();
+    	}
+    	return null;
+    }
+    
+    /**
+     * 
+     * @param vehicleId
+     * @param vehicleType
+     * @param behaviourType
+     * @param hitrun
+     * @param principalFactor
+     * @param factortooclose
+     * @param factorhighspeed
+     * @param factorsigns
+     * @param factorturn
+     * @param factorlight
+     * @param factorstop
+     * @param factorother
+     * @param factorchangelane
+     * @param factoralcohol
+     * @param factorovertaking
+     * @param factoroversleep
+     * @param factordistraction
+     * @param factorConcience
+     * @param factorOtherParking
+     * @param factorOtherCrossing
+     * @param factorOtherStanding
+     * @param contact
+     * @param number
+     * @return
+     */
+    private VehicleInvolvedDataType getVehicle(String vehicleId,String vehicleType, 
+    		String behaviourType, String hitrun,
+            String principalFactor, boolean factortooclose,boolean factorhighspeed,boolean factorsigns
+            ,boolean factorturn,boolean factorlight,boolean factorstop,boolean factorother,
+            boolean factorchangelane, boolean factoralcohol, boolean factorovertaking,boolean factoroversleep,
+            boolean factordistraction,boolean factorConcience,boolean factorOtherParking,
+            boolean factorOtherCrossing, boolean factorOtherStanding, String contact, int number, 
+            boolean factorsleep ) {
+        
+        VehicleInvolvedDataType vehicle = new VehicleInvolvedDataType();
+        
+        if(!Util.empty(vehicleId)) {
+            vehicle.setInvolvedid(new Integer(vehicleId));
+        }
+        vehicle.setNumber(new Integer(number));
+        vehicle.setTypeVehicle(new TypeVehicleDataType(vehicleType));
+        vehicle.setBehaviourVehicle(new VehicleBehaviourDataType(behaviourType));
+        
+        vehicle.setHitrun(hitrun);
+
+        vehicle.setPrincipalFactor(new AccidentFactorsDataType(principalFactor));
+        
+        vehicle.setFactortooclose(factortooclose);
+        vehicle.setFactorhighspeed(factorhighspeed);
+        vehicle.setFactorsigns(factorsigns);
+        vehicle.setFactorturn(factorturn);
+        vehicle.setFactorlight(factorlight);
+        vehicle.setFactorstop(factorstop);
+        vehicle.setFactorother(factorother);
+        vehicle.setFactorchangelane(factorchangelane);
+        vehicle.setFactoralcohol(factoralcohol);
+        vehicle.setFactorovertaking(factorovertaking);
+        vehicle.setFactorsleep(factorsleep);
+        vehicle.setFactordistract(factordistraction);
+        vehicle.setFactorConcience(factorConcience);
+        vehicle.setFactorOtherParking(factorOtherParking);
+        vehicle.setFactorOtherCrossing(factorOtherCrossing);
+        vehicle.setFactorOtherStanding(factorOtherStanding);
+        
+
+        vehicle.setContact(contact);
+        
+
+
+        return vehicle;
+    }
+    
+
+    
+    /**
+     * Devuelve true si el string que se pasa por parametro indicando un check
+     * es igual a "on", y false en caso contrario.
+     *  
+     * @param label
+     * @return
+     */
+    public boolean isChecked(String label) {
+        if (!Util.empty(label) && label.toLowerCase().equals("on"))
+        	return true;
+        else 
+        	return false;
+    }
+
+	@Override
+	public ActionForward cancel(HttpSession session, ActionMapping mapping,
+			ActionForm form) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+}
+

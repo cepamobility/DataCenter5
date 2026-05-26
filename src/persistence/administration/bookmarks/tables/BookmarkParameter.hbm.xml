@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.administration.bookmarks.tables" >
+    <class name="BookmarkParameter" table="bookmarkparameters">
+        <id name="id" column="id" type="java.lang.Integer">
+            <generator class="sequence">
+            	<param name="sequence">BookmarkParameter_Sequence</param>
+            </generator>
+        </id>
+		<many-to-one name="bookmark" column="bookmark" not-null="true"/>
+        <property column="type"  name="type"  type="java.lang.String" not-null="true" />
+        <property column="value" name="value" type="text"  not-null="true" />
+    </class>
+
+</hibernate-mapping>

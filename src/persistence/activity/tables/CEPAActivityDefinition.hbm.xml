@@ -1,0 +1,62 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.activity.tables"  >
+    <class name="CEPAActivityDefinition" table="cepaactivitydefinition">
+		
+		<id name="resourceKeyName" column="resourceKeyName" >
+		    <generator class="assigned">
+		     </generator>
+		</id>
+		
+        <property	name="category" type="java.lang.String" column="category"/>  
+        
+       <property	name="categoryForExpiry" type="java.lang.String" column="categoryForExpiry"/>                       		
+        
+       <property name="timeExpiry"	type="java.lang.Integer" column="timeExpiry" />        
+	
+	    <property name="haveGlobalReport" not-null="true"  ></property>
+	    <property name="haveIndividualReport" not-null="true" ></property>
+   	    <property name="haveNote" not-null="true" ></property> 
+   	    
+   	    <property name="hasForm" not-null="true" >
+		    <column name="hasForm" default="true"/>   	    
+   	    </property>    	    
+   	    <property name="hasTeoricoAsistence" not-null="true" >
+		    <column name="hasTeoricoAsistence" default="false"/>   	    
+   	    </property>    	
+   	    <property name="hasPracticoAsistence" not-null="true" >
+		    <column name="hasPracticoAsistence" default="false"/>   	    
+   	    </property>    	
+   	    
+   	    
+        <many-to-one name="checkList" 
+        	class="persistence.activity.tables.CheckList"	
+        	column="checklist"/>
+        
+        <!-- Nuevas columnas para Familias de Actividades -->
+        <many-to-one name="subFamily" 
+        	class="persistence.activity.tables.CEPAActivitySubFamily" 
+        	column="subfamily" />     
+        
+        <property name="isBTW" not-null="true" >
+        	<column name="isbtw" default="false" />
+        </property >         
+        
+         <property name="version"  type="java.lang.String"  >
+        	<column name="version" default="1.0" />
+        </property >
+        
+        
+        <set inverse="true" name="generalObservationsSet"  cascade="all-delete-orphan" lazy="false">
+				<key column="resourceKeyName" not-null="true"/>
+				<one-to-many class="CEPAScheduleActivityRegistryObservation" />
+		</set>
+		
+        
+   </class>
+
+</hibernate-mapping>

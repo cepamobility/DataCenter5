@@ -1,0 +1,28 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.cenapra.tables" >
+    <class name="CENAPRAActivityRegistry" table="cenapraactivityregistry">
+		
+	 	<id column="id" name="id" >
+            <generator class="sequence">
+            	<param name="sequence">CENAPRAActivityRegistry_Sequence</param>
+            </generator>
+        </id>
+
+        <many-to-one name="activity" class="CENAPRAActivity" not-null="true" column="activity" />        
+        <many-to-one name="participant" class="CENAPRAParticipant" not-null="true" column="participant" />
+
+       	<property name="observations" type="java.lang.String" column="observations"  />
+       	
+       	<property name="result" />
+       	
+       	<property name="note" type="java.lang.Integer" column="note" />
+       	<property name="number" type="java.lang.String" column="number" />
+       	
+	 </class>
+
+</hibernate-mapping>

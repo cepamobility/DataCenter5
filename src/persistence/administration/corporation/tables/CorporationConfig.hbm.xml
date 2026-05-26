@@ -1,0 +1,23 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.administration.corporation.tables" >
+
+	<class name="CorporationConfig" table="corporationconfig">
+		<id column="id" name="id" type="java.lang.Integer">
+            <generator class="sequence">
+            	<param name="sequence">CorporationConfig_Sequence</param>
+            </generator>
+		</id>
+	    
+	    <property name="key"	column="name" type="java.lang.String" not-null="true" />
+	    <property name="value"	column="value" type="java.lang.String" not-null="true" />
+	    <property name="corporationId"	column="corporationId" type="java.lang.Integer" />
+	    
+		
+
+  	</class>
+</hibernate-mapping>

@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.activity.tables">
+	<class name="CorporationCheckList" table="corporationchecklist">
+        
+       <composite-id class="CorporationCheckListPK" name="pk" >
+       		<key-many-to-one
+       			 name="checkList"
+       			 column="checklist"
+       			 class="persistence.activity.tables.CheckList"
+       	 	/>
+	        <key-property 	name="corporation"	type="java.lang.Integer"	column="corporation" />
+    	    <key-property 	name="type"			type="java.lang.Integer"	column="type" />
+       </composite-id>
+    </class>
+</hibernate-mapping>

@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.vehicle.tables">
+       <class name="AsyncCallCelulosa" table="asynccallcelulosa">
+        
+        <id	column="id"	name="id"	type="java.lang.Integer">
+            <generator class="native" />
+        </id>
+        <property	name="plate"	type="java.lang.String"		column="plate"	not-null="true" />        
+        <property	name="hours"	type="java.lang.Integer"		column="hours" />                
+        <property	name="reasondescription"	type="java.lang.String"		column="reasondescription" />
+        <property	name="reasoncode"	type="java.lang.Integer"		column="reasoncode"/>
+        <property	name="datehourstartpenalty"	type="java.lang.String" column="datehourstartpenalty"/>
+        <property	name="typeofpenalty"	type="java.lang.Integer"		column="typeofpenalty"/>
+        <property	name="totallesspoints"	type="java.lang.Integer"		column="totallesspoints"		not-null="true" />
+        <property	name="acounttotal"	type="java.lang.Integer"		column="accounttotal"		not-null="true" />
+        <property	name="result1"	type="java.lang.String"		column="result1"/>
+        <property	name="result2"	type="java.lang.String"		column="result2"/>
+        <property	name="result3"	type="java.lang.String"		column="result3"/>
+        <property	name="result4"	type="java.lang.String"		column="result4"/>
+        <property	name="result5"	type="java.lang.String"		column="result5"/>
+        <property	name="result6"	type="java.lang.String"		column="result6"/>
+        <property	name="result7"	type="java.lang.String"		column="result7"/>
+        <property	name="result8"	type="java.lang.String"		column="result8"/>
+        <property	name="result9"	type="java.lang.String"		column="result9"/>
+        <property	name="result10"	type="java.lang.String"		column="result10"/>
+        <property	name="calldate"	type="java.util.Date" column="calldate"/>
+        <property	name="count"	type="java.lang.Integer" column="count"/>
+        <property	name="status"	type="java.lang.Integer" column="status"/>
+        <property	name="reference"	type="java.lang.Integer" column="reference"/>
+        <property	name="loginName"	type="java.lang.String" column="loginname"/>
+     
+    </class>
+</hibernate-mapping>

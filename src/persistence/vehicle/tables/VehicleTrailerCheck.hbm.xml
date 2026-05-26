@@ -1,0 +1,16 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.vehicle.tables" >
+    <class name="VehicleTrailerCheck" table="vehicletrailerchecks">
+
+       <composite-id class="VehicleTrailerCheckPK" name="pk" >
+       		<key-many-to-one name="vehicle" column="vehicle" class="VehicleCheck" />
+       	 	<key-many-to-one name="trailer" column="trailer" class="TrailerCheck" />
+       </composite-id>
+
+	</class>
+</hibernate-mapping>

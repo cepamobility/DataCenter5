@@ -1,0 +1,788 @@
+<%@page language="java"
+	errorPage="../exception.jsp"
+	import="business.*"
+	import="java.io.*"
+	import="java.text.*"
+	import="java.util.*"
+	import="business.administration.user.*"
+	import="business.datatype.*"
+	import="communication.language.*"
+	import="communication.vehicle.tables.*"
+	import="communication.datatype.tables.*"
+	import="communication.datatype.*"
+	import="communication.corporation.tables.*"
+	import="communication.geografic.tables.*"
+	import="communication.administration.user.tables.*"
+	import="communication.administration.user.tables.geographicdivisions.*"
+	import="communication.security.*"
+	import="communication.util.*"
+	import="presentation.translator.web.util.*"
+	import="presentation.translator.web.routes.*"
+	import="presentation.translator.web.vehicle.*"
+	import="presentation.translator.web.activity.schedule.*"	
+	import="java.util.*"
+ 	import="communication.administration.user.*" 
+ 	import="communication.administration.corporation.tables.*"	
+	import="communication.util.Filter"
+ 			
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html" 
+%>
+<%
+	SystemAccess sys = (SystemAccess)session.getAttribute("SystemAccess");
+	Text messages = sys.getText(); UserSessionData userSessionData; DataTypeAccess datatypes;
+	GeoItemData item; String[] fileNames, dirNames ;String check; Iterator iter;
+	LinkedList sortCountries = new LinkedList(); 
+	LinkedList allCountries = new LinkedList();
+	String name="";
+	String countryCode = ""; String addRoutesPermission;
+	boolean canAddRoutes = false; 
+	boolean areCountries = false;
+	String directory = "", countryShow = "", deptoShow="", yearShow="", add = "", linkDirectory = "";
+	String directoryShow = "";	File dir, file; int dirCounter = 0;
+	File subDir; 
+	boolean haveRoutes = false; 
+	boolean showfiles = false;
+	String showfilesStr = "";
+	Collection files; String link = "";	String dirName="";String subDirectory="";
+	Date date; long fileSize;int fileCounter = 0; List subdirs = new LinkedList();
+	Format dateFormat;	LinkedList dateSort = new LinkedList();
+	dateFormat = new SimpleDateFormat("dd-MM-yyyy"); 		    
+ 	NumberFormat nf = NumberFormat.getNumberInstance(Locale.US);
+ 	Integer corporationId; String corporation;	CorporationDirectoryData cdd;
+ 	
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	userSessionData = sys.getUserSessionData();
+	
+	//	Me fijo si tiene permisos para agregar reportes
+	addRoutesPermission = Util.checkPermission(sys,SecurityConstants.ADD_ROUTES);
+	if (addRoutesPermission == null) {
+		// Si tiene permiso para agregar routes y viene con la opcion de agregar
+		// le dejo agregar routes
+		add = (String)request.getParameter("add");
+		//System.out.println("Routes.jsp: add="+add);
+		canAddRoutes = new Boolean(add.trim()).booleanValue();
+		System.out.println("Routes.jsp: canAddRoutes="+canAddRoutes);
+	}		
+	
+	
+	// Permisos para Ver Relevamientos de Rutas:
+	check = Util.checkPermission(sys,SecurityConstants.VIEW_ROUTES);		
+	if(check != null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else{
+		
+		// Manejo de Mensajes
+	 	RequestDispatcher dispatcher; 
+	 	String context; 
+	 	String pathMsg;
+	 	String pathLanguage;
+	 	pathLanguage="/util/jsp/language.jsp";	
+		// Carga system access (sys),userSession, id de la corporacion (crpName), lenguaje (lngName) y los textos (messages)
+		dispatcher=request.getRequestDispatcher(pathLanguage);
+		dispatcher.include(request,response);
+		// hace el include de la página que despliega el box que indica el resultado de la operación
+		// el texto que se despliega en el box es el guardado en la variable de sesión bajo la key Msg
+		pathMsg="/util/jsp/message.jsp";
+		dispatcher=request.getRequestDispatcher(pathMsg);
+		dispatcher.include(request,response);
+		// Fin manejo de mensajes
+		
+		showfilesStr = (String)request.getParameter("show");
+		if (!Util.empty(showfilesStr)){
+	showfiles = new Boolean(showfilesStr.trim()).booleanValue();
+	System.out.println("Routes.jsp: showFiles="+showfiles);
+		}else{
+	showfilesStr = (String)session.getAttribute("show");
+	if (!Util.empty(showfilesStr)){
+		showfiles = new Boolean(showfilesStr.trim()).booleanValue();					
+	}
+	session.removeAttribute("show");
+		}
+		
+		
+		corporationId = sys.getUserSessionData().getFilter().getCorporationId();
+		corporation = ""; // Nombre de la carpeta donde estan los Relevamientos de Rutas:
+		cdd = sys.getCorporationReportFacade().
+	findCorporationDirectoryByPrimaryKey(corporationId,sys.getUserSessionData());
+		
+		if (cdd == null || Util.empty(cdd.getDirectory())){
+	corporation = "null";
+		}else{
+	corporation = cdd.getDirectory();
+		}
+		// directory = "/home/datacenter5/" + corporation + "/routes" ;
+		directory = SecurityConstants.DATACENTER5_WAR_DIRECTORY + corporation + "/routes" ;
+		linkDirectory = SecurityConstants.DATACENTER5_LINK_DIRECTORY + corporation + "/routes";
+		
+		item = null;
+		// Ordeno los paises Alfabeticamente:
+		if (sys.getUserSessionData().getFilter().getCorporationId().intValue() == CorporationData.LOSPIQUES){
+	// Para "Los Piques" pongo solo Uruguay.
+	 sortCountries.add(new OptionItem(messages.getText("datatype.country.uy"),"datatype.country.uy"));
+		}else{
+	iter = sys.getUserSessionData().getFilter().getLastLevelItems(sys.getUserSessionData().getFilter().getGeoLevelCount(),null,null);							
+	while(iter.hasNext())
+	{
+	 item=(GeoItemData)iter.next();  
+	 sortCountries.add(new OptionItem(messages.getText(item.getName()),item.getName()));
+	}
+		}
+		Collections.sort(sortCountries);
+		// allCountries.addAll(sortCountries);
+		
+		// Si no existe el directorio de rutas, muestro un mensaje de que
+		// no hay rutas para esa corporacion.
+		dir = new File(directory);
+		try
+		{
+	if ( dir.isDirectory() ){
+		haveRoutes = true;
+	}else{
+		haveRoutes = false;
+	}
+		}catch (Exception e){
+	System.out.println("Exception in Routes.jsp" + e.getMessage());
+	e.printStackTrace();
+		}		
+		
+		
+		if (showfiles){
+	
+	countryShow =(String)request.getParameter("country");	
+	if (Util.empty(countryShow)){
+		countryShow = (String)session.getAttribute("country");
+		session.removeAttribute("country");
+	}
+	
+	// System.out.println("Country: "+country);
+	
+	deptoShow =(String)request.getParameter("depto");	
+	if (Util.empty(deptoShow)){
+		deptoShow = (String)session.getAttribute("depto");
+		session.removeAttribute("depto");
+	}
+	// System.out.println("Depto: "+depto);
+	
+	yearShow =(String)request.getParameter("year");	
+	if (Util.empty(yearShow)){
+		yearShow = (String)session.getAttribute("year");
+		session.removeAttribute("year");
+	}
+	directoryShow = 
+		SecurityConstants.DATACENTER5_WAR_DIRECTORY + corporation + "/routes/" +
+		countryShow + "/" + deptoShow ;
+	
+	linkDirectory = SecurityConstants.DATACENTER5_LINK_DIRECTORY + corporation + "/routes/" +
+		countryShow + "/" + deptoShow;
+	
+	System.out.println("Directorio: "+directoryShow);
+	RoutesUploadForm rzf = new RoutesUploadForm();
+		}
+%>
+			 	
+
+<html:html>
+<body>
+  
+<script language="javascript" type="text/javascript">
+
+function changeRoutesCountry(form,parent,child){
+	var message = '<%=messages.getText("generic.messages.select")%>';
+	var parentCombo = document.forms[form].elements[parent];
+	var childCombo = document.forms[form].elements[child];
+	if(parentCombo.selectedIndex != -1 && 
+		parentCombo.options[parentCombo.selectedIndex].value != "") {
+		var divi = parentCombo.options[parentCombo.selectedIndex].value;
+		var list = document.forms[form].elements[divi];
+		var vector = new Array();
+
+		for(i=0; i < list.length; i++) {
+			vector[i] = list.options[i].text+"|"+list.options[i].value;
+		}
+		
+		vector.sort();
+		childCombo.options.length=list.options.length+1;
+		childCombo.options[0].value = "";
+		childCombo.options[0].text = message;
+		for(i=0; i < vector.length; i++) {
+			values = vector[i].split("|");
+			childCombo.options[i+1].value = values[1];
+			childCombo.options[i+1].text = values[0];
+		}
+		childCombo.selectedIndex = 0;
+	}else {
+		childCombo.options.length=1;
+		childCombo.options[0].value = "";
+		childCombo.options[0].text = message;
+	}
+}
+
+
+function validateRoutesQuery(form){
+
+	if (document.forms[form].elements['country'].value == ""){
+		alert('<%=messages.getText("generic.supportmaterial.routes.nocountryselected")%>');
+	}else if (document.forms[form].elements['depto'].value == ""){
+		alert('<%=messages.getText("generic.supportmaterial.routes.nodeptoselected")%>');
+	}else{
+		document.forms[form].submit();
+	}
+}
+
+function sumbitUploadRoutes(subform, uploadForm){
+	
+	
+	if (document.forms[subform].elements['countryRoutes'].value == ""){
+		alert('<%=messages.getText("generic.supportmaterial.routes.nocountryselected")%>');
+	}else if (document.forms[subform].elements['deptoRoutes'].value == ""){
+		alert('<%=messages.getText("generic.supportmaterial.routes.nodeptoselected")%>');
+	}else {	
+		document.forms[uploadForm].elements['country'].value = document.forms[subform].elements['countryRoutes'].value;
+		document.forms[uploadForm].elements['depto'].value = document.forms[subform].elements['deptoRoutes'].value;
+		document.forms[uploadForm].submit();	
+	}
+}
+
+</script>
+
+<form action="layout.jsp?refer=/routes/Routes.jsp" name="RoutesCountry" method="post" >
+  <input type="hidden" name="add" value=<%=add%>  />	
+  <input type="hidden" name="show" value="true" />		   
+  <table width="700"  border="0" cellspacing="0" cellpadding="0" align="center">
+  <tr>
+    <td><table width="100%"  border="0" cellspacing="0" cellpadding="0">
+        <tr>
+          <td width="19"><img src="../datacenter/util/imgs/left.jpg" width="19" height="30"></td>
+          <td width="672" class="guide1"><%=messages.getText("generic.supportmaterial.routes")%></td>
+          <td width="19"><img src="../datacenter/util/imgs/right.jpg" width="19" height="30"></td>
+        </tr>
+        <tr>
+          <td width="19" background="../datacenter/util/imgs/left_line.gif">&nbsp;</td>
+          <td width="672">
+		  <table width="100%" cellpadding="3" cellspacing="0" class="texts" align='center'>			
+<% 
+				
+    			  		
+   			// Genero opciones para Departamentos:
+			iter = sortCountries.iterator();
+   			while(iter.hasNext()){
+				 OptionItem oi = (OptionItem)iter.next();
+				 name = oi.getLabel();
+				 countryCode = oi.getValue().substring(oi.getValue().length()-2); 
+				 // ubico ultimo punto:
+				 int pos = oi.getValue().lastIndexOf(".");
+				 countryCode = oi.getValue().substring(pos+1);
+				 
+				 // Busco los departamentos para cada pais y genero
+				 // una coleccion de departamentos para cada pais.
+				 String directoryCountry = directory + "/"+countryCode; 				 
+				 System.out.println("Pais: "+name);
+			 	 dir = new File(directoryCountry); // Directorio Pais
+				 try
+				 {
+					if ( dir.isDirectory() )
+					{
+						dirCounter = 0;
+						dirNames = dir.list();	// Directorios Departamentos
+						if (dirNames != null && dirNames.length > dirCounter)
+						{
+							// Tiene Departamentos, genero las opciones:
+							System.out.println("DirNames: "+dirNames.length);
+							// Lista de Directorios de Departamentos ordenada Alfabeticamente:																	
+							Arrays.sort(dirNames);
+							%>
+						
+							<select name='<%=countryCode%>' style="display:none">														
+							<%						
+							while (dirNames.length > dirCounter)
+							{										
+								subDir = new File(directoryCountry+"/"+dirNames[dirCounter]);								
+								// Department Name:									
+								String depName = messages.getText(subDir.getName());
+								// Department Value:
+								String depValue = subDir.getName();
+								dirCounter++; 								
+								%>
+								<option value='<%=depValue%>' >
+									<%=depName%>
+								</option>
+<%							}	%>
+							</select>									
+<%						}else{
+							// No tiene Departamentos, no muestro ese pais:
+							System.out.println("Borro Pais:"+name);
+							iter.remove();
+						}
+														
+					}else{
+						// No tiene Departamentos, no muestro ese pais:
+						System.out.println("Borro Pais:"+name);
+						iter.remove();
+					}
+				 }catch(Exception e){
+					 	System.out.println("Exception Routes.jsp" + e.getMessage());
+						e.printStackTrace();
+				 }
+  					
+ 			}
+	    	
+   			// Si tengo paises con rutas los muestro con sus departamentos:
+   			if (!sortCountries.isEmpty() && haveRoutes ){  
+	    			%>   					
+   					 
+   			<!-- Muestro los Paises -->	
+   			<tr> 
+ 				<td width="30%" align="left"><%=messages.getText("generic.messages.selectcountry")%>
+ 				</td>
+            	<td width="70%" align='left'>  					
+              		<select name="country" style="width:155;" id="country"
+              		onchange="javascript:changeRoutesCountry('RoutesCountry','country','depto'); " >
+              			<option value="" selected="selected"><%=messages.getText("generic.messages.select")%></option>
+<%    				// Muestro Paises:
+					iter = sortCountries.iterator();
+   	    			while(iter.hasNext()){
+    					 OptionItem oi = (OptionItem)iter.next();
+    					 name = oi.getLabel();
+    					 countryCode = oi.getValue().substring(oi.getValue().length()-2);    					  
+%> 
+						<option value='<%=countryCode%>'><%=name %></option>
+<%					}   %>
+					</select>
+				</td>
+   			</tr>
+   			<!-- Muestro los departamentos ordenados: -->
+	    	<tr>
+	    		<td width="30%" align="left"><%=messages.getText("generic.messages.selectzone")%>
+ 				</td>
+            	<td width="70%" align='left'>  					
+              		<select name="depto" style="width:155;" id="depto">	    		
+	    			</select>	
+	    		</td>
+	    	</tr>
+	    	
+	    	<!--  Muestro Años: -->
+	    	<tr>
+	    		<td width="30%" align="left">
+	    		<%=messages.getText("generic.messages.selectyear")%>
+ 				</td>
+				<td width="70%" align="left">	    		
+	    			<select name="year" style="width:155;">	    		
+	    				<%
+	    					Calendar c = Calendar.getInstance();
+	    					int year = c.get(Calendar.YEAR);
+	    					for (int i = 2005; i <= year + 1; i++){
+	    				%>
+	    				<option <%=(i == year)?"selected":""%> ><%=i%></option>
+<%	    					}	    				%>
+	    			</select>	
+	    		</td>
+	    	</tr>	
+	    	<tr>
+	    		<td width="30%" align="left"></td>
+	    		<td width="70%" align="right">
+	    			<input name="button" type="button" 
+	    				value='<%=messages.getText("generic.messages.open")%>' 
+	    				onclick="javascript:validateRoutesQuery('RoutesCountry');"/>
+	    		</td>
+	    	</tr>
+	    	    	
+<%   		}else{
+				// No hay Relevamientos de Rutas:
+%>
+   	        <tr>       
+              <td align='center'>	       		
+              		<%=messages.getText("generic.supportmaterial.routes.noroutes")%>             
+               </td>
+            </tr>
+    				
+<% 			}%>
+
+        </table></td>
+          <td width="19" background="../datacenter/util/imgs/right_line.gif">&nbsp;</td>
+        </tr>
+        <tr>
+          <td width="19"><img src="../datacenter/util/imgs/left_base.gif" width="19" height="11"></td>
+          <td width="672" background="../datacenter/util/imgs/center_base.gif"><img src="x" height="1" width="1"></td>
+          <td width="19"><img src="../datacenter/util/imgs/right_base.gif" width="19" height="11"></td>
+        </tr>
+    </table></td>
+  </tr> 
+</table>    										
+</form>
+
+
+<!--  Add Routes Module: -->
+<%if (canAddRoutes && haveRoutes ){ %>		
+<table width="700"  border="0" align="center" cellpadding="0" cellspacing="0">
+	<tr><td>	
+		<table width="700"  border="0" align="center" cellpadding="0" cellspacing="0">
+	      <tr>
+	        <td width="19"><img src="/datacenter/util/imgs/left.jpg" width="19" height="30"></td>
+	          <td width="672" background="/datacenter/util/imgs/center.jpg" class='guide1'>
+	          	<%=messages.getText("generic.supportmaterial.routes.addroutes") %>
+	          </td>
+	        <td width="19"><img src="/datacenter/util/imgs/right.jpg" width="19" height="30"></td>
+	      </tr>
+	      <tr>
+	          <td width="19" background="/datacenter/util/imgs/left_line.gif">&nbsp;</td>
+		      <td width="672">
+		      	<table width="672" cellpadding="0" cellspacing="0" class="texts">
+			      	<tr>
+			      		<td>&nbsp;
+			      		</td>
+			      	</tr>
+			      	
+<%
+
+   			if (!sortCountries.isEmpty()){ %>			      	
+			      	<!--  TODO: Aca seleccionar Pais y Depto -->
+			      	<!-- Muestro los Paises -->	
+			      	<tr><td colspan="2">
+			      	<form name="RoutesSubForm" >
+			      	
+	<%			      		  		
+   			// Genero opciones para Departamentos:
+			iter = sortCountries.iterator();
+   			while(iter.hasNext()){
+				 OptionItem oi = (OptionItem)iter.next();
+				 name = oi.getLabel();
+				 countryCode = oi.getValue().substring(oi.getValue().length()-2);    					 
+				 // Busco los departamentos para cada pais y genero
+				 // una coleccion de departamentos para cada pais.
+				 String countryDirectory = directory + "/"+countryCode; 				 
+				 System.out.println("Pais: "+name + "CountryCode: "+countryCode);
+			 	 dir = new File(countryDirectory); // Directorio Pais
+				 try
+				 {
+					if ( dir.isDirectory() )
+					{
+						dirCounter = 0;
+						dirNames = dir.list();	// Directorios Departamentos
+						if (dirNames != null && dirNames.length > dirCounter)
+						{
+							// Tiene Departamentos, genero las opciones:
+							System.out.println("DirNames: "+dirNames.length);
+							// Lista de Directorios de Departamentos ordenada Alfabeticamente:																	
+							Arrays.sort(dirNames);
+							%>
+						
+							<select name='<%=countryCode%>' style="display:none" id='<%=countryCode%>'>														
+							<%						
+							while (dirNames.length > dirCounter)
+							{										
+								subDir = new File(countryDirectory+"/"+dirNames[dirCounter]);								
+								// Department Name:									
+								String depName = messages.getText(subDir.getName());
+								// Department Value:
+								String depValue = subDir.getName();
+								dirCounter++; 								
+								%>
+								<option value='<%=depValue%>' >
+									<%=depName%></option>
+<%							}	%>
+							</select>									
+<%						}else{
+							// No tiene Departamentos, no muestro ese pais:
+							System.out.println("Borro Pais:"+name);
+							iter.remove();
+						}
+														
+					}else{
+						// No tiene Departamentos, no muestro ese pais:
+						System.out.println("Borro Pais:"+name);
+						iter.remove();
+					}
+				 }catch(Exception e){
+					 	System.out.println("Exception Routes.jsp" + e.getMessage());
+						e.printStackTrace();
+				 }
+  					
+ 			} // end while
+ 				%>
+			      	
+			      	<table width="100%" border="0" cellpadding="0" cellspacing="0" class="texts" >
+			      	<tr> 
+		 				<td width="30%" align="left"><%=messages.getText("generic.messages.selectcountry")%>
+		 				</td>
+		            	<td width="70%" align='left'> 		            						              		
+		            		<select name="countryRoutes" style="width:155;" 
+		            		onchange="javascript:changeRoutesCountry('RoutesSubForm','countryRoutes','deptoRoutes'); " >
+									<option value=""><%=messages.getText("generic.messages.select") %></option>
+		<%    				// Muestro Paises:
+							iter = sortCountries.iterator();
+		   	    			while(iter.hasNext()){
+		    					 OptionItem oi = (OptionItem)iter.next();
+		    					 name = oi.getLabel();
+		    					 countryCode = oi.getValue().substring(oi.getValue().length()-2);    					  								 
+	%>
+									<option value='<%=countryCode %>'><%=name %></option>							
+<%							} %>	
+							</select>						
+
+							
+						</td>
+		   			</tr>
+		   			<!-- Muestro los departamentos ordenados: -->
+			    	<tr>
+			    		<td width="30%" align="left"><%=messages.getText("generic.messages.selectzone")%>
+		 				</td>
+		            	<td width="70%" align='left'>  					
+		              		<select name="deptoRoutes" style="width:155;" >	    		
+			    			</select>	
+			    		</td>
+			    	</tr></table>
+			    	</form></td>
+			    	</tr>
+			    	
+			    	<tr><td width="100%">
+			    	<html:form action="RoutesUpload" method="post" enctype="multipart/form-data" >	
+			    	<table width="100%" cellpadding="0" cellspacing="0" class="texts">
+			      	<tr>
+			      		<td align="left" width="30%"><%=messages.getText("generic.supportmaterial.reports.file")%>:</td>
+			      		<td align="left" width="70%"><html:file property="file"/></td>			      					      					      		
+			      	</tr>
+			      	<tr>
+			      		<td align="left"  width="30%"><%=messages.getText("generic.supportmaterial.reports.year")%>:</td>
+			      		<td align="left"  width="70%">
+			      		
+			      		<%
+			      			LinkedList col= new LinkedList();
+				      		Calendar cal = Calendar.getInstance();
+				      		int i = 2005;
+				      		for (i = 2005; i <= cal.get(1)+1; i++)	{
+				      			col.add(new OptionItem(Integer.toString(i),Integer.toString(i)));
+				      		}
+				      		session.setAttribute("years",col);					      		
+			      		%>
+			                <html:select property="year" styleClass="input" style="width:155;"  >
+        			          <html:options collection="years" property="value" labelProperty="label" styleClass="input"/>
+			                </html:select>
+						</td>
+			      	</tr>
+			      	<tr>
+   				      	<td colspan="2" align="left" >
+   				      	<%=messages.getText("generic.supportmaterial.reports.date")%>:
+   				      	</td>
+   				      	
+   				    </tr>
+			      	<tr>
+			      		<td colspan="2" align="left" >&nbsp;&nbsp;
+			      			<html:radio property="radioDate" value="actualdate"  />&nbsp;
+			      			<%=messages.getText("generic.supportmaterial.reports.actualdate")%>
+			      		</td>
+			      	</tr>
+			      	<tr>
+			      		<td colspan="1" align="left"  width="30%">&nbsp;&nbsp;
+			      			<html:radio property="radioDate" value="otherdate" />&nbsp;
+			      			<%=messages.getText("generic.supportmaterial.reports.otherdate")%>
+			      		</td>
+			      		<td colspan="1" align="left" width="30%">
+			      			<html:text property="otherDateDay" maxlength="2" size="2"  />
+			      			<html:text property="otherDateMonth" maxlength="2" size="2" />
+			      			<html:text property="otherDateYear" maxlength="4" size="4" />
+			      		(<%=messages.getText("generic.supportmaterial.reports.format")%>: DD/MM/YYYY)</td>
+			      	</tr>
+			      	<tr>
+			      		<td width="100%" colspan="2">&nbsp;</td>
+			      	</tr>
+			      	<tr>
+			      		<td  width="30%">&nbsp;</td>
+			      		<td align="right"  width="70%">
+			      			<html:hidden property="directory" value='<%=directory%>' />
+							<html:hidden property="country" value=""/>
+							<html:hidden property="depto" value="" />
+			      			<html:button property="button" value='<%=messages.getText("generic.supportmaterial.routes.upload")%>'
+			      			 onclick="javascript:sumbitUploadRoutes('RoutesSubForm','RoutesUploadForm');" />
+			      		</td>
+			      	</tr>
+			      	</table></html:form>
+			      	</td>
+			      	</tr>	
+<% 			}else{
+				// No hay paises para las rutas: 
+%>
+					<tr>
+						<td colspan="2">
+			      			<form name="RoutesSubForm" >
+			      				<table width="100%" border="0" cellpadding="0" cellspacing="0" class="texts" >
+								</table>
+			    			</form>
+			    		</td>
+			    	</tr>
+					<tr>
+						<td>
+							<%=messages.getText("generic.supportmaterial.routes.nocountries")%>
+						</td>
+					</tr>
+<%			}
+%>		      	
+		      	</table>              
+		      </td>
+		      <td width="19" background="/datacenter/util/imgs/right_line.gif">&nbsp;</td>  	
+	      </tr>
+	      <tr>
+	        <td width="19"><img src="/datacenter/util/imgs/left_base.gif" width="19" height="11"></td>
+        	<td width="672" background="/datacenter/util/imgs/center_base.gif"><img src="x" height="1" width="1"></td>
+    	    <td width="19"><img src="/datacenter/util/imgs/right_base.gif" width="19" height="11"></td>
+	      </tr>
+		</table>
+		<br>
+		</td></tr>
+</table>
+<%	} %>
+
+
+<% if (showfiles && haveRoutes){ %>
+	<form name="RoutesShowForm" action="" method="post">
+
+	<table width="700"  border="0" align="center" cellpadding="0" cellspacing="0">
+	<%
+		directoryShow += "/"+yearShow;
+		dir = new File(directoryShow);
+		try
+		{ %>
+			
+			<tr>
+			    <td> 
+			      <table width="700"  border="0" align="center" cellpadding="0" cellspacing="0">
+			      <tr>
+			        <td width="19"><img src="/datacenter/util/imgs/left.jpg" width="19" height="30"></td>
+			          <td width="672" background="/datacenter/util/imgs/center.jpg" class='guide1'>
+			          <%=messages.getText("generic.supportmaterial.routes")+ " - " +
+			          	messages.getText("datatype.country."+countryShow) + " - " +
+			          	messages.getText(deptoShow) + " - " + yearShow %>         
+			         </td>
+			        <td width="19"><img src="/datacenter/util/imgs/right.jpg" width="19" height="30"></td>
+			      </tr>
+			      <tr>
+			        <td width="19" background="/datacenter/util/imgs/left_line.gif">&nbsp;</td>
+			        <td width="672">
+			        	<table width="672" cellpadding="0" cellspacing="0" class="texts">
+			              <tr> 
+			                <td colspan="3">&nbsp;</td>
+			              </tr>
+	<%		if ( dir.isDirectory() ){
+				fileNames = dir.list();	
+				fileCounter = 0;
+				if (fileNames != null && fileNames.length > fileCounter){ 
+				
+					System.out.println("Cantidad de Archivos: "+fileNames.length);%>
+
+	          	  <!--  Titulos:  -->
+                  <tr><td colspan="3">               
+	              <table width="672" cellpadding="0" cellspacing="0" class="texts">
+	              <tr>
+	                <td width="80%" align="left">
+	                	<%=messages.getText("generic.supportmaterial.reports.files") %>
+	                </td>
+	                <td width="10%" align="center">	
+	                  	<%=messages.getText("generic.supportmaterial.reports.date") %>
+	                </td>  
+	                <td width="10%" align="center">	
+	                  	<%=messages.getText("generic.supportmaterial.reports.filesize") %>
+	                </td>
+	              </tr> 
+	              </table>
+	              </td></tr>
+	              <tr> 
+	                <td colspan="3">&nbsp;</td>
+	              </tr> 
+							
+<%				
+					Arrays.sort(fileNames);
+					fileCounter = 0;
+					// Ordeno los archivos por fecha
+					dateSort = new LinkedList();
+					while (fileNames.length > fileCounter)
+					{
+						file = new File(directoryShow+"/"+fileNames[fileCounter]);
+						dateSort.add(new LongItem(new Long(file.lastModified()),
+								file.getName()));
+						fileCounter++;
+					}
+					
+					Collections.sort(dateSort,Collections.reverseOrder());
+					Iterator it = dateSort.iterator();
+					while (it.hasNext())
+					{					
+						LongItem oi = (LongItem)it.next();
+						if (oi == null) {
+							System.out.println("NULL");
+						}
+						System.out.println("File: "+oi.getLabel()+", "+oi.getValue());
+						
+						link = linkDirectory + "/"+yearShow + "/" + oi.getValue();
+						
+						System.out.println("File: "+directoryShow+"/"+oi.getValue());
+						
+						file = new File(directoryShow+"/"+oi.getValue());
+						name = oi.getValue().replace("_"," ");
+						date = new Date(oi.getLabel().longValue());
+				 		fileSize = file.length();										 		
+%>
+              <tr> 
+                <td width="80%" align="left">
+                	<img src="../datacenter/util/imgs/icon1.jpg" width="12" height="12">
+                	&nbsp;&nbsp;<strong><a href='<%=link%>' ><%=name%></a></strong> 
+                </td>
+                <td width="10%" align="right"> <div align="center"><strong><%=dateFormat.format(date)%></strong> </div></td>
+                <td width="10%" align="right"> <div align="center"><strong><%=(fileSize >= 1000)? nf.format(fileSize/1000)+"KB":nf.format(fileSize)+"Bytes"%></strong> </div></td>
+              </tr>
+              <tr> 
+                <td colspan="3">&nbsp;</td>
+              </tr>
+<%
+					} // fin while
+				}else{
+%>
+			  <tr> 
+                <td width="100%" colspan="3">
+                	<%=messages.getText("generic.supportmaterial.routes.noroutes")%>
+                </td>
+	          </tr>
+              <tr> 
+                <td width="100%" colspan="3">&nbsp;</td>
+              </tr>
+<%				}
+			}else{
+%>
+			  <tr> 
+                <td width="100%" colspan="3">
+                	<%=messages.getText("generic.supportmaterial.routes.noroutes")%>
+                </td>
+	          </tr>
+              <tr> 
+                <td width="100%" colspan="3">&nbsp;</td>
+              </tr>
+<%					
+			}				
+					%>
+            </table></td>
+        <td width="19" background="/datacenter/util/imgs/right_line.gif">&nbsp;</td>
+      </tr>
+      <tr>
+        <td width="19"><img src="/datacenter/util/imgs/left_base.gif" width="19" height="11"></td>
+        <td width="672" background="/datacenter/util/imgs/center_base.gif"><img src="x" height="1" width="1"></td>
+        <td width="19"><img src="/datacenter/util/imgs/right_base.gif" width="19" height="11"></td>
+      </tr>
+    </table>
+    <br>
+    </td>
+    
+    
+  </tr>
+<%	}catch(Exception e){
+		e.printStackTrace();
+	}
+%>
+</table>
+</form>
+<% } // fin if (showfiles) %>
+</body>
+</html:html>
+<%	} %>
+
+

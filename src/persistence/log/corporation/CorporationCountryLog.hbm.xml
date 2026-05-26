@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.log.corporation" >
+    <class name="CorporationCountryLog" table="corporationcountrylog">
+
+       	<composite-id class="CorporationCountryLogPK" name="pk" >
+	        <key-property	name="corporationId"	type="java.lang.Integer"	column="corporationid"/>
+	        <key-property	name="countryId"	type="java.lang.Integer"	column="countryid"/>
+	        <key-property	name="loginUser"	type="java.lang.String"	column="loginuser"/>
+	        <key-property	name="date"	type="java.util.Date"	column="date"/>
+       	</composite-id>
+       
+        <property name="active" not-null="true" />
+		
+	    <set name="geoLevel1Set" table="CountryLevel1s" cascade="all">
+    	    <key>
+        		<column name="corporationId"></column>
+         		<column name="countryId"></column>
+        		<column name="loginUser"></column>
+         		<column name="date"></column>
+         	</key>
+        	<many-to-many class="GeoLevel1Log">
+    		     <column name="idLevel1"></column>
+    		     <column name="loginUserLevel1"></column>
+    		     <column name="dateLevel1"></column>
+        	</many-to-many>
+    	</set>
+
+	</class>
+</hibernate-mapping>

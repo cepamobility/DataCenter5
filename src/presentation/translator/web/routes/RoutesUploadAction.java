@@ -1,0 +1,164 @@
+package presentation.translator.web.routes;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.util.Calendar;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.upload.FormFile;
+
+import business.SystemAccess;
+
+import communication.language.Text;
+
+import presentation.translator.web.util.AbstractAction;
+import presentation.translator.web.util.Util;
+
+
+public class RoutesUploadAction extends AbstractAction {
+
+	/**
+	 * 
+	 */	
+	public ActionForward action(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response) throws Exception 
+	{
+		HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        Text messages = sys.getText();
+    
+		try {
+			
+			RoutesUploadForm uploadForm = (RoutesUploadForm) form;			
+			FormFile file = (FormFile)uploadForm.getFile();	
+			// Valido file vacio o null
+			if (file == null || file.getFileName() == null || file.getFileName().equals("")){
+				session.setAttribute("Msg", 
+						messages.getText("generic.supportmaterial.cepatips.nofile"));
+		  	    return mapping.findForward("error");	
+			}
+			if (!this.validarString(file.getFileName())){
+				session.setAttribute("Msg", 
+						messages.getText("generic.supportmaterial.wrongname"));
+		  	    return mapping.findForward("error");	
+			}
+			if (uploadForm.getCountry().equals("")){
+				session.setAttribute("Msg",messages.getText("generic.supportmaterial.routes.nocountryselected"));
+				return mapping.findForward("error");
+			}
+			if (uploadForm.getDepto().equals("")){
+				session.setAttribute("Msg",messages.getText("generic.supportmaterial.routes.nodeptoselected"));
+				return mapping.findForward("error");
+			}
+			
+			String year = (String)uploadForm.getYear();		
+			String directory = (String)uploadForm.getDirectory();		
+			
+			// Para cambiarle la fecha:
+			String radiodate = (String)uploadForm.getRadioDate();		
+			String otherdateday = (String)uploadForm.getOtherDateDay();		
+			String otherdatemonth = (String)uploadForm.getOtherDateMonth();		
+			String otherdateyear = (String)uploadForm.getOtherDateYear();					
+			String country = (String)uploadForm.getCountry();
+			String depto = (String)uploadForm.getDepto();
+			
+			Calendar cal = Calendar.getInstance();
+			int year_1 = cal.get(Calendar.YEAR);
+			int month = cal.get(Calendar.MONTH)+1;
+			int day = cal.get(Calendar.DATE);
+			
+			InputStream reportStream = file.getInputStream();
+			String fileName = file.getFileName().replaceAll(" ", "_");
+
+			
+			// Me fijo si existe el directorio, sino lo creo.
+			File dir = new File(directory + "/" + country + "/" + depto + "/" +year);
+			if (!dir.exists()){
+				boolean success = dir.mkdir();
+			    if (!success) {
+					new Exception("No se pudo crear el directorio: " + dir.getName());
+				}
+			}
+			FileOutputStream fout = new FileOutputStream(directory+ "/" + country + "/"
+					+ depto + "/" + year + "/" + fileName);
+			int c = 0;
+			while ( (c=reportStream.read()) != -1){
+				fout.write(c);
+			}			
+			fout.flush();
+			fout.close();			
+
+			if ( radiodate.trim().equals("otherdate")){
+//				Valido fechas
+		        year_1 = ( Util.empty(otherdateyear) || !Util.isNumber(otherdateyear) ? 0 : 
+	    			Integer.valueOf(otherdateyear).intValue());
+		        month = (Util.empty(otherdatemonth) || !Util.isNumber(otherdatemonth) ? 0 : 
+	    			Integer.valueOf(otherdatemonth).intValue());
+		        day = (Util.empty(otherdateday) || !Util.isNumber(otherdateday) ? 0 : 
+	    			Integer.valueOf(otherdateday).intValue());
+				if (!Util.checkDate(day,month,year_1)){ 
+					// Mensaje de error en la fecha
+					session.setAttribute("Msg", messages.getText("generic.supportmaterial.cepatips.baddate"));
+			  	    return mapping.findForward("error");	
+				}
+				File file2 = new File(directory+"/"+country+"/"+depto+"/"+year+"/"+fileName);
+				cal = Calendar.getInstance();
+				cal.set(Calendar.YEAR,year_1);
+				cal.set(Calendar.MONTH,month-1);
+				cal.set(Calendar.DATE,day);		
+				file2.setLastModified(cal.getTimeInMillis());						
+				
+			}			
+			
+			session.setAttribute("Msg", messages.getText("generic.supportmaterial.routes.successuploadroute"));
+			session.setAttribute("show","true");
+			session.setAttribute("country",country);
+			session.setAttribute("depto",depto);
+			session.setAttribute("year",year);
+			
+			return mapping.findForward("success");	
+        }
+        catch(Exception e) {
+        	e.printStackTrace();
+    		session.setAttribute("Msg", messages.getText("generic.supportmaterial.cepatips.baddate"));
+	  	    return mapping.findForward("error");		
+	  	    
+        }       
+			
+    }
+
+	public ActionForward cancel(HttpSession session, ActionMapping mapping, ActionForm form) {
+		// TODO Auto-generated method stub
+		return null;
+	}
+
+	/**
+	 * Devuelve false si tiene caracteres que no son digito, letra,
+	 * espacio en blanco o punto o subrayado o guion.
+	 * @param s : String a validar
+	 * @return boolean
+	 */
+	public boolean validarString(String s){
+		int count = 0;
+		char c [] = s.toCharArray();
+		while (count < s.length()){
+			if (!Character.isLetterOrDigit(c[count]) && 
+				c[count] != ' ' && c[count] != '.' 
+				&& c[count] != '_' && c[count] != '-' ){			
+				return false;
+			}
+			count ++;
+		}
+		return true;
+	}
+	
+	
+}
+	
+	
+

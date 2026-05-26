@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.log.user" >
+    <class name="UserCorporationLog" table="usercorporationslog">
+
+       <composite-id class="UserCorporationLogPK" name="pk" >
+	        <key-property	name="userId"	type="java.lang.String"	column="userid"/>
+	        <key-property	name="corporationId"	type="java.lang.Integer"	column="corporationid"/>
+	        <key-property	name="loginUser"	type="java.lang.String"	column="loginuser"/>
+	        <key-property	name="date"	type="java.util.Date"	column="date"/>
+       </composite-id>
+       
+        <property name="action" type="java.lang.Integer" column="action" not-null="true" />
+
+        <property name="role" type="java.lang.String" column="role" not-null="true" />
+		
+
+    	<set name="permissions" table="userpermissionslog" cascade="all">
+			<key>
+					<column name="corporationId" /> 
+					<column name="userId" />
+					<column name="loginUser" /> 
+					<column name="date" />
+			</key>
+	        <element column="permission" type="java.lang.String"/>
+	    </set>
+	</class>
+</hibernate-mapping>

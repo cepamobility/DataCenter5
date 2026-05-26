@@ -1,0 +1,78 @@
+package communication.vehicle.tables;
+
+import java.util.ArrayList;
+import java.util.Date;
+
+
+public class VehicleStateData  {
+
+	public static String ACTIVE="ACTIVE";
+	public static String SUSPENDED_HOURS="SUSPENDED_HOURS";
+	public static String SUSPENDED_INDETERMINATE="SUSPENDED_INDETERMINATE";
+	
+	public static int REASON_CODE_POINTS=1;
+	public static int RASON_CODE_UNCONF=2;
+	public static int RASON_CODE_OTHERS=0;
+	public static int RASON_CODE_NONE=-1;
+	
+	public static int TYPEOFPENALTY_CODE_TIME=1;
+	public static int TYPEOFPENALTY_CODE_INDETERMINATE=0;
+	public static int TYPEOFPENALTY_CODE_NONE=-1;
+	public static int TYPEOFPENALTY_CODE_ADDPOINTS=2;
+	
+	private Date stateDate;
+    private String state;
+	private Integer hours;
+	private String reasonDescription;
+	private Integer reasonCode;
+	private Integer typeOfPenalty;
+    private ArrayList<VehicleStateHistoryData> history;
+    
+    
+    
+	public Integer getHours() {
+		return hours;
+	}
+	public void setHours(Integer hours) {
+		this.hours = hours;
+	}
+	public String getReasonDescription() {
+		return reasonDescription;
+	}
+	public void setReasonDescription(String reasonDescription) {
+		this.reasonDescription = reasonDescription;
+	}
+	public Integer getReasonCode() {
+		return reasonCode;
+	}
+	public void setReasonCode(Integer reasonCode) {
+		this.reasonCode = reasonCode;
+	}
+	public Integer getTypeOfPenalty() {
+		return typeOfPenalty;
+	}
+	public void setTypeOfPenalty(Integer typeOfPenalty) {
+		this.typeOfPenalty = typeOfPenalty;
+	}
+	public Date getStateDate() {
+		return stateDate;
+	}
+	public void setStateDate(Date stateDate) {
+		this.stateDate = stateDate;
+	}
+	public String getState() {
+		return state;
+	}
+	public void setState(String state) {
+		this.state = state;
+	}
+	public ArrayList<VehicleStateHistoryData> getHistory() {
+		return history;
+	}
+	public void setHistory(ArrayList<VehicleStateHistoryData> history) {
+		this.history = history;
+	}
+    
+    
+	
+}

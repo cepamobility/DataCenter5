@@ -1,0 +1,774 @@
+package communication.administration.corporation.tables;
+
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
+import communication.administration.group.tables.GroupLineData;
+
+public class CorporationData extends CorporationAttribute implements Serializable {
+	
+    private static final long serialVersionUID = 1L;
+
+    public static final int DATACENTER = 1;
+    public static final int FORESTAL = 2;
+    public static final int CEPA_SYSTEM = 3;
+    
+    
+    public static final int MONSANTO = 1;
+    public static final int DEMO = 2;
+    public static final int EMPLEADOSCEPA = 3;
+    public static final int JJ = 4;
+    public static final int ABBOTT = 5;    
+    public static final int NALCO = 6;
+    public static final int EQUITAL = 7;
+    public static final int ENCE = 8;
+    public static final int FORESTALORIENTAL = 9;
+    public static final int LILLY = 10;
+    public static final int ESCUELA = 11;
+    public static final int COLONVADE = 12;
+    public static final int MSD = 13;
+    public static final int CEPA = 14;
+    public static final int PFIZER = 15;
+    public static final int ASTRAZENECA = 16;
+    public static final int SANOFI = 17;
+    public static final int ORGANON = 18;	
+    public static final int LOSPIQUES = 19;
+    public static final int COMGAS = 20;
+    public static final int CASTROL = 21;
+    public static final int BP = 22;
+    public static final int SHELL = 23;
+    public static final int TINTASCORAL = 24;
+    public static final int BANDEIRANTE = 25;
+    public static final int CADBURY = 26;
+    public static final int GLAXO = 27;       
+    public static final int KLABIN = 28;    
+    public static final int YOLI = 29;    
+    public static final int POLICIA = 30;
+    public static final int DEMO_FORESTAL = 31;    
+    public static final int CENAPRA = 32;
+    public static final int CEPA_PESADOS = 33;
+    public static final int ALLERGAN = 35;
+    public static final int CIMSA = 36;    
+    public static final int TRANSPORTES_AMERICAN = 37;    
+    public static final int NESTLE = 38;    
+    public static final int PEPSICO = 39;
+    public static final int PACIFICRUBIALES = 40;
+	public static final int ANGLO = 41;
+	public static final int BAYER = 42;
+	public static final int SYNGENTA = 43;
+	public static final int MOSAIC = 44;
+	public static final int IMESEVI_UY = 46;
+	public static final int WEYERHAEUSER = 19;
+	
+	public static final int MONTES_DE_PLATA = 50;
+	public static final int NOVARTIS = 51;
+	public static final int NYCOMED = 52;
+
+	public static final int ORICA = 55;
+	public static final int CHEMTURA = 56;
+	public static final int SAEXPLORATION = 57;
+	public static final int DOW = 65;
+	public static final int DPA = 62;
+	public static final int FORESTALES = 63;
+	public static final int PORTOSEGUROS = 64;
+
+	public static final int REPORTER_JJ = 1004;
+	
+	public static final int COFUSA = 67;
+	public static final int FEMSA = 68;
+
+	public static final int FEMSA_BR = 69;
+	public static final int ACU = 70;
+	public static final int DTCP = 72;
+	public static final int BAYER_MX = 73;
+	public static final int COVESTRO = 74;
+	public static final int ECOLAB = 75;
+	public static final int HALLIBURTON = 76;
+	public static final int RICA = 77;
+	public static final int SYNGENTA_BR = 78;
+	public static final int SABMILLER = 80;
+	public static final int DEMOBR = 82;
+	public static final int TGS = 83;
+	public static final int DEMO_ALIANZA = 84;
+	public static final int RAIZEN = 87;
+	public static final int FRAYLOG = 88;
+	public static final int COCACOLA = 89;
+	public static final int FEMSA_NEW = 90;
+	public static final int FEMSA_T1 = 93;
+	
+	public static final int GENERAL_DATA= 91;
+    public static final int PFIZER_NEW = 92;
+    public static final int HEINEKEN = 94;
+    public static final int SANOFI_2 = 95;
+    public static final int FMC = 96;
+
+    public static final int FURLONG = 97;
+    
+    public static final int SUMMUM = 99;
+    public static final int RICA_2 = 100;
+
+    public static final int SURA = 102;
+    public static final int ABBOTT_ECUADOR = 103;    
+    public static final int NUNHEMS_MX = 104;    
+    public static final int BAYER_CONOSUR = 105;    
+	public static final int MONDELEZ = 106;    
+    public static final int ROCHE = 107;    
+    public static final int BAYER_TRAINING = 108;
+    public static final int SIMOES = 109;
+    public static final int ALRIYADAH = 110;
+    public static final int NESTLE_PILOTO = 112;
+    public static final int ANGLO_2 = 113;
+    
+    public static final int SUPERVISION = 0;
+
+	public static final int ADM = 115;
+	public static final int PERFICE = 116;
+	public static final int UPM_CELULOSA = 117;
+	public static final int KENVUE = 118;
+	public static final int SAN_NICOLAS = 119;
+
+	public static final int IFF = 121;
+	public static final int SOLENIS = 122;
+	public static final int SOCTMA = 123;
+	
+	public static final int CONTRACTOR_FORESTAL = 1001;
+
+	public static final int JJ_NONSALES = 300085;
+
+	
+    private Collection divOrgDataSet;
+	private GeoLabelAttributes[] geoLabels;
+	private GeoLabelData divGeoDataSet;
+	
+	public CorporationData(){}
+	
+	public CorporationData(Integer id,String name,Integer type,Collection divOrgDataSet,GeoLabelAttributes[] geoLabels,GeoLabelData data) {
+	    super(id,name,type);
+		this.divOrgDataSet=divOrgDataSet;
+		this.geoLabels = geoLabels;
+		this.divGeoDataSet = data;
+	}
+
+	public CorporationData(String name,Integer type) {
+        super(null,name,type);
+        this.divOrgDataSet=new LinkedList();
+    }
+
+    public CorporationData(Integer id) {
+    	super(id);
+    }
+
+	public Collection getDivOrgDataSet() {
+		return divOrgDataSet;
+	}
+
+	public DivOrgData getDivOrgData(int id) {
+	    Iterator it = divOrgDataSet.iterator();
+	    while(it.hasNext()) {
+	        DivOrgData data = (DivOrgData)it.next();
+	        if(data.getId().intValue() == id) {
+	            return data;
+	        }
+	    }
+	    return null;
+	}
+		
+    /**
+     * @return Returns the divGeoDataSet.
+     */
+    public communication.administration.corporation.tables.GeoLabelData getDivGeoDataSet() {
+        return divGeoDataSet;
+    }
+    
+    public Collection getItems(String level1,String level2) {
+        Collection data = new LinkedList();
+        if(divGeoDataSet != null) {
+    	    Iterator itLevel1 = divGeoDataSet.getItemIterator();
+    		if(empty(level1)) {
+    		    return divGeoDataSet.getItems();
+    		}else {    
+    		    while(itLevel1.hasNext()) {
+    		        GeoItemData item1 = (GeoItemData)itLevel1.next();
+                    if(String.valueOf(item1.getId()).equals(level1) && item1.getSubItems() != null) {
+                        if(empty(level2)) {
+                            return item1.getSubItems().getItems();
+                        }else {
+                            Iterator itLevel2 = item1.getSubItems().getItemIterator();
+                            while(itLevel2.hasNext()) {
+                                GeoItemData item2 = (GeoItemData)itLevel2.next();
+                                if(String.valueOf(item2.getId()).equals(level2) && item2.getSubItems() != null) {
+                                    return item2.getSubItems().getItems();
+                                }
+                            }
+                        }
+                    }
+    			}
+    	    }            
+        }
+		return data;
+    }
+    
+    public GeoItemData getCountry(String level1,String level2,String level3) {
+        if(divGeoDataSet != null) {
+            Iterator itLevel1 = divGeoDataSet.getItemIterator();
+            while(itLevel1.hasNext()) {
+                GeoItemData item1 = (GeoItemData)itLevel1.next();
+                if(String.valueOf(item1.getId()).equals(level1)) {
+                    if(empty(level2)) {
+                        return item1;
+                    }else {
+                        Iterator itLevel2 = item1.getSubItems().getItemIterator();
+                        while(itLevel2.hasNext()) {
+                            GeoItemData item2 = (GeoItemData)itLevel2.next();
+                            if(String.valueOf(item2.getId()).equals(level2)) {
+                                if(empty(level3)) {
+                                    return item2;
+                                }else {
+                                    Iterator itLevel3 = item2.getSubItems().getItemIterator();
+                                    while(itLevel3.hasNext()) {
+                                        GeoItemData item3 = (GeoItemData)itLevel3.next();
+                                        if(String.valueOf(item3.getId()).equals(level3)) {
+                                            return item3;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+    
+    /**
+     * @return Returns the geoLabels.
+     */
+    public GeoLabelAttributes[] getGeoLabels() {
+        return geoLabels;
+    }
+    
+	public Iterator getDivOrgsIterator() {
+		Collections.sort((List)divOrgDataSet);
+		return divOrgDataSet.iterator();
+	}
+	
+	public GeoLabelData getGeoLabelData() {
+	    return divGeoDataSet;
+	}
+
+    private boolean empty(String value) {
+        return value == null || value.trim().length() == 0;
+    }
+
+    public DivOrgAttribute[] getDivOrgs() {
+        DivOrgAttribute[] divOrgs = new DivOrgAttribute[3];
+        Collections.sort((List)divOrgDataSet);
+        Iterator it = divOrgDataSet.iterator();
+        int index = 0;
+        while(it.hasNext()) {
+            divOrgs[index] = ((DivOrgData)it.next()).getDivOrgAttribute();
+            index++;
+        }
+        return divOrgs;
+    }
+
+    public LabelItemAttribute[][] getDivOrgLabels() {
+        LabelItemAttribute[][] labels = new LabelItemAttribute[3][3];
+        Collections.sort((List)divOrgDataSet);
+        Iterator it = divOrgDataSet.iterator();
+        int index = 0;
+        while(it.hasNext()) {
+            labels[index] = ((DivOrgData)it.next()).getLabels();
+            index++;
+        }
+        return labels;
+    }
+
+    public Collection getAllGroupLines(int divOrgCount) {
+        Collection elements = new LinkedList();
+        Collections.sort((List)divOrgDataSet);
+        Iterator it = divOrgDataSet.iterator();
+        Collection[] items = new LinkedList[3];
+        for(int i = 0; i < 3; i++) {
+            items[i] = new LinkedList();
+        }
+        Collection countries = new LinkedList();
+        int index = 0;
+        while(it.hasNext()) {
+            DivOrgData divOrg = (DivOrgData)it.next();
+            LabelItemData lid1 = divOrg.getDivOrgLevels();
+            switch(divOrg.getLabels().length) {
+                case 1:
+                    if(lid1 != null) {
+                        Iterator it1 = lid1.getItemIterator();
+                        while(it1.hasNext()) {
+                        	ItemData itemIn1 = (ItemData) it1.next();
+                            if(itemIn1.active) {
+	                            Collection itemsOut1 = new LinkedList();
+	                            itemsOut1.add(itemIn1);
+	                            items[index].add(new LabelItemData(lid1.getId(),lid1.getName(),itemsOut1,lid1.getShowLevel()));
+                            }
+                        }
+                    }
+                    break;
+                case 2:
+                    if(lid1 != null) {
+                        Iterator it1 = lid1.getItemIterator();
+                        while(it1.hasNext()) {
+                            ItemData itemIn1 = (ItemData)it1.next();
+                            if(itemIn1.active) {
+	                            LabelItemData lid2 = itemIn1.getSubItems();
+	                            Iterator it2 = lid2.getItemIterator();
+	                            while(it2.hasNext()) {
+	                            	ItemData itemIn2 = (ItemData) it2.next();
+	                            	if(itemIn2.active) {
+		                                Collection itemsOut2 = new LinkedList();
+		                                itemsOut2.add(itemIn2);
+		                                Collection itemsOut1 = new LinkedList();
+		                                itemsOut1.add(new ItemData(itemIn1.getId(),itemIn1.getName(),itemIn1.active,new LabelItemData(lid2.getId(),lid2.getName(),itemsOut2,lid2.getShowLevel())));
+		                                items[index].add(new LabelItemData(lid1.getId(),lid1.getName(),itemsOut1,lid1.getShowLevel()));
+	                            	}
+	                            }
+                            }
+                        }
+                    }
+                    break;
+                case 3:
+                    if(lid1 != null) {
+                        Iterator it1 = lid1.getItemIterator();
+                        while(it1.hasNext()) {
+                            ItemData itemIn1 = (ItemData)it1.next();
+                            if(itemIn1.active) {
+	                            LabelItemData lid2 = itemIn1.getSubItems();
+	                            Iterator it2 = lid2.getItemIterator();
+	                            while(it2.hasNext()) {
+	                                ItemData itemIn2 = (ItemData)it2.next();
+	                            	if(itemIn2.active) {
+		                                LabelItemData lid3 = itemIn2.getSubItems();
+		                                Iterator it3 = lid3.getItemIterator();
+		                                while(it3.hasNext()) {
+			                                ItemData itemIn3 = (ItemData)it3.next();
+			                            	if(itemIn3.active) {
+			                                    Collection itemsOut3 = new LinkedList();
+			                                    itemsOut3.add(itemIn3);
+			                                    Collection itemsOut2 = new LinkedList();
+			                                    itemsOut2.add(new ItemData(itemIn2.getId(),itemIn2.getName(),itemIn2.active,new LabelItemData(lid3.getId(),lid3.getName(),itemsOut3,lid3.getShowLevel())));
+			                                    Collection itemsOut1 = new LinkedList();
+			                                    itemsOut1.add(new ItemData(itemIn1.getId(),itemIn1.getName(),itemIn1.active,new LabelItemData(lid2.getId(),lid2.getName(),itemsOut2,lid2.getShowLevel())));
+			                                    items[index].add(new LabelItemData(lid1.getId(),lid1.getName(),itemsOut1,lid1.getShowLevel()));
+			                            	}
+		                                }
+	                            	}
+	                            }
+                            }
+                        }
+                    }
+                    break;
+            }
+            index++;
+        }
+        
+        GeoLabelData glid1 = divGeoDataSet;
+        switch(geoLabels.length) {
+            case 1:
+                if(glid1 != null) {
+                    Iterator it1 = glid1.getItemIterator();
+                    while(it1.hasNext()) {
+                        Collection itemsOut1 = new LinkedList();
+                        itemsOut1.add(it1.next());
+                        countries.add(new GeoLabelData(glid1.getId(),glid1.getResourceKey(),glid1.getLevel(),itemsOut1));
+                    }
+                }
+                break;
+            case 2:
+                if(glid1 != null) {
+                    Iterator it1 = glid1.getItemIterator();
+                    while(it1.hasNext()) {
+                        GeoItemData itemIn1 = (GeoItemData)it1.next();
+                        if ( itemIn1 != null){
+	                        GeoLabelData lid2 = itemIn1.getSubItems();
+	                        if (lid2 != null){
+	                        	Iterator it2 = lid2.getItemIterator();
+		                        while(it2.hasNext()) {
+		                            Collection itemsOut2 = new LinkedList();
+		                            itemsOut2.add(it2.next());
+		                            Collection itemsOut1 = new LinkedList();
+		                            itemsOut1.add(new GeoItemData(itemIn1.getId(),itemIn1.getName(),itemIn1.active,new GeoLabelData(lid2.getId(),lid2.getResourceKey(),lid2.getLevel(),itemsOut2)));
+		                            countries.add(new GeoLabelData(glid1.getId(),glid1.getResourceKey(),glid1.getLevel(),itemsOut1));
+		                        }
+		                     }
+	                     }
+                    }
+                }
+                break;
+            case 3:
+                if(glid1 != null) {
+                    Iterator it1 = glid1.getItemIterator();
+                    while(it1.hasNext()) {
+                        GeoItemData itemIn1 = (GeoItemData)it1.next();
+                        if ( itemIn1 != null){
+                        	GeoLabelData lid2 = itemIn1.getSubItems();    
+                        	if (lid2 != null){
+		                        Iterator it2 = lid2.getItemIterator();
+		                        while(it2.hasNext()) {
+		                            GeoItemData itemIn2 = (GeoItemData)it2.next();
+		                            if ( itemIn2 != null){
+			                            GeoLabelData lid3 = itemIn2.getSubItems();
+			                            if (lid3 != null){
+				                            Iterator it3 = lid3.getItemIterator();
+				                            while(it3.hasNext()) {
+				                                Collection itemsOut3 = new LinkedList();
+				                                itemsOut3.add(it3.next());
+				                                Collection itemsOut2 = new LinkedList();
+				                                itemsOut2.add(new GeoItemData(itemIn2.getId(),itemIn2.getName(),itemIn2.active,new GeoLabelData(lid3.getId(),lid3.getResourceKey(),lid3.getLevel(),itemsOut3)));
+				                                Collection itemsOut1 = new LinkedList();
+				                                itemsOut1.add(new GeoItemData(itemIn1.getId(),itemIn1.getName(),itemIn1.active,new GeoLabelData(lid2.getId(),lid2.getResourceKey(),lid2.getLevel(),itemsOut2)));
+				                                countries.add(new GeoLabelData(glid1.getId(),glid1.getResourceKey(),glid1.getLevel(),itemsOut1));
+				                            }
+			                            }
+		                            }
+		                        }
+                        	}
+                        }
+                    }
+                }
+                break;
+        }
+        
+        Iterator it1 = items[0].iterator();
+        Iterator it2 = items[1].iterator();
+        Iterator it3 = items[2].iterator();
+        Iterator it4 = countries.iterator();
+        if(items[0].size() >= items[1].size() && items[0].size() >= items[2].size() && items[0].size() >= countries.size()) {
+            LabelItemData lid2 = null;
+            LabelItemData lid3 = null;
+            GeoLabelData glid = null;
+            while(it1.hasNext()) {
+                LabelItemData lid1 = (LabelItemData)it1.next();
+                if(it2.hasNext()) {
+                    lid2 = (LabelItemData)it2.next();
+                }
+                if(it3.hasNext()) {
+                    lid3 = (LabelItemData)it3.next();
+                }
+                if(it4.hasNext()) {
+                    glid = (GeoLabelData)it4.next();
+                }
+                GroupLineData groupLine = new GroupLineData(null);
+                LabelItemData[] lids = {lid1,lid2,lid3};
+                groupLine.setDivOrgs(lids);
+                groupLine.setCountry(glid);
+                elements.add(groupLine);
+            }
+        }else if(items[1].size() >= items[0].size() && items[1].size() >= items[2].size() && items[1].size() >= countries.size()) {
+            LabelItemData lid1 = null;
+            LabelItemData lid3 = null;
+            GeoLabelData glid = null;
+            while(it2.hasNext()) {
+                LabelItemData lid2 = (LabelItemData)it2.next();
+                if(it1.hasNext()) {
+                    lid1 = (LabelItemData)it1.next();
+                }
+                if(it3.hasNext()) {
+                    lid3 = (LabelItemData)it3.next();
+                }
+                if(it4.hasNext()) {
+                    glid = (GeoLabelData)it4.next();
+                }
+                GroupLineData groupLine = new GroupLineData(null);
+                LabelItemData[] lids = {lid1,lid2,lid3};
+                groupLine.setDivOrgs(lids);
+                groupLine.setCountry(glid);
+                elements.add(groupLine);
+            }
+        }else if(items[2].size() >= items[0].size() && items[2].size() >= items[1].size() && items[2].size() >= countries.size()) {
+            LabelItemData lid1 = null;
+            LabelItemData lid2 = null;
+            GeoLabelData glid = null;
+            while(it3.hasNext()) {
+                LabelItemData lid3 = (LabelItemData)it3.next();
+                if(it1.hasNext()) {
+                    lid1 = (LabelItemData)it1.next();
+                }
+                if(it2.hasNext()) {
+                    lid2 = (LabelItemData)it2.next();
+                }
+                if(it4.hasNext()) {
+                    glid = (GeoLabelData)it4.next();
+                }
+                GroupLineData groupLine = new GroupLineData(null);
+                LabelItemData[] lids = {lid1,lid2,lid3};
+                groupLine.setDivOrgs(lids);
+                groupLine.setCountry(glid);
+                elements.add(groupLine);
+            }
+        }else {
+            LabelItemData lid1 = null;
+            LabelItemData lid2 = null;
+            LabelItemData lid3 = null;
+            while(it4.hasNext()) {
+                GeoLabelData glid = (GeoLabelData)it4.next();
+                if(it1.hasNext()) {
+                    lid1 = (LabelItemData)it1.next();
+                }
+                if(it2.hasNext()) {
+                    lid2 = (LabelItemData)it2.next();
+                }
+                if(it3.hasNext()) {
+                    lid3 = (LabelItemData)it3.next();
+                }
+                GroupLineData groupLine = new GroupLineData(null);
+                LabelItemData[] lids = {lid1,lid2,lid3};
+                groupLine.setDivOrgs(lids);
+                groupLine.setCountry(glid);
+                elements.add(groupLine);
+            }
+        }
+        return elements;
+    }
+
+	public Collection getAllGroupLines(int divOrgCount, String userName) {
+        Collection elements = new LinkedList();
+        Collections.sort((List)divOrgDataSet);
+        Iterator it = divOrgDataSet.iterator();
+        Collection[] items = new LinkedList[3];
+        for(int i = 0; i < 3; i++) {
+            items[i] = new LinkedList();
+        }
+        Collection countries = new LinkedList();
+        int index = 0;
+        while(it.hasNext()) {
+            DivOrgData divOrg = (DivOrgData)it.next();
+            LabelItemData lid1 = divOrg.getDivOrgLevels();
+            switch(divOrg.getLabels().length) {
+                case 1:
+                    if(lid1 != null) {
+                        Iterator it1 = lid1.getItemIterator();
+                        while(it1.hasNext()) {
+                            Collection itemsOut1 = new LinkedList();
+                            itemsOut1.add(it1.next());
+                            items[index].add(new LabelItemData(lid1.getId(),lid1.getName(),itemsOut1,lid1.getShowLevel()));
+                        }
+                    }
+                    break;
+                case 2:
+                    if(lid1 != null) {
+                        Iterator it1 = lid1.getItemIterator();
+                        while(it1.hasNext()) {
+                            ItemData itemIn1 = (ItemData)it1.next();
+                            LabelItemData lid2 = itemIn1.getSubItems();
+                            Iterator it2 = lid2.getItemIterator();
+                            while(it2.hasNext()) {
+                                Collection itemsOut2 = new LinkedList();
+                                itemsOut2.add(it2.next());
+                                Collection itemsOut1 = new LinkedList();
+                                itemsOut1.add(new ItemData(itemIn1.getId(),itemIn1.getName(),itemIn1.active,new LabelItemData(lid2.getId(),lid2.getName(),itemsOut2,lid2.getShowLevel())));
+                                items[index].add(new LabelItemData(lid1.getId(),lid1.getName(),itemsOut1,lid1.getShowLevel()));
+                            }
+                        }
+                    }
+                    break;
+                case 3:
+                    if(lid1 != null) {
+                        Iterator it1 = lid1.getItemIterator();
+                        while(it1.hasNext()) {
+                            ItemData itemIn1 = (ItemData)it1.next();
+                            LabelItemData lid2 = itemIn1.getSubItems();
+                            Iterator it2 = lid2.getItemIterator();
+                            while(it2.hasNext()) {
+                                ItemData itemIn2 = (ItemData)it2.next();
+                                LabelItemData lid3 = itemIn2.getSubItems();
+                                Iterator it3 = lid3.getItemIterator();
+                                while(it3.hasNext()) {
+                                    ItemData itemIn3 = (ItemData)it3.next();
+                                    Collection itemsOut3 = new LinkedList();
+                                    itemsOut3.add(itemIn3);
+                                    Collection itemsOut2 = new LinkedList();
+                                    itemsOut2.add(new ItemData(itemIn2.getId(),itemIn2.getName(),itemIn2.active,new LabelItemData(lid3.getId(),lid3.getName(),itemsOut3,lid3.getShowLevel())));
+                                    Collection itemsOut1 = new LinkedList();
+                                    itemsOut1.add(new ItemData(itemIn1.getId(),itemIn1.getName(),itemIn1.active,new LabelItemData(lid2.getId(),lid2.getName(),itemsOut2,lid2.getShowLevel())));
+                                    if(index == 2) {
+                                    	if(itemIn1.getName().trim().equalsIgnoreCase(userName.trim()) || itemIn2.getName().trim().equalsIgnoreCase(userName.trim()) || itemIn3.getName().trim().equalsIgnoreCase(userName.trim())) {
+                                        	items[index].add(new LabelItemData(lid1.getId(),lid1.getName(),itemsOut1,lid1.getShowLevel()));
+                                    	}
+                                    }else {
+                                    	items[index].add(new LabelItemData(lid1.getId(),lid1.getName(),itemsOut1,lid1.getShowLevel()));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    break;
+            }
+            index++;
+        }
+        
+        GeoLabelData glid1 = divGeoDataSet;
+        switch(geoLabels.length) {
+            case 1:
+                if(glid1 != null) {
+                    Iterator it1 = glid1.getItemIterator();
+                    while(it1.hasNext()) {
+                        Collection itemsOut1 = new LinkedList();
+                        itemsOut1.add(it1.next());
+                        countries.add(new GeoLabelData(glid1.getId(),glid1.getResourceKey(),glid1.getLevel(),itemsOut1));
+                    }
+                }
+                break;
+            case 2:
+                if(glid1 != null) {
+                    Iterator it1 = glid1.getItemIterator();
+                    while(it1.hasNext()) {
+                        GeoItemData itemIn1 = (GeoItemData)it1.next();
+                        if ( itemIn1 != null){
+	                        GeoLabelData lid2 = itemIn1.getSubItems();
+	                        if (lid2 != null){
+	                        	Iterator it2 = lid2.getItemIterator();
+		                        while(it2.hasNext()) {
+		                            Collection itemsOut2 = new LinkedList();
+		                            itemsOut2.add(it2.next());
+		                            Collection itemsOut1 = new LinkedList();
+		                            itemsOut1.add(new GeoItemData(itemIn1.getId(),itemIn1.getName(),itemIn1.active,new GeoLabelData(lid2.getId(),lid2.getResourceKey(),lid2.getLevel(),itemsOut2)));
+		                            countries.add(new GeoLabelData(glid1.getId(),glid1.getResourceKey(),glid1.getLevel(),itemsOut1));
+		                        }
+		                     }
+	                     }
+                    }
+                }
+                break;
+            case 3:
+                if(glid1 != null) {
+                    Iterator it1 = glid1.getItemIterator();
+                    while(it1.hasNext()) {
+                        GeoItemData itemIn1 = (GeoItemData)it1.next();
+                        if ( itemIn1 != null){
+                        	GeoLabelData lid2 = itemIn1.getSubItems();    
+                        	if (lid2 != null){
+		                        Iterator it2 = lid2.getItemIterator();
+		                        while(it2.hasNext()) {
+		                            GeoItemData itemIn2 = (GeoItemData)it2.next();
+		                            if ( itemIn2 != null){
+			                            GeoLabelData lid3 = itemIn2.getSubItems();
+			                            if (lid3 != null){
+				                            Iterator it3 = lid3.getItemIterator();
+				                            while(it3.hasNext()) {
+				                                Collection itemsOut3 = new LinkedList();
+				                                itemsOut3.add(it3.next());
+				                                Collection itemsOut2 = new LinkedList();
+				                                itemsOut2.add(new GeoItemData(itemIn2.getId(),itemIn2.getName(),itemIn2.active,new GeoLabelData(lid3.getId(),lid3.getResourceKey(),lid3.getLevel(),itemsOut3)));
+				                                Collection itemsOut1 = new LinkedList();
+				                                itemsOut1.add(new GeoItemData(itemIn1.getId(),itemIn1.getName(),itemIn1.active,new GeoLabelData(lid2.getId(),lid2.getResourceKey(),lid2.getLevel(),itemsOut2)));
+				                                countries.add(new GeoLabelData(glid1.getId(),glid1.getResourceKey(),glid1.getLevel(),itemsOut1));
+				                            }
+			                            }
+		                            }
+		                        }
+                        	}
+                        }
+                    }
+                }
+                break;
+        }
+        
+        Iterator it1 = items[0].iterator();
+        Iterator it2 = items[1].iterator();
+        Iterator it3 = items[2].iterator();
+        Iterator it4 = countries.iterator();
+        if(items[0].size() >= items[1].size() && items[0].size() >= items[2].size() && items[0].size() >= countries.size()) {
+            LabelItemData lid2 = null;
+            LabelItemData lid3 = null;
+            GeoLabelData glid = null;
+            while(it1.hasNext()) {
+                LabelItemData lid1 = (LabelItemData)it1.next();
+                if(it2.hasNext()) {
+                    lid2 = (LabelItemData)it2.next();
+                }
+                if(it3.hasNext()) {
+                    lid3 = (LabelItemData)it3.next();
+                }
+                if(it4.hasNext()) {
+                    glid = (GeoLabelData)it4.next();
+                }
+                GroupLineData groupLine = new GroupLineData(null);
+                LabelItemData[] lids = {lid1,lid2,lid3};
+                groupLine.setDivOrgs(lids);
+                groupLine.setCountry(glid);
+                elements.add(groupLine);
+            }
+        }else if(items[1].size() >= items[0].size() && items[1].size() >= items[2].size() && items[1].size() >= countries.size()) {
+            LabelItemData lid1 = null;
+            LabelItemData lid3 = null;
+            GeoLabelData glid = null;
+            while(it2.hasNext()) {
+                LabelItemData lid2 = (LabelItemData)it2.next();
+                if(it1.hasNext()) {
+                    lid1 = (LabelItemData)it1.next();
+                }
+                if(it3.hasNext()) {
+                    lid3 = (LabelItemData)it3.next();
+                }
+                if(it4.hasNext()) {
+                    glid = (GeoLabelData)it4.next();
+                }
+                GroupLineData groupLine = new GroupLineData(null);
+                LabelItemData[] lids = {lid1,lid2,lid3};
+                groupLine.setDivOrgs(lids);
+                groupLine.setCountry(glid);
+                elements.add(groupLine);
+            }
+        }else if(items[2].size() >= items[0].size() && items[2].size() >= items[1].size() && items[2].size() >= countries.size()) {
+            LabelItemData lid1 = null;
+            LabelItemData lid2 = null;
+            GeoLabelData glid = null;
+            while(it3.hasNext()) {
+                LabelItemData lid3 = (LabelItemData)it3.next();
+                if(it1.hasNext()) {
+                    lid1 = (LabelItemData)it1.next();
+                }
+                if(it2.hasNext()) {
+                    lid2 = (LabelItemData)it2.next();
+                }
+                if(it4.hasNext()) {
+                    glid = (GeoLabelData)it4.next();
+                }
+                GroupLineData groupLine = new GroupLineData(null);
+                LabelItemData[] lids = {lid1,lid2,lid3};
+                groupLine.setDivOrgs(lids);
+                groupLine.setCountry(glid);
+                elements.add(groupLine);
+            }
+        }else {
+            LabelItemData lid1 = null;
+            LabelItemData lid2 = null;
+            LabelItemData lid3 = null;
+            while(it4.hasNext()) {
+                GeoLabelData glid = (GeoLabelData)it4.next();
+                if(it1.hasNext()) {
+                    lid1 = (LabelItemData)it1.next();
+                }
+                if(it2.hasNext()) {
+                    lid2 = (LabelItemData)it2.next();
+                }
+                if(it3.hasNext()) {
+                    lid3 = (LabelItemData)it3.next();
+                }
+                GroupLineData groupLine = new GroupLineData(null);
+                LabelItemData[] lids = {lid1,lid2,lid3};
+                groupLine.setDivOrgs(lids);
+                groupLine.setCountry(glid);
+                elements.add(groupLine);
+            }
+        }
+        return elements;
+	}
+
+    public void createGeoLabels(int count) {
+        geoLabels = new GeoLabelAttributes[count]; 
+    }
+
+}

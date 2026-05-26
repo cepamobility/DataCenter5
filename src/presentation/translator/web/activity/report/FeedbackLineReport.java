@@ -1,0 +1,140 @@
+/*
+ * Created on 24-feb-2006
+ *
+ * TODO To change the template for this generated file go to
+ * Window - Preferences - Java - Code Style - Code Templates
+ */
+package presentation.translator.web.activity.report;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+
+import net.sf.jasperreports.engine.JRExporterParameter;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.export.JRPdfExporter;
+import net.sf.jasperreports.engine.util.JRLoader;
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+import business.activity.ActivityReportFacade;
+import business.driver.DriverReportFacade;
+
+import communication.activity.tables.CEPAActivityConstants;
+import communication.activity.tables.CEPAActivityScheduleRegistryData;
+import communication.activity.tables.ItemData;
+import communication.activity.tables.ItemValueData;
+import communication.activity.tables.PointCommentData;
+import communication.activity.tables.PointData;
+import communication.activity.tables.PointObservationSelectedData;
+import communication.administration.corporation.tables.DivOrgAttribute;
+import communication.administration.corporation.tables.GeoLabelData;
+import communication.administration.user.UserSessionData;
+import communication.alert.AlertConstants;
+import communication.driver.tables.DriverData;
+import communication.language.Text;
+import communication.util.EmptyDataSource;
+
+public class FeedbackLineReport {
+
+		
+	public FeedbackLineReport(CEPAActivityScheduleRegistryData completeResult, SystemAccess sys, OutputStream out) throws Exception {
+		
+		UserSessionData userSessionData = sys.getUserSessionData();
+		Text messages = sys.getText();
+		
+		ActivityReportFacade activityReport = sys.getActivityReportFacade();
+
+		String activityType = CEPAActivityConstants.FEEDBACK_LINE_MANAGER;
+
+		DriverReportFacade driverReport = sys.getDriverReportFacade(); 
+        DriverData driver = completeResult.getDriver();
+
+		Date activityDate = completeResult.getDate();
+
+    	HashMap<String,Object> parameters = new HashMap<String,Object>();
+
+    	//Collection itemValueSet = new LinkedList();
+        Collection<PointCommentData> pointObs = new LinkedList<PointCommentData>();
+        Iterator points = completeResult.getActivity().getDefinition().getCheckList().getSortPoints();
+        boolean sendRoadSafety = false;
+        while(points.hasNext()) {
+        	PointData point = (PointData)points.next();
+        	Iterator itemsIt = point.getSortItems();
+        	if(point.getPointOrder() == 1) {
+	            while(itemsIt.hasNext()) {
+	                ItemData item = (ItemData)itemsIt.next();
+	                String insertedValue = String.valueOf(completeResult.getValueFromItem(item));
+	                if(insertedValue.equals("1")) 
+	                	parameters.put("item"+String.valueOf(item.getId()), "SI");
+	                else
+	                	parameters.put("item"+String.valueOf(item.getId()), "NO");
+	            }
+        	}else {
+        		String pointObsValue = completeResult.getPointComment(point);
+        		pointObs.add(new PointCommentData(point, pointObsValue));
+                ItemData item = (ItemData)itemsIt.next();
+                if(point.getPointOrder() > 7) {
+	                Integer insertedValue = completeResult.getValueFromItem(item);
+	                if(insertedValue != null && insertedValue.intValue() > 0) {
+	                	parameters.put("item"+String.valueOf(item.getId()), insertedValue+" puntos");
+	                	parameters.put("point"+String.valueOf(point.getId()), pointObsValue);
+	                	sendRoadSafety = true;
+	                }
+                }else {
+                	parameters.put("point"+String.valueOf(point.getId()), pointObsValue);
+                }
+        	}
+        }
+
+		DivOrgAttribute[] divOrgs = userSessionData.getFilter().getDivOrgsAttrs();
+        Collection list = driver.getDivOrgs();
+        GeoLabelData countrygeo = driver.getCountry();
+
+    	parameters.put("fondo", AlertConstants.TEMP_DIRECTORY_BAYERMX+"back.jpg");
+    	
+		String driverName = driver.getFirstName() + " " + driver.getLastName();
+        parameters.put("conductor",  "Nombre: "+driverName);
+        
+        parameters.put("lugar", "Lugar: "+completeResult.getActivity().getCity());
+        parameters.put("fecha", "Fecha: "+Util.formatDate(completeResult.getActivity().getDate()));
+        parameters.put("nivel", "Nivel: "+completeResult.getActivity().getTheme());
+        parameters.put("obs", completeResult.getObs());
+
+        //JasperCompileManager.compileReportToFile(AlertConstants.TEMP_DIRECTORY_BAYERMX+"flm.jrxml", AlertConstants.TEMP_DIRECTORY_BAYERMX+"flm.jasper");
+    	FileInputStream input = new FileInputStream(new File(AlertConstants.TEMP_DIRECTORY_BAYERMX+"flm.jasper"));
+
+        JasperReport jasperReport = (JasperReport)JRLoader.loadObject(input);
+
+		Collection<String> files = new LinkedList<String>();
+		Collection<String> names = new LinkedList<String>();
+
+		String fileName = driver.getCorporationId();
+        if(fileName == null || fileName.trim().length() == 0) {
+        	fileName = driverName.replaceAll(" ", "_");
+        }
+        fileName = "FeedbackROAD_"+fileName+".pdf";
+    	String file = AlertConstants.TEMP_DIRECTORY_BAYERMX+"out/"+fileName;
+        JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, new EmptyDataSource());
+
+        files.add(file);
+        names.add(fileName);
+
+        JRPdfExporter exporter = new JRPdfExporter();
+        exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
+        exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, out);
+        exporter.exportReport();       
+        out.flush();
+        out.close();
+
+	}
+
+}

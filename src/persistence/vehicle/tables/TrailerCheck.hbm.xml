@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.vehicle.tables" >
+    <class name="TrailerCheck" table="trailercheck">
+		
+		 <id
+            column="trailerCheckId"
+            name="trailerCheckId"
+        >
+            <generator class="sequence">
+            	<param name="sequence">TrailerCheck_Sequence</param>
+            </generator>
+        </id>
+        
+        <property	name="date" type="java.util.Date" column="date"/>    
+              
+        <property	name="name" type="java.lang.String" column="name"/>
+        
+        <property	name="licenseNumber" type="java.lang.String" column="licenseNumber"/>        
+        
+        <property	name="dateLicenseExpiry" type="java.util.Date" column="dateLicenseExpiry"/>            
+        
+        <property	name="obs" type="java.lang.String" column="obs"/>
+        
+        <property	name="serie" type="java.lang.String" column="serie"/>                
+        
+        <many-to-one name="trailer" class="persistence.vehicle.tables.Trailer" not-null="true" >
+             <column name="trailer"></column>
+        </many-to-one>
+        
+      	<set name="itemValueSet" table="trailercheckitemsvalues" cascade="all">
+       		<key column="tailercheck"></key>
+       		<composite-element class="persistence.activity.tables.ItemValueStr">
+       			<property name="itemValue" type="java.lang.String">
+       				<column  name="itemValue" default="0"></column>
+       			</property>
+       			<many-to-one class="persistence.activity.tables.Item" name="item" fetch="join" />       		
+       		</composite-element>
+       </set>                
+
+	 </class>
+
+</hibernate-mapping>

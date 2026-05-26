@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE server PUBLIC 
+	"-//JBoss//DTD MBean Service 5.0//EN" 
+	"http://www.jboss.org/j2ee/dtd/jboss-service_5_0.dtd">
+<server>
+
+<mbean code="org.jboss.varia.scheduler.Scheduler" name=":service=DayScheduler">
+	<attribute name="StartAtStartup">true</attribute>
+	<attribute name="SchedulableClass">business.alert.scheduledtask.DayAlert</attribute>
+	<attribute name="DateFormat">dd/MM/yy HH:mm</attribute>
+	
+	<!-- Corre cada un dia a las doce y 10 de noche. -->
+	<!-- <attribute name="InitialStartDate">09/06/2010 02:01</attribute> -->  
+	
+	<attribute name="InitialStartDate">NOW</attribute> 
+	<!-- <attribute name="SchedulePeriod">43200000</attribute> -->
+	<!-- <attribute name="SchedulePeriod">10000</attribute> -->
+	<!--attribute name="SchedulePeriod">1800000</attribute--> <!-- every 30 minutes -->
+	<!-- <attribute name="SchedulePeriod">1000</attribute> --><!-- every second -->
+	<!-- <attribute name="InitialStartDate">22/10/2007 11:30</attribute> -->	
+	<attribute name="SchedulePeriod">43200000</attribute><!--  Cada 1 dia -->	
+	<!-- <attribute name="InitialRepetitions">-1</attribute> -->
+	<attribute name="InitialRepetitions">-1</attribute>	
+</mbean>
+
+
+
+<!--  JBoss 4.0 
+    <mbean code="org.jboss.mq.server.jmx.Topic" name="jboss.mq.destination:service=Topic,name=DayAlertTopic">
+	  <attribute name="JNDIName">topic/DayAlertTopic</attribute>
+	  <depends optional-attribute-name="DestinationManager">jboss.mq:service=DestinationManager</depends>
+	</mbean>
+-->
+         
+<!--  JBoss 5.1 Gus: --> 
+	 <!-- 
+	<mbean code="org.jboss.jms.server.destination.TopicService" 
+		name="jboss.messaging.destination:service=Topic,name=DayAlertTopic"
+		xmbean-dd="xmdesc/Topic-xmbean.xml">
+			  	
+		<attribute name="JNDIName">topic/DayAlertTopic</attribute>
+		
+	  	<attribute name="RedeliveryDelay">10000</attribute>
+	  	<attribute name="MaxDeliveryAttempts">3</attribute>
+	  	
+	  	<depends optional-attribute-name="ServerPeer"> 
+	  		jboss.messaging:service=ServerPeer
+	  	</depends>
+	  	<depends>jboss.messaging:service=PostOffice</depends>
+	  		    
+	</mbean>
+	-->
+	
+</server>

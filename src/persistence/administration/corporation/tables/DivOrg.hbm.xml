@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.administration.corporation.tables" >
+
+	<class name="DivOrg" table="divorgs">
+		
+		<id column="id" name="id" type="java.lang.Integer">
+			<generator class="native" />
+		</id>
+		
+		<many-to-one name="corporation" column="corporation" not-null="true"/>
+		
+        <property column="resourcekey" name="resourceKey" type="java.lang.String" not-null="true" />
+
+		<set inverse="true" name="itemLevel1Set" cascade="all-delete-orphan">
+			<key column="divorg" />
+			<one-to-many
+					class="DivOrgItemLevel1"
+			/>	
+		</set>
+
+		<set inverse="true" name="levelLabelSet" cascade="all-delete-orphan">
+			<key column="divorg" />
+			<one-to-many
+					class="LevelLabel"
+			/>	
+		</set>
+		
+  	</class>
+</hibernate-mapping>

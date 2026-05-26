@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.report.tables">
+    <class name="JJCrashSubtypes" table="jjcrashbysubtypes">
+				 
+        <id	column="id"	name="id"	type="java.lang.Integer">
+            <generator class="sequence">
+            	<param name="sequence">JJReports_st_Sequence</param>
+            </generator>
+        </id>
+        
+        <property	name="subtype"	type="java.lang.String"		column="subtype"		not-null="true" />
+        
+        <property	name="collition"	type="java.lang.String"		column="collition"		not-null="true" />
+    
+        <property	name="order"	type="java.lang.Integer"		column="lineorder"		not-null="true" />
+	    
+        <property	name="percentage"	type="java.lang.Double"		column="percentage"		not-null="true" />
+	    
+	    <property	name="count"	type="java.lang.Integer"		column="count"		not-null="true" />
+	    
+	    <property	name="cost"	type="java.lang.Integer"		column="cost"		not-null="true" />
+	    
+	 
+	    <many-to-one name="snapshot" column="snapshot" not-null="true"/>
+	    
+    </class>
+</hibernate-mapping>

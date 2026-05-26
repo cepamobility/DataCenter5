@@ -1,0 +1,55 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.log.fleet" >
+	<class name="AbstractFleetLog" table="genericfleetslog">
+        
+        <composite-id class="FleetLogPK" name="pk" >
+	        <key-property	name="fleet"	type="java.lang.Integer"	column="fleet"/>
+	        <key-property	name="userId"	type="java.lang.String"		column="userid"/>
+	        <key-property	name="date"		type="java.util.Date"		column="date"/>
+        </composite-id>
+        
+		<property	name="action" 		type="java.lang.Integer" 	column="action"/>      
+		<property 	name="comment" 		type="java.lang.String" column="comment"/>		
+	    <property 	name="name"			type="java.lang.String"		column="name"/>
+        <property 	name="description"	type="java.lang.String"		column="description"/>
+       	<property 	name="active" 		type="java.lang.Boolean"	column="active" />
+        <property 	name="period"		type="java.lang.Integer"	column="period"/>
+		<property	name="exclusionDate"	type="java.util.Date"	column="exclusionDate"	/>
+		<property 	name="blockMonth"	type="java.lang.Integer"	column="blockMonth" />
+		<property	name="blockYear"	type="java.lang.Integer"	column="blockYear" />
+		
+        <property  name="corporation" type="java.lang.Integer" column="corporation" />
+		
+		<!--  Table: fleetdivisionslog -->
+		<set inverse="true" name="divisionSet" >
+        	<key>
+         		<column name="fleet"></column>
+         		<column name="userId"></column>
+         		<column name="date"></column>
+         	</key>
+			<one-to-many class="FleetDivisionLog" />
+		</set>
+		
+		<!-- IndividualFleet (Ver Notas mas abajo en este archivo) -->  	    
+       	<set name="vehicleIdSet" table="vehiclefleetslog" >
+           	<key>
+         		<column name="fleet"></column>
+         		<column name="userId"></column>
+         		<column name="date"></column>
+         	</key>
+          	<element column="vehicleIdSet" type="java.lang.Integer"></element>
+       	</set>
+
+
+    </class>
+</hibernate-mapping>
+<!-- 
+Notas: 
+	Para saber si se agrego o borro un vehiculo o division hay que hacer
+	un select con join de la tabla genericfleetslog con vehiclefleetslog
+	o fleetdivisionlog igualando las keys: fleet, userId, date
+-->

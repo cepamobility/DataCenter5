@@ -1,0 +1,264 @@
+package presentation.translator.web.alert;
+
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.LinkedList;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.upload.FormFile;
+
+import presentation.translator.web.util.AbstractAction;
+import presentation.translator.web.util.DataTypeUtil;
+import presentation.translator.web.util.OptionItem;
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+import business.alert.AlertABMFacade;
+
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.user.UserSessionData;
+import communication.alert.AlertConstants;
+import communication.alert.AlertData;
+import communication.alert.Message;
+import communication.datatype.DataTypeConstants;
+import communication.datatype.tables.AlertFrecuencyDataType;
+import communication.datatype.tables.AlertTypeDataType;
+import communication.language.Text;
+import communication.util.MailSender;
+
+
+public class AlertCreateAction extends AbstractAction {
+
+		
+	public ActionForward action(ActionMapping mapping, ActionForm form, 
+			HttpServletRequest request, HttpServletResponse response) throws Exception {
+		
+        HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+		UserSessionData userSessionData = sys.getUserSessionData();
+		AlertForm formData = (AlertForm) form;
+		if(formData.getDailyFrecuency()==null){
+			formData.setDailyFrecuency("1");
+		}
+		
+		formData.setFrecuency(AlertFrecuencyDataType.MONTHLY);
+		
+		AlertData alertData = formData.getAlertData(sys);
+		
+		
+		Text messages = sys.getText();
+		AlertABMFacade alertABM = sys.getAlertABMFacade();
+		// AlertReportFacade alertReport = sys.getAlertReportFacade();
+		
+		
+		// Validar Subject y Body
+		if (Util.empty(formData.getSubject())){
+			session.setAttribute("AlertCreateAction", formData);
+			session.setAttribute("Msg", 
+					messages.getText("generic.alert.emptysubject"));
+	  	    return mapping.findForward("error");	
+		}
+		String subject = formData.getSubject();
+		if (Util.empty(formData.getBody())){
+			session.setAttribute("AlertCreateAction", formData);
+			session.setAttribute("Msg", 
+					messages.getText("generic.alert.emptybody"));
+	  	    return mapping.findForward("error");	
+		}
+		String body = formData.getBody();
+		
+		String message = formData.validate(sys);
+		int addDay = (formData.getDailyFrecuency() != null) ?
+				new Integer(formData.getDailyFrecuency()).intValue() * (24 * 60 * 60 * 1000): 0;
+		
+		Date nextDate = null;
+		boolean test = false;
+		if (formData.getTest().equalsIgnoreCase("TEST")){
+			nextDate = Util.getDate("01","01","2100"); // 1-1-2100 Test Value
+			test = true;
+		}else {
+			nextDate = Util.getDate(formData.getStartDate(),formData.getStartMonth(),
+					formData.getStartYear());
+			//nextDate = new Date(nextDate.getTime()+addDay);
+		}
+		
+		if (nextDate==null){
+			session.setAttribute("AlertCreateAction", formData);
+			session.setAttribute("Msg", 
+					messages.getText("generic.alert.emptydate"));
+	  	    return mapping.findForward("error");	
+		}
+		
+		alertData.setNextdate(nextDate);
+		
+		//String attachment = null;
+		//String attachmentName = null;
+		/* Gestion del archivo adjunto - Attachment */
+		/*FormFile file = (FormFile)formData.getFile();
+		if (file != null && file.getFileName() != null || !file.getFileName().equals("")){
+			String directory = AlertConstants.TEMP_DIRECTORY_ALERT_BAYER;
+		
+			// Valido Nombre de Archivo
+			if (!this.validarString(file.getFileName())){
+				session.setAttribute("Msg", 
+						messages.getText("generic.supportmaterial.cepatips.badfile"));
+		  	    return mapping.findForward("error");	
+			}
+			// Fin Valido Nombre de Archivo
+			String fileName = file.getFileName().replace(" ","_");
+									
+			InputStream reportStream = file.getInputStream();
+			FileOutputStream fout;
+			// File file2;		
+			fout = new FileOutputStream(directory+"/"+fileName);		
+			int c = 0;
+			while ( (c=reportStream.read()) != -1){
+				fout.write(c);
+			}			
+			fout.flush();
+			fout.close();			
+			// file2 = new File(directory+"/"+fileName);				
+			System.out.println("Guarde el archivo adjunto");
+			
+			attachment = directory+"/"+fileName;
+			attachmentName = fileName;
+			// Guardo la ubicacion del archivo en la alerta
+			alertData.setAttachment(attachment);
+		}			
+		
+		if (alertData.getAlertType().equals(new AlertTypeDataType(
+				AlertConstants.ALERTTYPE_CEPA_TIPS))){			
+			// finaliza al dia siguiente de ser enviada la alerta
+			Date endDate = new Date(nextDate.getTime() + 1);
+			alertData.setEnddate(endDate);
+		}*/
+		
+		String alertId = formData.getAlertId();
+		if (Util.empty(alertId)){
+			
+			alertABM.createAlert(alertData,message, userSessionData);
+		}else{
+			alertData.setEnddate(null);
+			alertABM.updateAlert(alertData, message, userSessionData);
+		}
+        
+		if (test){
+			String email1 = formData.getEmail1();
+			if (Util.empty(email1)){
+				// No se puede hacer el test si no se especifica un email1
+				session.setAttribute("Msg", 
+						messages.getText("generic.alert.emptyemail") 	);
+		  	    return mapping.findForward("error");	
+			}
+			
+			if (sys.getCorporationId() == CorporationData.BAYER){
+				// aca mandar el email de test
+				//sendTestBayer(sys, email1, subject, body, attachment, attachmentName);
+			}
+			
+			// Vuelve a la alerta mostrando un msg de email de Test enviado
+			// Para activar la alerta debe cliquear en el boton guardar.
+			
+			session.setAttribute("Msg", 
+					messages.getText("generic.alert.testsended") +
+					formData.getEmail1()+"<br/>"+
+					messages.getText("generic.alert.presssave") );
+	  	    return mapping.findForward("error");	
+		}else{
+			// Lista de Actividades
+			session.setAttribute("Msg", 
+					messages.getText("generic.alert.alertcreated"));
+			return mapping.findForward("success");
+		}
+	}
+	
+	/**
+	 * 
+	 * @param sys
+	 * @param email1
+	 * @param subject
+	 * @param body
+	 * @param attachment -- full path name + fiename dot extension
+	 * @param attachmentName --- filename dot extension
+	 * @throws Exception 
+	 */
+	private void sendTestBayer(SystemAccess sys, String email1, 
+		String subject, String body, String attachment, String attachmentName) throws Exception{
+		MailSender sender = new MailSender();       
+		String mailServer = null;
+		String replyToMail = null;
+		String replyToName = null;
+		String fromName = null;
+		boolean sent = false;
+		
+		Collection to = new LinkedList();
+		to.add(email1);
+		
+		Message message = null; 
+		message = 
+				new Message(
+					AlertConstants.FROM_BAYER_BR, // From
+					AlertConstants.FROMNAME_BAYER_BR, // From Name
+					AlertConstants.FROMPASSWORD_BAYER_BR, // From password
+					to, // To
+					subject, // Subject
+					business.alert.handler.Util.getCompleteHTMLMail(
+							body,AlertConstants.DIGITAL_SIGNATURE_BAYER_BR,
+							AlertConstants.FROM_BAYER_BR), // Body
+					attachment, // atachement
+					attachment  // atachment name
+				); 
+		
+
+		replyToMail = (message.getReplyTo() != null) ? 
+				message.getReplyTo() : AlertConstants. FROM_BAYER_BR;
+		replyToName = AlertConstants.FROMNAME_BAYER_BR;
+		fromName = AlertConstants.FROMNAME_BAYER_BR;
+				
+		Collection<String> files = new LinkedList<String>();
+		Collection<String> name = new LinkedList<String>();
+		files.add(message.getAttachment());
+		name.add(message.getName());
+		sent = sender.sendImageMandrill(to, 
+				fromName,AlertConstants.EMAIL_SUPPORT, 
+				message.getSubject(), message.getBody(), files, name, 
+				replyToMail, replyToName, new LinkedList<String>(), null);
+		
+		if (sent){
+			System.out.println("Mail con attachment enviado a: "+email1);
+		}
+	}
+
+    public ActionForward cancel(HttpSession session,ActionMapping mapping, ActionForm form) {
+        return null;
+    }    
+    
+    /**
+	 * Devuelve false si tiene caracteres que no son digito, letra,
+	 * espacio en blanco o punto o subrayado o guion.
+	 * @param s : String a validar
+	 * @return boolean
+	 */
+	public boolean validarString(String s){
+		int count = 0;
+		char c [] = s.toCharArray();
+		while (count < s.length()){
+			if (!Character.isLetterOrDigit(c[count]) && 
+				c[count] != ' ' && c[count] != '.' 
+				&& c[count] != '_' && c[count] != '-' ){			
+				return false;
+			}
+			count ++;
+		}
+		return true;
+	}
+
+}
