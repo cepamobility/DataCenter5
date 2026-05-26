@@ -1,0 +1,200 @@
+<%@page import="communication.datatype.tables.TypeTradeDataType"%>
+<%@page import="communication.datatype.DataTypeConstants"%>
+<%@page import="business.SystemAccess"%>
+<%@page language="java" 
+	errorPage="exception.jsp" 
+	import="java.util.*"
+	import="business.vehicle.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.fleet.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.vehicle.*" 	
+ 	import="communication.administration.user.*" 	
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<%@page import="communication.administration.corporation.tables.CorporationData"%>
+<%@page import="communication.driver.tables.DriverData"%>
+<%@page import="communication.administration.corporation.tables.CountryData"%>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	 	<title> CEPA International</title>
+		<META http-equiv="Cache-Control" content="no-cache">
+		<META http-equiv="Pragma" content="no-cache">
+		<style type="text/css">
+<!--	body {
+			margin-left: 0px;
+			margin-top: 0px;
+			margin-right: 0px;
+			margin-bottom: 0px;
+		}
+		.contain {
+			width: 100%; 
+			height: 100%;
+		}
+ -->
+		</style>
+	</head>
+
+<%!
+	Text messages; 
+	String attribute; 
+	String value;
+	UserSessionData userSessionData; 
+%>
+<%
+	SystemAccess sys=(SystemAccess)session.getAttribute("SystemAccess");
+	int corporationId = sys.getCorporationId();
+	userSessionData=sys.getUserSessionData();
+	String check = Util.checkPermission(sys,SecurityConstants.JJ_REPORTER);
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+
+		userSessionData.setDriver(null);
+
+		session.setAttribute("url","reporterjj/vehicle.jsp");
+		messages=sys.getText();
+		
+		boolean reporterjjmx = userSessionData.getFilter().getLoginName().equals(SecurityConstants.LOGIN_REPORTERJJ_MX);
+%>		
+	<body>
+	 	<table width="100%" height="90" border="0" cellpadding="0" cellspacing="0" class="default">
+		 	<form name="logout" action="../login.jsp" method="post">
+	 		</form>
+		 	<form name="cancel" action="forms.jsp" method="post">
+	 		</form>
+  			<tr>
+    			<td colspan="2">
+					<table width="100%" border="0" cellspacing="0" cellpadding="0" valign="top">
+      					<tr>
+        					<td><jsp:include  page='<%="../topMenu.jsp?home=true&reporter=true" %>'/></td>
+      					</tr>
+    				</table>	
+    			</td><!--end the top�s table -->
+  			</tr>
+  		</table>
+  		<br>
+  		<br>	
+		<table width="600" border="0" align="center" cellpadding="0" cellspacing="0">
+			<tr class="guide1"> 
+		    	<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText("generic.messages.addvehiclecheck")%>' />
+			</tr>
+		  	<tr> 
+	  			<jsp:include  page="../component/spaceline.jsp" />
+		  	</tr>
+<%		if(request.getParameter("error") != null) {
+			int error = Integer.parseInt(request.getParameter("error"));
+			if(error == 2) {		  	
+%>
+			<tr> 
+	  			<td colspan="3" class="red" align="left">
+	  				<%=messages.getText("reporterjj.vehicle.notfound1") %>
+	  			</td> 
+  			</tr> 
+			<tr> 
+	  			<td colspan="3" class="red" align="left">
+	  				<%=messages.getText("reporterjj.vehicle.notfound2") %>
+	  			</td> 
+  			</tr> 
+		  	<tr> 
+	  			<jsp:include  page="../component/spaceline.jsp" />
+		  	</tr>
+<%			}else if(error == 1) {
+%>
+			<tr> 
+				<td colspan="3" class="red" align="left">
+					<%=messages.getText("generic.messages.nodata") %>
+				</td> 
+			</tr> 
+			<tr> 
+				<jsp:include  page="../component/spaceline.jsp" />
+			</tr>			
+<%			}
+		}
+%>		  	
+			<tr> 
+	  			<td colspan="3"> 
+		    		<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("reporerjj.identifyvehicle")%>' /> 
+		    		<form name="search" action="vehicles.jsp" method="get">
+						<table width="100%" border="0" align='center' cellpadding="0" cellspacing="0">
+							<tr> 
+					  			<td colspan="3" class="red" align="left">
+									<%=(reporterjjmx) ? "Ingrese matricula sin espacios" : messages.getText("reporterjj.vehiclecheck.text4")%>
+								</td>
+	     					</tr>
+	   						<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+	   						<tr  class="linetwo">
+	       						<th align="left"> <%=messages.getText("generic.vehicle.vehicledata.registrationNumber")%></th>
+	        					<td align="right"><input type="text" name="plate" size="50" class="input"/></td>
+	     					</tr>
+	   						<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+<%			if(reporterjjmx) {
+%>							<input type="hidden" name="trade" />
+							<input type="hidden" name="model" />
+							<input type="hidden" name="year" />	
+<%			}else {
+%>
+	   						<tr class="linetwo">
+	       						<th align="left"><%=messages.getText("generic.vehicle.vehicledata.trade")%></th>
+			        			<td align="right">
+			        				<select name="trade" class="input" style="width:155;">
+			        					<option value=""><%=messages.getText("generic.messages.select")%></option>
+<%				Iterator iter = sys.getDataTypeReportFacade().findAll(DataTypeConstants.TYPETRADE,userSessionData).iterator();
+				while(iter.hasNext()) {
+					String value = ((TypeTradeDataType)iter.next()).getResourceBundleId();
+					if(value.equals("generic.messages.nodata")) {
+%>										<option value="<%=value%>"><%=messages.getText(value)%></option>
+<%					}else {
+%>										<option value="<%=value%>"><%=value%></option>
+<%					}
+				}
+%>		                			</select>
+								</td>
+	   						</tr>
+	   						<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+	   						<tr class="linetwo">
+	       						<th align="left"><%=messages.getText("generic.vehicle.vehicledata.model")%></th>
+			        			<td align="right"><input type="text" name="model" size="50" class="input"/></td>
+	   						</tr>
+	   						<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr class="linetwo">
+		        				<th align="left" > <%=messages.getText("generic.vehicle.vehicledata.year")%></th>
+		        				<td align="right"><input type="text" name="year" size="50" class="input"/></td>
+		      				</tr>
+	   						<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+<%			}
+%>			  				<tr>
+	  						  	<td height="18" colspan="3" valign="top">
+	          						<div align="right">
+										<input type="submit" class="input" value='<%=messages.getText("generic.messages.search")%>' />
+<%			if(!reporterjjmx) {
+%>										<input type="button" class="input" value='<%=messages.getText("generic.messages.cancel")%>' onclick="document.forms['cancel'].submit();"/>
+<%			}
+%>							  		</div>          
+							  	</td>
+				  			</tr>
+						</table>			
+					</form>			
+	    			<jsp:include page="../component/utilityboxbottom.jsp"/>
+		      	</td>	
+		  	</tr>
+		  	<tr> 
+		    	<jsp:include  page="../component/spaceline.jsp" />
+		  	</tr>
+		</table>		
+	</body>
+<%	}
+%>		
+</html>

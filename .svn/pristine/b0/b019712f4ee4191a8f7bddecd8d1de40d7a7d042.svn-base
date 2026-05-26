@@ -1,0 +1,235 @@
+/*
+ * Created on 17-ago-2005
+ *
+ * TODO To change the template for this generated file go to
+ * Window - Preferences - Java - Code Style - Code Templates
+ */
+package presentation.translator.web.user;
+
+import java.util.ArrayList;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.LinkedList;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.hibernate.mapping.Collection;
+
+import presentation.translator.web.util.AbstractAction;
+import presentation.translator.web.util.Util;
+import presentation.web.template.linksDefinitions;
+import business.SystemAccess;
+import business.administration.user.UserABMFacade;
+import business.driver.DriverABMFacade;
+
+import communication.administration.RoleData;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.user.UserSessionData;
+import communication.administration.user.tables.UserAttributes;
+import communication.administration.user.tables.UserData;
+import communication.language.Text;
+import communication.util.MailSender;
+
+/**
+ * @author fcarriquiry
+ */
+public class CreateAction extends AbstractAction {
+
+    public ActionForward cancel(HttpSession session,ActionMapping mapping, ActionForm form) {
+        return mapping.findForward("UserNEDList");
+    }
+
+    
+     /**
+      * @author pchao
+      * 
+      * @param mapping
+      * @param createForm
+      * @param request
+      * @param response
+      * 
+      * @return 
+      * 
+      */
+    public ActionForward action(ActionMapping mapping, ActionForm createForm, HttpServletRequest request, HttpServletResponse response) throws Throwable {
+
+        HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        Text messages = sys.getText();
+        
+        CreateForm createData = (CreateForm) createForm;
+        String nick = createData.getLoginname();
+        String firstName = createData.getFirstName();
+        String lastName = createData.getLastName();
+        String language = createData.getLanguage();
+        String mail = createData.getEmail();
+        String role = createData.getRole();
+        String passwd = createData.getPassword();
+       
+        try {     	
+/**
+ * Obtengo los id de los checkbox de los grupos seleccionados,
+ * luego los cargo en la variable groups para poder pasarlos al metodo que me agrega los groups en el nuevo usuario 
+ *  
+ */
+	        String[] groupIds = request.getParameterValues("groupIds");
+	        		  
+	        String group;
+	        ArrayList<String> groups = new ArrayList<String>();
+	        
+	        if(groupIds!=null){
+	     	   	for (int i = 0; i < groupIds.length; i++) {
+	         		if(groupIds[i]!=null){
+	         		
+	         			int group_id = Integer.parseInt(groupIds[i]);
+	         			//System.out.println("Param "+i+" "+group_id);
+	         	        group = Integer.toString(group_id);
+	         	        groups.add(group);  	
+	         		}
+	         	}
+	     	  }
+/**
+ * Fin de los checkbox de grupos seleccionados
+ * 
+ * Comienzo con la validacion de los datos y luego genero el create segun los campos cargados en el formulario
+ * 
+ */
+    	   if(createData.getType().equals("password")) {
+               if(Util.empty(mail)) {
+                   session.setAttribute("Msg","user.error.emptymail");
+                   return mapping.findForward("create");
+               }
+               int type = (sys.getUserSessionData().getFilter().getCorporationId().intValue() != CorporationData.JJ) ? UserAttributes.SIMPLE : UserAttributes.DIFFICULT;
+               passwd = sys.getUserABMFacade().getNewPass(type);
+           }else {
+
+               String msg = validate(messages,createForm);
+               if (msg != null) {
+                   session.setAttribute("Msg", msg);
+                   createData.setPassword(null);
+                   createData.setRePassword(null);
+                   return mapping.findForward("create");
+               }
+               
+               if(sys.getUserSessionData().getFilter().getCorporationId().intValue() == CorporationData.JJ) {
+                   String valid = UserData.validatePassword(passwd);
+                   if(valid != null) {
+                       session.setAttribute("Msg",valid);
+                       createData.setPassword(null);
+                       createData.setRePassword(null);
+                       return mapping.findForward("create");
+                   }
+               }
+               
+	           UserData data = new UserData(passwd,firstName,lastName,language,nick,mail,sys.getUserSessionData().getFilter().getCorporationId(),new Hashtable(), new RoleData(role,true,null),new LinkedList());
+	           UserABMFacade userABM = null;
+	           userABM = sys.getUserABMFacade();
+	           userABM.userCreate(data,sys.getUserSessionData());
+	           userABM.addUserGroup(createData.getLoginname(), groups, sys.getUserSessionData());//Cargo los grupos
+	           
+	           if(createData.getType().equals("password")) {
+	               MailSender sender = new MailSender();
+	               String password = getMessage1(language,nick)+passwd;
+	               String title = getTitle1(language);
+	               sender.send(mail,"smtp.cepasafedrive.com","CEPA DATA CENTER",
+	               		"datacenter@cepasafedrive.com","$Dc&28a$",title,password);
+	           }
+	           return mapping.findForward("UserNEDList");
+	        
+           }
+    	   return mapping.findForward("create");
+        	
+		 }catch(Exception e) {
+           Throwable thw = (e instanceof ServletException) ? ((ServletException)e).getRootCause() : e;
+           while (thw.getCause() != null) {
+               thw = thw.getCause();
+           }
+           if (thw.getClass().toString().indexOf("AlreadyExistsException") > 0) {
+               session.setAttribute("Msg",messages.getText("user.error.alreadyexist"));
+               createData.setPassword(null);
+               createData.setRePassword(null);
+               return mapping.findForward("create");
+           }else {
+               createData.setPassword(null);
+               createData.setRePassword(null);
+               createData.setLoginname(null);
+               throw e;
+           }
+       }
+       
+    }
+
+    /**
+     * Metodos que validan los datos cargados en los campos cuando voy a crear un nuevo usuario
+     * en caso que me largue una excepcion muestra un mensaje en pantalla segun el campo 
+     * que no cumple con los controles. 
+     * 
+     * @param messages 
+     * @param form
+     * @return messages
+     */
+    private String validate(Text messages,ActionForm form) {
+        CreateForm createData = (CreateForm) form;
+        if (Util.empty(createData.getLoginname())) {
+            return messages.getText("generic.user.userdata.loginname.isinvalid");
+        }
+        if (!Util.empty(createData.getPassword()) && !Util.empty(createData.getRePassword())) {
+            if (createData.getPassword().compareTo(createData.getRePassword()) != 0) {
+                return messages.getText("generic user.userdata.passconfirm");
+            }
+        } else {
+            return messages.getText("generic.user.userdata.pass.isempty");
+        }
+        if (Util.empty(createData.getFirstName())) {
+            return messages.getText("generic.user.userdata.firstname.isempty");
+        }
+        if (Util.empty(createData.getLastName())) {
+            return messages.getText("generic.user.userdata.lastname.isempty");
+        }
+        if (Util.empty(createData.getLanguage())) {
+            return messages.getText("generic.user.userdata.language.isempty");
+        }
+        return null;
+    }
+
+    private String getTitle1(String language) {
+        if(language.equals("es")) {
+            return "Nuevo usuario";
+        }else if(language.equals("pt")) {
+            return "Usuario novo";
+        }else {
+            return "New User";
+        }
+    }
+    
+    private String getMessage1(String language, String loginname) {
+        String message = "";
+        if(language.equals("es")) {
+            message += "<b>Por su pedido, su usuario ha sido creado.</b><br>";
+            message += "<b>url:</b> <a href=\"https://www.cepadc.com/datacenter/>www.cepadc.com</a><br>";
+            message += "<b>Login:</b> "+loginname;
+            message += "<br>";
+            message += "<b>Password: </b>";
+        }else if(language.equals("pt")) {
+            message += "<b>Segundo Solicitado, su usuario foi criado.</b><br>";
+            message += "<b>url:</b> <a href=\"https://www.cepadc.com/datacenter/>www.cepadc.com</a><br>";
+            message += "<b>Login:</b> "+loginname;
+            message += "<br>";
+            message += "<b>Password: </b>";        
+        }else {
+            message += "<b>For your asking your user has been created.</b><br>";
+            message += "<b>url:</b> <a href=\"https://www.cepadc.com/datacenter/>www.cepadc.com</a><br>";
+            message += "<b>Login:</b> "+loginname;
+            message += "<br>";
+            message += "<b>Password: </b>";
+        }
+        
+        return Util.emailTranslation(message);
+    }
+}

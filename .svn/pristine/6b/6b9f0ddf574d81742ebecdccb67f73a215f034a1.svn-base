@@ -1,0 +1,558 @@
+<!doctype html>
+
+<%@page import="communication.alert.AlertConstants"%>
+<%@page import="communication.vehicle.tables.VehicleData"%>
+<%@page import="java.util.Collections"%>
+<%@page import="communication.activity.tables.ItemData"%>
+<%@page import="communication.language.Text"%>
+<%@page import="communication.activity.tables.PointData"%>
+<%@page import="java.util.Iterator"%>
+<%@page import="java.util.List"%>
+<%@page import="java.util.Collection"%>
+<%@page import="communication.activity.tables.CheckListData"%>
+<%@page language="java" 
+	errorPage="../exception.jsp" 
+	import="business.*"
+%>
+<%@page import="communication.administration.user.UserSessionData"%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+<%
+	SystemAccess sys = (SystemAccess)session.getAttribute("SystemAccess");
+	UserSessionData userSessionData = sys.getUserSessionData();
+	Text messages = sys.getText();
+	session.removeAttribute("imagesCheckList");
+
+	VehicleData data = sys.getVehicleReportFacade().findVehicleByPrimaryKey(new Integer(request.getParameter("id")),userSessionData); 
+	String checklist = request.getParameter("checklist");
+	
+	String next = "layout.jsp?refer=vehicle/VehicleView.jsp?id="+request.getParameter("id");
+	String success = "layout.jsp";
+	if(userSessionData.isDPACheckList()) {
+		next = "vehicle/selectCheckListFOSA.jsp?vehicle="+request.getParameter("id");
+		if(request.getParameter("fu")!=null){
+			success = "../vehicle/successUPM.jsp";
+			
+		}else{
+			success = "vehicle/successUPM.jsp";	
+		}
+		
+	}
+%>
+
+<html lang="en">
+	<head>
+		<meta charset="iso-8859-1">
+		<meta http-equiv="X-UA-Compatible" content="IE=9; IE=EDGE" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<link rel="apple-touch-icon-precomposed" sizes="57x57" href="images/apple-touch-icon-57x57-precomposed.png" />
+		<link rel="apple-touch-icon-precomposed" sizes="72x72" href="images/apple-touch-icon-72x72-precomposed.png" />
+		<link rel="apple-touch-icon-precomposed" sizes="114x114" href="images/apple-touch-icon-114x114-precomposed.png" />
+		<link rel="apple-touch-icon-precomposed" sizes="144x144" href="images/apple-touch-icon-144x144-precomposed.png" />
+		<meta name="viewport" content="user-scalable=no, width=980" />
+		<meta name="description" content="">
+		<meta name="keywords" content="">
+		<title>DPA - Checklist</title>
+		<link rel="shortcut icon" type="image/ico" href="images/favicon.ico">
+		<link rel="stylesheet" href="styles/fonts/pontano_sans.css">
+		<link rel="stylesheet" href="styles/base.css">
+		<link rel="stylesheet" href="styles/checklist.css">
+		<link rel="stylesheet" href="styles/jquery-ui-1.10.3.custom.min.css">
+	</head>
+	<body>
+		<header>
+			<section class="grid_container">
+				<h1 class="customer_logo" style="background-image: url('images/main_logo_large');">DC</h1>
+				<div class="toolbar">
+					<div class="cepa_logo">CEPA Safe Drive</div>
+					<span class="username"><%=sys.getUserSessionData().getFilter().getFirstName()+" "+sys.getUserSessionData().getFilter().getLastName() %></span>
+					<span class="exit"><a href='<%=next%>'><%=messages.getText("generic.messages.exit") %></a></span>
+				</div>
+				<br/>
+				<div id="videocontainer" style="display: none;">
+					<div style="float: left;">
+					<!--  <img src='menu/images/Shot_Camera-icon.png' style="height:100px;width:100px;" onclick="takepicture();"/>-->	
+						<!-- <div id="videocontainerh"> -->
+					</div>
+					<video id="video" style="position:fixed;top:0;left:0;width: 100%;height: 100%;" autoplay onclick="takepicture();"></video>
+		 		</div>
+				<div id="confirm_pb" style="display: none;"> </div>
+			</section>
+		</header>
+	
+
+		<section id="content">
+			<section class="grid_container">
+				<form id="assessment" name="assessment" class="checklist" action="resultCheckListSyngenta.jsp"  data-module="<%=checklist%>" data-success-redirect="<%=success%>">
+					<fieldset class="title">
+						<h4><%=messages.getText("generic.activity.form.truckchecklist") %></h4>
+						<!-- h5>Data Efetivação: 07/02/2011 • Revisão: 00</h5 -->
+					</fieldset>
+
+					<fieldset>
+						<div class="narrow" id="qw1" data-type="2">
+							<label for="q1"><%=messages.getText("generic.vehicle.vehicledata.matricula") %></label>
+							<input id="q1" name="q1" type="hidden" value="<%=String.valueOf(data.getId())%>"><%=data.getMatricula()%>
+						</div>
+						<div class="narrow" id="qw3" data-type="2">
+							<label for="q3"><%=messages.getText("generic.messages.date") %></label>
+							<input id="q3" name="q3" type="date" >
+						</div>
+					</fieldset>
+
+					<fieldset class="title">
+						<h4><%=messages.getText("Datos") %></h4>
+						<!-- h5>Data Efetivação: 07/02/2011 • Revisão: 00</h5 -->
+					</fieldset>
+<%
+			CheckListData checkList = sys.getActivityReportFacade().findCheckList(new Integer(checklist),userSessionData);	
+			Collection points = checkList.getPoints();
+			Collections.sort((List)points);
+			Iterator pointIt = points.iterator();
+			Integer idVG=null;
+			int pneusIndex=0;
+			while(pointIt.hasNext()) {
+				PointData point = (PointData) pointIt.next();
+				Iterator<ItemData> itemsIt = point.getSortItems();
+				while(itemsIt.hasNext()){
+					ItemData item = itemsIt.next();
+					String divName = "qw"+String.valueOf(item.getId());
+					String qName = "q"+String.valueOf(item.getId());
+					String comName = "q"+String.valueOf(item.getId())+"comment";
+					idVG=item.getId();
+					if(item.getType().intValue() == 1) {
+	%>
+						<fieldset tagVG="<%=idVG%>" tagVGm="s">
+							<div id="<%=divName%>" data-type="15"  data-foto="true">
+								<label  style="cursor: pointer;" for="<%=qName%>"  onclick="toggleVisible(this);" ><%=messages.getText(item.getText()) %></label>
+								<label tagV="s" class="radio" style="float:left;" ><input type="radio" name="<%=qName%>" value="2" checked="checked"><%=messages.getText("checklist.dpa.yes") %></label>
+								<label tagV="s" class="radio" style="float:left;" ><input type="radio" r="t" name="<%=qName%>" value="1"><%=messages.getText("checklist.dpa.no") %></label>
+								<!-- Se deja por compatibilidad --><label tagV="s" class="checkbox" style="float:left;visibility: hidden;display:none;" ><input type="checkbox" p="t" rname="<%=qName%>" onclick="stopSelected(this);" name="<%="c"+qName%>" ></label>
+								<img tagV="s" src="menu/images/Photo-Video-Slr-camera-icon.png" style="cursor:pointer;right:47px;position: absolute;" onclick="init('<%=qName%>');"/>
+								<label tagV="s" class="inline" >&nbsp;</label>
+								<label tagV="s" class="inline" ><%=messages.getText("generic.messages.observations") %><input id="<%=comName%>" name="<%=comName%>" type="text"></label>
+								
+								 <canvas tagV="n" id="canvas<%=qName%>" style="display: none;"></canvas>
+								 <div tagV="n" id="foto<%=qName%>"></div>
+								 
+								 
+	  							 <input type="hidden" id="fotoSrc<%=qName%>" tag='fotoSrc' src="" foto="false" />
+							</div>
+						</fieldset>
+	<%				} else if(item.getType().intValue() == 2){
+						switch(pneusIndex) {
+							case 0:
+	%>	
+	
+								<fieldset class="title">
+									<h4><%=messages.getText("syngenta.checklist.cover") %></h4>
+									<!-- h5>Data Efetivação: 07/02/2011 • Revisão: 00</h5 -->
+								</fieldset>
+								<fieldset style="height: 660px;">
+									<div id="<%=divName%>" data-type="1" style="left: 200px; position: absolute;top: 35px;">
+										<label for="<%=qName%>"><%=messages.getText(item.getText()) %></label>
+										<label class="inline"  ><input id="<%=qName%>" name="<%=qName%>"  style="width: 100px;" value='.' type="text"></label>
+									</div>
+	<%						
+								break;
+							case 1: %>
+								
+									<div id="<%=divName%>" data-type="1"    style="position: absolute; top: 150px;left :200px;">
+										<label for="<%=qName%>"><%=messages.getText(item.getText()) %></label>
+										<label class="inline"  ><input id="<%=qName%>" name="<%=qName%>"  style="width: 100px;" value='.' type="text"></label>
+									</div>
+									
+	<%						
+								break;
+							case 2: %>
+								
+									<div id="<%=divName%>" data-type="1"   style="right: 200px; position: absolute;top: 35px;">
+										<label for="<%=qName%>"><%=messages.getText(item.getText()) %></label>
+										<label class="inline"  ><input id="<%=qName%>" name="<%=qName%>" value='.' style="width: 100px;" type="text"></label>
+									</div>
+										
+	
+	<%						
+								break;
+							case 3: %>
+									
+									<div id="<%=divName%>" data-type="1"  style="position: absolute; top: 150px;right: 273px;">
+										<label for="<%=qName%>"><%=messages.getText(item.getText()) %></label>
+										<label class="inline"   ><input id="<%=qName%>" name="<%=qName%>" value='.'  style="width: 100px;" type="text"></label>
+									</div>
+										
+	<%						
+								break;
+							case 4: %>
+									<img src="./images/autotecho.jpg" style="position: absolute;   top: 229px;left: 220px;">
+									<div id="<%=divName%>" data-type="1" style="position: absolute; top: 477px;left: 200px;">
+										<label for="<%=qName%>"><%=messages.getText(item.getText()) %></label>
+										<label class="inline"  ><input id="<%=qName%>" name="<%=qName%>"  style="width: 100px;" value='.' type="text"></label>
+									</div>
+										
+	<%						
+								break;
+							case 5: %>
+									<div id="<%=divName%>" data-type="1"  style="position: absolute; top: 590px;left: 200px;">
+										<label for="<%=qName%>"><%=messages.getText(item.getText()) %></label>
+										<label class="inline"  ><input id="<%=qName%>" name="<%=qName%>" style="width: 100px;" value='.' type="text"></label>
+									</div>
+										
+	<%						
+								break;
+							case 6: %>
+								
+									<div id="<%=divName%>" data-type="1"  style="position: absolute; top: 477px;right: 200px;" >
+										<label for="<%=qName%>"><%=messages.getText(item.getText()) %></label>
+										<label class="inline"  ><input id="<%=qName%>" name="<%=qName%>"  style="width: 100px;" value='.' type="text"></label>
+									</div>
+										
+	<%						
+								break;
+							case 7: %>
+								
+									<div id="<%=divName%>" data-type="1"   style="position: absolute; top: 590px;right: 273px;">
+										<label for="<%=qName%>"><%=messages.getText(item.getText()) %></label>
+										<label class="inline"  ><input id="<%=qName%>" name="<%=qName%>" value='.'  style="width: 100px;" type="text"></label>
+									</div>
+										
+								</fieldset>		
+	<%						
+								break;
+						}
+						pneusIndex++;
+					}
+				}
+			}
+%>
+					
+					<fieldset class="title">
+						<h5><%=messages.getText("generic.messages.observations") %></h5>
+					</fieldset>
+					<fieldset>
+						<div id="qw4" data-type="1">
+							<label for="q4"><%=messages.getText("generic.driver.charge") %></label>
+							<label class="inline"><input id="q4" name="q4" type="text"></label>
+						</div>
+					</fieldset>
+					<fieldset>
+						<div id="qw2" data-type="11">
+							<textarea id="q2" name="q2" cols="50" rows="4"><%=messages.getText("checklist.dpa.noobs") %></textarea>
+						</div>
+					</fieldset>
+					<fieldset class="title">
+						<h5><%=messages.getText("generic.activity.result") %></h5>
+					</fieldset>
+					<fieldset>
+						<div id="qw0" data-type="3">
+							<label class="radio"><input type="radio" name="q0" value="1"><%=messages.getText("generic.messages.approved").toUpperCase() %></label>
+							<label class="radio"><input type="radio" name="q0" value="2"><%=messages.getText("generic.messages.notapproved").toUpperCase() %></label>
+						</div>
+					</fieldset>
+					<input type="submit">
+				</form>
+			</section>
+		</section>
+		<div id="confirm_message" style="display:none;">
+			Componente(s) RECUSADO(S):
+			__questions__
+			Tem certeza?
+			<br>
+			<img style='display:none;' width="225px" class='loader' src='menu/images/ajax-loader.gif'/>
+			<br>
+			
+			<button class="button confirm_answers_ok"><%=messages.getText("generic.messages.confirm") %></button>
+			<button class="button confirm_answers_no"><%=messages.getText("generic.messages.cancel") %></button>
+		</div>
+		<script type="text/javascript" src="scripts/json2.min.js"></script>
+		<script type="text/javascript" src="scripts/jquery-2.0.2.min.js"></script>
+		<script type="text/javascript" src="scripts/jquery-ui-1.10.3.custom.min.js"></script>
+		<script type="text/javascript" src="scripts/jquery.ui.datepicker-pt.js"></script>
+		<script type="text/javascript" src="scripts/jquery.ui.datepicker-es.js"></script>
+		<script type="text/javascript" >
+		 var srcImgWarning='menu/images/redFlag.png';
+		 var corp="Syngenta";
+		 function stopSelected(cb){
+			 if($(cb).is(':checked')){
+				 $('input[name="'+$(cb).attr('rname')+'"]').prop('checked',true);
+			 }
+		 }
+						
+		
+		</script>
+		<script type="text/javascript" src="scripts/jquery.tadeouy.loggable.js"></script>
+		<script type="text/javascript" src="scripts/jquery.tadeouy.assessmentController.js"></script>
+		<script type="text/javascript" src="scripts/jquery.tadeouy.question.js"></script>
+		<script type="text/javascript" src="scripts/jquery.tadeouy.card.js"></script>
+		<script type="text/javascript" src="scripts/jquery.tadeouy.assessment.js"></script>
+		<script type="text/javascript" src="scripts/assessment.js"></script>
+		
+		<script type="text/javascript">
+
+	  	var initiated=false;
+	  	var qNameBuff="";
+	  	var h,w,topBack;
+	  	var sourcesIds=null;
+
+	 function off(){
+		 $('#videocontainer').hide();
+		 $('#videocontainerh').hide();
+		 
+	 }
+	 function on(){
+		 $('#videocontainer').show();
+		 $('#videocontainerh').show();
+		 
+	 } 	
+ 	 function init(qName) {
+ 		 topBack=$(window).scrollTop();
+ 		 qNameBuff=qName;	
+	 	  video        = document.querySelector('#video');
+	   	  canvas       = document.querySelector('#canvas'+qName);
+	   
+		  ctx    = canvas.getContext('2d');
+		  streaming    = false;
+		  width  = 600;
+		  height = 450;
+
+		  
+		  img = new Image(),
+	      imgwidth = 172,
+	      imgheight = 50;
+	  	  img.src = 'menu/images/logo_cepa_agua.png';
+			
+
+		if(!initiated){
+			if(navigator.userAgent.match(/Chrome/i)){
+				if(sourcesIds==null){
+					MediaStreamTrack.getSources(
+						function(sourceInfos){
+							$('#videocontainerh').append("<select id='video_select' style='height:100px;width:100px;'/>");
+							var video_select=$('#video_select');
+							var video_count=0;
+							 for (var i = 0; i < sourceInfos.length; i++) {
+								var option = document.createElement("option");
+								    option.value = sourceInfos[i].id;
+								    option.text = sourceInfos[i].label;
+								    if (sourceInfos[i].kind === 'audio') {
+								      /*audio_count++;
+								      if (option.text === '') {
+								        option.text = 'Audio ' + audio_count;
+								      }
+								      audio_select.appendChild(option);*/
+								    } else {
+								      video_count++;
+								      if (option.text === '') {
+								        option.text = 'Video ' + video_count;
+								      }
+								      
+								      video_select.append(option);
+								      sourcesIds=sourceInfos[i].id;
+								      video_select.val(sourcesIds);								      
+								    }
+							 }
+							 if(video_count<2){
+								 sourcesIds="N";
+							 }
+							 video_select.change(function(){sourcesIds=$('#video_select').val();initiated=false;init2();});
+							 init2();
+						}
+						
+					);
+				}else{
+					init2();
+				}
+			}else{
+				init2();
+			}
+		   
+		}else{
+			on();
+			 canvas.width = w;
+	          canvas.height = h;
+	          ctx.drawImage(img, 590 - imgwidth, 440 - imgheight, imgwidth, imgheight);
+	          streaming = true;
+		}
+		
+	  }
+
+	  function init2(){
+			
+		  navigator.getMedia = ( navigator.getUserMedia ||
+                  navigator.webkitGetUserMedia ||
+                  navigator.mozGetUserMedia ||
+                  navigator.msGetUserMedia);
+			var constraint={video: true,audio: false};
+			
+			if(sourcesIds!=null && sourcesIds!="N"){
+				constraint={video: {optional: [{sourceId: sourcesIds}]},audio: false};
+			}
+			
+			navigator.getMedia(
+
+					constraint,
+					
+			function(stream) {
+				if (navigator.mozGetUserMedia) {
+					 video.mozSrcObject = stream;
+				} else {
+					 var vendorURL = window.URL || window.webkitURL;
+					 video.src = vendorURL ? vendorURL.createObjectURL(stream) : stream;
+				}
+
+	    		
+				
+				video.play();
+				//video.style.width = width + 'px';
+				//video.style.height = height + 'px';
+				if (video.requestFullscreen) {
+	    			 video.requestFullscreen();
+				} else if (video.mozRequestFullScreen) {
+					video.mozRequestFullScreen();
+				} else if (video.webkitRequestFullscreen) {
+					video.webkitRequestFullscreen();
+				}
+				
+				on();
+				initiated=true;
+			},
+			function(err) {
+			console.log("An error occured! " + err);
+			}
+			);
+			
+			video.addEventListener('play', function(ev){
+			if (!streaming) {
+			 /*finalheight = video.clientHeight / (video.clientWidth/width);
+			 video.setAttribute('width', width);
+			 video.setAttribute('height', finalheight);
+			 canvas.width = width;
+			 canvas.height = finalheight;
+			 h=finalheight;
+			 w=width;*/
+			 h=video.videoHeight;
+			 w=video.videoWidth;
+			 canvas.width = w;
+			 canvas.height = h;
+			 
+			 ctx.drawImage(img, 590 - imgwidth, 440 - imgheight, imgwidth, imgheight);
+			 streaming = true;
+			 
+			}
+			}, false);
+      }
+
+ 	 function takepicture(qName) {
+ 	 	 if(qName=="undefined" || !qName){
+ 	 		qName=qNameBuff;
+ 	 	  }
+ 	    //ctx.save();
+ 	    //ctx.translate(width, 0);
+ 	    //ctx.scale(-1, 1);
+ 	    canvas=document.createElement("canvas");
+ 	    ctx    = canvas.getContext('2d');
+ 	   	h=video.videoHeight;
+		w=video.videoWidth;
+		canvas.width = w;
+		canvas.height = h;
+		 
+		//ctx.drawImage(img, w - imgwidth, h - imgheight, imgwidth, imgheight);
+ 	    ctx.drawImage(video, 0, 0, w, h);
+ 	    //ctx.restore();
+ 	    //ctx.scale(1, 1);
+ 	    //ctx.drawImage(img, 590 - imgwidth, 440 - imgheight, imgwidth, imgheight);
+ 	    
+
+ 	    upload(qName);
+
+ 	    off();
+ 	  }
+
+ 	function upload(qName) {
+ 	    var head = /^data:image\/(png|jpeg);base64,/,
+ 	        data = '',
+ 	        fd = new FormData(),
+ 	        xhr = new XMLHttpRequest();
+
+ 	    data = canvas.toDataURL('image/jpeg', 0.9).replace(head, '');
+		$('#fotoSrc'+qName).attr('foto','true');
+		$('#fotoSrc'+qName).attr('fotoSrc',data);
+		$('#foto'+qName).empty();
+		$('#foto'+qName).append("<img src='data:image/jpeg;base64,"+data+"' style='max-width:"+($($('fieldset[class="title2"]')[0]).width()-20)+"px;'/>");
+ 	  }
+
+	function toggleVisible(t){
+		$(t).parent().find('label').each(
+				function(){
+					if($(this).attr('tagV')=='n' || $(this).attr('tagV')=='s'){
+						if($(this).attr('tagV')=='n'){
+							$(this).css("display","block");
+							$(this).attr('tagV','s');
+						}else{
+							$(this).css("display","none");
+							$(this).attr('tagV','n');
+						}
+					}	
+				}
+		);
+		$(t).parent().find('img').each(
+				function(){
+					if($(this).attr('tagV')=='n' || $(this).attr('tagV')=='s'){
+						if($(this).attr('tagV')=='n'){
+							$(this).css("display","block");
+							$(this).attr('tagV','s');
+						}else{
+							$(this).css("display","none");
+							$(this).attr('tagV','n');
+						}
+					}	
+				}
+		);
+	}
+
+	function toggleVisibleGroup(n){
+		$(document).find('fieldset').each(
+				function(){
+					if($(this).attr('tagVG')==n ){
+						if($(this).attr('tagVGm')=='n'){
+							$(this).css("display","block");
+							$(this).attr('tagVGm','s');
+						}else{
+							$(this).css("display","none");
+							$(this).attr('tagVGm','n');
+						}
+					}	
+				}
+		);
+		
+	}
+	$(document).ready(
+			function(){
+				$('label[tagV="n"]').each(
+						function(){
+							$(this).css("display","none");
+						}	
+				);
+
+				$('img[tagV="n"]').each(
+						function(){
+							$(this).css("display","none");
+						}	
+				);
+
+				$('fieldset[tagVGm="n"]').each(
+						function(){
+							$(this).css("display","none");
+						}
+				);
+					
+			}
+
+	);
+  	
+  </script> 
+		
+	</body>
+</html>

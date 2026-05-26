@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.administration.corporation.tables" >
+
+<class table="asynccallmdpsig" name="MDPSIGAsyncCall">
+
+	
+	<id name="id" type="java.lang.Long" column="id">
+		<generator class="sequence">
+			<param name="sequence">MDPSIGAsyncCall_Sequence</param>
+		</generator>
+	</id>
+
+	<property name="plate" type="java.lang.String" column="plate" not-null="true"/>
+	<property name="description" type="java.lang.String" column="description" length="10000"  not-null="true"/>
+	<property name="vehiclechecklist" type="java.lang.Integer" column="vehiclechecklist"  />
+	<property name="checklist" type="java.lang.Integer" column="checklist"  />
+	<property name="contractorIDSIG" type="java.lang.Integer" column="contractorIDSIG"  />
+	
+	<property name="pathToPDF" type="java.lang.String" length="500" column="pathToPDF" not-null="true"/>
+	<property name="dateChecklist" type="java.sql.Timestamp" column="dateChecklist" not-null="true"  />
+	<property name="driver" type="java.lang.String" length="500" column="driver" />
+	<property name="contractor" type="java.lang.String" length="500" column="contractor" />
+	
+    <property name="result1" type="java.lang.String" column="result1"  />
+    <property name="result2" type="java.lang.String" column="result2"  />
+    <property name="result3" type="java.lang.String" column="result3"  />
+    <property name="result4" type="java.lang.String" column="result4"  />
+    <property name="result5" type="java.lang.String" column="result5"  />
+    <property name="result6" type="java.lang.String" column="result6"  />
+    <property name="result7" type="java.lang.String" column="result7"  />
+    <property name="result8" type="java.lang.String" column="result8"  />
+    <property name="result9" type="java.lang.String" column="result9"  />
+    <property name="result10" type="java.lang.String" column="result10"  />
+    <property name="callDate" type="java.sql.Timestamp" column="callDate"  />
+    <property name="count" type="java.lang.Integer" column="count"  />
+    <property name="status" type="java.lang.Integer" column="status"  />
+    <property name="sigID" type="java.lang.Integer" column="sigID"  />
+    
+    
+ </class>
+</hibernate-mapping>

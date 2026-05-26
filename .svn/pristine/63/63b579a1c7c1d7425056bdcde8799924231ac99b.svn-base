@@ -1,0 +1,170 @@
+/*
+ * Created on 01-sep-2005
+ *
+ * TODO To change the template for this generated file go to
+ * Window - Preferences - Java - Code Style - Code Templates
+ */
+package communication.administration.corporation.tables;
+
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Date;
+
+import communication.language.Text;
+
+/**
+ * @author fcarriquiry
+ * 
+ */
+public class PointAccountData implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+    public static boolean UPM_POINTS=true;
+    
+	public static final Integer DRIVER = 1;
+
+    private Integer id;
+	private Integer type;
+    private Integer reference;
+   	private Double total;
+	private Date created;
+	private Collection<PointMoveData> moves;
+	
+	public PointAccountData() {
+	}
+
+
+	public Integer getId() {
+		return id;
+	}
+
+
+	public void setId(Integer id) {
+		this.id = id;
+	}
+
+
+	public Integer getType() {
+		return type;
+	}
+
+
+	public void setType(Integer type) {
+		this.type = type;
+	}
+
+
+	public Integer getReference() {
+		return reference;
+	}
+
+
+	public void setReference(Integer reference) {
+		this.reference = reference;
+	}
+
+
+	public Double getTotal() {
+		return total;
+	}
+
+
+	public void setTotal(Double total) {
+		this.total = total;
+	}
+
+
+	public Date getCreated() {
+		return created;
+	}
+
+
+	public void setCreated(Date created) {
+		this.created = created;
+	}
+
+
+	public Collection<PointMoveData> getMoves() {
+		return moves;
+	}
+
+
+	public void setMoves(Collection<PointMoveData> moves) {
+		this.moves = moves;
+	}
+
+
+	public void sum(double sum, int corporation) {
+		total += sum;
+		switch(corporation) {
+			case CorporationData.BAYER_MX:
+				if(total < 0) 
+					total = 0.0;
+				break;
+			case CorporationData.MONTES_DE_PLATA:
+				if(total < 0) 
+					total = 0.0;
+				if(total > 100) 
+					total = 100.0;
+				break;
+		}
+	}
+
+	public String getEval(Text messages,int corporation) {
+		if(corporation == CorporationData.BAYER_MX) {
+			if(total < 20) {
+				return "("+messages.getText("driver.points.lowrisk")+")";
+			} else if(total < 30) {
+				return "("+messages.getText("driver.points.meddiumrisk")+")";
+			} else if(total < 50) {
+				return "("+messages.getText("driver.points.highrisk")+")";
+			} else {
+				return "("+messages.getText("driver.points.veryhighrisk")+")";
+			}
+		} else {
+			if(total <= 25) {
+				return "("+messages.getText("driver.points.lowrisk")+")";
+			} else if(total >= 30) {
+				return "("+messages.getText("driver.points.highrisk")+")";
+			} 
+		}
+		return "";
+	}
+	
+	public int getLevel(int corporation) {
+		if(corporation == CorporationData.MONTES_DE_PLATA) {
+			if(total < 40) {
+				return 3;
+			} else if(total < 60) {
+				return 2;
+			} else if(total < 80) {
+				return 1;
+			} else {
+				return 0;
+			}
+		}
+		return 0;
+	}
+
+	public String getEval(Text messages,int corporation, Integer value) {
+		if(corporation == CorporationData.BAYER_MX) {
+			switch(value.intValue()) {
+				case 0:
+					return messages.getText("driver.points.lowrisk");
+				case 1:
+					return messages.getText("driver.points.meddiumrisk");
+				case 2:
+					return messages.getText("driver.points.highrisk");
+				case 3:
+					return messages.getText("driver.points.veryhighrisk");
+			}
+		} else {
+			if(value <= 25) {
+				return "("+messages.getText("driver.points.lowrisk")+")";
+			} else if(value >= 30) {
+				return "("+messages.getText("driver.points.highrisk")+")";
+			} 
+		}
+		return "";
+	}
+}

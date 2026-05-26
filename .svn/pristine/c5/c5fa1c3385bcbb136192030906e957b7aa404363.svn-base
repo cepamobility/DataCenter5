@@ -1,0 +1,382 @@
+<%@page language="java" 
+	errorPage="../../exception.jsp"
+	import="business.*"
+	import="business.activity.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.activity.tables.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.util.*"
+	import="communication.driver.tables.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.activity.schedule.*" 	
+ 	import="communication.administration.user.*" 	
+ 	import="communication.datatype.tables.ActivityTypeDataType"
+	import="business.activity.ActivityReportFacade"
+	import="java.util.*"	
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+<!-- CommentaryDriveForm  -->
+
+<%!
+	RequestDispatcher dispatcher; 
+	boolean esMonsanto;
+	String context;String pathView; String pathMsg; 
+	String pathSearch;
+	String pathLanguage; Text messages; SystemAccess sys;
+	Integer pageNum; boolean all; int pageSize; 
+	String attribute; String value;
+	UserSessionData userSessionData; 
+	ActivityReportFacade activityReport;
+	String str1, str2, str3,col, idActivity, idDriver;
+	CEPAActivityScheduleData  activityData;
+	String enabled, url = "";
+	int columns;
+	DriverData driver;
+	CEPAActivityScheduleRegistryData registryData;
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	userSessionData=sys.getUserSessionData();	
+	String check = Util.checkPermission(sys,SecurityConstants.CREATE_CEPASCHEDULEACTIVITYREGISTRY);	
+	String check1 = Util.checkPermission(sys,SecurityConstants.CREATE_CD_ACTIVITY);		
+	if ((check!=null) && (check1!=null)) 
+	{
+		response.sendRedirect(request.getContextPath()+check);
+	}
+	else 
+	{
+		messages=sys.getText();
+		pathLanguage="/util/jsp/language.jsp";	
+		dispatcher=request.getRequestDispatcher(pathLanguage);
+		dispatcher.include(request,response);
+	
+		context=request.getContextPath();
+		pathMsg="/util/jsp/message.jsp";
+	
+			
+		dispatcher=request.getRequestDispatcher(pathMsg);
+		dispatcher.include(request,response);
+
+		idActivity =(String)request.getParameter("idActivity");
+		if(idActivity==null){
+			idActivity=(String)session.getAttribute("id");			
+		}
+		// session.setAttribute("id",idActivity); 
+		
+		idDriver = (String)request.getParameter("idDriver");
+		
+		if (!Util.empty(idDriver)){
+			driver = sys.getDriverReportFacade().findDriverByPrimaryKey(Integer.valueOf(idDriver),sys.getUserSessionData());
+		}
+		
+		// session.setAttribute("url","activity/schedule/CEPAActivityScheduleView.jsp");
+		url = "activity/schedule/CEPAActivityScheduleView.jsp";
+		userSessionData.setUrl(url+"?idActivity="+idActivity+"&idDriver="+idDriver);
+		
+		// Para utilizar en VehicleCheckCreate
+		session.setAttribute("idActivity",idActivity);
+
+		session.setAttribute("from","commentaryView");
+		
+		//session.setAttribute("from","commentary");
+		
+		// Elimino form de checklist si es que existe
+		session.removeAttribute("VehicleCheckForm");	
+		
+		//System.out.println("IDACTIVIY:" + (String)session.getAttribute("idActivity"));		
+		
+		enabled =(String)request.getParameter("enabled");
+		if (Util.empty(enabled))
+		{
+			enabled="true";
+			session.setAttribute("from","commentaryAdd");
+		}
+		else {
+			if (enabled.equals("true")) {
+				session.setAttribute("from","commentaryAdd");
+			}
+		}
+		
+		// Obtengo el formulario de esa actividad para dibujarlo en el HTML:
+		activityReport = sys.getActivityReportFacade();
+		
+		// Obtengo la cantidad de columnas a dibujar en el formulario:
+		col = request.getParameter("columns");		
+		if (!Util.empty(col))
+		{
+			columns	 = (Integer.parseInt(col));
+		}
+		else
+		{
+			columns = 1;
+		}
+		activityData = activityReport.findCEPAActivityScheduleByPrimaryKey(new Integer(Integer.parseInt(idActivity)),userSessionData);
+		esMonsanto = sys.getUserSessionData().getFilter().getCorporationId().equals(new Integer(1));
+		
+		registryData = activityReport.getCompleteResult(
+				new Integer(idActivity),new Integer(idDriver),sys.getUserSessionData());		
+		
+		
+%>
+
+<html:html>
+<LINK REL=StyleSheet HREF="../../util/css/estilo.css" TYPE="text/css">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+<script language="JavaScript" type="text/javascript">
+function preparedCheckboxRadioParameters(form){
+
+		var elements=form.elements;
+		var length=elements.length;
+		var i;
+		var valueCheckboxParamList="";
+		var separator="<";
+		for(i=0;i<length;i++){
+			var element=elements[i];
+			if((element.type.toLowerCase()=="checkbox") || (element.type.toLowerCase()=="radio")) {
+				if(element.checked){
+					if(valueCheckboxParamList==""){
+						valueCheckboxParamList=element.value;
+					}
+					else{
+						valueCheckboxParamList=element.value+"<"+valueCheckboxParamList;
+					}	
+				}	
+			} 
+		
+		}
+		
+		form.checkboxParamList.value=valueCheckboxParamList;
+		preparedPointCommentList(form);
+		return true;
+}
+
+function preparedPointCommentList(form)
+{		
+		if ((form.commentaryDrive.value == "true") &&
+			(form.commentaryDriveOther.value == "false"))
+		{
+			var i;
+			var valuePointCommentList="";
+			var separator="<";
+			// Cantidad de puntos mostrados:
+			var pointCount = form.pointCount.value;
+				// Cargo el string con los comentarios en el orden de los puntos...
+			// separados por <
+			for (i = 0; i <= pointCount-1; i++)
+			{
+				pointComment = "pointComment" + i;
+				if (form.elements[pointComment].value == "")
+					form.elements[pointComment].value = "_"; // agrego un caracter dummy para
+					// poder pasar el filtro del split, y contabilizar este comentario tambien.
+				if (i == 0)	{
+						valuePointCommentList = form.elements[pointComment].value;
+				} else {
+					valuePointCommentList += separator + 
+						form.elements[pointComment].value;								
+				}
+			}		
+			form.pointCommentList.value = valuePointCommentList;
+		}
+		else
+			form.pointCommentList.value = "";
+				
+}
+	
+
+function setAction(form1,form2){
+	if(preparedCheckboxRadioParameters(form1)) {
+		form2.checkboxParamList.value = form1.checkboxParamList.value;
+		form2.commentaryDriveOther.value = form1.commentaryDriveOther.value;
+		form2.note.value = form1.note.value;
+		form2.obs.value = form1.obs.value;		
+		form2.instructor.value = form1.instructor.value;	
+	   	form2.partner.value = form1.partner.value;	
+		form2.cepaCourse.value = form1.cepaCourse.value;	
+		form2.plate.value = form1.plate.value;	   
+		form2.conductionType.value = form1.conductionType.value;
+		form2.skidcar.value = "";
+		form2.pointCommentList.value = form1.pointCommentList.value;
+		form2.idDriver.value = '<%=idDriver%>';
+		form2.idActivity.value = '<%=idActivity%>';
+		form2.url.value = '<%=url%>';
+		form2.submit();
+	}
+}
+
+function setAction2(form1,form3){
+	if(preparedCheckboxRadioParameters(form1)) {
+		<% 
+			if ((enabled !=null) && (enabled.equals("false"))) {
+		
+		%>
+				form3.plate.value = '<%=registryData.getPlate()%>';
+		<%
+			}
+			else {
+		%>
+				form3.plate.value = form1.plate.value;
+		<%		
+		}
+		%>		
+
+		form3.name.value = '<%=(driver !=null)? driver.getFirstName() + " " + driver.getLastName():""%>';		
+		
+		form3.submit();
+	}
+}
+function setActionActivityView(form)
+{
+	form.submit();
+}
+</script>	
+
+
+
+<body>
+<div align="center">  
+  <form name="ActivityForm1" method="post" action="">
+  <%
+   		//	Segun la cantidad de columnas a dibujar, dibujo:
+		switch (columns) {
+			case 1: // OneColumnForm.jsp					
+					if (esMonsanto)
+					{
+						// Monsanto
+%>
+		<jsp:include  page='OneColumnForm.jsp?idActivity=<%=idActivity%>' />
+
+<%					}else if (!esMonsanto && activityData.getIsOld())
+					{ 
+						// Actividades Viejas No Monsanto:
+						%>
+
+		<jsp:include  page='OneColumnForm.jsp?idActivity=<%=idActivity%>' />
+		
+<%					}else{
+						// J&J  y otras corporaciones - Acitividades Nuevas:
+%>
+		<jsp:include  page='CommentaryDriveOtherForm.jsp?idActivity=<%=idActivity%>&enabled=<%=enabled%>' />
+<%					}
+					break;
+			case 2: // TwoColumnForm.jsp
+%>
+		<jsp:include  page="TwoColumnForm.jsp" />
+<%					break;
+			case 3: // ThreeColumnform.jsp
+%>
+		<jsp:include  page="ThreeColumnForm.jsp" />
+<%					break;
+			default: // 1
+%>
+		<jsp:include page="OneColumnForm.jsp" />
+<%
+	
+		}  
+%>	
+
+
+<!--  Footer: Boton Aceptar -->
+		<table width="600" border="0" cellpadding="0" cellspacing="0">
+        	<tr>   		
+		   		<td align="right">
+		   		    <input type="hidden" name="checkboxParamList" /> 
+					<!--  Para btw2 -->
+		   		    <input type="hidden" name="skidcar" value="" />   
+		   		    <!-- fin para btw2 -->
+		   		    <!--  Lista de Comentarios de los Puntos: -->
+		   		    <input type="hidden" name="pointCommentList" value="" />		   		    
+		   			<%if (!(esMonsanto) && !(enabled.equalsIgnoreCase("true")) && !activityData.getIsOld()) { %>		   				
+		   				<!-- Boton de Retorno -->
+		   				<input name="button2" type="button" 
+		   				value='<%=messages.getText("generic.messages.back") %>' onClick="javascript:setActionActivityView(document.forms['FormCD']);" class="input"/>	
+		   		<%	}	
+		   			else
+		   			{ %>	
+		   			
+			   			<!-- Boton de Retorno -->
+			   			<input name="button2" type="button" 
+			   			value='<%=messages.getText("generic.messages.back") %>' 
+			   				onClick="javascript:setActionActivityView(document.forms['FormCD']);" class="input"/>			   			
+			   			
+			   			<!-- Boton de Guardar CD -->
+			   			<%
+			   				String button2 = "javascript:setAction(document.forms['ActivityForm1'] ,document.forms['ActivityRegistryForm'])";
+			   			%>
+			   			<input name="button2" type="button" 
+			   			value='<%=messages.getText("generic.messages.save") %>' onClick="<%=button2%>" class="input"/>   			
+			   			<%
+		   			}	  
+					if(!activityData.getDefinition().getResourceKeyName().equals(CEPAActivityConstants.COMMENTARYDRIVE_INSTRUCTORES)) {
+%>
+		   				<!-- Boton de CheckList -->
+		   				<input name="button2" type="button" 
+		   				value='<%=messages.getText("generic.messages.addvehiclecheck") %>' 
+		   				onClick="javascript:setAction2(document.forms['ActivityForm1'],document.forms['Form2']);" class="input"/>   					   					   			
+<%					}
+%>
+            	</td>                 							
+    	  	</tr>              
+	    </table>
+
+
+   </form>       
+</div>
+
+<form name="Form2" method="post" action="layout.jsp?refer=/vehicle/VehicleCheckForm.jsp">
+	  <input type="hidden" name="plate" value=""/> 	
+	  <input type="hidden" name="name" value="" />				
+</form>
+  
+<%
+	String action2 = "layout.jsp?refer=/activity/schedule/CEPAActivityScheduleView.jsp?idActivity=" + idActivity;
+%>
+<form name="FormCD" method="post" action='<%=action2%>' >
+</form>
+
+
+<html:form action = "/ActivityRegistrycreate" method="post">
+	<html:hidden property="idDriver" value='' />
+	<html:hidden property="idActivity" value='' />
+	<html:hidden property="url" value='' />
+	<html:hidden property="checkboxParamList" value="checkboxParamList" />
+	<html:hidden property="obs" value="obs" />	
+	<html:hidden property="note" value="note" />	
+	<html:hidden property="instructor" value="instructor" />	
+	<html:hidden property="partner" value="partner" />	
+	<html:hidden property="cepaCourse" value="cepaCourse" />	
+	<html:hidden property="conductionType" value="conductionType" />
+	<html:hidden property="plate" value="plate" />	
+	<html:hidden property="skidcar" value="skidcar" />	
+	<html:hidden property="pointCommentList" value="pointCommentList" />
+	<html:hidden property="trade" value="" />	
+	<html:hidden property="initialKm" value="-1" />
+	<html:hidden property="finalKm" value="-1" />
+	<html:hidden property="initialHr" />
+	<html:hidden property="finalHr" />	
+	<html:hidden property="initialMinute" />
+	<html:hidden property="finalMinute" />						
+	<html:hidden property="vehicleType" value="" />									
+	<html:hidden property="circulationAreaHighWay" value="false" />
+	<html:hidden property="circulationAreaRoad" value="false" />		
+	<html:hidden property="circulationAreaSubUrban" value="false" />		
+	<html:hidden property="circulationAreaUrban" value="false" />												
+	<html:hidden property="velocityBox" value="" />											
+	<html:hidden property="light" value="" />
+	<html:hidden property="commentaryDriveOther" value="commentaryDriveOther" />					
+	<html:hidden property="frenaje"/>		
+</html:form>
+
+</body>
+</html:html>
+<%
+	}
+%>

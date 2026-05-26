@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.driver.tables">
+	<class name="AnualPlan" table="anualplans">
+		
+       <id	column="id"	name="id"	type="java.lang.Integer">
+            <generator class="sequence">
+            	<param name="sequence">AnualPlan_Sequence</param>
+            </generator>
+        </id>
+        <many-to-one 	name="driver"  class="persistence.driver.tables.Driver"	column="driver"/>
+        <property		name="year"	   type="java.lang.Integer"		column="year"		not-null="true" />
+        <property		name="dateStart"	   type="java.util.Date"		column="dateStart"		not-null="true" />
+        <property		name="expiry"	   type="java.util.Date"		column="expiry"		not-null="true" />
+        <property		name="dateSchedule"	   type="java.util.Date"		column="dateSchedule"		 />
+        <property		name="date"	   type="java.util.Date"		column="date"		 />
+        <property		name="type"	   type="java.lang.Integer"		column="type"		not-null="true" />
+        <property		name="status"	   type="java.lang.Integer"		column="status"		not-null="true" />
+        <property		name="resullt"	   type="java.lang.Integer"		column="resullt"		 />
+        
+   	</class>
+</hibernate-mapping>

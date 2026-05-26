@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.log.vehicle">
+    <class name="VehicleSMFLog" table="vehicleSMFlog">
+
+       <composite-id class="VehicleSMFLogPK" name="pk" >
+	        <key-property	name="vehicleSMF"	type="java.lang.Integer"	column="vehicleSMF"/>
+	        <key-property	name="userId"	type="java.lang.String"	column="userid"/>
+	        <key-property	name="date"	type="java.util.Date"	column="date"/>
+       </composite-id>        
+       
+        <property	name = "orderNumber" type = "java.lang.Integer" column = "orderNumber" />
+        <property	name = "corporationSMF"	type = "java.lang.String" column = "corporationSMF" />        
+	    <property	name = "instalationDateSMF" type = "java.util.Date"	column = "instalationDateSMF" />
+	   	<property	name = "responsibleTechnical"	type = "java.lang.String" column = "responsibleTechnical"/>          
+	  	<property	name = "localInstallation" type = "java.lang.String" column = "localInstallation"/>
+	   	<property	name = "observationsSMF" type = "java.lang.String" column = "observationsSMF"/>
+	    <property	name = "ustContact"	type = "java.lang.String" column = "ustContact"/>         
+	     
+    </class>
+</hibernate-mapping>

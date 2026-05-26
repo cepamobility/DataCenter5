@@ -1,0 +1,720 @@
+event.accident.nonrecordable	Accidente No Recordable	Non Recordable Accidente	Acidente Não Contabiliza
+generic.fleet.colective.integritycheck	Chequeo de integridad	Integrity Check	Verificação de Integridade
+generic.fleet.colective.integritycheckwarning	No se ha registrado ningún evento. Si esta flota registra eventos a nivel individual no utilice esta funcionalidad	No event has been recorded. If this fleet records events individually do not use this function.	Não há nenhum evento ingressado Se esta frota cadastra eventos de forma individual não utilize essa funcionalidade
+fleet.accidents.integritycheck.ok	Cantidades de accidentes ingresados coinciden correctamente	Cross-check # of Accidents - OK	A quantidade de acidentes ingressados coincide
+fleet.accidents.integritycheck.wrong	Ingreso de accidentes inconsistente; existe una diferencia en la cantidad de accidentes registrados por franquicia/país y los accidentes en las millas	Inconsistent accident input; there is a difference between the number of accidents informed by franchise/country and accidents reported in miles	Ingresso de acidentes inconsistente; existe uma diferença na quantidade de acidentes registrados por franquia/país e acidentes reportados nas milhas
+fleet.incidents.integritycheck.ok	Cantidades de incidentes ingresados coinciden correctamente	Cross-check # of Incidents - OK	A quantidade de incidentes ingressados coincide
+fleet.incidents.integritycheck.wrong	Ingreso de incidentes inconsistente; existe una diferencia en la cantidad de incidentes registrados por franquicia/país y los incidentes en las millas	Inconsistent incident input; there is a difference between the number of incidents informed by franchise/country and incidents reported in miles	Ingresso de incidentes inconsistente; existe uma diferença na quantidade de incidentes registrados por franquia/país e incidentes reportados nas milhas
+fleet.insert.colective.verify	Chequeo	Check	Verificação
+datatype.incidentclasification.firestealvandalism	Fuego, robo o vandalismo	Fire, theft or vandalism	Incêndio, roubo, vandalismo
+generic.messages.differences	Diferencias	Differences	Diferenças
+web.group.lines	Líneas del Grupo	Group Lines	Lineas Grupo
+group.data.lines	Líneas	Lines	Lineas
+datatype.scheduledactivitytype.btwthailand	BTW Tailandia	BTW Thailand	BTW Tailândia
+generic.activity.form.btwthailand.title	Defensive Driving Record	Defensive Driving Record	Defensive Driving Record
+generic.activity.form.btwthailand.subtitle	Observe behavior / Report of drive test in a field	Observe behavior / Report of drive test in a field	Observe behavior / Report of drive test in a field
+generic.activity.form.btwthailand.name	Name	Name	Name
+generic.activity.form.btwthailand.drivingexperience	Driving experience	Driving experience	Driving experience
+generic.activity.form.btwthailand.date	Date	Date	Date
+generic.activity.form.btwthailand.typeofvehicle	Type Of Vehicle	Type Of Vehicle	Type Of Vehicle
+generic.activity.form.btwthailand.year(s)	Year(s)	Year(s)	Year(s)
+generic.activity.form.btwthailand.U	U	U	U
+generic.activity.form.btwthailand.S	S	S	S
+generic.activity.form.btwthailand.G	G	G	G
+generic.activity.form.btwthailand.point1	Start/Stop	Start/Stop	Start/Stop
+generic.activity.form.btwthailand.point2	Holding of a wheel	Holding of a wheel	Holding of a wheel
+generic.activity.form.btwthailand.point3	Driving on highway	Driving on highway	Driving on highway
+generic.activity.form.btwthailand.point4	Intersection technique	Intersection technique	Intersection technique
+generic.activity.form.btwthailand.point5	Turning/U-turning	Turning/U-turning	Turning/U-turning
+generic.activity.form.btwthailand.point6	Overtaking/Be overtaken	Overtaking/Be overtaken	Overtaking/Be overtaken
+generic.activity.form.btwthailand.point7	Observation/Anticipation/Response	Observation/Anticipation/Response	Observation/Anticipation/Response
+generic.activity.form.btwthailand.point1item1	Be-wagon	Be-wagon	Be-wagon
+generic.activity.form.btwthailand.point1item3	The 8 commandments	The 8 commandments	The 8 commandments
+generic.activity.form.btwthailand.point1item5	Apply MSM-Start moving	Apply MSM-Start moving	Apply MSM-Start moving
+generic.activity.form.btwthailand.point1item7	Look back over the shoulder	Look back over the shoulder	Look back over the shoulder
+generic.activity.form.btwthailand.point1item2	Parking/Start moving on slope	Parking/Start moving on slope	Parking/Start moving on slope
+generic.activity.form.btwthailand.point1item4	To use handbrake/gear	To use handbrake/gear	To use handbrake/gear
+generic.activity.form.btwthailand.point1item6	Apply MSM while parking	Apply MSM while parking	Apply MSM while parking
+generic.activity.form.btwthailand.point1item8	Manners and conscience (parking)	Manners and conscience (parking)	Manners and conscience (parking)
+generic.activity.form.btwthailand.point2item1	Apply push and pull technique	Apply push and pull technique	Apply push and pull technique
+generic.activity.form.btwthailand.point2item2	Wheel handling while driving	Wheel handling while driving	Wheel handling while driving
+generic.activity.form.btwthailand.point3item1	Speed in various situation	Speed in various situation	Speed in various situation
+generic.activity.form.btwthailand.point3item3	Signal when moving to another lane/deceleration/brake	Signal when moving to another lane/deceleration/brake	Signal when moving to another lane/deceleration/brake
+generic.activity.form.btwthailand.point3item5	Traffic discipline	Traffic discipline	Traffic discipline
+generic.activity.form.btwthailand.point3item7	Scanning by mirrors	Scanning by mirrors	Scanning by mirrors
+generic.activity.form.btwthailand.point3item2	Maintain safe distance	Maintain safe distance	Maintain safe distance
+generic.activity.form.btwthailand.point3item4	Giving a horn	Giving a horn	Giving a horn
+generic.activity.form.btwthailand.point3item6	Look back over th shoulder when change a lane	Look back over th shoulder when change a lane	Look back over th shoulder when change a lane
+generic.activity.form.btwthailand.point3item8	See a miror before apply break	See a miror before apply break	See a miror before apply break
+generic.activity.form.btwthailand.point4item1	Discipline/To yiled	Discipline/To yiled	Discipline/To yiled
+generic.activity.form.btwthailand.point4item3	Stop at a safe distance	Stop at a safe distance	Stop at a safe distance
+generic.activity.form.btwthailand.point4item2	Speed/smooth when stop	Speed/smooth when stop	Speed/smooth when stop
+generic.activity.form.btwthailand.point4item4	Handbrake/Gear(Starting/Stopping)	Handbrake/Gear(Starting/Stopping)	Handbrake/Gear(Starting/Stopping)
+generic.activity.form.btwthailand.point5item1	Speed/Gear/Smooth	Speed/Gear/Smooth	Speed/Gear/Smooth
+generic.activity.form.btwthailand.point5item3	Using lane	Using lane	Using lane
+generic.activity.form.btwthailand.point5item2	To give signal	To give signal	To give signal
+generic.activity.form.btwthailand.point5item4	Make trouble/harm to others	Make trouble/harm to others	Make trouble/harm to others
+generic.activity.form.btwthailand.point6item1	Apply MSM	Apply MSM	Apply MSM
+generic.activity.form.btwthailand.point6item3	Speed/Back to the lane	Speed/Back to the lane	Speed/Back to the lane
+generic.activity.form.btwthailand.point6item2	Overtaking skill and time spent	Overtaking skill and time spent	Overtaking skill and time spent
+generic.activity.form.btwthailand.point6item4	Response while being overtaken	Response while being overtaken	Response while being overtaken
+generic.activity.form.btwthailand.point7item1	Look around/Scanning	Look around/Scanning	Look around/Scanning
+generic.activity.form.btwthailand.point7item3	Response (harmoniously)	Response (harmoniously)	Response (harmoniously)
+generic.activity.form.btwthailand.point7item2	Commentary	Commentary	Commentary
+generic.activity.form.btwthailand.point7item4	Overall	Overall	Overall
+generic.activity.form.btwthailand.unsatisfactory	Unsatisfactory	Unsatisfactory	Unsatisfactory
+generic.activity.form.btwthailand.satisfactory	Satisfactory	Satisfactory	Satisfactory
+generic.activity.form.btwthailand.good	Good	Good	Good
+generic.activity.form.btwthailand.definitions.bewagon	BEWAGON = Break, Electricity, Water, Air (tyre), Gasoline, Oil, Noise	BEWAGON = Break, Electricity, Water, Air (tyre), Gasoline, Oil, Noise	BEWAGON = Break, Electricity, Water, Air (tyre), Gasoline, Oil, Noise
+generic.activity.form.btwthailand.definitions.msm	MSM = Mirrors, Signals, Manoeuvre	MSM = Mirrors, Signals, Manoeuvre	MSM = Mirrors, Signals, Manoeuvre
+generic.activity.form.btwthailand.definitions.the8commandments	The 8 Commandments	The 8 Commandments	The 8 Commandments
+generic.activity.form.btwthailand.definitions.1	1. Vehicle Walk Around & Clean All Mirrors	1. Vehicle Walk Around & Clean All Mirrors	1. Vehicle Walk Around & Clean All Mirrors
+generic.activity.form.btwthailand.definitions.2	2. Lock all doors	2. Lock all doors	2. Lock all doors
+generic.activity.form.btwthailand.definitions.3	3. Adjust seat	3. Adjust seat	3. Adjust seat
+generic.activity.form.btwthailand.definitions.4	4. Adjust side-view and behind mirror	4. Adjust side-view and behind mirror	4. Adjust side-view and behind mirror
+generic.activity.form.btwthailand.definitions.5	5. Fasten safety belt	5. Fasten safety belt	5. Fasten safety belt
+generic.activity.form.btwthailand.definitions.6	6. Prepare to start engine	6. Prepare to start engine	6. Prepare to start engine
+generic.activity.form.btwthailand.definitions.6.1	6.1. Pull hand brake	6.1. Pull hand brake	6.1. Pull hand brake
+generic.activity.form.btwthailand.definitions.6.2	6.2. N-gear or P-gear in autogear	6.2. N-gear or P-gear in autogear	6.2. N-gear or P-gear in autogear
+generic.activity.form.btwthailand.definitions.6.3	6.3. Step on clutch (manual gear), step on brake (auto gear)	6.3. Step on clutch (manual gear), step on brake (auto gear)	6.3. Step on clutch (manual gear), step on brake (auto gear)
+generic.activity.form.btwthailand.definitions.6.4	6.4. Check all meters and lights, and then start engine	6.4. Check all meters and lights, and then start engine	6.4. Check all meters and lights, and then start engine
+generic.activity.form.btwthailand.definitions.7	7. Check all meters and lights again	7. Check all meters and lights again	7. Check all meters and lights again
+generic.activity.form.btwthailand.definitions.8	8. Prepare to move, apply MSM. Test brake when go ahead 3-4 M.	8. Prepare to move, apply MSM. Test brake when go ahead 3-4 M.	8. Prepare to move, apply MSM. Test brake when go ahead 3-4 M.
+generic.activity.form.commentarydrive.commentarydrivelog	Ingreso de Actividades	Activities Insert	Inserção das Atividades
+query.commentarydrivelog.from	Desde	From	Desde
+query.commentarydrivelog.to	Hasta	To	Hasta
+generic.query.commentarydrivelog	Consulta de Ingreso de Actividades	Activities Insert Query	
+generic.fleet.colective.fuel	Combustible	Fuel	Combustível
+generic.fleet.colective.addfuel	Agregar Combustible	Add Fuel	Adicionar Combustível
+fleet.colective.fuel	Combustible	Fuel	Combustível
+fleet.colective.liters	Litros	Liters	Litros
+fleet.query.consumedfuel.menu	Consumo de Combustible	Consumed Fuel	Consumo de Combustível
+fleet.query.consumedfuel.title	Consulta de Consumo de Combustible	Consumed Fuel Query	Consulta de Consumo de Combustível
+query.consumedfuel.vehicletype	Tipo de Vehículo	Vehicle Type	Tipo de Veículo
+query.consumedfuel.vehicles	Cantidad de Vehículos	Vehicle Count	Quantidade de Veículos
+query.consumedfuel.miles	Millas	Miles	Milhas
+query.consumedfuel.fuel	Combustible	Fuel	Combustível
+query.consumedfuel.liters	Litros	Liters	Litros
+generic.fleet.fleetsearch.name	Nombre del País	Country Name	Nome de Pais
+generic.messages.notresult	No hay resultado	No Result	Sem resultado
+generic.fleet.fleetsearch.period	Período de Reporte	Report Period	Periodo de Reporte
+fleet.colective.accident.number	Número de Accidentes	Number of Accident 	Numero de Acidentes
+fleet.colective.incident.number	Número de Incidentes	Number of Incident	Numero de Incidentes
+fleet.colective.incident.cost	Costo Total de Daños Materiales en USD	Total Cost of Material Damage in USD	
+fleet.colective.accident.cost	Costo Total de Daños Materiales en USD	Total Cost of Material Damage in USD	
+jj.divisions.franquice	Franquicia	Franchise	Franquicia
+query.cdlog.activitydate	Fecha de Actividad	Activity Date	Data de Atividade
+query.cdlog.loguser	Usuario	User	Usuario
+query.cdlog.logdate	Fecha	Date	Data
+fleet.error.invalid.vehicles	Ingrese un Número de Vehículos sin Decimales, Puntos o Comas	Insert Number of Vehicles, no Decimals,Points or Commas	
+fleet.error.invalid.miles	Ingrese un Cantidad de Millas sin Decimales, Puntos o Comas	Insert Miles, no Decimals,Points or Commas	
+fleet.error.invalid.accidents	Ingrese 0 si no Ocurrió Ningún Accidente o un Número sin Decimales, Puntos o Comas	Type 0 if no Accidents Occurred or  a Number, no Decimals,Points or Commas	
+fleet.error.invalid.incidents	Ingrese 0 si no Ocurrió Ningún Incidente o un Número sin Decimales, Puntos o Comas	Type 0 if no Incidents Occurred or  a Number, no Decimals,Points or Commas	
+fleet.error.empty.data	Ingrese 0 en Caso que no Existan Datos	Type 0 in Case of No Data	
+datatype.collisionclasification.betweenmotionvehicles	Colisión Entre Vehiculos en Movimiento	Collision Between Vehicles in Motion	Colisão Entre Veículos em Movimento
+datatype.collisionclasification.fixedobject	Colisión con Objeto Fijo	Collision with Fixed Object	Colisão com Objeto Ffixo
+datatype.collisionclasification.noncollision	Accidente de no Colisión	Non Collision Accident	Acidente sem Colisão
+datatype.collisionclasification.pedestrian	Atropellamiento de Peatón	Injury to Pedestrian or Bystanders	Atropelamento
+datatype.collisionclasification.contact	Contacto con Animales, etc	Contact with Animal, Gravel, etc	Colisão com Animal, Detrito, etc
+datatype.collisionclasification.companyvehicles	Dos Vehículos de la Cía	Two Company Vehicles	Dois Veículos da Companhia
+datatype.collisionclasification.nonemployee	Conducido por no funcionario	Driven by Non Employee	Conduzido por Terceiros
+datatype.accidentclasification.ourdriverfailedyield	Nuestro Conductor no Cede el Paso	Our Driver Failed to Yield right-of-way	Nosso Motorista não Respeitou a Preferência de Passagem
+datatype.accidentclasification.ourdriverparkingbacking	Estacionando/En Retroceso	Driver Parking/Backing	Motorista Estacionando/Dando Ré
+datatype.accidentclasification.ourdriverhitrear	Nuestro Conductor Choca de Atrás	Our Driver Rear-Ended the Other Vehicle	Nosso Motorista Colidiu na Traseira do Outro Veículo
+datatype.accidentclasification.otherpartyfailedyield	El Otro Conductor no Cede el Paso	Other Driver Failed to Yield right-of-way	O Outro Motorista não Respeito a Preferência de Passagem
+datatype.accidentclasification.otherpartyparkingbacking	El Otro Conductor Estacionando/En Retroceso	Other Driver Parking/Backing	O Outro Motorista Estacionando/Dando Ré
+datatype.accidentclasification.otherpartyhitrear	El Otro Conductor Choca de Atrás	Other Driver Rear-Ended Our Vehicle	O Outro Motorista Colidiu na Traseira do Nosso Veículo
+datatype.accidentclasification.rollover	Vuelco	Rollover	Capotamento
+datatype.accidentclasification.offroad	Salida de Pista	Running Off the Road	Saída da Pista
+datatype.accidentclasification.atrop	Atropellamiento de Peatón	Injury to Pedestrian or Bystanders	Atropelamento
+datatype.accidentclasification.fixedobject	Colisión con Objeto Fijo	Collision with Fixed Object	Colisão com Objeto Fixo
+datatype.accidentclasification.evasivemaneuver	Maniobra Evasiva	Evasive Maneuver	Manobra Evasiva
+datatype.incidentclasification.rightparked	Vehículo Correctamente Estacionado	Properly Parked Vehicle	Veículo Corretamente Estacionado
+datatype.incidentclasification.animalcontact	Contacto con Animales, etc	Contact with Animals, Gravel, etc	Contato con Animais, Cascalho, etc
+datatype.incidentclasification.mecanicalfail	Fallas del Vehículo	Vehicle Failure	Falha Mecânica
+datatype.incidentclasification.actsofnature	Fenómenos Naturales	Acts of Nature	Fenômenos Naturais
+datatype.incidentclasification.objectfall	Caída de Objetos sobre el Vehículo	Objects Falling on the Vehicle	Queda de Objeto no Veículo
+datatype.incidentclasification.pavementfalis	Obstáculos/Fallas en el Pavimento	Obstacles/Broken Pavement	Obstáculos/Falhas no Pavimento
+query.eventcount.accidentcount	Cantidad de Accidentes	Accident Count	Quantidade de Acidentes
+query.eventcount.accidentcost	Costo de Accidentes	Accident Cost	Custo de Acidentes
+query.eventcount.finecount	Cantidad de Multas	Fine Count	Quantidade de Multas
+query.eventcount.finecost	Costo de Multas	Fine Cost	Custo de Multas
+query.eventcount.incidentcount	Cantidad de Incidentes	Incident Count	Quantidade de Incidentes
+query.eventcount.incidentcost	Costo de Incidentes	Incident Cost	Custo de Incidentes
+query.eventcount.totalcosto	Costo Total	Total Cost	Custo Total
+generic.event.eventdata.type	Tipo	Type	Tipo
+query.apmm.vehicle_percent	% Vehículos en Accidentes	% Vehicles in Accidents	% Veículos en Acidente
+query.driver.driverdata.title	Consulta de Conductores y Eventos	Driver and Event Query	Consulta por Condutores e Eventos
+generic.messages.country	País	Country	Pais
+query.vehicle.vehicledata.title	Consulta de Vehículos	Vehicle Query	Consulta por Veículos
+generic.activity.form.btwthailand.comments	General or Specific Comments	General or Specific Comments	General or Specific Comments
+generic.activity.form.btwthailand.definitions	Definitions	Definitions	Definitions
+query.vehicle.vehicledata.title	Consulta de Vehículos	Vehicle Query	Consulta por Veículos
+query.apmm.showdecimals	Mostrar Decimales	Show Decimals	
+datatype.collisionclasification.betweenmotionvehicles_datatype.accidentclasification.other	Colisión Entre Vehiculos en Movimiento / Otro	Collision Between Vehicles in Motion / Other	Colisão Entre Veículos em Movimento / Outro 
+datatype.collisionclasification.fixedobject_datatype.accidentclasification.other	Colisión con Objeto Fijo / Otro	Collision with Fixed Object / Other	Colisão com Objeto Ffixo / Outro
+datatype.collisionclasification.noncollision_datatype.accidentclasification.other	Accidente de no Colisión / Otro	Non Collision Accident / Other	Acidente sem Colisão / Outro
+user.create.with.password	Crear y Generar Password	Create and Genereate Password	Criar sim Senha
+generic.supportmaterial.reports	Reportes	Reports	Relatórios
+generic.supportmaterial.reports.noreports	No hay reportes.	There are no reports.	Não há nenhum relatório.
+generic.supportmaterial.reports.date	Fecha	Date	Data
+generic.supportmaterial.reports.filesize	Tamaño	Size	Tamanho
+generic.supportmaterial.reports.fiscalyear	Año Fiscal	Fiscal Year	Ano Fiscal
+generic.supportmaterial.reports.addreport	Agregar Reportes	Add Reports	Adicionar Relatórios
+generic.supportmaterial.reports.file	Archivo	File	Lima
+generic.supportmaterial.reports.year	Año	Year	Ano
+generic.supportmaterial.reports.filedate	Fecha del Archivo	File's Date	Data da Lima
+generic.supportmaterial.reports.actualdate	Fecha Actual	Actual Date	Data Real
+generic.supportmaterial.reports.otherdate	Otra Fecha	Another Date	Uma Outra Data
+generic.supportmaterial.reports.format	Formato	Format	Formato
+generic.supportmaterial.cepatips	CEPA Tips	CEPA Tips	CEPA Tips
+generic.supportmaterial.cepatips.nocepatips	No hay CEPA Tips.	There are no CEPA Tips.	Não há Nenhum CEPA Tips.
+generic.supportmaterial.cepatips.files	Archivos de CEPA Tips	CEPA Tips Files	Limas de CEPA Tips
+menu.option.supportmaterial.reports.addreports	Agregar Informes	Add Reports	Adicionar Relatórios
+generic.supportmaterial.reports.uploadreport	Subir Informe	Upload Report	Levantar o Relatório
+generic.supportmaterial.cepatips.addcepatips	Agregar CEPA Tips	Add CEPA Tips	Adicionar CEPA Tips
+generic.supportmaterial.cepatips.uploadcepatips	Subir CEPA Tips	Upload CEPA Tips	Levantar o CEPA Tips
+generic.supportmaterial.reports.successuploadreport	Informe Subido con Éxito	Success Upload Report	Levantar o Relatório Correto
+generic.supportmaterial.cepatips.successuploadcepatips	CEPA Tips Subido con Éxito	Success Upload CEPA Tips	Levantar o CEPA Tips Correto
+generic.supportmaterial.cepatips.nofile	No Seleccionó un Archivo	No File Selected	Nenhuma Lima Selecionada
+generic.supportmaterial.cepatips.baddate	Fecha Incorrecta	Incorrect Date	Data Incorreta
+generic.supportmaterial.reports.noreports	No hay reportes.	There are no reports.	Não há nenhum relatório.
+query.accidenttype.accidentcount	Cantidad de Accidentes	Accident Count	Quantidade de Acidentes
+query.accidenttype.incidentcount	Cantidad de Incidentes	Incident Count	Quantidade de Incidentes
+query.accidenttype.finecount	Cantidad de Multas	Fine Count	Quantidade de Multas
+queries.event.bytype	Eventos por Tipo	Event by Type	Eventos por Tipo
+query.accidenttype.func.other.injured	Funcionario y Tercero Lesionados	Employee and Third Party Injured	Funcionário e Terceiro Lesionado
+query.accidenttype.funcinjured.otherfatal	Funcionario Lesionado y Tercero Fallecido	Employee Injured and Third Party Fatally Injured	Funcionário Lesionado e Terceiro Faleceu
+query.accidenttype.funcfatal.otherinjured	Funcionario Fallecido y Tercero Lesionado	Employee Fatally Injured and Third Party Injured	Funcionário Faleceu e Terceiro Lesionado
+query.accidenttype.func.other.fatal	Funcionario y Tercero Fallecidos	Employee and Third Party Fatally Injured	Funcionário e Terceiro Faleceu
+null_datatype.accidentclasification.other	Colisión Otro	Other	Outro 
+query.driverswithoutbtw.title	Conductores que no Realizaron BTW	Drivers without BTW	Condutores que no Realizaron BTW
+activity.query.driverswithoutbtw	Conductores sin BTW	Drivers without BTW	Condutores sem BTW
+datatype.finequalify.speedover50	Transitando a velocidad superior a la pemitida en más del 50%	Exceeding posted speed limit by more than 50%	Trans. em velocidade superior a máx.permitida em mais de 50%
+generic.messages.all.region	Todas las Regiones	All Regions	Todas las Regiãoes
+generic.messages.all.country	Todos los Países	All Countries	Todos los Paises
+messages.jj.all11	Todos los Op. Group	All Op. Group	Todos los Op. Group
+messages.jj.all12	Todas las Franquicias	All Franchises	Todas las Franquicias
+messages.jj.all21	Todos los Sectores	All Sector	Todos los Sectores
+messages.jj.all13			
+messages.jj.all22			
+messages.jj.all23			
+messages.jj.all31			
+messages.jj.all32			
+messages.jj.all33			
+generic.messages.dateformat	dd/mm/aaaa	dd/mm/yyyy	dd/mm/aaaa
+generic.fleet.blockedperiods	Períodos Bloqueados	Blocked Periods	Períodos Bloqueados
+permission.addreport.name	Agregar Informes	Add Reports	Adicionar Relatórios
+permission.viewreportjohnson.name	Ver Informes	View Reports	Ver Relatórios
+permission.viewreport.name	Ver Informes	View Reports	Ver Relatórios
+permission.fleetblockdata.name	Bloquear Datos	Block Data	Dados do Bloco
+permission.fleetinsertblockeddata.name	Insertar Datos Bloqueados	Insert Blocked Data	Introduzir dados obstruídos
+activity.create.nextview	Ir a Actividad Ingresada	Go to Activity	Ir à Atividade Ingressada
+activity.create.message	Ingreso Exitoso	Activity input successfully	Atividade ingressada com sucesso
+generic.message.description	Descripción	Description	Descrição
+generic.messages.coursesguides	Guías de los Cursos	Courses Guides	Guias dos Cursos
+generic.supportmaterial.coursesguides.noguides	No hay Guías de Cursos	There aren't Courses Guides	Não há umas Guias dos Cursos
+generic.supportmaterial.coursesguides.files	Guía del Curso	Course Guide	Guia do Curso
+generic.supportmaterial.coursesguides.title	Guías de Interpretación de Resultados de Cursos	Interpretation Guides of Courses's Results	Guias da Interpretação de Resultados dos Cursos
+generic.supportmaterial.coursesguides.guide	Guía de Interpretación de Resultados del Curso	Interpretation Guide of Course's Results	Guia da Interpretação de Resultados do Curso
+generic.messages.reportalldrivers	Reporte Total PDF	Total Report PDF	Relatórios Total PDF
+generic.supportmaterial.coursesguides.guide	Guía de Interpretación de Resultados del Curso	Interpretation Guide of Course's Results	Guia da Interpretação de Resultados do Curso
+role.reporting.name	Reporter CEPA	Reporter CEPA	Reporter CEPA
+permission.drivereventupdate.name	Modificar Datos de sus Eventos	Modify own Event Data	Modificar Dados de sus Eventos
+permission.drivervehicleedit.name	Modificar Datos de sus Vehículos	Modify own Vehicle Data	Modificar Dados de sus Veículos
+datatype.accident.factors.other.parking.baking	Otras imprudencias al estacionar/retroceder	Other reckless acts while parking/ backing	Outras imprudências ao estacionar/dar ré
+datatype.accident.factors.other.crossing	Otras imprudencias en intersección	Other reckless acts at intersection	Outras imprudências em cruzamento
+datatype.accident.factors.other.parking.standing	Otras imprudencias al entrar/salir de una área de estacionamiento	Other reckless acts while entering/ leaving parking area	Outras imprudências ao entrar ou deixar área de estacionamento
+generic.messages.allparticipantsresult	Resultados de Todos los Participantes en PDF	All Participants Results in PDF	Todos os Resultados dos Participants no PDF
+datatype.accident.factors.other.parking.standing	Otras imprudencias al entrar/salir de una área de estacionamiento	Other reckless acts while entering/ leaving parking area	Outras imprudências ao entrar ou deixar área de estacionamento
+generic.corporation.corporationdata.organizationaldivisions	Divisiones Organizacionales	Organizational Division	Divisão Organizacional
+generic.corporation.corporationdata.levelcount	Cantidad de Niveles	Level Count	Quantidade de níveis
+generic.corporation.data	Datos	Data	Dados
+corporation.error.emptyname	Nombre de la Corporación Vacío	Empty Corporation Name	
+corporation.error.emptydivorgname	Nombre de División Organizacional Vacío	Empty Organizational Division Name	
+corporation.error.emptylevelname	Nombre de Nivel de División Organizacional Vacío	Empty Organizational Division Level Name	
+generic.corporation.corporationdata.divgeo	División Geográfica	Geographic Division	Divisão Geografica
+generic.corporation.corporationdata.divgeoname	Nombre	Name	Nome
+generic.supportmaterial.reports.files	Reportes	Reports	Relatórios
+query.hrd.title	HRD (Conductores de Alto Riesgo)	HRD (High Risk Drivers)	HRD (Condutores do Elevado Risco)
+driver.query.hrd	HRD (Conductores de Alto Riesgo)	HRD (High Risk Drivers)	HRD (Condutores do Elevado Risco)
+generic.driver.driverdata.hrdConditions	Condiciones HRD	HRD Conditions	HRD Circunstâncias
+generic.driver.driverdata.hrdCondition1	CD1: 2 o más accidentes en un período de 1 año.	CD1: 2 or more accidentes in a period of 1 year.	CD1: 2 ou mais accidentes em um período de 1 ano.
+generic.driver.driverdata.hrdCondition2	CD2: 3 eventos (accidentes, o multas de trafico con vehículo en movimiento) en un período de 1 año.	CD2: 3 events (accidents, or traffic fines with vehicle in motion) in a priod of 1 year.	CD2: 3 eventos (acidentes, ou multas do tráfego com o veículo no movimento) em um priod de 1 ano.
+generic.driver.driverdata.hrdCondition3	CD3: Cualquier evento relacionado con alcohol o drogas.	 CD3: Any event related with alcohol or drugs.	CD3: Todo o evento relacionou-se com álcool ou drogas.
+permission.hrdphrdquery.name	Consultas HRD y PHRD	HRD & PHRD Queries	Pergunta da HRD & PHRD
+generic.driver.driverdata.hrdConditions1	CD1	CD1	CD1
+generic.driver.driverdata.hrdConditions2	CD2	CD2	CD2
+generic.driver.driverdata.hrdConditions3	CD3	CD3	CD3
+driver.query.phrd	PHRD (Potenciales Conductores de Alto Riesgo)	PHRD (Potential High Risk Drivers)	PHRD (Potencial Condutores do Elevado Risco)
+query.phrd.title	PHRD (Potenciales Conductores de Alto Riesgo)	PHRD (Potential High Risk Drivers)	PHRD (Potencial Condutores do Elevado Risco)
+generic.driver.driverdata.phrdConditions1	CD1	CD1	CD1
+generic.driver.driverdata.phrdConditions2	CD2	CD2	CD2
+generic.driver.driverdata.phrdConditions3	CD3	CD3	CD3
+generic.driver.driverdata.phrdConditions4	CD4	CD4	CD4
+generic.driver.driverdata.phrdConditions5	CD5	CD5	CD5
+generic.driver.driverdata.phrdConditions6	CD6	CD6	CD6
+generic.driver.driverdata.phrdConditions7	CD7	CD7	CD7
+generic.driver.driverdata.phrdscore	Puntaje	Score	Contagem
+driver.query.hrdmonsanto	HRD Brasil	HRD Brazil	HRD Brasil
+generic.activity.monitores1.title1J&J	LA IMPORTANCIA DEL MULTIPLICADOR DENTRO DEL SAFE FLEET	LA IMPORTANCIA DEL MULTIPLICADOR DENTRO DEL SAFE FLEET	LA IMPORTANCIA DEL MULTIPLICADOR DENTRO DEL SAFE FLEET
+generic.activity.monitores1.text1J&J	La capacitación realizada subrayó la importancia del compromiso del Multiplicador dentro del Programa Safe Fleet, considerando que el rol asumido por cada uno, asesorando, evaluando y motivando a la fuerza de ventas en materia de seguridad vial,  tendrá incidencia directa en el sector más expuesto y vulnerable dentro del tránsito.	La capacitación realizada subrayó la importancia del compromiso del Multiplicador dentro del Programa Safe Fleet, considerando que el rol asumido por cada uno, asesorando, evaluando y motivando a la fuerza de ventas en materia de seguridad vial,  tendrá incidencia directa en el sector más expuesto y vulnerable dentro del tránsito.	La capacitación realizada subrayó la importancia del compromiso del Multiplicador dentro del Programa Safe Fleet, considerando que el rol asumido por cada uno, asesorando, evaluando y motivando a la fuerza de ventas en materia de seguridad vial,  tendrá incidencia directa en el sector más expuesto y vulnerable dentro del tránsito.
+generic.activity.monitores1.objectiv1J&J	OBJETIVO DESARROLLADO	OBJETIVO DESARROLLADO	OBJETIVO DESARROLLADO
+generic.activity.monitores1.point1J&J	Concientización acerca de la problemática de los accidentes de tránsito dentro de la Compañía y sus consecuencias humanas y económicas.	Concientización acerca de la problemática de los accidentes de tránsito dentro de la Compañía y sus consecuencias humanas y económicas.	Concientización acerca de la problemática de los accidentes de tránsito dentro de la Compañía y sus consecuencias humanas y económicas.
+generic.activity.monitores1.point2J&J	Análisis de la situación estadística y metas a conseguir.   Identificación de la tipología de incidentes/accidentes más frecuente.	Análisis de la situación estadística y metas a conseguir.   Identificación de la tipología de incidentes/accidentes más frecuente.	Análisis de la situación estadística y metas a conseguir.   Identificación de la tipología de incidentes/accidentes más frecuente.
+generic.activity.monitores1.point3J&J	Alcance del liderazgo del Multiplicador y las diferentes tareas y acciones que favorecen la adopción de comportamientos más seguros por parte de los Rep Comerciales.	Alcance del liderazgo del Multiplicador y las diferentes tareas y acciones que favorecen la adopción de comportamientos más seguros por parte de los Rep Comerciales.	Alcance del liderazgo del Multiplicador y las diferentes tareas y acciones que favorecen la adopción de comportamientos más seguros por parte de los Rep Comerciales.
+generic.activity.monitores1.point4J&J	Mecanismos de evaluación práctica y control para los nuevos funcionarios.	Mecanismos de evaluación práctica y control para los nuevos funcionarios.	Mecanismos de evaluación práctica y control para los nuevos funcionarios.
+generic.activity.monitores1.point5J&J	Herramientas que permiten valorar el desempeño de los conductores afectados a la flota. Aplicación de la “Conducción Comentada”.	Herramientas que permiten valorar el desempeño de los conductores afectados a la flota. Aplicación de la “Conducción Comentada”.	Herramientas que permiten valorar el desempeño de los conductores afectados a la flota. Aplicación de la “Conducción Comentada”.
+generic.activity.monitores1.point6J&J	Control en la comunicación y reporte de los eventos que sufran los representantes comerciales (incidentes y accidentes).	Control en la comunicación y reporte de los eventos que sufran los representantes comerciales (incidentes y accidentes).	Control en la comunicación y reporte de los eventos que sufran los representantes comerciales (incidentes y accidentes).
+generic.activity.monitores1.title1	INTRODUCCIÓN	INTRODUCCIÓN	INTRODUCCIÓN
+generic.activity.monitores1.text1	El compromiso de los niveles gerenciales en el área de ventas y/o Supervisores de flota (quienes tienen contacto frecuente con los Rep. Comerciales y/o conductores en general), resulta fundamental en el éxito del Programa de Seguridad en la Flota, ya que el rol asumido por cada gerente/supervisor, tomando la responsabilidad de asesorar, evaluar y motivar a la fuerza de ventas en materia de seguridad,  tendrá incidencia directa en el sector más expuesto y vulnerable dentro del tránsito.	El compromiso de los niveles gerenciales en el área de ventas y/o Supervisores de flota (quienes tienen contacto frecuente con los Rep. Comerciales y/o conductores en general), resulta fundamental en el éxito del Programa de Seguridad en la Flota, ya que el rol asumido por cada gerente/supervisor, tomando la responsabilidad de asesorar, evaluar y motivar a la fuerza de ventas en materia de seguridad,  tendrá incidencia directa en el sector más expuesto y vulnerable dentro del tránsito.	El compromiso de los niveles gerenciales en el área de ventas y/o Supervisores de flota (quienes tienen contacto frecuente con los Rep. Comerciales y/o conductores en general), resulta fundamental en el éxito del Programa de Seguridad en la Flota, ya que el rol asumido por cada gerente/supervisor, tomando la responsabilidad de asesorar, evaluar y motivar a la fuerza de ventas en materia de seguridad,  tendrá incidencia directa en el sector más expuesto y vulnerable dentro del tránsito.
+generic.activity.monitores1.objectiv1	OBJETIVO DESARROLLADO	OBJETIVO DESARROLLADO	OBJETIVO DESARROLLADO
+generic.activity.monitores1.point1	Concientización acerca de la problemática de los accidentes de tránsito dentro de la Compañía y sus consecuencias humanas y económicas.	Concientización acerca de la problemática de los accidentes de tránsito dentro de la Compañía y sus consecuencias humanas y económicas.	Concientización acerca de la problemática de los accidentes de tránsito dentro de la Compañía y sus consecuencias humanas y económicas.
+generic.activity.monitores1.point2	Análisis de la situación estadística interna y visualización de datos comparativos con otras compañías.   Identificación de la tipología de incidentes/accidentes más frecuente.	Análisis de la situación estadística interna y visualización de datos comparativos con otras compañías.   Identificación de la tipología de incidentes/accidentes más frecuente.	Análisis de la situación estadística interna y visualización de datos comparativos con otras compañías.   Identificación de la tipología de incidentes/accidentes más frecuente.
+generic.activity.monitores1.point3	Comprensión de los comportamientos que le permitirán alcanzar el liderazgo, demostrando la importancia del programa de Seguridad en la Flota y planificando diferentes tareas y/o acciones induzcan a comportamientos más seguros.	Comprensión de los comportamientos que le permitirán alcanzar el liderazgo, demostrando la importancia del programa de Seguridad en la Flota y planificando diferentes tareas y/o acciones induzcan a comportamientos más seguros.	Comprensión de los comportamientos que le permitirán alcanzar el liderazgo, demostrando la importancia del programa de Seguridad en la Flota y planificando diferentes tareas y/o acciones induzcan a comportamientos más seguros.
+generic.activity.monitores1.point4	Control en la comunicación y reporte de los eventos que sufran los representantes comerciales (incidentes y accidentes).	Control en la comunicación y reporte de los eventos que sufran los representantes comerciales (incidentes y accidentes).	Control en la comunicación y reporte de los eventos que sufran los representantes comerciales (incidentes y accidentes).
+generic.activity.monitores1.point5	Desarrollo mecanismos de evaluación práctica y control para los nuevos funcionarios.	Desarrollo mecanismos de evaluación práctica y control para los nuevos funcionarios.	Desarrollo mecanismos de evaluación práctica y control para los nuevos funcionarios.
+generic.activity.monitores1.point6	Conocer las diferentes herramientas que permiten valorar el desempeño de los conductores, haciéndose especial hincapié en la “Conducción Comentada”.	Conocer las diferentes herramientas que permiten valorar el desempeño de los conductores, haciéndose especial hincapié en la “Conducción Comentada”.	Conocer las diferentes herramientas que permiten valorar el desempeño de los conductores, haciéndose especial hincapié en la “Conducción Comentada”.
+generic.activity.monitores1.point7	Asesoramiento a los funcionarios y reportar los resultados.	Asesoramiento a los funcionarios y reportar los resultados.	Asesoramiento a los funcionarios y reportar los resultados.
+activityquery.activity.generalreport.monitors.technicalaspecttext	El entrenamiento práctico realizado permitió valorar los distintos aspectos que conforman el rol del Multiplicador/Monitor y especialmente profundizar en las técnicas y herramientas de evaluación de los conductores.	El entrenamiento práctico realizado permitió valorar los distintos aspectos que conforman el rol del Multiplicador/Monitor y especialmente profundizar en las técnicas y herramientas de evaluación de los conductores.	El entrenamiento práctico realizado permitió valorar los distintos aspectos que conforman el rol del Multiplicador/Monitor y especialmente profundizar en las técnicas y herramientas de evaluación de los conductores.
+generic.activity.form.monitors.formeval	Interpretación y Uso de la Planilla de Evaluación	Interpretation and Use of the Evaluation Form	Interpretación y Uso de la Planilla de Evaluación
+generic.driver.driverdata.lastupdate	Última Actualización	Last Update	Último Update
+generic.driver.driverdata.lastupdate.format	(dd/mm/aaaa)	(dd/mm/yyyy)	(dd/mm/aaaa)
+generic.driver.driverdata.phrd.generatingdata	Los datos están siendo procesados. Por favor realice su consulta más tarde.	The data are being process. Please make the query later.	Os dados estão sendo processo. Fazer por favor a consulta em seguida.
+generic.driver.driverdata.phrdConditions	Condiciones PHRD	PHRD Conditions	PHRD Circunstâncias
+generic.driver.driverdata.phrdCondition1	CD1: Edad del conductor menor a 25 años. (Puntaje: 3 puntos)	CD1: Driver's age under 25 years. (Score: 3 points)	CD1: Idade do condutor sob 25 anos. (Contagem: 3 pontos)
+generic.driver.driverdata.phrdCondition2	CD2: Experiencia como conductor menor a 2 años. (Puntaje: 2 puntos)	CD2: Time as a driver: less than 2 years. (Score: 2 points)	CD2: Tempo como um condutor: menos de 2 anos. (Contagem: 2 pontos)
+generic.driver.driverdata.phrdCondition3	CD3: Antiguedad del conductor en la compañía menor a 1 año. (Puntaje: 3 puntos)	CD3: Time with the company less than 1 year. (Score: 3 points)	CD3: Tempo com a companhia menos de 1 ano. (Contagem: 3 pontos)
+generic.driver.driverdata.phrdCondition4	CD4: Más de 3 hábitos o reacciones incorrectas detectadas en el último BTW. (Puntaje: 2 puntos)	CD4: More than 3 incorrect habits or reactions during the last BTW training. (Score: 2 points)	CD4: Mais de 3 hábitos ou reações incorretas durante o último treinamento do BTW. (Contagem: 2 pontos)
+generic.driver.driverdata.phrdCondition5	CD5: Comportamientos de agresividad o alta velocidad detectados en el último BTW. (Puntaje: 4 puntos)	CD5: Speed and/or aggressiveness behaviors in the last BTW training. (Score: 4 points)	CD5: Comportamentos da velocidade e/ou do aggressiveness no último treinamento do BTW. (Contagem: 4 pontos)
+generic.driver.driverdata.phrdCondition6	CD6: Accidentes del conductor: Más de 2 en un periodo de más de 1 año. (Puntaje: 2 puntos)	CD6: Driver's Accidents: more than 2 in a period of more than 1 year. (Score: 2 points)	CD6: Acidentes do condutor: mais de 2 em um período de mais de 1 ano. (Contagem: 2 pontos)
+generic.driver.driverdata.phrdCondition7	CD7: En el último BTW se indicó que el conductor es PHRD. (Puntaje: 5 puntos)	CD7: In the last BTW was indicated that the conductor is PHRD. (Score: 5 points)	CD7: No último BTW foi indicado que o condutor é PHRD. (Contagem: 5 pontos)
+corporation.demo.divisions	Divisiones	Divisions	Divisões
+demo.divisions.division	División	Division	Divisão
+demo.divisions.subdivision	Subdivisión	Subdivision	Subdivisão
+corporation.demo.sectors	Sectores	Sectors	Sectores
+demo.sectors.sector	Sector	Sector	Sector
+corporation.demo.region	Región	Region	Região
+corporation.demo.country	País	Country	País
+generic.driver.driverdata.bpsregistry	Registro de BPS	BPS Registry	Registro BPS
+driver.query.bpsregistry	Conductores sin Registro de BPS	Drivers without BPS Registry	Condutores sem Registro BPS
+driver.query.bpsregistry.query	Consulta de Conductores sin Registro de BPS	Drivers without BPS Registry Query	Consulta de Condutores sem Registro BPS
+generic.driver.aptitudtest	Gabinete Psicotécnico	Aptitud Test	Exame Psicotécnico
+driver.aptitudtest.date	Fecha	Date	Fecha
+driver.aptitudtest.apt	Apto	Apt	Apto
+driver.aptitudtest.expiry	Vencimiento	Expiry	Vencimiento
+driver.aptitudtest.nodata	No hay Datos para Mostrar	There is no Data	Sem Dados
+driver.modify.aptitudtest	Gabinetes Psicotécnicos	Aptitud Tests	Exames Psicotécnicos
+driver.query.aptitudtest	Gabinetes Psicotécnicos	Aptitud Test	Exames Psicotécnicos
+driver.query.aptitudtest.query	Consulta de Gabinetes Psicotécnicos	Aptitud Test Query	Consulta de Exames Psicotécnicos
+driver.aptitudtest.expired	Vencidos	Expired	Vencidos
+driver.aptitudtest.notexpired	No Vencidos	Not Expired	No Vencidos
+driver.aptitudtest.apts	Aptos	Apts	Aptos
+driver.aptitudtest.notapts	No Aptos	Not Apts	No Aptos
+driver.aptitudtest.query.lasttest	Último Gabinete Realizado	Last Test Done	Ultimo Exame Realizado
+driver.aptitudtest.query.isapt	Es Apto	Is Apt	Es Apto
+driver.modify.alcoholcontrol	Controles de Alcoholemia	Alcohol Controls	Controles de Alcoolemia
+driver.alcoholcontrol.date	Fecha	Date	Fecha
+driver.aptitudtest.result	Resultado	Result	Resultado
+driver.alcoholcontrol.result	Resultado	Result	Resultado
+driver.alcoholcontrol.nodata	No hay Datos para Mostrar	There is no Data	Sem Dados
+driver.alcoholcontrol.new	Nuevo	New	Nova
+generic.messages.positive	Positivo	Positive	Positivo
+generic.messages.negative	Negativo	Negative	Negativo
+driver.alcoholcontrol.expired	Vencidos	Expired	Vencidos
+driver.alcoholcontrol.notexpired	No Vencidos	Not Expired	No Vencidos
+driver.query.alcoholcontrol.query	Consulta de Controles de Alcoholemia	Alcohol Control Query	Consulta de Controles de Alcoolemia
+driver.query.alcoholcontrol	Controles de Alcoholemia	Alcohol Controls	Controles de Alcoolemia
+driver.alcoholcontrol.neverdone	Sin Controles	Without Controls	Sem Controles
+driver.alcoholcontrol.effective	Vigente	Effective	Vigente
+driver.alcoholcontrol.query.lasttest	Último Control	Last Control	Ultimo Control
+driver.alcoholcontrol.query.result	Resultado	Result	Resultado
+driver.alcoholcontrol.expiry	Estado	Status	Estado
+role.fleetreporter.name	Reporter de Flotas	Fleet Reporter	Reporter de Frotas
+query.hrdmon.title	HRD Brasil	HRD Brazil	HRD Brasil
+generic.driver.driverdata.hrdMonConditions	Condiciones HRD Brasil	HRD Brazil Conditions	HRD Brasil Circunstâncias
+generic.driver.driverdata.hrdMonCondition1	CD1: El conductor tuvo en 1 período de un año: 2 multas gravísimas o 2 accidentes, o 1 multa gravisima y un accidente o 1 vuelco.	CD1: The dirver had in a period of a year: 2 fines very serious or 2 accidents, or 1 fine very serious and an accident or 1 upset.	CD1: O condutor teve em um período de um ano: 2 multas muito sérias ou 2 acidentes, ou 1 multa muito séria e um acidente ou 1 virada. 
+generic.driver.driverdata.hrdMonCondition2	CD2: Cualquier evento relacionado con alcohol o drogas.	 CD2: Any event related with alcohol or drugs.	CD2: Todo o evento relacionou-se com álcool ou drogas.
+generic.driver.driverdata.hrdMonCondition3	CD3: Abandona el lugar del accidente sin autorización.	CD3: The driver leaves the place of the accident without authorization.	CD3: O condutor sae do lugar do acidente sem a autorização.
+generic.driver.driverdata.hrdMonCondition4	CD4: Accidentes con vícitmas fatales.	CD4: Fatal accidents with vícitmas.	CD4: Acidentes fatais com vícitmas.
+generic.driver.driverdata.hrdMonAnexo	Todas las condiciones se aplican a los últimos 3 años.	All the conditions are applied to the last 3 years.	Todas as circunstâncias são aplicadas aos últimos 3 anos.
+generic.driver.driverdata.hrdMonConditions1	CD1	CD1	CD1
+generic.driver.driverdata.hrdMonConditions2	CD2	CD2	CD2
+generic.driver.driverdata.hrdMonConditions3	CD3	CD3	CD3
+generic.driver.driverdata.hrdMonConditions4	CD4	CD4	CD4
+generic.activity.phrdbycourse	Phrd por Curso	Phrd by Course	Phrd por Curso
+generic.activity.phrdbycourse.isphrd	El conductor puede ser PHRD.	The driver could be PHRD.	O condutor pode ser PHRD.
+query.activity.generalreport.monitors.technicalaspecttext	El entrenamiento práctico realizado permitió valorar los distintos aspectos que conforman el rol del Monitor y especialmente profundizar en las técnicas y herramientas de evaluación de los conductores.	El entrenamiento práctico realizado permitió valorar los distintos aspectos que conforman el rol del Monitor y especialmente profundizar en las técnicas y herramientas de evaluación de los conductores.	El entrenamiento práctico realizado permitió valorar los distintos aspectos que conforman el rol del Monitor y especialmente profundizar en las técnicas y herramientas de evaluación de los conductores.
+query.activity.generalreport.multiplicators.technicalaspecttext	El entrenamiento práctico realizado permitió valorar los distintos aspectos que conforman el rol del Multiplicador y especialmente profundizar en las técnicas y herramientas de evaluación de los conductores.	El entrenamiento práctico realizado permitió valorar los distintos aspectos que conforman el rol del Multiplicador y especialmente profundizar en las técnicas y herramientas de evaluación de los conductores.	El entrenamiento práctico realizado permitió valorar los distintos aspectos que conforman el rol del Multiplicador y especialmente profundizar en las técnicas y herramientas de evaluación de los conductores.
+query.activity.ecquery.title	Conductores que no Realizaron Evaluaciones en Cabina.	Drivers who did not make Evaluations in Cabin.	Condutores que não fizeram Avaliações na Cabine.
+query.activity.ecquery.titlepesados	Conductores que no Realizaron Evaluaciones en Cabina en Vehículos Pesados.	Drivers who did not make Evaluations in Cabin with Heavy Vehicles.	Condutores que não fizeram Avaliações na Cabine com Veículos Pesados.
+query.activity.ecquery.menu	Conductores sin Evaluación en Cabina.	Drivers with out Evaluation in Cabin	Condutores sin Avaliações na Cabine
+generic.messages.queries.forest	Consultas	Queries	Consultas
+generic.supportmaterial.cepatips.badfile	Nombre de Archivo Incorrecto.	Incorrect file name.	Nome de Lima Incorreta.
+menu.option.supportmaterial.routes	Relevamiento de Rutas	Released Routes	Rotas Liberadas
+menu.option.supportmaterial.routes.addroutes	Agregar Relevamiento de Rutas	Add Released Routes	Adicionar Rotas Liberadas
+menu.option.supportmaterial.accidentinvestigation	Investigación de Accidentes	Accident Investigation	Investigação de Acidentes
+generic.messages.selectcountry	Seleccione País	Select Country	Selecionar o País
+generic.messages.selectzone	Seleccione Zona	Select Area	Selecionar a Área
+generic.messages.department	Zona	Area	Área
+generic.messages.selectyear	Seleccione Año	Select Year	Selecionar o Ano
+generic.supportmaterial.routes	Ver Relevamiento de Rutas	View Released Routes	Ver Rotas Liberadas
+menu.option.supportmaterial.viewroutes	Ver Relevamiento de Rutas	View Release Routes	Ver Rotas Liberadas
+generic.supportmaterial.routes.noroutes	No hay Rutas Relevadas	There aren't Released Routes	Não há Rotas Liberadas
+generic.supportmaterial.routes.noaccidentinvestigation	No hay Investigaciones de Accidentes	There aren't Accidents Investigations	Não há Investigações de Acidentes
+generic.supportmaterial.accidentinvestigation	Investigación de Accidentes	Accidents Investigation	Investigações de Acidentes
+generic.supportmaterial.routes.addaccidentinvestigation	Agregar Investigación de Accidente	Add Accident Investigation	Adicionar Investigação de Acidente
+menu.option.viewcepatips	Ver CEPA Tips	View CEPA Tips	Ver CEPA Tips
+menu.option.supportmaterial.viewreports	Ver Reportes	View Reports	Ver Relatórios
+menu.option.supportmaterial.viewaccidentinvestigation	Ver Investigaciones de Accidentes	View Accidents Investigations	Ver Investigações de Acidentes
+generic.supportmaterial.wrongname	Nombre de Archivo Incorrecto	Incorrect file name	Lima Nome Incorreta
+generic.supportmaterial.routes.successuploadroute	Archivo Subido con Éxito	Successfully File Upload	Upload da Lima Com Sucesso
+generic.supportmaterial.routes.nocountries	No hay Países Asignados para Relevamiento de Rutas. Contacte con el administrador del Sistema.	There aren't Assigned Countries for Released Routes. Please Contact Systems Administrator.	Não é Atribuído Países para Rotas Liberadas. Por favor do contato con el administrador de sistema.
+generic.supportmaterial.routes.nocountryselected	No Seleccionó ningún País.	No Country Selected.	Nenhum País Selecionou.
+generic.supportmaterial.routes.nodeptoselected	No Selccionó ninguna Zona.	No Area Selected.	Nenhum Área Selecionou.
+generic.supportmaterial.routes.addroutes	Agregar Relevamiento de Rutas	Add Released Routes	Adicionar Rotas Liberadas
+generic.supportmaterial.routes.upload	Subir Archivo	Upload File	Upload da Lima
+menu.option.supportmaterial.accidentinvestigation.addaccident	Agregar Investigación de Accidentes	Add Accidents Investigation	Adicionar Investigações de Acidentes
+generic.activity.phrdbycourse.isphrd	El conductor puede ser PHRD.	The driver could be PHRD.	O condutor pode ser PHRD.
+query.driver.alcoholcontrol.expiry	Estado de Controles	Control Status	Estado de Controles
+driver.aptitudtest.status	Estado	Status	Estado
+role.fleetreporter.name	Reporter de Flotas	Fleet Reporter	Reporter de Frotas
+driver.modify.prizes	Premios y Multas	Prizes and Fines	Premios y Multas
+driver.prizes.date	Fecha	Date	Fecha
+driver.prizes.type	Tipo	Type	Tipo
+driver.prizes.mount	Monto	Mount	Monto
+driver.prizes.nodata	No hay Datos para Mostrar	There is no Data	Sem Dados
+generic.driver.prizes	Premios y Multas	Prizes and Fines	Premios y Multas
+driver.prize.new	Nuevo	New	Novo
+driver.prize.prize	Premio	Prize	Premio
+driver.prize.fine	Multa	Fine	Multa
+generic.driver.excluded	Conductor Excluído	Excluded Driver	Condutor Excluido
+generic.driver.excludeddate	Fecha de Exclusión	Exclusion Date	Data de Exclusão
+generic.driver.otherdata	Otros Datos	Other Data	Outros Dados
+driver.alcoholconotrol.withpositive	Con Algún Control Positivo	With A Positive Control	
+driver.alcoholcontrol.anypositive	Algún Control Positivo	Any Positive Control	
+driver.alcoholcontro.history	Historial	History	Historial
+driver.alcoholconotrol.withoutpositive	Sin Controles Positivo	Without Any Positive Control	
+generic.group.lines	Líneas	Lines	Lineas
+vehicle.data.sucta	Vencimiento del Carné del SUCTA	SUCTA Card Expiry	
+vehicle.data.mtop	Vencimiento del Carné del MTOP	MTOP Card Expiry	
+vehicle.data.ensurance	Aseguradora	Ensurance Company	
+corporation.nalco.assignedvehicles	Vehículo Asignado	Assigned Vehicle	Veículo Designado
+corporation.nalco.divisions	Divisiones	Divisions	Divisões
+corporation.nalco.units	Unidades	Units	Unidades
+nalco.assignedvehicles.assignedvehicle	Vehículo Asignado	Assigned Vehicle	Veículo Designado
+nalco.divisions.region	Región	Region	Região
+nalco.divisions.division	Divisiones	Divisions	Divisões
+nalco.divisions.subdivision	Subdivisiones	Subdivisions	Subdivisões
+nalco.divisions.country	País	Country	País
+nalco.units.unit	Unidad	Unit	Unidad
+corporation.demo.region	Región	Region	Região
+corporation.demo.country	País	Country	País
+vehicle.checklist.history	Historial de CheckList	CheckList History	Historial de CheckList
+vehicle.checklist.query.error1	Luces delanteras/traseras del tractor no funcionan o su acrílico esta dañado		
+vehicle.checklist.query.error2	Luces de la plataforma de carga no funcionan o su acrílico esta dañado		        
+vehicle.checklist.query.error3	Otras luces no funcionan o su acrílico esta dañado		
+vehicle.checklist.query.error4	Neumáticos delanteros/ traseros en mal estado del tractor		
+vehicle.checklist.query.error5	Neumáticos delanteros/ traseros en mal estado de la plataforma de carga		
+vehicle.checklist.query.error6	Auxiliar en mal estado/ Sin auxiliar		
+vehicle.checklist.query.error7	Estado general de tractor y plataforma de carga (daños, limpieza, exterior)		
+vehicle.checklist.query.error8	Equipamiento incompleto		
+vehicle.checklist.query.error9	Imperfecciones en el Parabrisas		
+vehicle.checklist.query.error10	Desperfectos en los ejes		
+vehicle.checklist.query.error11	Elementos de seguridad de la plataforma de carga en mal estado		
+vehicle.checklist.query.error12	Falta/vencimiento de documentos (tractor y plataforma de carga)		
+vehicle.checklist.query.error13	Otros		
+vehicle.checklist.query.error14	Sin observaciones		
+vehicle.checklist.query.key1	1.1	1.1	1.1
+vehicle.checklist.query.key2	1.2	1.2	1.2
+vehicle.checklist.query.key3	1.3	1.3	1.3
+vehicle.checklist.query.key4	2.1	2.1	2.1
+vehicle.checklist.query.key5	2.2	2.2	2.2
+vehicle.checklist.query.key6	2.3	2.3	2.3
+vehicle.checklist.query.key7	3	3	3
+vehicle.checklist.query.key8	4	4	4
+vehicle.checklist.query.key9	5	5	5
+vehicle.checklist.query.key10	6	6	6
+vehicle.checklist.query.key11	7	7	7
+vehicle.checklist.query.key12	8	8	8
+vehicle.checklist.query.key13	9	9	9
+vehicle.checklist.query.key14	10	10	10
+generic.messages.desassociate	Desasociar	Dissociate	Desassociar
+vehicle.trailer.registrationNumber	Matrícula	License Plate	Placa
+vehicle.trailer.plate	Matrícula	License Plate	Placa
+vehicle.trailer.trade	Marca	Make	Marca
+vehicle.trailer.model	Modelo	Model	Modelo
+vehicle.trailer.year	Año	Year	Ano
+vehicle.trailer.add	Nueva Plataforma de Carga	New Trailer	
+vehicle.trailer.list	Plataformas de Carga del Sistema	Trailers of the System	
+generic.data.trailer.pl	Mantenimiento de Plataformas de Carga	Management of Trailers	
+vehicle.data.notrailer	No tiene una Plataforma de Carga Asociada	No Trailer	
+vehicle.data.trailer	Plataforma de Carga	Trailer	
+vehicle.checklist.query	Consulta de Check Lists	Check List Query	Consulta de Check Lists
+trailer.add.new	Agregar Plataforma de Carga Nueva	Add New Trailer	Agregar Novo
+trailer.add.existing	Agregar Plataforma de Carga Existente	Add Existing Trailer	
+trailer.associate.confirm	Confirma que desea asociar esta zorra	Confirm to Associate this Trailer	
+trailer.error.select1	Debe Seleccionar Solo 1 Plataforma de Carga	You Can Select Only 1 Trailer	
+trailer.delete.confirm	Confirma que Desea Borrar esta Plataforma de Carga	Confirm to Delete This Trailer	
+trailer.delete.error	No se Puede Borrar esta Plataforma de Carga por Tenér Datos Asociados	This Trailer Cant Be Delete, Has Asociated Data	
+trailer.desassociate.confirm	Confirma que Desea Desasociar esta Plataforma de Carga	Confirm to Desassociate this Trailer	
+activity.truck.checklist.estado	Estado Vehículo		
+truck.checklist.estado.exterior	Exterior		
+truck.checklist.estado.cabina	Daños Cabina		
+truck.checklist.estado.acoplado	Daños Acoplado		
+activity.truck.checklist.elementos.cabina	Elementos de Cabina		
+truck.checklist.elementos.cinturon	Cinturón		
+truck.checklist.elementos.apoyacabeza	Apoya Cabeza		
+truck.checklist.elementos.parabrisas	Parabrisas		
+truck.checklist.elementos.limpiaparabrisas	Limpiaparabrisas		
+truck.checklist.elementos.retrovisores	Espejos retrovisores		
+truck.checklist.elementos.instrumentos	Funcionamiento de Instrumentos		
+truck.checklist.elementos.lucesinstrumentos	Luces Instrumentos		
+truck.checklist.elementos.bocina	Bocina		
+activity.truck.checklist.seguridad.acoplado	Elementos de Seguridad del Acoplado		
+activity.truck.checklist.enganches	Enganches		
+truck.checklist.enganches.chasis	Chasis-Plataforma de Carga		
+truck.checklist.enganches.remolque	Semi remolque		
+truck.checklist.enganches.proteccion	Protección		
+generic.vehiclecheck.form.incorrect	Incorrecto	Wrong	
+activity.truck.checklist.seguridad.cabina	Elementos de Seguridad de Cabina		
+truck.checklist.seguridad.cabina.botiquin	Botiquín		
+truck.checklist.seguridad.cabina.extintor	Extintores		
+truck.checklist.seguridad.cabina.baliza	Triángulos Reflectivos		
+truck.checklist.seguridad.cabina.corte	Corte Corriente		
+truck.checklist.seguridad.cabina.linterna	Linterna		
+truck.checklist.seguridad.cabina.vhs	VHS		
+truck.checklist.seguridad.cabina.lingas	Lingas o Fajas		
+truck.checklist.seguridad.cabina.gato	Gato y Llave de Ruedas		
+truck.checklist.seguridad.cabina.tacos	Tacos		
+activity.truck.checklist.cubiertas	Cubiertas		
+truck.checklist.cubiertas.tractor.delantera	Delanteras Tractor		
+truck.checklist.cubiertas.tractor.trasera	Traseras Tractor		
+truck.checklist.cubiertas.acoplado.delantera	Delanteras Acoplado		
+truck.checklist.cubiertas.acoplado.trasera	Traseras Acoplado		
+truck.checklist.cubiertas.auxiliares	Auxiliares		
+truck.checklist.elementos.sueltos	Elementos Sueltos		
+activity.truck.checklist.luces	Luces		
+truck.checklist.luces.tractor.posicion	Posición Tractor		
+truck.checklist.luces.tractor.baja	Baja Tractor		
+truck.checklist.luces.tractor.alta	Alta Tractor		
+truck.checklist.luces.tractor.senalero	Señalero Tractor		
+truck.checklist.luces.tractor.baliza	Balizas Tractor		
+truck.checklist.luces.acoplado.posicion	Posición Acoplado		
+truck.checklist.luces.acoplado.lateral	Lateral Acoplado		
+truck.checklist.luces.acoplado.freno	Freno Acoplado		
+truck.checklist.luces.acoplado.senalero	Señalero Acoplado		
+truck.checklist.luces.acoplado.baliza	Balizas Acoplado		
+truck.checklist.luces.acoplado.reversa	Reversa Acoplado		
+activity.truck.checklist.documentos	Documentos		
+truck.checklist.documentos.propiedad	Libreta de Propiedad		
+truck.checklist.documentos.seguro	Seguro		
+truck.checklist.documentos.venicimiento	Vencimiento Seguro		
+truck.checklist.documentos.patente	Patente al Día		
+truck.checklist.documentos.sucta.tractor	Vencimiento SUCTA Tractor		
+truck.checklist.documentos.sucta.remolque	Vencimiento SUCTA Remolque		
+truck.checklist.documentos.mtop.tractor	Certificado MTOP Tractor		
+truck.checklist.documentos.mtop.acoplado	Certificado MTOP Acoplado		
+vehicle.data.ownercard	Libreta de Propiedad		
+vehicle.data.ensurancetype	Tipo de Seguro	Ensurance Type	
+vehicle.data.axiscount	Cantidad de Ejes	Axis Count	
+vehicle.data.hp	Potencia(hp)		
+vehicle.trailer.edit	Editar Plataforma de Carga	Edit Trailer	
+generic.trailer.confirmdelete	Confirma que Desea Borrar esta Plataforma de Carga		
+activity.trailer.checklist	Checklist de Plataforma de Carga	Trailer Checklist	
+activity.trailer.checklist.estado	Estado Vehículo		
+trailer.checklist.estado.exterior	Limpieza Exterior		
+trailer.checklist.estado.acoplado	Daños		
+trailer.checklist.seguridad.acoplado.estaquero	Estaquero 4,10 metros		
+trailer.checklist.seguridad.acoplado.reja	Reja Protección de Cabina		
+trailer.checklist.seguridad.acoplado.red	Red Metálica Trasera		
+activity.trailer.checklist.cubiertas	Cubiertas	Covers	
+trailer.checklist.cubiertas.acoplado.delantera	Delanteras		
+trailer.checklist.cubiertas.acoplado.trasera	Traseras		
+trailer.checklist.luces.acoplado.posicion	Posición		
+trailer.checklist.luces.acoplado.lateral	Laterales		
+trailer.checklist.luces.acoplado.freno	Freno		
+trailer.checklist.luces.acoplado.senalero	Señalero		
+trailer.checklist.luces.acoplado.baliza	Balizas		
+trailer.checklist.luces.acoplado.reversa	Reversa		
+activity.trailer.checklist.documentos	Documentos		
+trailer.checklist.documentos.sucta.remolque	Vencimiento SUCTA		
+trailer.checklist.documentos.mtop.acoplado	Venicimientos MTOP		
+trailer.checklist.delete.confirm	Confirma que Desea Borrar el Check List		
+truck.checklist.trailer	Agregar Datos de Plataforma de Carga		
+checklist.error.missingdata	Falta Cargar Datos		
+generic.activity.form.truckchecklist	CheckList		
+truck.checklist.seguridad.acoplado.estaquero	Estaquero		
+truck.checklist.seguridad.acoplado.reja	Reja de Protección de Cabina		
+truck.checklist.seguridad.acoplado.red	Red Metálica Trasera		
+trailer.checklist.cubiertas.auxiliares	Auxiliares		
+truck.checklist.report	Reporte de CheckList	CheckList Query	
+generic.messages.count	Cantidad		
+activity.query.checklist	Fallas de CheckList		
+generic.activity.form.evaluacionencabinapesado.point1	1. Antes de Salir.		
+generic.activity.form.evaluacionencabinapesado.point1item1	Utilizó el equipo/vestimenta reglamentaria.		
+generic.activity.form.evaluacionencabinapesado.point1item2	Llevó consigo la documentación reglamentaria.		
+generic.activity.form.evaluacionencabinapesado.point1item3	La documentación está vigente.		
+generic.activity.form.evaluacionencabinapesado.point1item4	Planificó el Itinerario.		
+generic.activity.form.evaluacionencabinapesado.point1item5	Distribuyó correctamente la carga.		
+generic.activity.form.evaluacionencabinapesado.point1item6	Respetó la altura máxima reglamentaria de la carga.		
+generic.activity.form.evaluacionencabinapesado.point1item7	Controló elementos sueltos.		
+generic.activity.form.evaluacionencabinapesado.point1item8	Reguló el asiento/respaldo correctamente.		
+generic.activity.form.evaluacionencabinapesado.point1item9	Ajustó los espejos retrovisores.		
+generic.activity.form.evaluacionencabinapesado.point1item10	Se ajustó el cinturón de seguridad.		
+generic.activity.form.evaluacionencabinapesado.point1item11	Demostró conocimiento de los instrumentos.		
+generic.activity.form.evaluacionencabinapesado.point1item12	Demostró conocimiento de función de testigos/tablero.		
+generic.activity.form.evaluacionencabinapesado.point1item13	Señaló su salida.		
+generic.activity.form.evaluacionencabinapesado.yes	SI		
+generic.activity.form.evaluacionencabinapesado.no	No (Corrige ante observación)		
+generic.activity.form.evaluacionencabinapesado.control	Debe hacerse seguimiento		
+generic.activity.form.evaluacionencabinapesado.point2	2. Durante el Recorrido.		
+generic.activity.form.evaluacionencabinapesado.point2item1	Demostró buena actitud con los demás usuarios.		
+generic.activity.form.evaluacionencabinapesado.point2item2	Respetó a los peatones.		
+generic.activity.form.evaluacionencabinapesado.point2item3	Obedeció las reglas de preferencia.		
+generic.activity.form.evaluacionencabinapesado.point2item4	Atendió y obedeció las reglas de tránsito.		
+generic.activity.form.evaluacionencabinapesado.point2item5	Obedeció los límites de velocidad.		
+generic.activity.form.evaluacionencabinapesado.point2item6	Mantuvo velocidad adecuada.		
+generic.activity.form.evaluacionencabinapesado.point2item7	Mantuvo siempre la distancia de seguridad.		
+generic.activity.form.evaluacionencabinapesado.point2item8	Anticipó el riesgo delantero.		
+generic.activity.form.evaluacionencabinapesado.point2item9	Controló a los vehículos traseros.		
+generic.activity.form.evaluacionencabinapesado.point2item10	Señaló todas sus maniobras.		
+generic.activity.form.evaluacionencabinapesado.point2item11	Controló los espejos con frecuencia.		
+generic.activity.form.evaluacionencabinapesado.point2item12	Verificó siempre por los espejos antes de maniobrar.		
+generic.activity.form.evaluacionencabinapesado.point2item13	Verificó los puntos ciegos antes de maniobrar.		
+generic.activity.form.evaluacionencabinapesado.point2item14	Se ubicó en el carril adecuado al cambiar de posición.		
+generic.activity.form.evaluacionencabinapesado.point2item15	Al girar se ubicó en el carril correcto.		
+generic.activity.form.evaluacionencabinapesado.point2item16	Demostró atención al aproximarse a intersecciones.		
+generic.activity.form.evaluacionencabinapesado.point2item17	Accedió a la intersección con el vehículo controlado.		
+generic.activity.form.evaluacionencabinapesado.point2item18	Obedeció los semáforos.		
+generic.activity.form.evaluacionencabinapesado.point2item19	Respetó el señalamiento y maniobras de terceros.		
+generic.activity.form.evaluacionencabinapesado.point2item20	Realizó los rebazamientos/adelantamientos con seguridad.		
+generic.activity.form.evaluacionencabinapesado.point2item21	Usó el claxon/bocina con criterio.		
+generic.activity.form.evaluacionencabinapesado.point2item22	Se mostró tolerante y paciente.		
+generic.activity.form.evaluacionencabinapesado.point2item23	No usó ni atendió el celular mientras condujo.		
+generic.activity.form.evaluacionencabinapesado.point2item24	Transmitió en general seguridad y dominio del vehículo.		
+generic.activity.form.evaluacionencabinapesado.point3	3. Manejo de los Comandos.		
+generic.activity.form.evaluacionencabinapesado.point3item1	Manejó con ambas manos el volante.		
+generic.activity.form.evaluacionencabinapesado.point3item2	Utilizó correctamente el cutch/embrague.		
+generic.activity.form.evaluacionencabinapesado.point3item3	Frenó con sensibilidad.		
+generic.activity.form.evaluacionencabinapesado.point3item4	Utilizó correctamente freno de motor.		
+generic.activity.form.evaluacionencabinapesado.point3item5	Utilizó correctamente freno auxiliar (remolque, bastón, etc.).		
+generic.activity.form.evaluacionencabinapesado.point3item6	Aceleró con sensibilidad.		
+generic.activity.form.evaluacionencabinapesado.point3item7	Realizó los cambios de marchas correctamente.		
+generic.activity.form.evaluacionencabinapesado.point4	4. Detenciones, Estacionamiento y Maniobras.		
+generic.activity.form.evaluacionencabinapesado.point4item1	Señaló su intención adecuada y anticipadamente.		
+generic.activity.form.evaluacionencabinapesado.point4item2	Mantiene distancia de seguridad con vehículo delantero.		
+generic.activity.form.evaluacionencabinapesado.point4item3	Evaluó correctamente área de estacionamiento.		
+generic.activity.form.evaluacionencabinapesado.point4item4	Buscó y usó correctamente referencias.		
+generic.activity.form.evaluacionencabinapesado.point4item5	Maniobró con seguridad.		
+generic.activity.form.evaluacionencabinapesado.point5	5. Incidentes Graves.		
+generic.activity.form.evaluacionencabinapesado.point5item1	Cruza con luz roja.		
+generic.activity.form.evaluacionencabinapesado.point5item2	Cruza sin respetar un Alto/Pare.		
+generic.activity.form.evaluacionencabinapesado.point5item3	Adelanta en forma irreglamentaria/negligente.		
+generic.activity.form.evaluacionencabinapesado.point5item4	Comete un incidente.		
+generic.activity.form.evaluacionencabinapesado.point5item5	Otros.		
+generic.activity.form.evaluacionencabinapesado.observations	Observaciones		
+generic.activity.form.evaluacionencabinapesado.instructor	Instructor		
+generic.activity.form.evaluacionencabinapesado.fecha	Fecha		
+generic.activity.form.evaluacionencabinapesado.driver	Funcionario Evaluado		
+generic.activity.form.evaluacionencabinapesado.title	Evaluación en Cabina Vehículo Pesado		
+datatype.scheduledactivitytype.evaluacionencabinapesado	Evaluación en Cabina Pesados	Evaluation in Cabin Heavy	Avaliação na Cabine Pesados
+generic.messages.observations	Observaciones	Observations	Observações
+vehicle.expiry.sucta	Vencimiento SUCTA	SUCTA Card Expiry	
+vehicle.expiry.mtop	Vencimiento MTOP	MTOP Card Expiry	
+generic.activity.form.btw1.frenajeconvencional	Frenaje Convencional:	Conventional Breaking:	Quebrar Convencional:
+generic.activity.form.btw1.frenajeabs	Frenaje ABS:	ABS Breaking:	Quebrar ABS:
+corporation.tile.contractors	Contratistas	Contractors	Contratantes
+corporation.tile.country	País	Country	País
+corporation.tile.region	Región	Region	Región
+generic.activity.form.btw1.frenajeabs	Frenaje ABS:	ABS Breaking:	Quebrar ABS:
+truck.checklist.seguridad.acoplado.ejes	Ejes Acoplado		
+truck.checklist.seguridad.cabina.ejes	Ejes Tractor		
+trailer.checklist.seguridad.acoplado.ejes	Ejes		
+query.reportmileage.invalidmonth	Período Incorrecto - No hay odometros previos		
+generic.messages.welcome	Bienvenido/a	Welcome	Bem-vindo/a
+permission.hrdbrasilquery.name	HRD Brasil	HRD Brasil	HRD Brasil
+datatype.scheduledactivitytype.pesados1	Pesados 1	Heavy 1	Pesados 1
+datatype.scheduledactivitytype.seguimientoenruta	Seguimiento en Ruta	Seguimiento en ruta	Seguimiento en Ruta
+datatype.scheduledactivitytype.gabinetepsicotecnico	Gabinetes Psicotécnicos	Aptitud Test	Exames Psicotécnicos
+generic.messages.vehicle	Vehículos	Vehicles	Veículos
+generic.activity.form.seguimientoenruta.title	Seguimiento en Ruta Vehículo Pesado	On-Road Driver Assessment - Heavy Vehicles	Acompanhamento de Motoristas em Trânsito - Veículo Pesado
+generic.activity.form.vehiclepursuitroutelist	Seguimiento en Ruta Vehículo Pesado	On-Road Driver Assessment - Heavy Vehicles	Acompanhamento de Motoristas em Trânsito - Veículo Pesado
+generic.activity.form.seguimientoenruta.corporation	Empresa:	Company:	Empresa:
+generic.activity.form.seguimientoenruta.plate	Matrícula de unidad evaluada:	Vehicle license plate:	Placa da unidade avaliada:
+generic.activity.form.seguimientoenruta.instructor	Instructor:	Instructor:	Instrutor:
+generic.activity.form.seguimientoenruta.date	Fecha:	Date:	Data:
+generic.activity.form.seguimientoenruta.evaluationtime	Horario de evaluación:	Assessment time:	Horário da avaliação:
+generic.activity.form.seguimientoenruta.evaluationarea	Área o tramo de evaluación:	Assessment location:	Área ou trecho da avaliação:
+generic.activity.form.seguimientoenruta.yes	SI	YES	SIM
+generic.activity.form.seguimientoenruta.no	NO	NO	NÃO
+generic.activity.form.seguimientoenruta.point1	Durante el Recorrido	During the Trip	Durante o Percurso
+generic.activity.form.seguimientoenruta.point1item1	Utiliza el equipo/vestimenta reglamentaria.	Uses regulatory equipment/uniform.	Utilizou equipamento/vestimenta regulamentar.
+generic.activity.form.seguimientoenruta.point1item2	Se ajustó el cinturón de seguridad.	Uses the seat belt.	Colocou o cinto de segurança.
+generic.activity.form.seguimientoenruta.point1item3	Distribuyó correctamente la carga.	Distributes load properly.	Distribuiu corretamente a carga.
+generic.activity.form.seguimientoenruta.point1item4	Respetó la altura máxima reglamentaria de la carga.	Respects maximum load height limit.	Respeitou a altura máxima da carga.
+generic.activity.form.seguimientoenruta.point1item5	Circuló con la carga comprometiendo la seguridad.	Drives with load compromising safety.	Circulou com a carga comprometendo a segurança.
+generic.activity.form.seguimientoenruta.point1item6	Demostró buena actitud con los demás usuarios.	Displays overall good attitude towards other roadway users.	Demonstrou bom comportamento com os demais usuários.
+generic.activity.form.seguimientoenruta.point1item7	Respetó a los peatones.	Respects pedestrians.	Respeitou os pedestres.
+generic.activity.form.seguimientoenruta.point1item8	Obedeció las reglas de preferencia.	Obeys the right-of-way rules.	Cumpriu as regras de preferência.
+generic.activity.form.seguimientoenruta.point1item9	Obedeció las reglas de tránsito.	Follows the rules of the road.	Cumpriu as normas de trânsito.
+generic.activity.form.seguimientoenruta.point1item10	Circuló con las luces reglamentarias.	Adequately uses lights.	Circulou com as luzes obrigatórias.
+generic.activity.form.seguimientoenruta.point1item11	Obedeció los límites de velocidad reglamentarios.	Respects the posted speed limits.	Obedeceu aos limites de velocidade.
+generic.activity.form.seguimientoenruta.point1item12	Mantuvo velocidad adecuada.	Maintains appropriate speed.	Manteve velocidade adequada.
+generic.activity.form.seguimientoenruta.point1item13	Mantuvo siempre la distancia de seguridad.	Always maintains a safe distance/clearance.	Guardou distância de segurança.
+generic.activity.form.seguimientoenruta.point1item14	Anticipó el riesgo delantero.	Scans and anticipates hazards located ahead.	Antecipou o risco à frente.
+generic.activity.form.seguimientoenruta.point1item15	Controló a los vehículos traseros.	Controls vehicles following behind.	Controlou os veículos que vinham atrás.
+generic.activity.form.seguimientoenruta.point1item16	Señaló todas sus maniobras.	Signals all maneuvers.	Sinalizou todas as manobras.
+generic.activity.form.seguimientoenruta.point1item17	Verificó siempre por los espejos antes de maniobrar.	Scans mirrors before every maneuver.	Verificou os espelhos antes de manobrar.
+generic.activity.form.seguimientoenruta.point1item18	Se ubicó en el carril adecuado al cambiar de posición.	Adequately positions the vehicle after changing lanes.	Utilizou a faixa correta quando mudou de posição.
+generic.activity.form.seguimientoenruta.point1item19	Al girar se ubicó en el carril correcto.	Maintains the appropriate lane while negotiating a curve.	Ao fazer curvas, posicionou-se na faixa correta.
+generic.activity.form.seguimientoenruta.point1item20	Demostró seguridad en intersecciones.	Displays safety when approaching/crossing intersections.	Demonstrou segurança nos cruzamentos.
+generic.activity.form.seguimientoenruta.point1item21	Obedeció las indicaciones de semáforos.	Respects traffic lights.	Cumpriu as indicações dos semáforos.
+generic.activity.form.seguimientoenruta.point1item22	Anticipó cambio de luces en semáforos.	Anticipates changes in traffic lights.	Antecipou a mudança de luz dos semáforos.
+generic.activity.form.seguimientoenruta.point1item23	Respetó el señalamiento y maniobras de terceros.	Respects signals and maneuvers of other roadway users.	Respeitou as luzes de sinalização e manobras de terceiros.
+generic.activity.form.seguimientoenruta.point1item24	Realizó los rebazamientos/adelantamientos con seguridad.	Performs safe passing maneuvers.	Realizou ultrapassagens com segurança.
+generic.activity.form.seguimientoenruta.point1item25	Usó el claxon/bocina con criterio.	Uses the horn with criteria.	Utilizou a buzina com critério.
+generic.activity.form.seguimientoenruta.point1item26	Se mostró tolerante y paciente.	Displays tolerance and patience.	Demonstrou-se tolerante e paciente.
+generic.activity.form.seguimientoenruta.point1item27	No usó ni atendió el celular mientras condujo.	Does not place calls or answer the cell phone while driving.	Não usou nem atendeu o celular enquanto dirigia.
+generic.activity.form.seguimientoenruta.point2	Detenciones, Estacionamiento y Maniobras	Stops, Parking and Maneuvers	Paradas, Estacionamento e Manobras
+generic.activity.form.seguimientoenruta.point2item1	Frenó progresivamente y anticipó su intención.	Brakes progressively and displays intent in advance.	Freou progressivamente e antecipou sua intenção.
+generic.activity.form.seguimientoenruta.point2item2	Señaló su intención adecuada y anticipadamente.	Signals intent properly and in advance.	Sinalizou sua intenção de forma adequada e antecipada.
+generic.activity.form.seguimientoenruta.point2item3	Mantiene distancia de seguridad con vehículo delantero.	Maintains a safe distance from the vehicle ahead.	Guardou distância segura do veículo da frente.
+generic.activity.form.seguimientoenruta.point2item4	Maniobró con seguridad.	Maneuvers safely.	Manobrou com segurança.
+generic.activity.form.seguimientoenruta.point2item5	Señaló correctamente salida y/o reinicio de maniobra.	Adequately signals when pulling out and/or maneuvering.	Sinalizou corretamente a saída e/ou o reinício das manobras.
+generic.activity.form.seguimientoenruta.point3	Incidentes Graves	Serious Incidents	Incidentes Graves
+generic.activity.form.seguimientoenruta.point3item1	Cruza con luz roja.	Ran a red light.	Avançou o sinal vermelho.
+generic.activity.form.seguimientoenruta.point3item2	Cruza sin respetar un alto/Pare.	Failed to stop at a regulatory "STOP" sign.	Desrespeitou sinal de parada obrigatória.
+generic.activity.form.seguimientoenruta.point3item3	Adelanta en forma irreglamentaria/negligente.	Improper passing maneuver.	Ultrapassou de forma ou em local indevido.
+generic.activity.form.seguimientoenruta.point3item4	Comete un incidente.	Was involved in an incident.	Cometeu um incidente.
+generic.activity.form.seguimientoenruta.point3item5	Otros.	Others.	Outros.
+generic.activity.form.seguimientoenruta.observations	Observaciones	Observations Observaçoes	
+generic.messages.addpursuitroute	Agregar Seguimiento en Ruta	Add On-Road Driver Assessment	Adicionar Acompanhamento de Motoristas em Trânsito
+permission.vehiclechecklist.name	Checklist de Vehículos	Vehicle CheckList	Vehicle CheckList
+vehicle.seguimientoenruta.history	Historial de Seguimientos en Ruta	On-Road Driver Assessment History	História Acompanhamento de Motoristas em Trânsito
+generic.messages.noinstructor	Falta el instructor.	It lacks the instructor.	Falta o instrutor.
+generic.messages.nodata	Sin Datos	No Data	No Data
+generic.messages.noarea	Falta el Área	Fill the Location.	Falta o Área.
+trailer.seguimientoenruta.delete.confirm	Confirma que desea borrar el Seguimiento En Ruta.	Confirm that you want to delete this On-Road Driver Assessment.	Confirmar que você quer suprimir este Acompanhamento de Motoristas em Trânsito.
+vehicle.seguimientoenruta.query	Consulta de Seguimientos en Ruta	On-Road Driver Assessment Query	Consulta de Acompanhamento de Motoristas em Trânsito
+vehicle.seguimientoenruta.with	Con Seguimientos en Ruta.	With On-Road Driver Assessment.	Con Acompanhamento de Motoristas em Trânsito.
+vehicle.seguimientoenruta.without	Sin Seguimientos en Ruta.	With out On-Road Driver Assessment.	Sem Acompanhamento de Motoristas em Trânsito.
+vehicle.seguimientoenruta.query.error1	Durante el Recorrido	During the Trip	Durante o Percurso
+vehicle.seguimientoenruta.query.error2	Detenciones, Estacionamiento y Maniobras	Stops, Parking and Maneuvers	Paradas, Estacionamento e Manobras
+vehicle.seguimientoenruta.query.error3	Incidentes Graves	Serious Incidents	Incidentes Graves
+vehicle.seguimientoenruta.query.error4	Observaciones	Observations	Observaçoes
+vehicle.seguimientoenruta.report	Reporte de Seguimientos en Ruta	On-Road Driver Assessment Report	Reporte Acompanhamento de Motoristas em Trânsito
+vehicle.seguimientoenruta.query.notpursuit	Camiones sin Seguimiento en Ruta	Trucks without On-Road Driver Assessment	Caminhões sem Acompanhamento de Motoristas em Trânsito
+vehicle.seguimientoenruta.query.notpursuit.query	Consulta de Camiones sin Seguimiento en Ruta	Trucks without On-Road Driver Assessment Query	Consulta Caminhões sem Acompanhamento de Motoristas em Trânsito
+datatype.scheduledactivitytype.principiante	Principiante	Beginner	Novato
+datatype.scheduledactivitytype.principiante.refreshment	Principiante (Refreshment)	Beginner (Refreshment)	Novato (Refreshment)
+datatype.scheduledactivitytype.avanzado	Avanzado	Advanced	Avançado
+generic.activity.note.notapply	No Aplica	Not Apply	Não Aplicar
+generic.driver.driverdata.date	Fecha	Date	Fecha
+generic.driver.driverdata.type	Tipo	Type	Tipo
+generic.driver.driverdata.clasification	Clasificación	Clasification	Clasificación
+generic.driver.driverdata.hrdMonConditions.criterio	Clasificación	Clasification	Clasificación
+generic.driver.driverdata.result	Resultado	Result	Resutado
+labelkey	language	text	
+fleet.error.invalid.costs	Ingrese 0 si no Ocurrió Ningún Costoe o un Número sin Decimales, Puntos o Comas.	Type 0 if no Costs Occurred or  a Number, no Decimals,Points or Commas.	Type 0 if no Costs Occurred or  a Number, no Decimals,Points or Commas.
+generic.driver.driverdata.hrdConditions.criterio	Clasificación	Clasification	Clasificación

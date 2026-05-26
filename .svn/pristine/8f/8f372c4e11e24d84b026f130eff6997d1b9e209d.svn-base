@@ -1,0 +1,149 @@
+<%@page import="communication.util.tables.AppFileData"%>
+<%@page language="java"
+	errorPage="../exception.jsp"
+	import="business.*"
+	import="java.io.*"
+	import="java.text.*"
+	import="java.util.*"
+	import="business.administration.user.*"
+	import="business.datatype.*"
+	import="communication.language.*"
+	import="communication.vehicle.tables.*"
+	import="communication.datatype.tables.*"
+	import="communication.datatype.*"
+	import="communication.corporation.tables.*"
+	import="communication.geografic.tables.*"
+	import="communication.administration.user.tables.*"
+	import="communication.administration.user.tables.geographicdivisions.*"
+	import="communication.security.*"
+	import="communication.util.*"
+	import="presentation.translator.web.util.*"
+	import="presentation.translator.web.vehicle.*"
+	import="presentation.translator.web.activity.schedule.*"	
+	import="java.util.*"
+ 	import="communication.administration.user.*" 
+ 	import="communication.administration.corporation.tables.*"	
+	import="communication.util.Filter"
+	import="communication.security.*"
+ 			
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html" 
+%>
+<%
+	SystemAccess sys = (SystemAccess)session.getAttribute("SystemAccess");
+	Text messages = sys.getText();
+	UserSessionData userSessionData;
+	// Fin manejo de mensajes
+ 	
+	//	Me fijo si tiene permisos para agregar reportes o cepa tips
+	String addReportPermission = Util.checkPermission(sys,SecurityConstants.ADD_REPORT);
+	if (addReportPermission == null) {
+		
+		sys = (SystemAccess)session.getAttribute("SystemAccess");
+		userSessionData = sys.getUserSessionData();
+		Collection<AppFileData> files = sys.getCorporationReportFacade().getAppFiles(userSessionData);
+%>
+
+
+<html:html>
+	<head>
+		<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	</head>
+	<body>
+		<html:form action="/UpdateAppFileDatabase" method="post">	
+			<table width="850"  border="0" cellspacing="0" cellpadding="0" align="center"> 
+				<tr class="guide1">
+					<jsp:include  page='<%="../component/titlecomponent.jsp?colspan=5&title="+messages.getText("generic.appfiles.confirmupdate")%>' />
+				</tr>
+		   		<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+		  		</tr>
+				<tr>
+					<td width="50%" valign="top" colspan="5">
+						<jsp:include  page='../component/utilitybox4top.jsp' />
+						<table width="100%"  border="0" cellspacing="0" cellpadding="0" align="center"> 
+						    <tr height="25">
+						     	<th width='10%' class="lineone">
+			            			<%=messages.getText("generic.appfiles.updateline")+": "%> 
+			            		</th> 
+						     	<td width='90%' class="lineone" align="left">
+			            			<html:text property="updateLine" styleClass="input" size="50" /> 
+			            		</td> 
+			            	</tr>
+						    <tr height="25">
+						     	<th width='10%' class="lineone">
+			            			<%=messages.getText("generic.appfiles.badge")+": "%> 
+			            		</th> 
+						     	<td width='90%' class="lineone" align="left">
+			            			<html:select property="badge" styleClass="input">
+<%							for(int i = 0; i <= 15; i++) {					
+%>										<html:option value="<%=String.valueOf(i)%>"><%=String.valueOf(i)%></html:option>
+<%							}					
+%>         							</html:select>
+			            		</td> 
+			            	</tr>
+			            	<tr>
+						     	<td width='100%' class="lineone" colspan="2" align="right">
+			        				<html:submit value='<%=messages.getText("generic.appfiles.updatedatabase")%>' /> 
+			        				<html:cancel value='<%=messages.getText("generic.messages.cancel")%>' /> 
+			            		</td> 
+			            	</tr>
+			            </table>
+						<jsp:include  page='../component/utilitybox4bottom.jsp' />
+					</td>
+				</tr>
+		   		<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+		  		</tr>
+<%		Iterator<AppFileData> it = files.iterator();
+		String line = "linetwo";
+		int last = 0;
+		while(it.hasNext()) {
+			AppFileData file = it.next();
+			String url = (sys.isCorporation(CorporationData.JJ)) ? SecurityConstants.APPJJ_URL : SecurityConstants.APPCEPA_URL; 
+			url += "files/" + file.getCategoryName().toLowerCase()+"/"+file.getDocumentname();			
+			if(file.getCategory().intValue() != last) {
+				if(last > 0) {
+%>			    
+						</table>
+						<jsp:include  page='../component/utilityboxbottom.jsp' />
+					</td>
+				</tr>
+		   		<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+		  		</tr>
+<%			}
+%>
+		    	<tr>
+		      		<td>
+		      			<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText(file.getCategoryName())%>' />
+						<table width="100%"  border="0" cellspacing="0" cellpadding="0" align="center"> 
+<%				last = file.getCategory().intValue();
+		}
+%>
+						    <tr height="25">
+						     	<td class="linetwo">
+						     		<a href='<%=url%>'>
+							     		<%=file.getOrder() + " - " + file.getTitle()%>
+							     	</a>
+						     	</td>
+						     </tr>
+<%		}
+%>			    
+						</table>
+						<jsp:include  page='../component/utilityboxbottom.jsp' />
+					</td>
+				</tr>
+		   		<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+		  		</tr>
+			</table>
+		</html:form>
+	</body>
+</html:html>
+
+<%
+  	}
+ %>

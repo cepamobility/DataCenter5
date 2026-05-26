@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.log.corporation" >
+	<class name="CorporationLog" table="corporationlog">
+       	<composite-id class="persistence.log.IdLogPK" name="pk" >
+	        <key-property	name="id"	type="java.lang.Integer"	column="id"/>
+	        <key-property	name="loginUser"	type="java.lang.String"	column="loginuser"/>
+	        <key-property	name="date"	type="java.util.Date"	column="date"/>
+       	</composite-id>
+	    
+	    <property name="name" column="name" type="java.lang.String" not-null="true"	/>
+	    <property name="action" column="action" type="java.lang.Integer" not-null="true"	/>
+		
+		<set inverse="true" name="DivOrgSet"  cascade="all-delete-orphan">
+			<key>
+					<column name="corporationDivOrg" /> 
+					<column name="loginDivOrg" /> 
+					<column name="dateDivOrg" />
+			</key>
+			<one-to-many class="DivOrgLog" />
+		</set>
+	
+		<set inverse="true" name="GeoLabelSet"  cascade="all-delete-orphan">
+			<key>
+				<column name="corporationGeoLabel" /> 
+				<column name="loginGeoLabel" /> 
+				<column name="dateGeoLabel" />
+			</key>
+			<one-to-many class="GeoLabelLog" />
+		</set>
+
+  	</class>
+</hibernate-mapping>

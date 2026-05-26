@@ -1,0 +1,71 @@
+<html>
+<head>
+<style type="text/css">
+
+.style1 {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11px;
+	color: #000000;	
+}
+.style5 {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px; color: #153F65;
+ 	font-weight: bold;
+ }
+
+</style>
+</head>
+
+<body>
+<DIV align="center">
+  <table width="600" height="453"  border="0" cellpadding="0" cellspacing="0">
+    <tr> 
+      <td height="219" valign="top"><img src="/datacenter/util/imgs/home_top.jpg" width="600" height="219"></td>
+    </tr>
+    <tr> 
+      <td height="102" align="center" valign="top" background="/datacenter/util/imgs/home_middle.jpg"> 
+        <table width="578" border="0" cellpadding="1">
+          <tr valign="top"> 
+            <td width="184" height="209"> <p><span class="style5">New Layout<br>
+                </span><span class="style1">Designed to facilitate usability and 
+                significantly enhance task execution speed.<br>
+                </span><span class="style5"><br>
+                100% Developed In-House<br>
+                </span><span class="style1">This well-structured, solid and more 
+                secure database management system was completely developed in-house 
+                by CEPA with the support of an excellent and highly competent 
+                team of professionals.</span></p></td>
+            <td width="184"><span class="style5">New Functionalities</span> <br> 
+              <span class="style1"><IMG SRC="/datacenter/util/imgs/icon2.jpg" NAME="gr&aacute;ficos1" ALIGN=BOTTOM WIDTH=8 HEIGHT=8 BORDER=0> 
+              Reports and data provided at the touch of a button<br>
+              <IMG SRC="/datacenter/util/imgs/icon2.jpg" NAME="gr&aacute;ficos1" ALIGN=BOTTOM WIDTH=8 HEIGHT=8 BORDER=0> 
+              Improved data management system that uses more intuitive interfaces 
+              and allows a variety of new queries<br>
+              <IMG SRC="/datacenter/util/imgs/icon2.jpg" NAME="gr&aacute;ficos1" ALIGN=BOTTOM WIDTH=8 HEIGHT=8 BORDER=0> 
+              New elements that simplify the workload<br>
+              <IMG SRC="/datacenter/util/imgs/icon2.jpg" NAME="gr&aacute;ficos1" ALIGN=BOTTOM WIDTH=8 HEIGHT=8 BORDER=0> 
+              Prompt response to new market requirements</span></td>
+            <td width="196"><span class="style5">Tecnology and Speed</span><br> 
+              <span class="style1">Developed with state-of-the-art technology, 
+              the new Data Center is more secure, robust, and faster.<br>
+              <br>
+              </span><span class="style5">New services currently under development</span><span class="style1"><br>
+              <IMG SRC="/datacenter/util/imgs/icon2.jpg" NAME="gr&aacute;ficos1" ALIGN=BOTTOM WIDTH=8 HEIGHT=8 BORDER=0> 
+              Comprehensive Fleet Management Solutions<br>
+              <IMG SRC="/datacenter/util/imgs/icon2.jpg" NAME="gr&aacute;ficos1" ALIGN=BOTTOM WIDTH=8 HEIGHT=8 BORDER=0> 
+              Comprehensive Occupational Safety Solutions<br>
+              <IMG SRC="/datacenter/util/imgs/icon2.jpg" NAME="gr&aacute;ficos1" ALIGN=BOTTOM WIDTH=8 HEIGHT=8 BORDER=0> 
+              Business Intelligence Module, which allows clients to create 
+              a unique set of queries.</span></td>
+          </tr>
+        </table></td>
+    </tr>
+    <tr>
+      <td height="19" align="center" valign="top"><img src="/datacenter/util/imgs/home_bottom.jpg" width="600" height="21"></td>
+    </tr>
+  </table>
+</DIV>
+<p><br>
+</p>
+</body>
+</html>

@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.driver.tables">
+       <class name="DriverStateHistory" table="driverstatehistory">
+        
+	        <id	column="id"	name="id"	type="java.lang.Integer">
+	           <generator class="sequence">
+					<param name="sequence">DriverStateHistory_Sequence</param>
+				</generator>
+	        </id>
+	        <property	name="state"	type="java.lang.String"		column="state"	not-null="true" />        
+	        <property	name="stateDate"	type="java.sql.Timestamp"		column="stateDate"	not-null="true" />        
+	        <property	name="reasonDescription"	type="java.lang.String"		column="reasonDescription"	not-null="true" />  
+    	</class>
+</hibernate-mapping>

@@ -1,0 +1,882 @@
+package persistence.datatype;
+
+import java.sql.ResultSet;
+import java.sql.Statement;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.StringTokenizer;
+
+import javax.ejb.CreateException;
+import javax.ejb.SessionBean;
+
+import org.hibernate.Hibernate;
+import org.hibernate.Query;
+import org.hibernate.SQLQuery;
+import org.hibernate.Transaction;
+import org.hibernate.classic.Session;
+
+import persistence.datatype.tables.EmailAddress;
+import persistence.datatype.tables.GeneralDataType;
+import persistence.datatype.tables.InstructorRegistryType;
+import persistence.hibernate.HibernateUtil;
+import persistence.util.ExceptionHandler;
+import persistence.util.Util;
+import persistence.util.UtilityQuery;
+
+import communication.activity.tables.DriverMaxExpiry;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.InstructorRegistryData;
+import communication.administration.dpa.UnconformityItemTypeDPADataType;
+import communication.administration.dpa.UnconformityTypeDPADataType;
+import communication.administration.user.UserSessionData;
+import communication.alert.AlertConstants;
+import communication.datatype.DataTypeConstants;
+import communication.datatype.tables.AccidentClasificationDataType;
+import communication.datatype.tables.AccidentFactorsDataType;
+import communication.datatype.tables.ActionOrganizationDataType;
+import communication.datatype.tables.AlertFrecuencyDataType;
+import communication.datatype.tables.AlertPriorityDataType;
+import communication.datatype.tables.AlertTypeDataType;
+import communication.datatype.tables.AssignedVehicleDataType;
+import communication.datatype.tables.BrasilStateDataType;
+import communication.datatype.tables.CEPAActivityNoteDataType;
+import communication.datatype.tables.CirculationDirectionDataType;
+import communication.datatype.tables.ClimateDataType;
+import communication.datatype.tables.ComplaintCallDataType;
+import communication.datatype.tables.ConditionRoutDataType;
+import communication.datatype.tables.ConsequenceDataType;
+import communication.datatype.tables.ContractDataType;
+import communication.datatype.tables.DPACourseDataType;
+import communication.datatype.tables.EducationDataType;
+import communication.datatype.tables.EducationLevelDataType;
+import communication.datatype.tables.EnsuranceDataType;
+import communication.datatype.tables.FineQualifyDataType;
+import communication.datatype.tables.FineTypeDataType;
+import communication.datatype.tables.FleetConsequenceDataType;
+import communication.datatype.tables.GeneralDTData;
+import communication.datatype.tables.IncidentClasificationDataType;
+import communication.datatype.tables.LightingDataType;
+import communication.datatype.tables.MaritalStatusDataType;
+import communication.datatype.tables.PavementDataType;
+import communication.datatype.tables.PlatformDataType;
+import communication.datatype.tables.PopulationGroupDataType;
+import communication.datatype.tables.PuestoPepsicoDataType;
+import communication.datatype.tables.SexDataType;
+import communication.datatype.tables.StateOfEmployeeDataType;
+import communication.datatype.tables.TrafficControlDataType;
+import communication.datatype.tables.TypeCenterCostDataType;
+import communication.datatype.tables.TypeCoverDataType;
+import communication.datatype.tables.TypeDistanceUnitDataType;
+import communication.datatype.tables.TypeEngineDataType;
+import communication.datatype.tables.TypeFuelDataType;
+import communication.datatype.tables.TypeTradeDataType;
+import communication.datatype.tables.TypeUseDataType;
+import communication.datatype.tables.TypeVehicleDataType;
+import communication.datatype.tables.TypeVolumeUnitDataType;
+import communication.datatype.tables.UnconformityDataType;
+import communication.datatype.tables.VehicleBehaviourDataType;
+import communication.datatype.tables.WayDataType;
+import communication.datatype.tables.ZoneDataType;
+import communication.driver.tables.DriverData;
+import communication.exception.CommunicationProblemException;
+import communication.exception.DeslogedException;
+
+/**
+ * @ejb.bean name="DataTypeReport" display-name="Name for DataTypeReport"
+ *           description="Description for DataTypeReport" jndi-name="ejb/DataTypeReport"
+ *           type="Stateless"
+ *  
+ */
+public abstract class DataTypeReportBean implements SessionBean {
+    
+    private ExceptionHandler handler = new ExceptionHandler(DataTypeReportBean.class);
+
+    /**
+     * @ejb.create-method 
+     * @ejb.permission role-name = "systemaccess,administrator,resetpassword"
+     * @throws CreateException
+     */
+    public void ejbCreate() throws CreateException { }
+
+	/**
+	 * @throws DeslogedException
+	 * @throws CommunicationProblemException
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "systemaccess,administrator,resetpassword"
+	 */ 	 
+	public Collection findAll(UserSessionData userSessionData, int attribute) throws Exception {
+		if (userSessionData == null) {
+            throw new DeslogedException("DataTypeReportBean: findAll","session = null");
+		}
+		List result = new LinkedList();
+		List list = null;
+		Session session = null;
+		try {
+			session = HibernateUtil.currentSession();
+			Query query = null;
+			switch(attribute) {
+				case DataTypeConstants.DPA_COURSES:
+					query = session.createSQLQuery("SELECT resourcebundleid FROM datatypedpacourses").addScalar("resourcebundleid",Hibernate.STRING);
+	                Iterator it1 = query.list().iterator();
+	                while(it1.hasNext()) {
+	                    result.add(new DPACourseDataType((String) it1.next()));
+	                }
+					return result;
+				case DataTypeConstants.SEX:
+					query = session.createSQLQuery("SELECT resourcebundleid FROM datatypesex").addScalar("resourcebundleid",Hibernate.STRING);
+                    Iterator it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new SexDataType((String) it.next()));
+                    }
+					return result;
+				case DataTypeConstants.CLIMATE:
+					query = session.createSQLQuery("SELECT resourcebundleid FROM datatypeclimate").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new ClimateDataType((String) it.next()));
+                    }
+                    return result;
+				case DataTypeConstants.CONDITIONROUT:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypeconditionrout").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new ConditionRoutDataType((String) it.next()));
+                    }
+                    return result;
+				case DataTypeConstants.CONSEQUENCE:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypeconsequence").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new ConsequenceDataType((String) it.next()));
+                    }
+                    return result;
+				case DataTypeConstants.CIRCULATIONDIRECTION:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypecirculationdirection").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new CirculationDirectionDataType((String) it.next()));
+                    }
+                    return result;
+				case DataTypeConstants.LIGHTING:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypelighting").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new LightingDataType((String) it.next()));
+                    }
+                    return result;
+				case DataTypeConstants.STATEOFEMPLOYEE:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypestateofemployee").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new StateOfEmployeeDataType((String) it.next()));
+                    }
+                    return result;
+				case DataTypeConstants.ZONE:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypezone").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new ZoneDataType((String) it.next()));
+                    }
+                    return result;
+				case DataTypeConstants.CRPONPRIMARYCLASIFICATION:
+					query= session.createQuery("select corporationprimaryclasification from persistence.datatype.tables.CrponPrimaryClasification corporationprimaryclasification where corporationprimaryclasification.corporation="+userSessionData.getFilter().getCorporationId());
+					break;
+				case DataTypeConstants.TYPEUSE:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypeuse").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new TypeUseDataType((String) it.next()));
+                    }
+                    return result;
+				case DataTypeConstants.TYPEFUEL:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypefuel").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new TypeFuelDataType((String) it.next()));
+                    }
+                    return result;
+				case DataTypeConstants.TYPEENGINE:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypeengine").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new TypeEngineDataType((String) it.next()));
+                    }
+                    return result;
+				case DataTypeConstants.TYPEVOLUMEUNIT:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypevolumeunit").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new TypeVolumeUnitDataType((String) it.next()));
+                    }
+                    return result;
+				case DataTypeConstants.TYPEDISTANCEUNIT:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypedistanceunit").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new TypeDistanceUnitDataType((String) it.next()));
+                    }
+                    return result;
+				case DataTypeConstants.TYPECENTERCOST:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypeownership").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new TypeCenterCostDataType((String) it.next()));
+                    }
+                    return result;
+				case DataTypeConstants.TYPEVEHICLE:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypevehicle").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new TypeVehicleDataType((String) it.next()));
+                    }
+                    return result;
+				case DataTypeConstants.TYPEPLATFORM:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypeplatform").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new PlatformDataType((String) it.next()));
+                    }
+                    return result;
+				case DataTypeConstants.TYPECEPAACTIVITY:
+					// En CEPAActivityType están todos los tipos de actividad y en ActivityCorporationType están los tipos de actividad de cada corporación 
+					query = session.createQuery("select cepaactivitytype " +
+							" from CEPAActivityType cepaactivitytype,ActivityTypeByCorporation activitytypebycorporation  " +
+							" where cepaactivitytype.resourceBundleId = activitytypebycorporation.resourceBundleId " +
+							" and activitytypebycorporation.corporationId =" + userSessionData.getFilter().getCorporationId() +
+							" order by cepaactivitytype.resourceBundleId ");
+					break;							
+				case DataTypeConstants.TYPECEPAACTIVITYNOTE:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypecepaactivitynote").addScalar("resourcebundleid",Hibernate.STRING);
+                    list = query.list();
+                    if (list != null){
+	                    it = list.iterator();
+	                    while(it.hasNext()) {
+	                        result.add(new CEPAActivityNoteDataType((String) it.next()));
+	                    }
+                    }
+                    return result;
+				case DataTypeConstants.TYPECEPAACTIVITYSCHEDULESTATE:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypecepaactivityschedulestate").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new GeneralDTData((String) it.next()));
+                    }
+                    return result;
+				case DataTypeConstants.TYPETRADE:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypetrade").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new TypeTradeDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.TYPECOVER:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypecover").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new TypeCoverDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.WAY:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypeway").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new WayDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.TRAFFIC_CONTROLS:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypetrafficcontrols").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new TrafficControlDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.PAVEMENT:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypepavement").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new PavementDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.ACCIDENT_FACTORS:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypeaccidentfactors where oldId>-1").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new AccidentFactorsDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.VEHICLE_BEHAVIOUR:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypevehiclebehaviour where oldId>-1").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new VehicleBehaviourDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.NEW_ACCIDENT_FACTORS:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypeaccidentfactors where oldId=-1").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new AccidentFactorsDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.NEW_VEHICLE_BEHAVIOUR:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypevehiclebehaviour where oldId=-1").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new VehicleBehaviourDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.CONTRACT:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypecontract").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new ContractDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.COLLISION_CLASIFICATION:
+                    query = session.createQuery("select collision from persistence.datatype.tables.CollisionClasification collision,persistence.datatype.tables.CollisionClasificationByCorporation collisionbycorporation where collision.resourceBundleId=collisionbycorporation.resourceBundleId and collisionbycorporation.corporationId =" + userSessionData.getFilter().getCorporationId());
+                    break;
+                case DataTypeConstants.NEW_JJ_COLLISION_CLASIFICATION:
+                    query = session.createQuery("select collision from persistence.datatype.tables.CollisionClasification collision where collision.oldId=-1 ");
+                    break;    
+                case DataTypeConstants.ACCIDENT_CLASIFICATION:
+                    query = session.createQuery("select accident,accidentbycorporation.active from persistence.datatype.tables.AccidentClasification accident,persistence.datatype.tables.AccidentClasificationByCorporation accidentbycorporation where accident.resourceBundleId=accidentbycorporation.resourceBundleId and accidentbycorporation.corporationId =" + String.valueOf(userSessionData.getFilter().getCorporationId()));
+                    break;
+                case DataTypeConstants.NEW_JJ_ACCIDENT_CLASIFICATION:
+                    query = session.createQuery("select accident from persistence.datatype.tables.AccidentClasification accident where accident.oldId=-1");
+                    break;       
+                case DataTypeConstants.INCIDENT_CLASIFICATION:
+                    query = session.createQuery("select incident from persistence.datatype.tables.IncidentClasification incident, persistence.datatype.tables.IncidentClasificationByCorporation incidentbycorporation where incident.resourceBundleId=incidentbycorporation.resourceBundleId and incidentbycorporation.corporationId =" + userSessionData.getFilter().getCorporationId());
+                    break;
+                case DataTypeConstants.NEW_JJ_INCIDENT_CLASIFICATION:
+                	query = session.createQuery("select incident from persistence.datatype.tables.IncidentClasification incident where incident.oldId=-1");
+                    break;    
+                case DataTypeConstants.OLD_ACCIDENT_CLASIFICATION:
+                    query = session.createQuery("select accident from persistence.datatype.tables.AccidentClasification accident,persistence.datatype.tables.OldAccidentClasificationByCorporation accidentbycorporation where accident.resourceBundleId=accidentbycorporation.resourceBundleId and accidentbycorporation.corporationId =" + userSessionData.getFilter().getCorporationId());
+                    break;                      
+                case DataTypeConstants.OLD_INCIDENT_CLASIFICATION:
+                    query = session.createQuery("select incident from persistence.datatype.tables.IncidentClasification incident, persistence.datatype.tables.OldIncidentClasificationByCorporation incidentbycorporation where incident.resourceBundleId=incidentbycorporation.resourceBundleId and incidentbycorporation.corporationId =" + userSessionData.getFilter().getCorporationId());
+                    break;
+                case DataTypeConstants.OLD_FINE_QUALIFY:
+                    query = session.createQuery("select fine from persistence.datatype.tables.FineQualify fine, persistence.datatype.tables.OldFineQualifyByCorporation finebycorporation where fine.resourceBundleId=finebycorporation.resourceBundleId and finebycorporation.corporationId =" + userSessionData.getFilter().getCorporationId());
+                    break;
+                case DataTypeConstants.FLEET_CONSEQUENCE:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypefleetconsequence").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new FleetConsequenceDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.FINE_TYPE:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypefinetype").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new FineTypeDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.FINE_QUALIFY:
+                	 query = session.createQuery("select fine from persistence.datatype.tables.FineQualify fine, persistence.datatype.tables.FineQualifyByCorporation finebycorporation where fine.resourceBundleId=finebycorporation.resourceBundleId and finebycorporation.corporationId =" + userSessionData.getFilter().getCorporationId());
+                     break;
+                case DataTypeConstants.ENSURANCE_TYPE:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypeensurance").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new EnsuranceDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.ALL_ACCIDENT_CLASIFICATION:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypeaccidentclasification").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new AccidentClasificationDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.ALL_INCIDENT_CLASIFICATION:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypeincidentclasification").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new IncidentClasificationDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.ALL_FINE_QUALIFY:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypefinequalify").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new FineQualifyDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.MONITORING_SYSTEM:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypemonitoringsystem").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new EnsuranceDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.POPULATION_GROUP:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypepopulationgroup").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new PopulationGroupDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.ACTION_ORGANIZATION:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypeactionorganization").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new ActionOrganizationDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.EDUCATION:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypeeducation").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new EducationDataType((String) it.next()));
+                    }
+                    return result;               
+                case DataTypeConstants.ALERT_TYPE:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypealerttype").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new AlertTypeDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.ALERT_PRIORITY:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypealertpriority").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new AlertPriorityDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.ALERT_FRECUENCY:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypealertfrecuency").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new AlertFrecuencyDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.UNCONFORMITY_TYPE:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM unconformitytypes WHERE corporationid = "+String.valueOf(userSessionData.getFilter().getCorporationId())).addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new UnconformityDataType((String) it.next()));
+                    }
+                    return result;
+                case DataTypeConstants.ASSIGNED_VEHICLE:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypeassignedvehicle").addScalar("resourcebundleid",Hibernate.STRING);
+                    it = query.list().iterator();
+                    while(it.hasNext()) {
+                        result.add(new AssignedVehicleDataType((String) it.next()));
+                    }
+                    return result;
+                    
+                case DataTypeConstants.MARITAL_STATUS:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypemaritalstatus ").
+                    	addScalar("resourcebundleid",Hibernate.STRING);
+                    list = query.list();
+                    if (list != null){
+                    	it = list.iterator();
+                    	if (it != null){
+                    		while(it.hasNext()) {
+                    			result.add(new MaritalStatusDataType((String) it.next()));
+                    		}
+                    	}
+                    }
+                    return result;
+                    
+                case DataTypeConstants.EDUCATION_LEVEL:
+                    query = session.createSQLQuery("SELECT resourcebundleid FROM datatypeeducationlevel ").
+                    	addScalar("resourcebundleid",Hibernate.STRING);
+                    list = query.list();
+                    if (list != null){
+                    	it = list.iterator();
+                    	if (it != null){
+                    		while(it.hasNext()) {
+                    			result.add(new EducationLevelDataType((String) it.next()));
+                    		}
+                    	}
+                    }
+                    return result;
+                case DataTypeConstants.PUESTO_PEPSICO:
+                	query = session.createSQLQuery("SELECT resourcebundleid FROM datatypepuestopepsico ").
+                	addScalar("resourcebundleid",Hibernate.STRING);
+	                list = query.list();
+	                if (list != null){
+	                	it = list.iterator();
+	                	if (it != null){
+	                		while(it.hasNext()) {
+	                			result.add(new PuestoPepsicoDataType((String) it.next()));
+	                		}
+	                	}
+	                }
+	                return result;
+	                
+                case DataTypeConstants.COMPLAINT_CALL:
+                	query = session.createSQLQuery("SELECT resourcebundleid FROM datatypecomplaintcall ").
+                	addScalar("resourcebundleid",Hibernate.STRING);
+	                list = query.list();
+	                if (list != null){
+	                	it = list.iterator();
+	                	if (it != null){
+	                		while(it.hasNext()) {
+	                			String value = (String)it.next();
+	                			if (value != null){
+	                				result.add(new ComplaintCallDataType(value));
+	                			}
+	                		}
+	                	}
+	                }
+	                return result;
+                case DataTypeConstants.DPA_INSTRUCTOR_REGISTRY:
+                	query = session.createSQLQuery("SELECT resourcebundleid FROM datatypeinstructorregistry ").
+                	addScalar("resourcebundleid",Hibernate.STRING);
+	                list = query.list();
+	                if (list != null){
+	                	it = list.iterator();
+	                	if (it != null){
+	                		while(it.hasNext()) {
+	                			String value = (String)it.next();
+	                			if (value != null){
+	                				result.add(new InstructorRegistryType(value));
+	                			}
+	                		}
+	                	}
+	                }
+	                return result;    
+                case DataTypeConstants.BRASIL_STATE:
+                	query = session.createSQLQuery("SELECT resourcebundleid FROM datatypebrasilstate ").
+                	addScalar("resourcebundleid",Hibernate.STRING);
+	                list = query.list();
+	                if (list != null){
+	                	it = list.iterator();
+	                	if (it != null){
+	                		while(it.hasNext()) {
+	                			result.add(new BrasilStateDataType((String) it.next()));
+	                		}
+	                	}
+	                }
+	                return result;
+                case DataTypeConstants.DPA_UNCONFORMITY_TYPE:
+                	query = session.createSQLQuery("SELECT resourcebundleid FROM datatypedpaunconformitytype ").
+                	addScalar("resourcebundleid",Hibernate.STRING);
+	                list = query.list();
+	                if (list != null){
+	                	it = list.iterator();
+	                	if (it != null){
+	                		while(it.hasNext()) {
+	                			result.add(new UnconformityTypeDPADataType((String) it.next()));
+	                		}
+	                	}
+	                }
+	                return result;   
+                case DataTypeConstants.DPA_UNCONFORMITY_ITEM_TYPE:
+                	query = session.createSQLQuery("SELECT resourcebundleid FROM datatypedpaunconformityitemtype ").
+                	addScalar("resourcebundleid",Hibernate.STRING);
+	                list = query.list();
+	                if (list != null){
+	                	it = list.iterator();
+	                	if (it != null){
+	                		while(it.hasNext()) {
+	                			result.add(new UnconformityItemTypeDPADataType((String) it.next()));
+	                		}
+	                	}
+	                }
+	                return result;      
+			}
+
+			List dtColl = query.list();
+			Iterator iter = dtColl.iterator();
+
+			while (iter.hasNext()) {
+                if(attribute == DataTypeConstants.ACCIDENT_CLASIFICATION) {
+                    Object[] data = (Object[]) iter.next();
+                    AccidentClasificationDataType datatype = (AccidentClasificationDataType)((GeneralDataType)data[0]).getData();
+                    if (data[1] !=null)
+                    	datatype.setActive(((Boolean) data[1]).booleanValue());
+                    result.add(datatype);
+                }else {
+    				GeneralDataType dataType = (GeneralDataType) iter.next();
+    				result.add(dataType.getData());
+                }
+			}
+
+			session.close();
+
+		} catch (Exception e) {
+			Object[] parameters = {attribute};
+			e.printStackTrace();
+            handler.getException(e,"findAll",userSessionData,parameters);
+		} 
+
+		return result;
+
+	}
+
+    /**
+     * @throws DeslogedException
+     * @throws CommunicationProblemException
+     * @ejb.interface-method
+     * @ejb.permission role-name = "systemaccess,administrator,resetpassword"
+     */      
+    public Collection findAllCEPA(UserSessionData userRequest, int attribute) throws Exception {
+        
+        if (userRequest == null) {
+            throw new DeslogedException("findAllCEPA","userRequest = null");
+        }
+        List result = new LinkedList();
+
+        Session session = null;
+
+        try {
+            session = HibernateUtil.currentSession();
+            
+            Transaction tx = session.beginTransaction();
+            int corporation = (userRequest.isCorporation(CorporationData.MONTES_DE_PLATA)) ? CorporationData.MONTES_DE_PLATA * -1 : CorporationData.SUPERVISION; 
+
+            Query query = null;
+            switch(attribute) {
+                case DataTypeConstants.ACCIDENT_CLASIFICATION:
+                    query = session.createQuery("select accident from persistence.datatype.tables.AccidentClasification accident,persistence.datatype.tables.AccidentClasificationByCorporation accidentbycorporation where accident.resourceBundleId=accidentbycorporation.resourceBundleId and accidentbycorporation.corporationId =" + corporation);
+                    break;                      
+                case DataTypeConstants.INCIDENT_CLASIFICATION:
+                    query = session.createQuery("select incident from persistence.datatype.tables.IncidentClasification incident, persistence.datatype.tables.IncidentClasificationByCorporation incidentbycorporation where incident.resourceBundleId=incidentbycorporation.resourceBundleId and incidentbycorporation.corporationId =" + corporation);
+                    break;
+                case DataTypeConstants.COLLISION_CLASIFICATION:
+                    query = session.createQuery("select collision from persistence.datatype.tables.CollisionClasification collision,persistence.datatype.tables.CollisionClasificationByCorporation collisionbycorporation where collision.resourceBundleId=collisionbycorporation.resourceBundleId and collisionbycorporation.corporationId =" + corporation);
+                    break; 
+                case DataTypeConstants.FINE_QUALIFY:
+               	 	query = session.createQuery("select fine from persistence.datatype.tables.FineQualify qualify, persistence.datatype.tables.FineQualifyByCorporation finebycorporation where fine.resourceBundleId=finebycorporation.resourceBundleId and finebycorporation.corporationId =" + CorporationData.MONSANTO);
+                    break;
+            }
+
+            List dtColl = query.list();
+            Iterator iter = dtColl.iterator();
+
+            while (iter.hasNext()) {
+                GeneralDataType dataType = (GeneralDataType) iter.next();
+                result.add(dataType.getData());
+            }
+
+            tx.commit();
+            session.close();
+
+        } catch (Exception e) {
+			Object[] parameters = {attribute};
+            handler.getException(e,"findAllCEPA",userRequest,parameters);
+        } 
+
+        return result;
+    }
+    
+    
+    /**
+     * @throws DeslogedException
+     * @throws CommunicationProblemException
+     * @ejb.interface-method
+     * @ejb.permission role-name = "systemaccess,administrator"
+     */      
+    public Collection findAllClasificationLevel(UserSessionData userRequest, int attribute, String parent) throws Exception {
+        
+        if (userRequest == null) {
+            throw new DeslogedException("findAllClasificationLevel","userRequest = null");
+        }
+        List result = new LinkedList();
+
+        Session session = null;
+
+        try {
+            session = HibernateUtil.currentSession();
+            
+            Transaction tx = session.beginTransaction();
+           
+            Query query = null;
+            switch(attribute) {
+                case DataTypeConstants.ACCIDENT_CLASIFICATION_LEVEL1:
+                    //query = session.createQuery("select accident from persistence.datatype.tables.AccidentClasificationLevel1 accident,persistence.datatype.tables.AccidentClasificationByCorporation accidentbycorporation where accident.resourceBundleId=accidentbycorporation.resourceBundleId and accidentbycorporation.corporationId =" + corporation);
+                	String prefix = (parent == null) ? "general" : parent;
+                	query = session.createQuery("select accident from persistence.datatype.tables.AccidentClasificationLevel1 accident WHERE accident.resourceBundleId LIKE '"+prefix+"%'");
+                    break;                      
+                case DataTypeConstants.ACCIDENT_CLASIFICATION_LEVEL2:
+                	 //query = session.createQuery("select accident from persistence.datatype.tables.AccidentClasificationLevel1 accident,persistence.datatype.tables.AccidentClasificationByCorporation accidentbycorporation where accident.resourceBundleId=accidentbycorporation.resourceBundleId and accidentbycorporation.corporationId =" + corporation);
+                	query = session.createQuery("select accident from persistence.datatype.tables.AccidentClasificationLevel2 accident where accident.parent='"+parent+"'");
+                    break;
+                case  DataTypeConstants.ACCIDENT_CLASIFICATION_LEVEL3:
+                	//query = session.createQuery("select accident from persistence.datatype.tables.AccidentClasificationLevel1 accident,persistence.datatype.tables.AccidentClasificationByCorporation accidentbycorporation where accident.resourceBundleId=accidentbycorporation.resourceBundleId and accidentbycorporation.corporationId =" + corporation);
+            		query = session.createQuery("select accident from persistence.datatype.tables.AccidentClasificationLevel3 accident where accident.parent='"+parent+"'");
+                    break; 
+                case DataTypeConstants.ACCIDENT_CLASIFICATION_LEVEL4:
+                	//query = session.createQuery("select accident from persistence.datatype.tables.AccidentClasificationLevel1 accident,persistence.datatype.tables.AccidentClasificationByCorporation accidentbycorporation where accident.resourceBundleId=accidentbycorporation.resourceBundleId and accidentbycorporation.corporationId =" + corporation);
+            		query = session.createQuery("select accident from persistence.datatype.tables.AccidentClasificationLevel4 accident where accident.parent='"+parent+"' ORDER BY resourceBundleId");
+                    break;
+            }
+
+            List dtColl = query.list();
+            Iterator iter = dtColl.iterator();
+
+            while (iter.hasNext()) {
+                GeneralDataType dataType = (GeneralDataType) iter.next();
+                if(dataType.getResourceBundleId().equals("general.eventdata.accidentclasification3") && userRequest.isCorporation(CorporationData.MONSANTO))
+                	result.add(dataType.getData());
+                else if(!dataType.getResourceBundleId().equals("general.eventdata.accidentclasification3")){
+                	result.add(dataType.getData());
+                }
+            }
+
+            tx.commit();
+            session.close();
+
+        } catch (Exception e) {
+			Object[] parameters = {attribute};
+            handler.getException(e,"findAllClasificationLevel",userRequest,parameters);
+        } 
+
+        return result;
+    }
+    
+    
+    /**
+     * @throws DeslogedException
+     * @throws CommunicationProblemException
+     * @ejb.interface-method
+     * @ejb.permission role-name = "systemaccess,administrator,resetpassword"
+     */      
+    public Collection getActivityWithExpiry(UserSessionData userSessionData,Integer[][] divOrgs,Integer[] divGeos,Date from, Date to,int status,String firstName,String lastName,String vehicleAllowed) throws Exception {
+    	try {
+    		Session session = HibernateUtil.currentSession();
+            String select = "select distinct ";
+            switch(userSessionData.getCorporationId()) {
+            	case CorporationData.MONSANTO:
+            		select += "CASE WHEN ca.type IN ('datatype.scheduledactivitytype.btw1','datatype.scheduledactivitytype.btw2','datatype.scheduledactivitytype.btw2-4x4','datatype.scheduledactivitytype.btw2onboard','datatype.scheduledactivitytype.btw2onboard2','datatype.scheduledactivitytype.btw2spv','datatype.scheduledactivitytype.btwutilitarioreboque','datatype.scheduledactivitytype.outtraining','datatype.scheduledactivitytype.outtraininglivianos','datatype.scheduledactivitytype.outtrainingpesados','tablet.form.btw1.livianos','tablet.form.btw2.livianos','tablet.form.btw2onboard') THEN 'datatype.scheduledactivitytype.btw1' " +
+                				"WHEN ca.type IN ('tablet.form.toj','tablet.form.specialdayoftraining','tablet.form.phrd','datatype.scheduledactivitytype.trainingonthejob','datatype.scheduledactivitytype.specialdayoftraining','datatype.scheduledactivitytype.hrd') THEN 'datatype.scheduledactivitytype.trainingonthejob' " +
+                				"WHEN ca.type IN ('datatype.scheduledactivitytype.btw3','datatype.scheduledactivitytype.btw3update') THEN 'datatype.scheduledactivitytype.btw3' " +
+                				"ELSE ca.type " +
+                				"END as type ";
+    	        	break;
+            	case CorporationData.JJ:
+            		select += "CASE WHEN ca.type IN ('tablet.form.btw1onboard','tablet.form.btw1.livianos','datatype.scheduledactivitytype.btwonboard2','datatype.scheduledactivitytype.btw1') THEN 'datatype.scheduledactivitytype.btw1' "+
+            				"WHEN ca.type IN ('tablet.form.btw2onboard','datatype.scheduledactivitytype.btw2onboard2','tablet.form.btw2.livianos','datatype.scheduledactivitytype.btw2') THEN 'datatype.scheduledactivitytype.btw2' " +
+            				"WHEN ca.type IN ('datatype.scheduledactivitytype.trainingonthejob','tablet.form.toj') THEN 'datatype.scheduledactivitytype.trainingonthejob' " +
+            				"WHEN ca.type IN ('datatype.scheduledactivitytype.evaluacionencabina','tablet.form.evaluacionencabina') THEN 'datatype.scheduledactivitytype.evaluacionencabina' " +
+            				"WHEN ca.type IN ('tablet.form.phrd','datatype.scheduledactivitytype.hrd') THEN 'datatype.scheduledactivitytype.hrd' " +
+            				"ELSE ca.type " +
+            				"END as type ";
+            		break;
+               /* case CorporationData.BAYER: case CorporationData.COVESTRO:
+                	select += "CASE WHEN ca.type IN ('datatype.scheduledactivitytype.btw1','datatype.scheduledactivitytype.btw2','datatype.scheduledactivitytype.btw2onboard','datatype.scheduledactivitytype.btw2onboard2','datatype.scheduledactivitytype.btwonboard2', 'datatype.scheduledactivitytype.btwutilitarioreboque','tablet.form.btw1.livianos','tablet.form.btw1onboard','tablet.form.btw2.livianos','tablet.form.btw2onboard' ) THEN 'datatype.scheduledactivitytype.btw1' " +
+                				"ELSE ca.type " +
+                				"END as type ";
+    	        	break;*/
+                default:
+                	select += "ca.type as type ";
+            }
+            select += " from cepaactivity ca,activityregistry ar,drivers d,cepaactivitydefinition ad ";
+
+            //restricciones de permisos
+            select += UtilityQuery.filterDivs(divOrgs,divGeos,"d",userSessionData);
+                
+                //joins
+            select += " AND ca.activityid = ar.activity "+
+                   		"AND d.id = ar.driver "+
+                   		"AND ca.activityid = ar.activity and ad.resourcekeyname = ca.type " +
+                   		"AND ad.timeexpiry > 0";
+
+                
+            if(!Util.empty(firstName)) {
+            	select += " AND lower(d.firstname) like '%"+firstName.toLowerCase()+"%' ";
+            }
+            if(!Util.empty(lastName)) {
+            	select += " AND lower(d.lastname) like '%"+lastName.toLowerCase()+"%' ";
+            }
+            switch (status) {
+            	case DriverData.ACTIVE:
+            	   select += " AND d.exclusionDate is null ";
+                   break;
+            	case DriverData.EXCLUDED:
+            	   select += " AND d.exclusionDate is not null ";
+                   break;
+            }
+            if(!Util.empty(vehicleAllowed) && !vehicleAllowed.equals("datatype.vehicletype.all")) {
+            	select += " AND d.vehicleallowed = '"+vehicleAllowed+"' ";
+            }
+
+            if(from != null) {
+            	select += " AND ca.dateexpiry >= "+Util.formatSQL(from, 0);
+            }
+
+            if(to != null) {
+            	select += " AND ca.dateexpiry < "+Util.formatSQL(to, 1);
+            }
+                
+                //solo actividades dictadas
+            select += " and ca.state = 'datatype.scheduledactivitystate.dictada'";
+    			
+            SQLQuery query = session.createSQLQuery(select).addScalar("type",Hibernate.STRING);
+			return query.list();
+        } catch (Exception e) {
+			Object[] parameters = {};
+            handler.getException(e,"getActivityWithExpiry",userSessionData,parameters);
+        } 
+
+        return new LinkedList();
+    }
+
+    /**
+     * @throws DeslogedException
+     * @throws CommunicationProblemException
+     * @ejb.interface-method
+     * @ejb.permission role-name = "systemaccess,administrator,resetpassword"
+     */      
+    public String[] getAvailableAddress(Integer corporation, UserSessionData userSessionData) throws Exception {
+    	String[] address = new String[2];
+    	try {
+    		Session session = HibernateUtil.currentSession();
+    		Calendar today = Calendar.getInstance();
+    		String sql = "";
+    		
+    		if (corporation != null && corporation.intValue() == CorporationData.BAYER){
+	    	  
+    			String mailUsed = AlertConstants.BAYER_ALERT_EMAILS[(new Double(Math.random()*19)).intValue()];
+    			address[0] = mailUsed;
+    			address[1] =  AlertConstants.BAYER_ALERT_EMAILS_PASSWORD;// password
+    			return address;
+	    	  
+    		}else {
+    			sql = "SELECT email FROM EmailAddress email WHERE address LIKE '%@cepalogistica%' ORDER BY date, sended";
+	      
+    			Query q = session.createQuery(sql);
+    			Iterator it = q.list().iterator();
+    			
+    			boolean found = false;
+    			while(it.hasNext() && !found) {
+    				EmailAddress emailAddress = (EmailAddress) it.next(); 
+    				Calendar last = Calendar.getInstance();
+    				last.setTime(emailAddress.getDate());
+		      
+					address[0] = emailAddress.getAddress();
+					address[1] = emailAddress.getPassword();
+    				if(last.get(Calendar.DATE) != today.get(Calendar.DATE) || last.get(Calendar.MONTH) != today.get(Calendar.MONTH) || last.get(Calendar.YEAR) != today.get(Calendar.YEAR)) {
+    					
+    					emailAddress.setDate(today.getTime());
+    					emailAddress.setSended(new Integer(1));
+    					session.update(emailAddress);
+    					return address;
+    				}else {
+    					int sended = emailAddress.getSended();
+    					if(sended < 100) {
+    						emailAddress.setSended(new Integer(sended+1));
+        					session.update(emailAddress);
+        					return address;
+    					}
+    				}
+    			}	
+    		}
+        } catch (Exception e) {
+			Object[] parameters = {};
+            handler.getException(e,"getActivityWithExpiry",userSessionData,parameters);
+        } 
+    	return null;
+    }
+}

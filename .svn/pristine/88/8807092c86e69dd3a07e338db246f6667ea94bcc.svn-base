@@ -1,0 +1,5 @@
+eclipse.preferences.version=1
+encoding//src/persistence/util/Util.java=UTF-8
+encoding//src/presentation/report/activity/ActivityReportTabletFactory.java=UTF-8
+encoding//src/presentation/translator/web/activity/schedule/ActivityCertificateAction.java=UTF-8
+encoding//src/presentation/translator/web/util/Util.java=UTF-8

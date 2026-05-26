@@ -1,0 +1,1140 @@
+package persistence.alert;
+
+import java.io.Serializable;
+import java.math.BigInteger;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.Statement;
+import java.sql.Time;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
+import javax.ejb.TransactionAttribute;
+import javax.ejb.TransactionAttributeType;
+
+import org.hibernate.Hibernate;
+import org.hibernate.Query;
+import org.hibernate.SQLQuery;
+import org.hibernate.classic.Session;
+
+import persistence.alert.tables.Alert;
+import persistence.alert.tables.AlertTo;
+import persistence.driver.tables.Driver;
+import persistence.hibernate.HibernateUtil;
+import persistence.util.LogAction;
+import persistence.util.Util;
+
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.CountryData;
+import communication.administration.dpa.UnconformityItemAlertDPAData;
+import communication.alert.AlertConstants;
+import communication.alert.AlertData;
+import communication.alert.PersonData;
+import communication.alert.TravelAlertData;
+import communication.util.MD5;
+import communication.vehicle.tables.VehicleData;
+
+public class AlertPersistence implements Serializable{
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+
+
+	public AlertPersistence() {		
+	}
+
+	/**
+	 * Obtiene las alertas a correrse en el día actual.
+	 * @return
+	 * @throws Exception
+	 */
+	public  LinkedList<AlertData> getTodayAlert() throws Exception {
+		
+		LinkedList<AlertData> result = null;
+		
+		try{	
+			Session session = HibernateUtil.currentSession();
+			String queryStr = " select distinct alert " +
+			   " from Alert as alert " +
+		       // " where alert.lastdate >= CURRENT_DATE and alert.lastdate <= CURRENT_DATE + 1" ;
+		       // Fecha finalizacion nula o mayor o igula que hoy
+		       " where (alert.enddate is null or alert.enddate >= CURRENT_TIMESTAMP) " +
+		       // Fecha de proximo envio no nula y menor o igual que hoy
+		       " and (alert.nextdate is not null and alert.nextdate <= CURRENT_TIMESTAMP) " ;
+		
+			
+			Query query = session.createQuery(queryStr);
+			
+			System.out.println("Alertas de Hoy: "+queryStr);
+			
+			List alertColl = query.list();
+			if (alertColl != null && alertColl.size() > 0){
+				Iterator iter = alertColl.iterator();
+				Alert alert;
+				result = new LinkedList();
+				while (iter.hasNext()) {
+					alert = (Alert) iter.next();
+					alert.setTo(getTo(alert.getAlertId().intValue()));
+					
+					AlertData alertData = alert.getAlertData();
+					if (!result.contains(alertData)){
+						result.add(alertData);
+					}
+				}
+			}
+
+		}catch(Exception e){
+			e.printStackTrace();		
+		}
+		return result;
+	}
+	
+	/**
+	 * Actualiza la fecha de la ultima alerta enviada al driver
+	 * segun el email del driver y su id
+	 * 
+	 * // TODO, pasar esto a un Thread independiente, asi actualiza en paralelo.
+	 * @param email
+	 */
+	@ TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+	public void getUpdateAlertDateDriverById(PersonData person){
+		try{	
+			 if (person != null && person.getIdDriver() != null){
+				Session session = HibernateUtil.currentSession();
+				
+				session.beginTransaction();
+				
+				String queryStr = "UPDATE Driver SET alertDate = CURRENT_TIMESTAMP WHERE " +
+						" id = " + person.getIdDriver() + " "; 
+						// " email = '" + email + "' ";
+					
+				Query query = session.createQuery(queryStr);
+				query.executeUpdate();
+								
+				session.flush();
+				session.getTransaction().commit();
+				
+				
+				System.out.println("Se actualizo el alertDate del driver "  +person.getIdDriver().toString());
+			}
+
+		}catch(Exception e){
+			e.printStackTrace();		
+		}
+	}
+	
+	/**
+	 * 
+	 * @param person
+	 */
+	public void getUpdateAlertDateDriverByIdParallel(PersonData person){
+		try{	
+			 if (person != null && person.getIdDriver() != null){
+								
+				Class.forName("org.postgresql.Driver");
+	            Connection conn1 = DriverManager.getConnection(
+	            		"jdbc:postgresql://"+AlertConstants.SERVER_PRODUCTION_IP+":5432/datacenter5",
+	            		"postgres","pr0v1s0r1A");
+	            Statement st1 = conn1.createStatement();
+	            
+	            String queryStr =  "UPDATE Drivers SET alertDate = CURRENT_TIMESTAMP WHERE " +
+				" id = " + person.getIdDriver() + " "; 
+					        	
+	            st1.executeUpdate(queryStr);	            
+	            conn1.close();
+				
+				System.out.println("Se actualizo el alertDate del driver "  +person.getIdDriver().toString());
+			}
+
+		}catch(Exception e){
+			e.printStackTrace();		
+		}
+	}
+	
+	/**
+	 * Actualiza la fecha de la ultima alerta enviada al usuario
+	 * segun el email del usuario y su login.
+	 * @param email
+	 */
+	public void getUpdateAlertDateUserByLogin(PersonData person){
+		try{	
+			if (person != null && person.getLogin() != null){
+				Session session = HibernateUtil.currentSession();
+				MD5 md5 = new MD5();
+				String queryStr = "UPDATE User SET alertDate = CURRENT_TIMESTAMP WHERE " +
+						" loginname = '" + md5.encriptar(person.getLogin()) + "' "; 
+						// " email = '" + email + "' ";
+					
+				Query query = session.createQuery(queryStr);
+				int count = query.executeUpdate();
+				
+				//System.out.println("Se actualizo el alertDate del usuario " + login);
+			}
+
+		}catch(Exception e){
+			e.printStackTrace();		
+		}
+	}
+	
+	/**
+	 * Actualiza el alertdate de los usuarios ignorando hibernate, por fuera.
+	 * Para evitar que la transaccion larga de hibernate se corte y no los actualice
+	 * @param person
+	 */
+	public void getUpdateAlertDateUserByLoginParallel(PersonData person){
+		try{	
+			if (person != null && person.getLogin() != null){
+			
+				Class.forName("org.postgresql.Driver");
+	            Connection conn1 = DriverManager.getConnection(
+	            		"jdbc:postgresql://"+AlertConstants.SERVER_PRODUCTION_IP+":5432/datacenter5",
+	            		"postgres","pr0v1s0r1A");
+	            Statement st1 = conn1.createStatement();
+	            
+	            MD5 md5 = new MD5();
+	            String queryStr = "UPDATE Users SET alertDate = CURRENT_TIMESTAMP WHERE " +
+				" driver = " + person.getIdDriver()+" AND loginname IN (select loginname from usercorporations where role = 'fleetdriver')"; 
+				// " email = '" + email + "' ";
+	        	
+	            st1.executeUpdate(queryStr);	            
+	            conn1.close();
+	            
+	            System.out.println("Se actualizo el alertDate del usuario " + md5.encriptar(person.getLogin()));
+			}
+
+		}catch(Exception e){
+			e.printStackTrace();		
+		}
+	}
+	
+	/**
+	 * 
+	 * @param corporation
+	 * @param alertId
+	 * 
+	 * @return
+	 * @throws Exception
+	 */
+	private  HashSet getTo(int alertId) throws Exception {
+		HashSet result = null;
+		try {
+			Session session = HibernateUtil.currentSession();
+			Query query;
+			List list = new LinkedList();
+			Iterator it;
+			String sql  = "SELECT distinct email, corporation, id " +
+			" FROM alertto " +
+			" where alert = " + alertId;
+			
+			query = session.createSQLQuery(sql)
+				.addScalar("email",Hibernate.STRING)
+				.addScalar("corporation",Hibernate.INTEGER)
+				.addScalar("id",Hibernate.INTEGER);
+
+			list = query.list();	
+			if (list != null && list.size() > 0){
+				it = list.iterator(); 
+				result = new HashSet();
+				while(it.hasNext()) {
+					Object[] row = (Object[])it.next(); 
+					if (row != null){
+						String email = (String) row[0];
+						Integer corporation = (Integer) row[1];
+						Integer id = (Integer) row[2];
+						AlertTo alertTo = new AlertTo(id,corporation,email);
+						result.add(alertTo);
+					}
+				}
+			}
+		
+		} catch (Exception e) {		
+			e.printStackTrace();			
+		}
+		
+		return result;
+	}
+
+	/**
+	 * Actualiza los datos de una alerta.
+	 * @param data
+	 * @param comment
+	 * @param userRequest
+	 * @throws Exception
+	 */
+	public  void updateAlert(AlertData data) throws Exception {
+		new LogAction("updateAlert");
+		try{
+			Session session = HibernateUtil.currentSession();
+			Alert alert = (Alert)session.load(Alert.class,data.getAlertId());
+			alert.updateAlert(data,session);
+			session.update(alert);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw e;
+		}	
+	}
+	
+	
+	/**
+	 * Borra una alerta.
+	 * @param data
+	 * @param comment
+	 * @throws Exception
+	 */
+	// @ TransactionAttribute (TransactionAttributeType.REQUIRES_NEW)
+	public void deleteAlert(AlertData data) throws Exception {
+		
+		try{			
+			Alert alert = null; 
+
+			Session session = HibernateUtil.currentSession();
+			alert = (Alert) session.load(Alert.class, data.getAlertId());
+
+			session.delete(alert); 
+			
+		}catch(Exception e){
+			e.printStackTrace();
+
+		}
+		
+		
+	}
+	
+	/**
+	 * Finaliza una alerta con la fecha actual, a partir de ese momento no corre mas.
+	 * @param idAlert
+	 * @throws Exception
+	 */
+	public void finishAlert(Integer idAlert) throws Exception {
+		
+		AlertData alertData = null;		
+		try{	
+			Session session = HibernateUtil.currentSession();
+			
+			String queryStr = " select  alert" +
+				       " from Alert as alert " +
+				       " where alert.enddate is null and alert.alertId ="+idAlert.intValue();
+			
+			Query query = session.createQuery(queryStr);
+			
+			List alertColl = query.list();
+		    Iterator iter = alertColl.iterator();
+		    Alert alert = null;
+		    Date date = new Date();
+		    while (iter.hasNext()) {
+				alert = (Alert) iter.next();
+				alertData = alert.getAlertData();
+				alertData.setEnddate(date);
+				updateAlert(alertData);
+			}
+			   
+			   
+		}catch(Exception e){
+			e.printStackTrace();
+			
+		}
+	}
+
+	
+	/**
+	 * Devuelve una colecciòn de los conductores de "corporationid",
+	 * cuya licencia expira en "daysLeft" dias.
+	 * @param corporationId
+	 * @param daysLeft
+	 * @param onlyEquals
+	 * @param countryId (si solo quiero un pais sino null)
+	 * @return
+	 */
+	public LinkedList<PersonData> getLicenseExpiryDrivers(
+			Integer corporationId, int daysLeft, boolean onlyEquals,
+			Integer countryId
+		) throws Exception{
+
+		LinkedList<PersonData> result = null;
+		Driver driver = null;
+		Query query = null;
+		
+		try{
+			Session session = HibernateUtil.currentSession();			
+			
+			// Date Format:
+			String DATE_FORMAT = "yyyy-MM-dd";
+			java.text.SimpleDateFormat sdf = new java.text.SimpleDateFormat(DATE_FORMAT);
+			
+			Calendar c = Calendar.getInstance();
+			c.add(Calendar.DATE, daysLeft);
+			
+			System.out.println("Vencimientos menores a "+sdf.format(c.getTime()));
+		
+			String queryStr = "select driver from Driver as driver " +
+				"where driver.corpCountry.pk.corporation.id = :corporationId and  ";
+			
+			
+			if (!onlyEquals){
+				queryStr += " driver.licenseExpiry <=  :daysLeft ";
+			}else{
+				// Solo igual, por ejemplo = 30, = 7, = -1(ayer) ....
+				queryStr += " day(driver.licenseExpiry) = :day and " +
+							" month(driver.licenseExpiry) = :month and "+
+							" year(driver.licenseExpiry) = :year ";			
+			}
+			if (countryId != null){
+				queryStr += " and driver.corpCountry.pk.country.id = :countryId ";
+			}
+				
+			query = session.createQuery(queryStr);
+			
+			if (!onlyEquals){
+				query.setParameter("daysLeft", c.getTime());
+				query.setParameter("corporationId", corporationId);
+			}else{
+				query.setParameter("day", c.get(Calendar.DATE));
+				query.setParameter("month", c.get(Calendar.MONTH) + 1);
+				query.setParameter("year", c.get(Calendar.YEAR));
+				query.setParameter("corporationId", corporationId);
+			}
+			if (countryId != null){
+				query.setParameter("countryId", countryId);
+			}
+			
+			List list = query.list();
+			
+			if (list != null && list.size() > 0){
+				Iterator iter = list.iterator();
+				result = new LinkedList<PersonData>();
+				while (iter.hasNext()) {
+					driver = (Driver) iter.next();
+					PersonData person = new PersonData(driver.getFirstName(),driver.getLastName(),driver.getEmail());
+					person.setLicenseExpiry(driver.getLicenseExpiry());
+					person.setIdDriver(driver.getId());
+					person.setIdCorporation(driver.getCorporation().getId());
+					
+					if (corporationId == CorporationData.BAYER){
+						// si es bayer agrego los datos del supervisor:
+						person.setSupervisorName(driver.getPhoneNumber());
+						person.setSupervisorEmail(driver.getOfficeAddress());
+					}
+					
+					System.out.println("LicenceExpiry:"+sdf.format(driver.getLicenseExpiry()));
+					result.add(person);
+					// Log:
+					System.out.println("Agrego el driver para las Alertas: "+driver.getFirstName()+" "+driver.getLastName());
+				}
+				
+				System.out.println("Cantidad de Emails a enviar:"+result.size());
+			}			
+			
+		}catch(Exception e){
+			e.printStackTrace();
+			throw e;
+		}	
+		return result;
+	}
+	
+	
+	/**
+	 * Obtiene los Drivers (de CIMSA u otra empresa) que no esten excluidos
+	 * que tengan menos o igual puntos que maxPoints.
+	 * 
+	 * @param maxPoints
+	 * @return
+	 */
+	public LinkedList<PersonData> getDriversWithPointsLessOrEquals(int maxPoints, Integer corporationId){
+		LinkedList<PersonData> result = null;
+    	try {
+    		
+    		// Conductores No excluidos de CIMSA 
+    		Session session = HibernateUtil.currentSession();
+    		
+       		Query query = session.createSQLQuery(
+       				"SELECT d.firstname as firstname, d.lastname as lastname, d.email as email, " +
+       				"d.id as iddriver, d.points as driverpoints, " +
+       				"sum(ge.points) as eventpoints, d.points - sum(ge.points) as finalpoints," +
+       				"d.corporation as corporation "+
+       				"FROM genericevents ge "+ 
+       				"inner join drivers d on d.id = ge.driver and ge.corporation = d.corporation "+
+       				"WHERE d.corporation = " + corporationId.toString() +" and d.exclusiondate is null  "+
+       				"group by d.id, d.points,d.firstname, d.lastname, d.email, d.corporation "+
+       				"having d.points - sum(ge.points) < " + String.valueOf(maxPoints)
+       				)
+       				.addScalar("firstname", Hibernate.STRING)
+       				.addScalar("lastname",Hibernate.STRING)
+       				.addScalar("email",Hibernate.STRING)
+       				.addScalar("iddriver",Hibernate.INTEGER)
+       				.addScalar("driverpoints",Hibernate.INTEGER)
+       				.addScalar("eventpoints",Hibernate.INTEGER)
+       				.addScalar("finalpoints",Hibernate.INTEGER)
+       				.addScalar("corporation",Hibernate.INTEGER);
+       		
+       		List list = query.list();
+       		if (list != null){
+       			Iterator it = list.iterator();
+       			result = new LinkedList<PersonData>();
+       			while(it.hasNext()) {
+       				Object[] row = (Object[])it.next();
+       				String firstName = (String)row[0];
+       				String lastName = (String)row[1];
+       				String email = (String)row[2];
+       				Integer idDriver = (Integer)row[3];
+       				Integer idCorporation = (Integer) row[7];
+       				PersonData person = new PersonData(firstName,lastName,email);
+       				person.setIdDriver(idDriver);
+       				person.setIdCorporation(idCorporation);
+       				
+					result.add(person);
+       			}
+       			System.out.println("Cantidad de Emails a enviar:"+result.size());
+       		}
+    		
+    		
+    	}catch(Exception e){
+    		e.printStackTrace();
+    	}
+    	return result;
+	}
+    
+   
+    /**
+     * Obtiene los conductores de monsanto brasil que pertenezcan a la flota
+     * y que sean usuarios fleetdriver y cuya clave es dos veces la encriyptacion del login.
+     * @param fleet
+     * @return
+     * @throws Exception
+     */
+    public LinkedList<PersonData> getMonsantoFleetDrivers(int fleet,String period,String year) throws Exception {
+		
+    	LinkedList<PersonData> result = null;
+    	Hashtable users = new Hashtable();
+		Session session = HibernateUtil.currentSession();
+		
+    	try {
+    		String query = "SELECT DISTINCT u.loginname,u.password,u.email,u.driver,u.firstname," +
+    				" u.lastname, u.corporationid " +
+    				"FROM vehiclefleets vf " +
+    				"JOIN vehicles v ON v.id = vf.vehicle " +
+    				"JOIN users u ON u.driver = v.driver " +
+    				"JOIN usercorporations uc ON uc.loginname = u.loginname "+  
+    				"WHERE vf.id = " + fleet + " AND uc.role = 'fleetdriver' "+
+    		        "AND v.id NOT IN (SELECT vehicle FROM odometers WHERE fleet = "+fleet+" AND period = " +period+" AND year = "+year+") "+
+
+    				// y no se le envio ya una alerta hoy: 
+    				
+    				" AND " +
+    				" ( " +
+    				"	( u.alertdate IS NULL ) OR " +
+    				"   ( date_trunc('day',u.alertdate) != date_trunc('day',CURRENT_TIMESTAMP) )" +
+    				" )  order by u.firstname, u.lastname  ";
+    		
+    		SQLQuery q = session.createSQLQuery(query).addScalar("loginname", Hibernate.STRING).
+    		addScalar("password", Hibernate.STRING).addScalar("email", Hibernate.STRING).
+    		addScalar("driver", Hibernate.INTEGER).addScalar("firstname", Hibernate.STRING).    		
+    		addScalar("lastname", Hibernate.STRING).addScalar("corporationid",Hibernate.INTEGER);
+    		
+    		/*
+    		q.setFirstResult(1);
+            q.setMaxResults(300);
+            */
+
+    		List l = q.list();
+    		if (l != null && l.size() > 0){
+	    		Iterator it = q.list().iterator();
+	    		result = new LinkedList();
+	    		MD5 md5 = new MD5();
+	    		
+	    		while(it.hasNext()) {
+	    			
+	    			Object[] data = (Object[])it.next();
+	                String loginName = (String)data[0];
+	                String email = (String)data[2];
+	                Integer driverId = (Integer)data[3];
+	                if(email != null && email.length() > 0) {
+		            	String crypt = md5.encriptar(md5.encriptar(loginName));
+		            	String cryptUser = null;
+		            	String user = null;
+		            	boolean found = false;
+		        		if(!data[1].equals(crypt)) {
+		            		System.out.println("Password incorrecto "+crypt+" "+data[0]);
+		            	}else {
+		                    int i = 1;
+		                    user = "fleetUser"+String.valueOf(data[3])+"_"+i;
+		                    cryptUser = md5.encriptar(user);
+		                    found = cryptUser.equals(loginName);
+		                    while(!found && i < 10) {
+		                    	i++;
+		                        user = "fleetUser"+String.valueOf(data[3])+"_"+i;
+		                        cryptUser = md5.encriptar(user); 
+		                        found = cryptUser.equals(loginName);
+		                    }
+		            	}
+		        		if(found) {		        			
+		        			if(!users.containsKey(driverId)) {
+		        				String link = "https://" + AlertConstants.DC_DOMAIN + "/datacenter/home.jsp?login="+user;
+		        				System.out.println(data[4]+","+data[5]+","+link);
+		        				users.put(driverId, user);
+		        				
+		        				String login = user;
+		        				PersonData person = new PersonData((String)data[4],(String)data[5],email,login);
+		        				// El login para la url es el user
+		        				// y para el identificador del usuario en la base de datos
+		        				// hay que hacer md5(user)
+		        				person.setIdCorporation((Integer)data[6]);
+		        				person.setLink(link);
+		        				person.setIdDriver(driverId);
+
+		        				result.add(person);
+		        			}
+		            	}
+	                }
+	    		}
+    		}
+    	}catch (Exception e) {
+        	e.printStackTrace();
+		}
+    	return result;
+    }
+
+    /**
+	 * Obtiene los viajes para el dia de hoy para la empresa ANGLO
+	 * @return LinkedList de TravelData
+	 * @throws Exception
+	 */
+	public LinkedList<TravelAlertData> getTravelsForToday(Integer corporationId) throws Exception{
+		
+		LinkedList<TravelAlertData> result = null;
+    	Hashtable users = new Hashtable();
+		Session session = HibernateUtil.currentSession();
+		
+    	try {
+    		String query = "SELECT firstname, lastname, t.corporation as corporation, dateleave, hourleave, state "+
+    					"FROM travels t, drivers d "+
+    					"WHERE t.driver = d.id and t.corporation = " + corporationId.toString()+
+    					" and state IN (1,2) ";
+    		
+    		SQLQuery q = session.createSQLQuery(query).addScalar("firstname", Hibernate.STRING).
+    		addScalar("lastname", Hibernate.STRING).addScalar("corporation", Hibernate.INTEGER).
+    		addScalar("dateleave", Hibernate.DATE).addScalar("hourleave", Hibernate.TIME).    		
+    		addScalar("state", Hibernate.INTEGER);
+    		
+    		List l = q.list();
+    		if (l != null && l.size() > 0){
+	    		Iterator it = q.list().iterator();
+	    		result = new LinkedList<TravelAlertData>();
+	    		
+	    		while(it.hasNext()) {
+	    			
+	    			Object[] data = (Object[])it.next();
+	                String firstName = (String)data[0];
+	                String lastName = (String)data[1];
+	                Integer corporation = (Integer)data[2];
+	                Date dateLeave = (Date)data[3];
+	                Time hourLeave = (Time)data[4];
+	                Integer state = (Integer)data[5];
+	                
+	                TravelAlertData travel = new TravelAlertData(firstName,lastName,dateLeave,hourLeave,state);
+	                result.add(travel);
+	    		}
+    		}
+	                
+    	}catch(Exception e){
+    		e.printStackTrace();
+    	}
+    	return result;
+	}
+
+	/**
+	 * Alertas de Lilly
+	 * @param period
+	 * @param year
+	 * @param divGeos
+	 * @param status
+	 * @param fleets
+	 * @return
+	 * @throws Exception
+	 */
+	public LinkedList<PersonData> getLillyActiveDrivers(String period,String year,
+    		int status,int fleetId, String fleetList) throws Exception {
+    	
+    	LinkedList<PersonData> result = null;
+    	Hashtable users = new Hashtable();
+		Session session = HibernateUtil.currentSession();
+		
+    	try {
+    		String query = "SELECT DISTINCT u.loginname,u.password,u.email,u.driver,u.firstname," +
+    				" u.lastname, u.corporationid " +
+    				"FROM vehiclefleets vf " +
+    				"JOIN vehicles v ON v.id = vf.vehicle " +
+    				"JOIN users u ON u.driver = v.driver " +
+    				"JOIN usercorporations uc ON uc.loginname = u.loginname "+  
+    				"WHERE vf.id IN (" + fleetList + ") AND uc.role = 'fleetdriver' "+
+
+    				// no ingresó el odómetro
+    				"AND v.id NOT IN (SELECT vehicle FROM odometers WHERE period = 8 AND year = "+year+" AND fleet IN ("+fleetList+"))"+
+    				
+    				// y no se le envio ya una alerta hoy: 
+    				
+    				" AND " +
+    				" ( " +
+    				"	( u.alertdate IS NULL ) OR " +
+    				"   ( date_trunc('day',u.alertdate) != date_trunc('day',CURRENT_TIMESTAMP) )" +
+    				" )  ";
+    		
+    		SQLQuery q = session.createSQLQuery(query).addScalar("loginname", Hibernate.STRING).
+    		addScalar("password", Hibernate.STRING).addScalar("email", Hibernate.STRING).
+    		addScalar("driver", Hibernate.INTEGER).addScalar("firstname", Hibernate.STRING).    		
+    		addScalar("lastname", Hibernate.STRING).addScalar("corporationid",Hibernate.INTEGER);
+    		
+    		/*
+    		q.setFirstResult(1);
+            q.setMaxResults(300);
+            */
+
+    		List l = q.list();
+    		if (l != null && l.size() > 0){
+	    		Iterator it = q.list().iterator();
+	    		result = new LinkedList();
+	    		MD5 md5 = new MD5();
+	    		
+	    		while(it.hasNext()) {
+	    			
+	    			Object[] data = (Object[])it.next();
+	                String loginName = (String)data[0];
+	                String email = (String)data[2];
+	                Integer driverId = (Integer)data[3];
+	                if(email != null && email.length() > 0) {
+		            	String crypt = md5.encriptar(md5.encriptar(loginName));
+		            	String cryptUser = null;
+		            	String user = null;
+		            	boolean found = false;
+		        		if(!data[1].equals(crypt)) {
+		            		System.out.println("Password incorrecto "+crypt+" "+data[0]);
+		            	}else {
+		                    int i = 1;
+		                    user = "fleetUser"+String.valueOf(data[3])+"_"+i;
+		                    cryptUser = md5.encriptar(user);
+		                    found = cryptUser.equals(loginName);
+		                    while(!found && i < 10) {
+		                    	i++;
+		                        user = "fleetUser"+String.valueOf(data[3])+"_"+i;
+		                        cryptUser = md5.encriptar(user); 
+		                        found = cryptUser.equals(loginName);
+		                    }
+		            	}
+		        		if(found) {		        			
+		        			if(!users.containsKey(driverId)) {
+		        				String link = "https://" + AlertConstants.DC_DOMAIN + "/datacenter/home.jsp?login="+user;
+		        				System.out.println(data[4]+","+data[5]+","+link);
+		        				users.put(driverId, user);
+		        				
+		        				String login = user;
+		        				PersonData person = new PersonData((String)data[4],(String)data[5],email,login);
+		        				// El login para la url es el user
+		        				// y para el identificador del usuario en la base de datos
+		        				// hay que hacer md5(user)
+		        				person.setIdCorporation((Integer)data[6]);
+		        				person.setLink(link);
+
+		        				result.add(person);
+		        			}
+		            	}
+	                }
+	    		}
+    		}
+    	}catch (Exception e) {
+        	e.printStackTrace();
+		}
+    	return result;
+    }
+	
+	
+	/**
+	 * Alertas de Bayer
+	 * Devuelve los conductores activos de Bayer BRASIL !
+	 * @param period
+	 * @param year
+	 * @param divGeos
+	 * @param status
+	 * @param fleets
+	 * @return
+	 * @throws Exception
+	 */
+	public LinkedList<PersonData> getBayerActiveDrivers() throws Exception {
+    	
+    	LinkedList<PersonData> result = null;
+    	int status = 0; // Conductores Activos
+    	
+    	try {
+	         
+	    	String sql = "SELECT DISTINCT d.firstname,d.lastname, " +
+	    			"c.resourcekey AS country,d.id AS driverId, d.email, " +
+	    			"d.corporation as corporation " +
+	    			"FROM " +
+	    			"drivers AS d, " +
+	    			"country AS c ";
+	    			
+	        sql += " WHERE d.country = c.id AND d.corporation =  "+CorporationData.BAYER + "" +
+	        		" AND c.id = "+CountryData.BRASIL_ID.toString()+ " ";	       
+	        
+	        switch (status) {
+	        	case VehicleData.ACTIVE:
+	        		sql += " AND d.exclusionDate is null";
+	        		break;
+	        	case VehicleData.EXCLUDED:
+	        		sql += " AND d.exclusionDate is not null";
+	        		break;
+	        }
+	        
+	        // Que no se le haya mandado una alerta hoy o NUNCA (null)a este driver:
+	        // para no mandar la misma alerta el mismo dia.
+	        sql += " AND ( d.alertdate is null OR date_trunc('day',d.alertdate) != date_trunc('day',CURRENT_TIMESTAMP) )";
+	               
+	        sql += " ORDER BY d.firstname,d.lastname";
+	        
+	        Session session = HibernateUtil.currentSession();
+	        System.out.println("SQL: "+sql);
+	        
+	        SQLQuery query = session.createSQLQuery(sql);
+	        query.addScalar("firstname",Hibernate.STRING); //0
+	        query.addScalar("lastname",Hibernate.STRING); //1 
+	        query.addScalar("country",Hibernate.STRING); //2
+            query.addScalar("driverId",Hibernate.INTEGER); //3
+	        query.addScalar("email",Hibernate.STRING);  // 4
+	        query.addScalar("corporation",Hibernate.INTEGER); // 5
+	       
+	        // TODO: Max results 50
+	        // query.setMaxResults(300);
+            
+            List list = query.list();
+            if (list != null && list.size() > 0){
+            	Iterator it = list.iterator();
+            	result = new LinkedList<PersonData>();
+            	while (it.hasNext()){
+            		Object[] o = (Object[])it.next();
+            		String email = (String)o[4]; 
+            		if (email != null && email.trim() != ""){ 
+            			PersonData person = new PersonData((String)o[0],(String)o[1],(String)o[4]);
+            			person.setIdDriver((Integer)o[3]);
+            			person.setIdCorporation((Integer)o[5]);
+            			result.add(person);
+            		}
+            	}            	
+            }             
+    	}catch (Exception e) {
+        	e.printStackTrace();
+        	throw e;
+		}        
+    	return result;
+    }
+	
+	/**
+	 * Obtiene las alertas a correrse en el día actual.
+	 * @return
+	 * @throws Exception
+	 */
+	public  LinkedList<UnconformityItemAlertDPAData> getDPAUnconformityTodayAlert() throws Exception {
+		
+		LinkedList<UnconformityItemAlertDPAData> result = new LinkedList<UnconformityItemAlertDPAData>();
+		
+		try{	
+			Session session = HibernateUtil.currentSession();
+			/*String queryStr = "select u.id,u.date,u.type,u.vehiclecheckid,u.driverId,i.type as iType,i.comment,i.expirity ,us.email,d.firstname,d.lastname ," +
+					" case when to_date(to_char(i.expirity , 'YYYY/MM/DD'), 'YYYY/MM/DD') = to_date(to_char(current_timestamp - 2 * interval '1 day' , 'YYYY/MM/DD'), 'YYYY/MM/DD') then 'S' else 'P' end"+
+					" from unconformityitemdpa as i INNER JOIN unconformitydpa as u on ( i.unconformitydpa=u.id and u.corpId=62 ) "+
+					" INNER JOIN users as us on u.userId=us.loginname "+
+					" INNER JOIN drivers as d on d.id=u.driverId "+
+					" where i.notify=true and i.correctiveactiondpa is null and ( to_date(to_char(i.expirity , 'YYYY/MM/DD'), 'YYYY/MM/DD') = to_date(to_char(current_timestamp , 'YYYY/MM/DD'), 'YYYY/MM/DD') " +
+					" or to_date(to_char(i.expirity , 'YYYY/MM/DD'), 'YYYY/MM/DD') = to_date(to_char(current_timestamp - 2 * interval '1 day' , 'YYYY/MM/DD'), 'YYYY/MM/DD')) ";
+			
+			Query query = session.createSQLQuery(queryStr);
+			
+			System.out.println("Alertas UnconformityDPA de Hoy: "+queryStr);
+			
+			List alertColl = query.list();
+			if (alertColl != null && alertColl.size() > 0){
+				Iterator iter = alertColl.iterator();
+				while (iter.hasNext()) {
+					Object[] row= (Object[]) iter.next();
+					Integer idu=(Integer)row[0];
+					Date date=(Date)row[1];
+					String utype=(String)row[2];
+					Integer vehicleid=(Integer)row[3];
+					Integer driverId=(Integer)row[4];
+					String iType=(String)row[5];
+					String comment=(String)row[6];
+					Date expirity=(Date)row[7];
+					String email=(String)row[8];
+					String referencia=((String)row[9]+" "+(String)row[10]);
+					String re=(String)row[11];
+					
+					UnconformityItemAlertDPAData item=new UnconformityItemAlertDPAData();
+					item.setUnconformityId(idu.toString());
+					item.setComment(comment);
+					item.setDate(Util.formatDate(date));
+					item.setDriverId(driverId!=null?driverId.toString():"0");
+					item.setVehicleId(vehicleid!=null?vehicleid.toString():"0");
+					item.setExpirity(Util.formatDate(expirity));
+					item.setType(iType);
+					item.setUnconformityType(utype);
+					item.setReferencia(referencia);
+					item.setEmail(email);
+					item.setFirstNotify(re.endsWith("P"));
+					
+					result.add(item);
+				}
+			}*/
+			
+			String queryStr = "select u.id,u.date,u.type,u.vehiclecheckid,u.driverId,i.type as iType,i.comment,i.expirity ,us.email,v.matricula, "+
+					 " case when to_date(to_char(i.expirity , 'YYYY/MM/DD'), 'YYYY/MM/DD') = to_date(to_char(current_timestamp - 2 * interval '1 day' , 'YYYY/MM/DD'), 'YYYY/MM/DD') then 'S' else 'P' end"+
+					" from unconformityitemdpa as i INNER JOIN unconformitydpa as u on i.unconformitydpa=u.id "+
+					" INNER JOIN users as us on u.userId=us.loginname "+
+					" INNER JOIN vehiclecheck as vc on vc.vehiclecheckid=u.vehiclecheckid "+
+					" INNER JOIN vehicles as v on vc.vehicle=v.id "+
+					" where v.corporation=62 and  i.notify=true and i.correctiveactiondpa is null and ( to_date(to_char(i.expirity , 'YYYY/MM/DD'), 'YYYY/MM/DD') = to_date(to_char(current_timestamp , 'YYYY/MM/DD'), 'YYYY/MM/DD') "+
+					" or to_date(to_char(i.expirity , 'YYYY/MM/DD'), 'YYYY/MM/DD') = to_date(to_char(current_timestamp - 2 * interval '1 day' , 'YYYY/MM/DD'), 'YYYY/MM/DD') ) ";
+			
+			Query query = session.createSQLQuery(queryStr);
+			
+			System.out.println("Alertas UnconformityDPA de Hoy: "+queryStr);
+			
+			List alertColl = query.list();
+			if (alertColl != null && alertColl.size() > 0){
+				Iterator iter = alertColl.iterator();
+				while (iter.hasNext()) {
+					Object[] row= (Object[]) iter.next();
+					Integer idu=(Integer)row[0];
+					Date date=(Date)row[1];
+					String utype=(String)row[2];
+					Integer vehicleid=(Integer)row[3];
+					Integer driverId=(Integer)row[4];
+					String iType=(String)row[5];
+					String comment=(String)row[6];
+					Date expirity=(Date)row[7];
+					String email=(String)row[8];
+					String referencia=(String)row[9];
+					String re=(String)row[10];
+					
+					UnconformityItemAlertDPAData item=new UnconformityItemAlertDPAData();
+					item.setUnconformityId(idu.toString());
+					item.setComment(comment);
+					item.setDate(Util.formatDate(date));
+					item.setDriverId(driverId!=null?driverId.toString():"0");
+					item.setVehicleId(vehicleid!=null?vehicleid.toString():"0");
+					item.setExpirity(Util.formatDate(expirity));
+					item.setType(iType);
+					item.setUnconformityType(utype);
+					item.setReferencia(referencia);
+					item.setEmail(email);
+					item.setFirstNotify(re.endsWith("P"));
+					
+					result.add(item);
+				}
+			}
+
+		}catch(Exception e){
+			e.printStackTrace();		
+		}
+		return result;
+	}
+	
+	/**
+	 * Obtiene las alertas a correrse en el día actual.
+	 * @return
+	 * @throws Exception
+	 */
+	public  LinkedList<UnconformityItemAlertDPAData> getForestalesDPAUnconformityTodayAlert() throws Exception {
+		
+		LinkedList<UnconformityItemAlertDPAData> result = new LinkedList<UnconformityItemAlertDPAData>();
+		
+		try{	
+			Session session = HibernateUtil.currentSession();
+			
+			String queryStr=" select u.id,u.date,u.type,u.vehiclecheckid,u.driverId,i.type as iType,i.comment,i.expirity ,cd.mail,v.matricula,  "+
+							" case when to_date(to_char(i.expirity , 'YYYY/MM/DD'), 'YYYY/MM/DD') = to_date(to_char(current_timestamp - 2 * interval '1 day' , 'YYYY/MM/DD'), 'YYYY/MM/DD') then 'S' else 'P' end  "+
+							" from unconformityitemdpa as i INNER JOIN unconformitydpa as u on i.unconformitydpa=u.id  "+ 
+							" INNER JOIN vehiclecheck as vc on vc.vehiclecheckid=u.vehiclecheckid  "+ 
+							" INNER JOIN vehicles as v on vc.vehicle=v.id  "+ 
+							" inner JOIN contractordata as cd on (cd.corporation=v.corporation and cd.id=v.divOrg1) "+
+							" where v.corporation in (9,19,50) and  i.notify=true and i.correctiveactiondpa is null and ( to_date(to_char(i.expirity , 'YYYY/MM/DD'), 'YYYY/MM/DD') = to_date(to_char(current_timestamp , 'YYYY/MM/DD'), 'YYYY/MM/DD') )";
+			
+			Query query = session.createSQLQuery(queryStr);
+			
+			System.out.println("Alertas UnconformityDPA Forestales de Hoy: "+queryStr);
+			
+			List alertColl = query.list();
+			if (alertColl != null && alertColl.size() > 0){
+				Iterator iter = alertColl.iterator();
+				while (iter.hasNext()) {
+					Object[] row= (Object[]) iter.next();
+					Integer idu=(Integer)row[0];
+					Date date=(Date)row[1];
+					String utype=(String)row[2];
+					Integer vehicleid=(Integer)row[3];
+					Integer driverId=(Integer)row[4];
+					String iType=(String)row[5];
+					String comment=(String)row[6];
+					Date expirity=(Date)row[7];
+					String email=(String)row[8];
+					String referencia=(String)row[9];
+					String re=(String)row[10];
+					
+					UnconformityItemAlertDPAData item=new UnconformityItemAlertDPAData();
+					item.setUnconformityId(idu.toString());
+					item.setComment(comment);
+					item.setDate(Util.formatDate(date));
+					item.setDriverId(driverId!=null?driverId.toString():"0");
+					item.setVehicleId(vehicleid!=null?vehicleid.toString():"0");
+					item.setExpirity(Util.formatDate(expirity));
+					item.setType(iType);
+					item.setUnconformityType(utype);
+					item.setReferencia(referencia);
+					item.setEmail(email);
+					item.setFirstNotify(re.endsWith("P"));
+					
+					result.add(item);
+				}
+			}
+
+		}catch(Exception e){
+			e.printStackTrace();		
+		}
+		return result;
+	}
+	
+	/**
+	 * Obtiene las alertas a correrse en el día actual.
+	 * @return
+	 * @throws Exception
+	 */
+	public  LinkedList<UnconformityItemAlertDPAData> getUPMDPAUnconformityTodayAlert() throws Exception {
+LinkedList<UnconformityItemAlertDPAData> result = new LinkedList<UnconformityItemAlertDPAData>();
+		
+		try{	
+			Session session = HibernateUtil.currentSession();
+			
+			String queryStr="select u.id,u.date,u.type,u.vehiclecheckid,u.driverId,i.type as iType,i.comment,i.expirity ,cd.mail,v.matricula,d.resourcekey "+
+							" from unconformityitemdpa as i INNER JOIN unconformitydpa as u on i.unconformitydpa=u.id   "+
+							" INNER JOIN vehiclecheck as vc on vc.vehiclecheckid=u.vehiclecheckid   "+
+							" INNER JOIN vehicles as v on vc.vehicle=v.id   "+
+							" inner JOIN contractordata as cd on (cd.corporation=v.corporation and cd.id=v.divOrg1) "+ 
+							" inner JOIN divorgitemlevel1s as d on (d.id=v.divOrg1) "+
+							" where v.corporation =9  and i.correctiveactiondpa is null and ( to_date(to_char(i.expirity , 'YYYY/MM/DD'), 'YYYY/MM/DD') <= to_date(to_char(current_timestamp , 'YYYY/MM/DD'), 'YYYY/MM/DD') )" +
+							"  and ( to_date(to_char(i.expirity , 'YYYY/MM/DD'), 'YYYY/MM/DD') >= to_date(to_char(u.date , 'YYYY/MM/DD'), 'YYYY/MM/DD') ) ";
+			
+			Query query = session.createSQLQuery(queryStr);
+			
+			System.out.println("Alertas UnconformityDPA UPM de Hoy: "+queryStr);
+			
+			List alertColl = query.list();
+			if (alertColl != null && alertColl.size() > 0){
+				Iterator iter = alertColl.iterator();
+				while (iter.hasNext()) {
+					Object[] row= (Object[]) iter.next();
+					Integer idu=(Integer)row[0];
+					Date date=(Date)row[1];
+					String utype=(String)row[2];
+					Integer vehicleid=(Integer)row[3];
+					Integer driverId=(Integer)row[4];
+					String iType=(String)row[5];
+					String comment=(String)row[6];
+					Date expirity=(Date)row[7];
+					String email=(String)row[8];
+					String referencia=(String)row[9];
+					String div=(String)row[10];
+					
+					
+					UnconformityItemAlertDPAData item=new UnconformityItemAlertDPAData();
+					item.setUnconformityId(idu.toString());
+					item.setComment(comment);
+					item.setDate(Util.formatDate(date));
+					item.setDriverId(driverId!=null?driverId.toString():"0");
+					item.setVehicleId(vehicleid!=null?vehicleid.toString():"0");
+					item.setExpirity(Util.formatDate(expirity));
+					item.setType(iType);
+					item.setUnconformityType(utype);
+					item.setReferencia(referencia);
+					item.setEmail(email);
+					item.setFirstNotify(true);
+					item.setDivOrgItem1(div);
+					result.add(item);
+				}
+			}
+
+		}catch(Exception e){
+			e.printStackTrace();		
+		}
+		return result;
+	}
+	
+	
+	/**
+	 * Cantidad de checklist por contratista
+	 * @return
+	 * @throws Exception
+	 */
+	public  ArrayList<ArrayList<String>> getLogisticContractorWeekAlert(Integer idCorporation,Integer checkName) throws Exception {
+		ArrayList<ArrayList<String>> rows=new ArrayList<ArrayList<String>>();
+		
+		try{	
+			Session session = HibernateUtil.currentSession();
+			
+			String queryStr="select d.resourcekey as Contratista,0 as Cantidad " +
+							" from divorgitemlevel1s as d " +
+							" inner join divorgs div on(d.divorg=div.id and div.corporation=(:idcorp)) " +
+							" inner join contractorData as cd on (cd.id=d.id and cd.mail is not null and trim(cd.mail) <>'') " +
+							" where active=true and d.active=true and d.id not in( " +
+							" select v.divOrg1 " +
+							" from vehiclecheck as vc " +
+							" inner join vehicles as v on (vc.vehicle=v.id ) " + 
+							"  where to_date(to_char(vc.date, 'YYYY-MM-DD'), 'YYYY-MM-DD') >= to_date((:sd), 'YYYY-MM-DD') and to_date(to_char(vc.date, 'YYYY-MM-DD'), 'YYYY-MM-DD')<to_date((:ed), 'YYYY-MM-DD') ) and d.active=true" +
+							" union( " +
+							" select d.resourcekey as Contratista,count(vc.vehicleCheckId) as Cantidad " +
+							" from divorgitemlevel1s as d " +
+							" inner join divorgs div on(d.divorg=div.id and div.corporation=(:idcorp)) " +
+							" inner join contractorData as cd on (cd.id=d.id and cd.mail is not null and trim(cd.mail) <>'') " +
+							" inner join vehiclecheck as vc on ( vc.name in ('"+checkName+"')) " +
+							" inner join vehicles as v on (vc.vehicle=v.id and v.divOrg1=d.id ) " +
+							" where to_date(to_char(vc.date, 'YYYY-MM-DD'), 'YYYY-MM-DD') >= to_date((:sd), 'YYYY-MM-DD') and to_date(to_char(vc.date, 'YYYY-MM-DD'), 'YYYY-MM-DD')<to_date((:ed), 'YYYY-MM-DD') and d.active=true " +
+							" group by d.resourcekey " +
+							" ) order by Cantidad asc, Contratista asc";
+			
+			Query query = session.createSQLQuery(queryStr);
+			Calendar cals=Calendar.getInstance();
+			cals.set(Calendar.HOUR,cals.getMinimum(Calendar.HOUR));
+			cals.set(Calendar.DATE, 1);
+			Calendar cale=Calendar.getInstance();
+			cale.set(Calendar.DATE, cale.getMaximum(Calendar.DATE));
+			query.setParameter("sd",Util.formatHSQL( cals.getTime(),0));
+			query.setParameter("ed", Util.formatHSQL( cale.getTime(),1));
+			query.setParameter("idcorp", idCorporation);
+			
+			System.out.println("Alertas Logistica Uruguay Hoy: "+queryStr);
+			
+			List alertColl = query.list();
+			if (alertColl != null && alertColl.size() > 0){
+				Iterator iter = alertColl.iterator();
+				while (iter.hasNext()) {
+					Object[] row= (Object[]) iter.next();
+					String contractor=(String)row[0];
+					BigInteger cantidad=(BigInteger)row[1];
+					ArrayList<String> rowStr=new ArrayList<String>();
+					rowStr.add(contractor);
+					rowStr.add(cantidad.toString());
+					rows.add(rowStr);
+				}
+			}
+
+			
+		}catch(Exception e){
+			e.printStackTrace();		
+		}
+		return rows;
+	}
+	
+}

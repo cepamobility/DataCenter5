@@ -1,0 +1,407 @@
+<%@page language="java" 
+	errorPage="../exception.jsp" 
+	import="business.*"
+	import="business.activity.*"
+	import="business.datatype.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.datatype.tables.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.util.*"
+	import="communication.datatype.DataTypeConstants"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.activity.schedule.*" 	
+ 	import="communication.administration.user.*" 	
+ 	import="communication.datatype.tables.ActivityTypeDataType"
+	import="business.vehicle.VehicleReportFacade"
+	import="java.util.*"	
+	import ="org.apache.struts.action.DynaActionForm"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+<!-- complaint.jsp -->
+
+
+<%@page import="presentation.translator.web.vehicle.VehicleMaintenanceForm"%>
+<%@page import="presentation.translator.web.vehicle.VehicleComplaintForm"%><html:html>
+<%!
+	VehicleData vehicle;
+	
+%>
+<%
+	SystemAccess sys = (SystemAccess)session.getAttribute("SystemAccess");
+	UserSessionData userSessionData = sys.getUserSessionData();	
+	
+	String check = Util.checkPermission(sys,SecurityConstants.MODIFY_VEHICLE);	
+	
+	if (check!=null) {
+		response.sendRedirect(request.getContextPath()+check);	
+
+	}else {
+		Text messages=sys.getText();
+	
+		userSessionData.setUrl("vehicle/complaint.jsp");
+		
+		RequestDispatcher dispatcher = request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+	
+		String id = (String)request.getParameter("id");
+		String type = (String)request.getParameter("type");
+		
+		VehicleReportFacade vehicleReport = sys.getVehicleReportFacade();	
+
+		String action = "/VehicleComplaint";
+		VehicleData vehicle = null;
+		if(Util.empty(type) || type.equals("Create")){
+	vehicle = vehicleReport.findVehicleByPrimaryKey(new Integer(id),userSessionData);
+	action += "Create";
+		}else {
+	ComplaintData complaint = vehicleReport.getVehicleComplaint(new Integer(id),userSessionData);
+	VehicleComplaintForm form = new VehicleComplaintForm(complaint);
+	session.setAttribute("VehicleComplaintForm",form);
+	vehicle = complaint.getVehicle();
+	action += "Edit";
+		}
+		
+		DataTypeReportFacade datatypeReport = sys.getDataTypeReportFacade();
+		
+		
+		LinkedList complaintCallOptions = new LinkedList();
+		Collection c2 = datatypeReport.findAll(DataTypeConstants.COMPLAINT_CALL,sys.getUserSessionData());
+		if (c2 != null){
+	Iterator iter = c2.iterator();			
+	complaintCallOptions.add(new OptionItem(messages.getText("generic.messages.nodata"),""));
+	while(iter != null && iter.hasNext()) {
+		String value = ((ComplaintCallDataType)iter.next()).getResourceBundleId();
+		if (value != null){
+	complaintCallOptions.add(new OptionItem(messages.getText(value),value));
+		}
+	}					
+		}
+		Collections.sort(complaintCallOptions);
+		request.setAttribute("complaintCallOptions",complaintCallOptions);
+%>	
+	<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+		<script type="text/javascript">
+			function confirmDelete(msg) {
+				if(confirm(msg)) {
+					document.forms['VehicleDeleteComplaintForm'].submit();
+				}
+			}
+		</script>
+	</head>
+
+	<body>
+		<center>
+			<html:form action="/VehicleComplaintDelete">
+				<html:hidden property="id" value='<%=id%>' />
+				<html:hidden property="vehicle" value='<%=String.valueOf(vehicle.getId())%>' />
+			</html:form>
+			<html:form action="<%=action%>">
+				<html:hidden property="id" value='<%=id%>' />
+<%		if(action.equals("/VehicleComplaintEdit")) {
+%>				<html:hidden property="vehicle" value='<%=String.valueOf(vehicle.getId())%>' />
+<%		}
+%>	 			<table width="650" border="0" cellspacing="0" cellpadding="0">  
+	 				<tr> 
+	  					<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText("generic.vehicle.complaint")%>' />
+	 				</tr>
+					<tr>
+						<jsp:include  page="../component/spaceline.jsp" />
+				  	</tr>
+					<tr>
+						<td>
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("vehicle.complaint.generalinfo")%>' />
+							<table width="100%">
+								<tr>
+								   	<th align="left" class="linetwo"> <%=messages.getText("vehicle.complaint.phonetype")+":"%> </th>
+					        		<td align="left" class="linetwo">
+					        		
+					        			<html:select property="callType" styleClass="input" style="width:150px;" >
+                          					<html:options collection="complaintCallOptions" property="value"
+													labelProperty="label" styleClass="input"/>
+                        				</html:select>
+					        		
+					        		</td>
+					        		<td align="right">&nbsp;</td>
+				         		</tr>
+			      				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+								<tr>
+								   	<th align="left" class="linetwo" colspan="3"> 
+								   		<%=messages.getText("vehicle.complaint.specification")+":"%> 
+								   	</th>
+								</tr>
+								<tr>
+					        		<td align="left" class="linetwo" colspan="3">
+					        			<html:textarea property="specification" rows="3" cols="120" styleClass="input">
+					        			</html:textarea>
+					        		</td>
+				         		</tr>
+			      				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+								<tr>
+								   	<th align="left" class="linetwo"> <%=messages.getText("vehicle.complaint.reportdate")+":"%> </th>
+					        		<td align="left" class="linetwo">
+	       								<jsp:include  page='<%="../component/dateComponent.jsp?index=1&day=reportDate&month=reportMonth&year=reportYear&form=VehicleComplaintForm" %>' />
+					        		</td>
+					        		<td align="left">&nbsp;</td>
+				         		</tr>
+			      				<tr  class="space">
+			      					<th align="right">&nbsp;</th>
+			      					<td align="right">&nbsp;</td>
+			      					<td align="right">&nbsp;</td>
+			      				</tr>
+								<tr>
+								   	<th align="left" class="linetwo"> <%=messages.getText("vehicle.complaint.ticket")+":"%> </th>
+					        		<td align="left" class="linetwo">
+	       								<html:text property="ticket" styleClass="input" size="50"/>
+					        		</td>
+					        		<td align="left">&nbsp;</td>
+				         		</tr>
+			      				<tr  class="space">
+			      					<th align="right">&nbsp;</th>
+			      					<td align="right">&nbsp;</td>
+			      					<td align="right">&nbsp;</td>
+			      				</tr>
+								<tr>
+								   	<th align="left" class="linetwo"> <%=messages.getText("vehicle.complaint.phoneId")+":"%> </th>
+					        		<td align="left" class="linetwo">
+	       								<html:text property="phoneId" styleClass="input"  size="50"/>
+					        		</td>
+					        		<td align="left">&nbsp;</td>
+				         		</tr>
+			      				<tr  class="space">
+			      					<th align="right">&nbsp;</th>
+			      					<td align="right">&nbsp;</td>
+			      					<td align="right">&nbsp;</td>	
+			      				</tr>
+								<tr>
+								   	<th align="left" class="linetwo"> <%=messages.getText("vehicle.complaint.agent")+":"%> </th>
+					        		<td align="left" class="linetwo">
+	       								<html:text property="agent" styleClass="input"  size="50"/>
+					        		</td>
+					        		<td align="left">&nbsp;</td>
+				         		</tr>
+							</table>    
+							<jsp:include  page="../component/utilityboxbottom.jsp" />
+						</td>
+					</tr>
+					<tr>
+						<jsp:include  page="../component/spaceline.jsp" />
+				  	</tr>
+					<tr>
+						<td>
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("vehicle.complaint.reporterinfo")%>' />
+							<table width="100%">
+								<tr>
+								   	<th align="left" class="linetwo"> <%=messages.getText("vehicle.complaint.reportername")+":"%> </th>
+					        		<td align="left" class="linetwo">
+	       								<html:text property="reporterName" styleClass="input" size="50"/>
+					        		</td>
+					        		<td align="left">&nbsp;</td>
+				         		</tr>
+			      				<tr  class="space">
+			      					<th align="right">&nbsp;</th>
+			      					<td align="right">&nbsp;</td>
+			      					<td align="right">&nbsp;</td>
+			      				</tr>
+								<tr>
+								   	<th align="left" class="linetwo"> <%=messages.getText("vehicle.complaint.reporterphone")+":"%> </th>
+					        		<td align="left" class="linetwo">
+	       								<html:text property="reporterPhone" styleClass="input" size="50"/>
+					        		</td>
+					        		<td align="left">&nbsp;</td>
+				         		</tr>
+			      				<tr  class="space">
+			      					<th align="right">&nbsp;</th>
+			      					<td align="right">&nbsp;</td>
+			      					<td align="right">&nbsp;</td>
+			      				</tr>
+								<tr>
+								   	<th align="left" class="linetwo"> <%=messages.getText("vehicle.complaint.reportermobile")+":"%> </th>
+					        		<td align="left" class="linetwo">
+	       								<html:text property="reporterMobile" styleClass="input" size="50"/>
+					        		</td>
+					        		<td align="left">&nbsp;</td>
+				         		</tr>
+			      				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+								<tr>
+								   	<th align="left" class="linetwo"> <%=messages.getText("vehicle.complaint.reporteremail")+":"%> </th>
+					        		<td align="left" class="linetwo">
+	       								<html:text property="reporterEmail" styleClass="input" size="50"/>
+					        		</td>
+					        		<td align="left">&nbsp;</td>
+				         		</tr>
+							</table>    
+							<jsp:include  page="../component/utilityboxbottom.jsp" />
+						</td>
+					</tr>
+		  			<tr>
+						<jsp:include  page="../component/spaceline.jsp" />
+		  			</tr>
+					<tr>
+						<td>
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.vehicle.complaintdata")%>' />
+							<table width="100%">
+		            			<tr class="linetwo">
+								   	<th align="left" class="linetwo" colspan="3"> 
+								   		<%=messages.getText("vehicle.complaint.location")+":"%> 
+								   	</th>
+								</tr>
+		            			<tr class="linetwo">
+					        		<td align="left" class="linetwo" colspan="3">
+					        			<html:textarea property="location" rows="2" cols="120" styleClass="input"></html:textarea>
+					        		</td>
+				         		</tr>
+			      				<tr  class="space">
+			      					<th align="right">&nbsp;</th>
+			      					<td align="right">&nbsp;</td>
+			      					<td align="right">&nbsp;</td>
+			      				</tr>
+		            			<tr class="linetwo">
+	              					<th align="left" valign="middle"><%=messages.getText("vehicle.complaint.date") %></th>
+	       							<td align="left" class="linetwo">
+	       								<jsp:include  page='<%="../component/dateComponent.jsp?index=2&day=date&month=month&year=year&form=VehicleMaintenanceForm" %>' />
+			          				</td>
+			          				<td align="left">&nbsp;</td>
+				         		</tr>
+			      				<tr  class="space">
+			      					<th align="right">&nbsp;</th>
+			      					<td align="right">&nbsp;</td>
+			      					<td align="right">&nbsp;</td>
+			      				</tr>
+			      				<tr>
+			        				<th align="left" class="linetwo" >
+			        					<%=messages.getText("vehicle.complaint.hour")%>
+			        				</th>
+			        				<td align="left" class="linetwo">
+										<html:text property="hour" style="width:23;" styleClass="input" maxlength="2"/>&nbsp;:&nbsp;
+		            					<html:text property="minute" style="width:23;" styleClass="input" maxlength="2"/>
+				   					</td>
+				   					<td align="left">&nbsp;</td>
+			          			</tr>
+			      				<tr  class="space">
+			      					<th align="right">&nbsp;</th>
+			      					<td align="right">&nbsp;</td>
+			      					<td align="right">&nbsp;</td>
+			      				</tr>
+		            			<tr class="linetwo">
+								   	<th align="left" class="linetwo" colspan="3"> 
+								   		<%=messages.getText("vehicle.complaint.description")+":"%> 
+								   	</th>
+								</tr>
+		            			<tr class="linetwo">
+					        		<td align="left" class="linetwo" colspan="3">
+					        			<html:textarea property="description" rows="3" cols="120" styleClass="input"></html:textarea>
+					        		</td>
+				         		</tr>
+			      			</table>
+							<jsp:include  page="../component/utilityboxbottom.jsp" />
+						</td>
+					</tr>
+					<tr>
+						<jsp:include  page="../component/spaceline.jsp" />
+				  	</tr>
+					<tr>
+						<td>
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("vehicle.complaint.vehicledata")%>' />
+							<table width="100%">
+								<tr>
+								   	<th align="left" class="linetwo"> <%=messages.getText("vehicle.complaint.plate")+":"%> </th>
+		         					<td align="left" class="linetwo"><%=vehicle.getMatricula()%></td>
+		         					<td align="left">&nbsp;</td>
+	         					</tr>
+      							<tr  class="space">
+      								<th align="right">&nbsp;</th>
+      								<td align="right">&nbsp;</td>
+      								<td align="right">&nbsp;</td>
+      							</tr>
+								<tr>
+								   	<th align="left" class="linetwo"> <%=messages.getText("vehicle.complaint.vehicletype")+":"%> </th>
+		         					<td align="left" class="linetwo"><%=messages.getText(vehicle.getType().getResourceBundleId())%></td>
+		         					<td align="left">&nbsp;</td>
+								</tr>
+      							<tr  class="space">
+      								<th align="right">&nbsp;</th>
+      								<td align="right">&nbsp;</td>
+      								<td align="right">&nbsp;</td>
+      							</tr>
+								<tr>
+								   	<th align="left" class="linetwo"> <%=messages.getText("vehicle.complaint.trade")+":"%> </th>
+		         					<td align="left" class="linetwo"><%=messages.getText(vehicle.getTrade().getResourceBundleId())%></td>
+		         					<td align="left">&nbsp;</td>
+								</tr>
+      							<tr  class="space">
+      								<th align="right">&nbsp;</th>
+      								<td align="right">&nbsp;</td>
+      								<td align="right">&nbsp;</td>
+      							</tr>
+								<tr>
+								   	<th align="left" class="linetwo"> <%=messages.getText("vehicle.complaint.model")+":"%> </th>
+		         					<td align="left" class="linetwo"><%=vehicle.getModel()%></td>
+		         					<td align="left">&nbsp;</td>
+								</tr>				  
+							</table>    
+							<jsp:include  page="../component/utilityboxbottom.jsp" />
+						</td>
+					</tr>
+		  			<tr>
+						<jsp:include  page="../component/spaceline.jsp" />
+		  			</tr>
+					<tr>
+						<td>
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("vehicle.complaint.otherdata")%>' />
+							<table width="100%">
+		            			<tr class="linetwo">
+								   	<th align="left" class="linetwo" colspan="3"> <%=messages.getText("vehicle.complaint.observations")+":"%> </th>
+								</tr>
+		            			<tr class="linetwo">
+					        		<td align="left" class="linetwo" colspan="3">
+					        			<html:textarea property="options" rows="2" cols="120" styleClass="input"></html:textarea>
+					        		</td>
+				         		</tr>
+			      				<tr  class="space">
+			      					<th align="right">&nbsp;</th>
+			      					<td align="right">&nbsp;</td>
+			      					<td align="right">&nbsp;</td>
+			      				</tr>
+		            			<tr class="linetwo">
+								   	<th align="left" class="linetwo"  colspan="3">
+								   	<%=messages.getText("vehicle.complaint.actions")+":"%> 
+								   	</th>
+								</tr>
+		            			<tr class="linetwo">
+					        		<td align="left" class="linetwo" colspan="3">
+					        			<html:textarea property="actions" rows="2" cols="120" styleClass="input"></html:textarea>
+					        		</td>
+				         		</tr>
+				         	</table>
+							<jsp:include  page="../component/utilityboxbottom.jsp" />
+						</td>
+					</tr>
+		  			<tr>
+						<jsp:include  page="../component/spaceline.jsp" />
+		  			</tr>
+        			<tr>   		
+		   				<td align="right">
+		   					<html:submit value='<%=messages.getText("generic.messages.accept") %>' styleClass="input"/>	 		                             
+<%		if(action.equals("/VehicleComplaintEdit")) {
+%>							<input type="button" value='<%=messages.getText("generic.messages.delete")%>' onclick="javascript:confirmDelete('<%=messages.getText("vehicle.complaint.confirmdelete")%>');" />
+<%		}
+%>		   					<html:cancel value='<%=messages.getText("generic.messages.cancel") %>' styleClass="input"/>	 		                             
+            			</td>                 							
+    	  			</tr>              
+ 				</table>
+			</html:form>
+		</center>
+	</body>
+<%		}
+%>	
+</html:html>

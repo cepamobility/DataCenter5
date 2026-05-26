@@ -1,0 +1,256 @@
+/*
+ * Created on 24-feb-2006
+ */
+package presentation.translator.web.activity.schedule;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import javax.servlet.ServletOutputStream;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import javax.swing.table.AbstractTableModel;
+
+import net.sf.jasperreports.engine.JRExporterParameter;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.export.JRPdfExporter;
+import net.sf.jasperreports.engine.util.JRLoader;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.action.DynaActionForm;
+import org.jfree.report.JFreeReport;
+import org.jfree.report.JFreeReportBoot;
+import org.jfree.report.modules.output.pageable.base.PageableReportProcessor;
+import org.jfree.report.modules.output.pageable.pdf.PDFOutputTarget;
+
+import presentation.report.ReportFactory;
+import presentation.report.ReportUtil;
+import presentation.report.activity.ActivityReportFactory;
+import presentation.report.activity.ActivityReportTabletFactory;
+import presentation.report.activity.EBtwReportFactory;
+import presentation.report.reporterjj.CommentaryDriveDataSource;
+import presentation.report.reporterjj.SelfEvaluationData;
+import presentation.report.reporterjj.SelfEvaluationReportFactory;
+import presentation.translator.web.util.AbstractAction;
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+import business.activity.ActivityReportFacade;
+
+import communication.activity.report.ActivityReportData;
+import communication.activity.report.ActivityReportTabletData;
+import communication.activity.report.SmallCertificateDataSource;
+import communication.activity.tables.ActivityPrincipalAttributes;
+import communication.activity.tables.CEPAActivityConstants;
+import communication.activity.tables.CEPAActivityScheduleData;
+import communication.activity.tables.CEPAActivityScheduleRegistryData;
+import communication.activity.tables.CheckListData;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.CountryData;
+import communication.alert.AlertConstants;
+import communication.driver.tables.DriverData;
+import communication.language.Text;
+import communication.util.EmptyDataSource;
+
+/**
+ * @author fcarriquiry
+ *
+ */
+public class ActivityAllCertificateAction extends AbstractAction {
+
+
+	public ActionForward action(ActionMapping mapping, ActionForm form, 
+    		HttpServletRequest request, HttpServletResponse response) throws Exception {
+    	 
+        HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        Text messages = sys.getText();
+        
+    	Integer activityId = new Integer(((DynaActionForm)form).getString("activity"));
+    	ActivityReportFacade activityReport = sys.getActivityReportFacade();
+    	CEPAActivityScheduleData activity = activityReport.findCEPAActivityScheduleByPrimaryKey(activityId, sys.getUserSessionData());
+		Collection drivers = activityReport.getParticipants(activityId,sys.getUserSessionData());
+		
+    	Iterator itDrivers = drivers.iterator();
+    	String[][] links = new String[drivers.size()][2];
+    	int index = 0;
+    	
+    	File f = new File(AlertConstants.TEMP_DIRECTORY_DOWNLOAD+"certificate_"+activityId+".zip");
+        OutputStream outZip = new FileOutputStream(f);
+    	ZipOutputStream zip = new ZipOutputStream(outZip);
+		while(itDrivers.hasNext()) {
+			DriverData driver = (DriverData)itDrivers.next();
+	        CEPAActivityScheduleRegistryData completeResult = activityReport.getCompleteResult(activity.getActivityId(), driver.getId(),messages,sys.getUserSessionData());        
+			String name = Util.formatFile(driver.getFirstName().trim() + " " + driver.getLastName().trim());
+
+
+	    	if(!activity.getDefinition().isHaveNote() || completeResult.isApprouved()) {
+		        String fileName = Util.formatDate(activity.getDate())+"_"+driver.getFirstName().replaceAll(" ","_")+"_"+driver.getLastName().replaceAll(" ","_");
+		
+		        String link = name;
+		        links[index][0] = fileName;
+		        links[index][1] = link;
+		        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+		        boolean withContent = (activity.getType().getResourceBundleId().equals(CEPAActivityConstants.BTW1) 
+		    			&& sys.getUserSessionData().getLenguage().equals("pt") 
+		    			&& sys.isBrasilCorporation() 
+		    			&& !sys.isCorporation(new int[]{CorporationData.MONSANTO,CorporationData.DOW})); 
+		
+		    	String activityKey = activity.getType().getResourceBundleId();
+		    	
+		    	HashMap<String,Object> parameters = new HashMap<String,Object>();
+		    	boolean sabMillerH = sys.isCorporation(CorporationData.SABMILLER) && activity.getCountryId().equals(String.valueOf(CountryData.HONDURAS_ID));
+		    	if(sabMillerH) {
+			        if(!Util.empty(driver.getCorporationId())) {
+			        	parameters.put("ci",  driver.getCorporationId());
+			        }else {
+			        	parameters.put("ci",  "----");
+			        }
+		    		parameters.put("fondo", AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+"fondo_sabmillerH.jpg");
+		    	}else {
+		    		parameters.put("fondo", AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+"fondo_"+sys.getUserSessionData().getLenguage()+".jpg");
+		    	}
+		    	
+		    	String driverName = driver.getFirstName() + " " + driver.getLastName();
+		        if(!Util.empty(driver.getCorporationId()) && (sys.isForestalUnified() || sys.isCorporation(CorporationData.FORESTALES))) {
+		        	driverName += " (C.I. " + Util.formatCorporationId(driver) + ")";
+		        }
+		        parameters.put("conductor",  driverName);
+		    	String title =  messages.getText(activityKey);
+		    	title = title.replace("(versión Tablets)","");
+		    	title = title.replace("(versão Tablets)","");
+		    	title = title.replace("(version Tablets)","");
+		    	
+		        parameters.put("actividad", title);
+		        if(sabMillerH) {
+		        	Calendar c = Calendar.getInstance();
+		        	c.setTime(completeResult.getActivity().getDate());
+		        	String s = c.get(Calendar.DATE)+" días del mes de "+messages.getText("generic.month."+String.valueOf(c.get(Calendar.MONTH)+1))+" de "+c.get(Calendar.YEAR);
+		        	parameters.put("fecha", s);
+		        }else {
+		        	parameters.put("fecha", Util.formatDate(activity.getDate()));
+		        }
+		        int timeExpiry=activityReport.getTimeExpiry(activity.getDefinition().getResourceKeyName(),activity.getCountryId(),sys.getUserSessionData());
+		        //String vigencia = (activity.getDefinition().getTimeExpiry() == 0) ? "---" : activity.getDefinition().getTimeExpiry() + " "  + messages.getText("generic.messages.years");
+		        if(sys.isCorporation(CorporationData.CEPA) && Integer.parseInt(activity.getCountryId()) == CountryData.MEXICO_ID.intValue() && activity.getData(ActivityPrincipalAttributes.DIV_ORG,1,2).equals("FMC")) {
+		        	timeExpiry = 1;
+		        }
+		        
+		        String vigencia = (timeExpiry == 0) ? "---" : timeExpiry + " "  + messages.getText("generic.messages.years");
+		        if(timeExpiry == 1) {
+		        	vigencia = vigencia.substring(0,vigencia.length()-1);
+		        }
+		        
+		        parameters.put("vigencia", vigencia);
+		
+		        String fileNameJasper = (withContent) ? "certificados_br" : "certificados";
+		        if(activityKey.equals(CEPAActivityConstants.BTW3SEGUNDARENOVACION) || activityKey.equals(CEPAActivityConstants.BTW3TERCERARENOVACION) || activityKey.equals(CEPAActivityConstants.CLEAT))
+		        	fileNameJasper = "certificados_largo";
+		    	if(sys.isCorporation(CorporationData.FEMSA_BR)) {
+			        JasperCompileManager.compileReportToFile(AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+"certificados69.jrxml", AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+"certificados69.jasper");
+			        fileNameJasper += String.valueOf(CorporationData.FEMSA_BR);
+		    	}
+		    	if(sys.isCorporation(CorporationData.SABMILLER) && activity.getCountryId().equals(String.valueOf(CountryData.HONDURAS_ID))) {
+			        fileNameJasper = "certificado_sabmillerH";	    		
+		    	}
+		        //JasperCompileManager.compileReportToFile(AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+fileNameJasper+".jrxml", AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+fileNameJasper+".jasper");
+		    	FileInputStream input2 = new FileInputStream(new File(AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+fileNameJasper+".jasper"));
+		
+		    	if(withContent) {
+			        FileInputStream input = new FileInputStream(new File(AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+"contenido.jasper"));
+			        JasperReport subReport = (JasperReport)JRLoader.loadObject(input);
+					parameters.put("contenido", AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+"contenido_pt.jpg");
+			        parameters.put("contenidoDS", new EmptyDataSource());
+			        parameters.put("subreport", subReport);
+		    	}
+		        JasperReport jasperReport = (JasperReport)JRLoader.loadObject(input2);
+		
+		        response.setHeader("Content-Type", "application/pdf");
+		        fileName = Util.stringToSlug(fileName.replaceAll(" ", "_"));
+		   	 	response.setHeader("Content-Disposition", "inline; filename=\""+fileName);
+		        JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, new EmptyDataSource());
+		
+		        JRPdfExporter exporter = new JRPdfExporter();
+		        exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
+		        exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, out);
+		        exporter.exportReport();       
+		        out.flush();
+		        out.close();
+
+		    	index++;
+		        
+		        zip.putNextEntry(new ZipEntry(fileName+".pdf"));
+		        zip.write(out.toByteArray());
+		        zip.closeEntry();
+	    	}
+		}
+    	zip.close();
+
+		response.setContentLength((int)f.length());
+        response.setContentType("application/zip");
+        response.setHeader("Content-Disposition", "attachment; filename=\"certificates.zip\"");
+		
+        InputStream input = new FileInputStream(f);
+        copy(input, response.getOutputStream());
+
+		return null;
+    }
+
+
+    private void copy(InputStream input, OutputStream output) throws Exception {
+    	byte[] buffer = new byte[4096];
+    	int read;
+    	while ((read = input.read(buffer)) != -1) {
+    	    output.write(buffer, 0, read);
+    	}
+    	input.close();
+
+	}
+
+
+	public ActionForward cancel(HttpSession session,ActionMapping mapping, ActionForm form) {
+        return null;
+    }
+    
+    public ActionForward executeReport(OutputStream out, JFreeReport report ) throws Exception {  
+    		
+    		try{
+	    		// PDF Report
+	            
+	            PDFOutputTarget target = new PDFOutputTarget(out);
+	            target.configure(report.getReportConfiguration());
+	            target.open();
+	            PageableReportProcessor proc = new PageableReportProcessor(report);            
+	            proc.setOutputTarget(target);
+	            proc.processReport();
+	            target.close();
+	            out.flush();
+	            out.close();
+    		}catch(Exception e){
+    			e.printStackTrace();
+    			//throw e;
+    		}
+    		
+	        return null;
+    }
+     
+} 
+    
+
+

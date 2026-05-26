@@ -1,0 +1,42 @@
+package communication.fleet;
+
+import java.util.ArrayList;
+import java.util.Collection;
+
+import communication.administration.corporation.tables.PointMoveData;
+import communication.report.UnconformityAction;
+import communication.vehicle.tables.VehicleStatusData;
+
+
+public class ContractorPointData  {
+
+	private String name;
+	private ArrayList<ResumePointData> resume=new ArrayList<ResumePointData>();
+	private ArrayList<VehiclePointData> vehicles=new ArrayList<VehiclePointData>();
+	
+	
+	
+	
+	public String getName() {
+		return name;
+	}
+	public void setName(String name) {
+		this.name = name;
+	}
+	public ArrayList<ResumePointData> getResume() {
+		return resume;
+	}
+	public void setResume(ArrayList<ResumePointData> resume) {
+		this.resume = resume;
+	}
+	public ArrayList<VehiclePointData> getVehicles() {
+		return vehicles;
+	}
+	public void setVehicles(ArrayList<VehiclePointData> vehicles) {
+		this.vehicles = vehicles;
+	}
+	
+	
+    
+  
+}

@@ -1,0 +1,184 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.administration.tables" >
+    <class name="LevelOfServiceVehicleDPA" table="levelofservicevehicledpa">
+
+        <id
+            name="id"
+            column="id"
+            type="java.lang.Integer"
+        >
+            <generator class="sequence">
+            	<param name="sequence">LevelOfServiceVehicleDPA_Sequence</param>
+            </generator>
+           
+        </id>
+        
+        <property
+			name="inspector"
+			column="inspector"
+			type="java.lang.String"
+			not-null="false" 
+		/>
+		
+		 <property
+			name="vehicleId"
+			column="vehicleId"
+			type="java.lang.Integer"
+			not-null="true" 
+		/>
+	
+		 <property
+			name="date"
+			column="date"
+			type="java.util.Date"
+			not-null="true" 
+		/>
+	
+		 <property
+			name="status"
+			column="status"
+			type="java.lang.String"
+			not-null="false" 
+		/>
+	
+		 <property
+			name="tipo"
+			column="tipo"
+			type="java.lang.String"
+			not-null="false" 
+		/>
+	
+	
+	
+	   <property
+			name="fleet"
+			column="fleet"
+			type="java.lang.Integer"
+			not-null="false" 
+		/>
+	
+	   <property
+			name="propTank"
+			column="propTank"
+			type="java.lang.String"
+			not-null="false" 
+		/>
+	
+	   <property
+			name="matricula"
+			column="matricula"
+			type="java.lang.String"
+			not-null="false" 
+		/>
+	
+	<property
+			name="eqp"
+			column="eqp"
+			type="java.lang.String"
+			not-null="false" 
+		/>
+	
+	
+	 <property
+			name="marca"
+			column="marca"
+			type="java.lang.String"
+			not-null="false" 
+		/>
+	
+		 <property
+			name="model"
+			column="model"
+			type="java.lang.String"
+			not-null="false" 
+		/>
+	
+	 <property
+			name="yearModel"
+			column="yearModel"
+			type="java.lang.String"
+			not-null="false" 
+		/>
+	
+	 <property
+			name="startOperation"
+			column="startOperation"
+			type="java.util.Date"
+			not-null="false" 
+		/>
+	
+	 <property
+			name="inspectVehicle"
+			column="inspectVehicle"
+			type="java.util.Date"
+			not-null="false" 
+		/>
+	
+	<property
+			name="vvaluationReportOfTheTachograph"
+			column="vvaluationReportOfTheTachograph"
+			type="java.util.Date"
+			not-null="false" 
+		/>
+	<property
+			name="chassi"
+			column="chassi"
+			type="java.lang.String"
+			not-null="false" 
+		/>
+	
+	<property
+			name="renavan"
+			column="renavan"
+			type="java.lang.String"
+			not-null="false" 
+		/>
+	
+	<property
+			name="reportOFINSP"
+			column="reportOFINSP"
+			type="java.lang.String"
+			not-null="false" 
+		/>
+	<property
+			name="crlv"
+			column="crlv"
+			type="java.lang.String"
+			not-null="false" 
+		/>
+	<property
+			name="crlvDate"
+			column="crlvDate"
+			type="java.util.Date"
+			not-null="false" 
+		/>	
+	<property
+			name="thirdPartyInsurance"
+			column="thirdPartyInsurance"
+			type="java.lang.String"
+			not-null="false" 
+		/>
+	<property
+			name="thirdPartyInsuranceDate"
+			column="thirdPartyInsuranceDate"
+			type="java.util.Date"
+			not-null="false" 
+		/>	
+	
+	<property
+			name="plant"
+			column="plant"
+			type="java.lang.String"
+			not-null="false" 
+		/>
+
+				
+		
+	</class>
+
+</hibernate-mapping>

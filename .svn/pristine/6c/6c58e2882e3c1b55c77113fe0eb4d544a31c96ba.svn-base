@@ -1,0 +1,1005 @@
+package communication.vehicle.tables;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+
+import persistence.util.Util;
+
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.DivOrgData;
+import communication.administration.corporation.tables.GeoItemData;
+import communication.administration.corporation.tables.GeoLabelData;
+import communication.administration.corporation.tables.ItemData;
+import communication.administration.corporation.tables.LabelItemData;
+import communication.administration.user.UserSessionData;
+import communication.datatype.tables.AssignedVehicleDataType;
+import communication.datatype.tables.EnsuranceDataType;
+import communication.datatype.tables.TypeCenterCostDataType;
+import communication.datatype.tables.TypeCoverDataType;
+import communication.datatype.tables.TypeDistanceUnitDataType;
+import communication.datatype.tables.TypeEngineDataType;
+import communication.datatype.tables.TypeFuelDataType;
+import communication.datatype.tables.TypeTradeDataType;
+import communication.datatype.tables.TypeUseDataType;
+import communication.datatype.tables.TypeVehicleDataType;
+import communication.datatype.tables.TypeVolumeUnitDataType;
+import communication.driver.tables.DriverData;
+import communication.util.LogActions;
+import communication.util.Validate;
+
+public class VehicleData extends VehicleMainAttributes implements Comparable , Serializable  {
+
+    public static final int ACTIVE = 0;
+    public static final int EXCLUDED = 1;
+    public static final int ALL = 2;
+    
+    public static final int DIV_ORG = 1;
+    public static final int DIV_GEO = 2;
+	    
+    private static final long serialVersionUID = 1L;
+	private TypeVehicleDataType type;
+	private String colour;
+	private String permissionNumber;
+	private TypeUseDataType use;
+	private Date permissionExpiry;
+	private TypeCenterCostDataType ownerShip;
+	private TypeFuelDataType fuel;
+	private Date purchaseDate;
+	private String chasisNumber;
+	private Float co2emission;
+	private Float consume;
+	private TypeEngineDataType engine;
+	private Integer tankCapacity;
+	private TypeVolumeUnitDataType tankUnit;
+	private boolean abs;
+	private boolean airBag;
+	private boolean aireAcondicionado;	
+	private TypeDistanceUnitDataType odometerUnit;
+	private CorporationData corporation;
+    private ArrayList<DivOrgData> divOrgs;	
+    private DriverData driver;
+	private String model;	
+	private TypeTradeDataType trade;	
+	private TypeCoverDataType cover;		
+    private String costCenter;
+    private Date inclusionDate;
+    
+    private Date mtopExpiry;
+    private Date suctaExpiry;
+    private Date greenCardExpiry;
+
+    private EnsuranceDataType ensuranceType;
+    private String ensurance;
+
+    private boolean ownerCard;                        
+
+    private Integer axisCount;
+    private Integer hp;
+
+    private String observations;
+    private VehicleOptionalInfoData optionalInfo;
+    
+    private Integer cost;
+	private Integer odometer;
+    
+    private Collection unconformities;
+	private AssignedVehicleDataType assignedVehicle;
+	
+	private String comment;
+	private boolean suspension;
+	
+	/**
+	 * Contratos de Alquiler de los Vehiculos (Allergan)
+	 */
+	private Collection contracts;
+	
+	//VEHICLE SMF
+	private VehicleSMFData vehicleSMFData;
+	
+	private HashMap<String, String> reportMoreInfo;
+	
+	
+	/**
+	 * Constructor
+	 * @param id
+	 * @param typeId
+	 * @param year
+	 * @param colour
+	 * @param permissionNumber
+	 * @param useId
+	 * @param permissionExpiry
+	 * @param centerCostId
+	 * @param fuelId
+	 * @param purchaseDate
+	 * @param chasisNumber
+	 * @param engineId
+	 * @param tankCapacity
+	 * @param tankUnitId
+	 * @param abs
+	 * @param airBag
+	 * @param aireAcondicionado
+	 * @param odometerUnitId
+	 * @param corporation
+	 * @param country
+	 * @param divOrgs
+	 * @param driver
+	 * @param matricula
+	 * @param model
+	 * @param tradeId
+	 * @param coverId
+	 * @param costCenter
+	 * @param inclusionDate
+	 * @param exclusionDate
+	 * @param suctaExpiry
+	 * @param mtopExpiry
+	 * @param ensurance
+	 * @param ensuranceType
+	 * @param ownerCard
+	 * @param axisCount
+	 * @param hp
+	 * @param observations
+	 * @param greenCardExpiry
+	 * @param optionalInfo
+	 * @param cost
+	 * @param unconformities
+	 * @param assignedVehicle
+	 * @param co2emission
+	 * @param contracts
+	 */
+    public VehicleData(Integer id,String typeId,Integer year,String colour,String permissionNumber,String useId,
+               Date permissionExpiry,String centerCostId,String fuelId,Date purchaseDate,String chasisNumber,
+               String engineId,Integer tankCapacity,String tankUnitId,boolean abs,boolean airBag,boolean aireAcondicionado,
+               boolean suspension,String odometerUnitId,CorporationData corporation,GeoLabelData country,Collection divOrgs,DriverData driver,
+               String matricula,String model,String tradeId,String coverId,String costCenter, Date inclusionDate, Date exclusionDate, 
+               Date suctaExpiry, Date mtopExpiry, String ensurance,EnsuranceDataType ensuranceType, boolean ownerCard,
+               Integer axisCount, Integer hp, String observations, Date greenCardExpiry,
+               VehicleOptionalInfoData optionalInfo,Integer cost,Collection unconformities,
+               AssignedVehicleDataType assignedVehicle, Float co2emission, Float consume, Collection contracts, VehicleSMFData vehicleSMFData) {   
+        
+        super(id,matricula,country,year, exclusionDate);
+    	if (!empty(typeId)) {
+    		this.type = new TypeVehicleDataType(typeId);
+    	}	
+    	this.colour = (colour != null)?colour.trim():"";
+    	this.permissionNumber = permissionNumber;
+    	this.use = new TypeUseDataType(useId);
+    	this.permissionExpiry = permissionExpiry;
+    	if (!empty(centerCostId)) {
+    		this.ownerShip = new TypeCenterCostDataType(centerCostId);
+    	}
+    	if (!empty(fuelId)) {
+    		this.fuel = new TypeFuelDataType(fuelId);
+    	}	
+    	this.purchaseDate = purchaseDate;
+    	this.chasisNumber = chasisNumber;
+    	this.co2emission = co2emission;
+    	this.consume = consume;
+    	
+    	if (!empty(engineId)) {
+    		this.engine = new TypeEngineDataType(engineId);
+    	}	
+    	this.tankCapacity = tankCapacity;
+    	if (!empty(tankUnitId)) {
+    		this.tankUnit = new TypeVolumeUnitDataType(tankUnitId);
+    	}	
+    	this.abs = abs;
+    	this.airBag = airBag;
+    	this.aireAcondicionado = aireAcondicionado;
+    	this.suspension = suspension;
+    	if (!empty(odometerUnitId)) {
+    		this.odometerUnit = new TypeDistanceUnitDataType(odometerUnitId);
+    	}	
+    	this.corporation = corporation;		
+    	this.divOrgs = new ArrayList<DivOrgData>(divOrgs);
+    	this.driver = driver;
+    	this.model = model.trim();
+    	if (!empty(tradeId)) {
+    		this.trade = new TypeTradeDataType(tradeId);
+    	}
+    	if (!empty(coverId)) {    	
+    		this.cover = new TypeCoverDataType(coverId);
+    	}	
+    	if (!empty(costCenter)) 	{
+    		this.costCenter = costCenter;
+    	}
+    	this.inclusionDate = inclusionDate;    	
+        this.mtopExpiry = mtopExpiry;
+        this.suctaExpiry = suctaExpiry;
+        this.greenCardExpiry = greenCardExpiry;
+        this.ensuranceType = ensuranceType;
+        this.ensurance = ensurance;
+        this.ownerCard = ownerCard;
+        this.axisCount = axisCount;
+        this.hp = hp;
+        this.observations = observations;
+        this.optionalInfo = optionalInfo;
+        this.cost = cost;
+        this.unconformities = unconformities;
+        this.assignedVehicle = assignedVehicle;
+        this.contracts = contracts;
+        //VEHICLE SMF
+        this.vehicleSMFData = vehicleSMFData;
+    }    
+    
+    public VehicleData(Integer id) {
+        super(id);
+    }
+        
+	public VehicleData(Integer id, String plate, String model, String tradeId) {
+        super(id,plate,null,null,null);
+        this.model = model;
+        if (!empty(tradeId)) {
+            this.trade = new TypeTradeDataType(tradeId);
+        }
+    }
+	
+
+
+	/**
+	 * constructor por copia
+	 * @param vehicle
+	 */
+    public VehicleData(VehicleData vehicle) {
+    	super(vehicle.getId(),vehicle.getMatricula(),vehicle.getCountry(),vehicle.getYear(),vehicle.getExclusionDate());
+    	type = vehicle.getType();
+    	colour = vehicle.getColour();
+    	permissionNumber = vehicle.getPermissionNumber();
+    	use = vehicle.getUse();
+    	permissionExpiry = vehicle.getPermissionExpiry();
+    	ownerShip = vehicle.getOwnerShip();
+    	fuel = vehicle.getFuel();
+    	purchaseDate = vehicle.getPurchaseDate();
+    	chasisNumber = vehicle.getChasisNumber();
+    	co2emission = vehicle.getCo2emission();
+    	consume = vehicle.getConsume();
+    	engine = vehicle.getEngine();
+    	tankCapacity = vehicle.getTankCapacity();
+    	tankUnit = vehicle.getTankUnit();
+    	abs = vehicle.getAbs();
+    	airBag = vehicle.getAirBag();
+    	suspension = vehicle.getSuspension();
+    	aireAcondicionado = vehicle.getAireAcondicionado();	
+    	odometerUnit = vehicle.getOdometerUnit();
+    	corporation = vehicle.getCorporation();
+        divOrgs = new ArrayList<DivOrgData>(vehicle.getDivOrgs());	
+        driver = vehicle.getDriver();
+    	model = vehicle.getModel();	
+    	trade = vehicle.getTrade();	
+    	cover = vehicle.getCover();		
+        costCenter = vehicle.getCostCenter();
+        inclusionDate = vehicle.getInclusionDate();
+        
+        mtopExpiry = vehicle.getMtopExpiry();
+        suctaExpiry = vehicle.getSuctaExpiry();
+        greenCardExpiry = vehicle.getGreenCardExpiry();
+
+        ensuranceType = vehicle.getEnsuranceType();
+        ensurance = vehicle.getEnsurance();
+
+        ownerCard = vehicle.isOwnerCard();                      
+        axisCount = vehicle.getAxisCount();
+        hp = vehicle.getHp();
+
+        observations = vehicle.getObservations();
+        optionalInfo = vehicle.getOptionalInfo();
+        
+        cost = vehicle.getCost();
+    	odometer = vehicle.getOdometer();
+        
+        unconformities = vehicle.getUnconformities();
+    	assignedVehicle = vehicle.getAssignedVehicle();
+    	
+    	/**
+    	 * Contratos de Alquiler de los Vehiculos (Allergan)
+    	 */
+    	contracts = vehicle.getContracts();
+    	
+    	vehicleSMFData = vehicle.getVehicleSMFData();
+	}
+    
+    
+
+	public HashMap<String, String> getReportMoreInfo() {
+		return reportMoreInfo;
+	}
+
+	public void setReportMoreInfo(HashMap<String, String> reportMoreInfo) {
+		this.reportMoreInfo = reportMoreInfo;
+	}
+
+	public VehicleData() {
+		super(null);
+	}
+
+	/**
+	 * @return Returns the abs.
+	 */
+	public boolean getAbs() {
+		return abs;
+	}
+	/**
+	 * @return Returns the airBag.
+	 */
+	public boolean getAirBag() {
+		return airBag;
+	}
+	/**
+	 * @return Returns the aireAcondicionado.
+	 */
+	public boolean getAireAcondicionado() {
+		return aireAcondicionado;
+	}	
+	/**
+	 * @return Returns the ownerShip.
+	 */
+	public TypeCenterCostDataType getOwnerShip() {
+		return ownerShip;
+	}
+	/**
+	 * @return Returns the chasisNumber.
+	 */
+	public String getChasisNumber() {
+		return chasisNumber;
+	}
+	/**
+	 * @return Returns the colour.
+	 */
+	public String getColour() {
+		return colour;
+	}
+	/**
+	 * @return Returns the corporation.
+	 */
+	public CorporationData getCorporation() {
+		return corporation;
+	}
+	/**
+	 * @return Returns the engine.
+	 */
+	public TypeEngineDataType getEngine() {
+		return engine;
+	}
+	
+	/**
+	 * @return Returns the fuel.
+	 */
+	public TypeFuelDataType getFuel() {
+		return fuel;
+	}
+	/**
+	 * @return Returns the odometerUnit.
+	 */
+	public TypeDistanceUnitDataType getOdometerUnit() {
+		return odometerUnit;
+	}
+	/**
+	 * @return Returns the permissionExpiry.
+	 */
+	public Date getPermissionExpiry() {
+		return permissionExpiry;
+	}
+	/**
+	 * @return Returns the permissionNumber.
+	 */
+	public String getPermissionNumber() {
+		return permissionNumber;
+	}
+	/**
+	 * @return Returns the purchaseDate.
+	 */
+	public Date getPurchaseDate() {
+		return purchaseDate;
+	}
+	/**
+	 * @return Returns the tankCapacity.
+	 */
+	public Integer getTankCapacity() {
+		return tankCapacity;
+	}
+	/**
+	 * @return Returns the tankUnit.
+	 */
+	public TypeVolumeUnitDataType getTankUnit() {
+		return tankUnit;
+	}
+	/**
+	 * @return Returns the type.
+	 */
+	public TypeVehicleDataType getType() {
+		return type;
+	}
+	/**
+	 * @return Returns the use.
+	 */
+	public TypeUseDataType getUse() {
+		return use;
+	}
+	
+	/**
+	 * @return Returns the divOrgs.
+	 */
+	public Collection getDivOrgs() {
+		return divOrgs;
+	}
+	/**
+	 * @return Returns the driver.
+	 */
+	public DriverData getDriver() {
+		return driver;
+	}	
+	/**
+	 * @return Returns the matricula.
+	 */
+	public TypeTradeDataType getTrade() {
+		return trade;
+	}	
+	/**
+	 * @return Returns the matricula.
+	 */
+	public TypeCoverDataType getCover() {
+		return cover;
+	}		
+	/**
+	 * @return Returns the model.
+	 */
+	public String getModel() {
+		return model;
+	}	
+	
+	/**
+	 * @set the id.
+	 */
+	public void setId(Integer id) {
+		this.id = id;
+	}		
+	
+	/**
+	 * @set the use.
+	 */
+	public void setUse(TypeUseDataType use) {
+		this.use = use;
+	}	
+	
+	/**
+	 * @set the driver.
+	 */
+	public void setDriver(DriverData driver) {
+		this.driver = driver;
+	}		
+	/**
+	 * @set the matricula.
+	 */
+	public void setMatricula(String matricula) {
+		this.matricula = matricula;
+	}		
+	/**
+	 * @set the chasisNumber.
+	 */
+	public void setChasisNumber(String chasisNumber) {
+		this.chasisNumber = chasisNumber;
+	}	
+	/**
+	 * @set the country.
+	 */ 
+	public void setCountry(GeoLabelData country) {
+		this.country = country;
+	}		
+		
+    /**
+     * @return
+     */
+    public Iterator getDivOrgsIterator() {
+        if(divOrgs == null) {
+            return null;
+        }
+        Collections.sort((List)divOrgs);
+        return divOrgs.iterator();
+    }	
+    
+	/**
+	 * @param data
+	 * @return null if is valid, String with message if is invalid
+	 */
+	public String validate(UserSessionData userRequest) {
+
+	if (empty(matricula)) {
+		return "generic.vehicle.vehicledata.regsitrationNumber";
+	}
+	if (use == null || use.getResourceBundleId() == null) {
+		return "generic.vehicle.vehicledata.useInvalid";
+	}	
+	if (type == null || type.getResourceBundleId() == null) {
+		return "generic.vehicle.vehicledata.typeInvalid";
+	}
+	if (trade == null || trade.getResourceBundleId() == null) {
+		return "generic.vehicle.vehicledata.tradeInvalid";
+	}	
+	if (empty(model)) {
+		return "generic.vehicle.vehicledata.model";
+	}
+/*	if (fuel == null || fuel.getResourceBundleId() == null) {
+		return "generic.vehicle.vehicledata.fuelInvalid";
+	}
+	if (odometerUnit == null || odometerUnit.getResourceBundleId() == null) {
+		return "generic.vehicle.vehicledata.odometerUnitInvalid";
+	}	
+	if (ownerShip == null || ownerShip.getResourceBundleId() == null) {
+		return "generic.vehicle.vehicledata.ownershipInvalid";
+	}		
+	if (engine == null || engine.getResourceBundleId() == null) {
+		return "generic.vehicle.vehicledata.engineInvalid";
+	}			
+	if (cover == null || cover.getResourceBundleId() == null) {
+		return "generic.vehicle.vehicledata.coverInvalid";
+	}				
+	if (tankUnit == null || tankUnit.getResourceBundleId() == null) {
+		return "generic.vehicle.vehicledata.tankUnitInvalid";
+	}					
+*/	
+	if (year == null) {
+		return "generic.vehicle.vehicledata.yearInvalid";
+	}
+	if (corporation == null) {
+		return "generic.vehicle.vehicledata.corporationInvalid";
+	}
+	if (country == null) {
+		return "generic.driver.driverdata.countryInvalid";
+	}
+/*	if (use.getResourceBundleId().equals("persistence.datatype.typeuse.individual") && driver == null) {
+		return "generic.vehicle.vehicledata.driverInvalid";
+	}	
+	if (use.getResourceBundleId().equals("persistence.datatype.typeuse.institutional") && driver != null) {
+		return "generic.vehicle.vehicledata.driverInvalid";
+	}
+*/				
+    Iterator divOrgsIterator = getDivOrgsIterator();
+    if(divOrgsIterator == null) {
+        return "generic.vehicle.vehicledata.divorgInvalid";
+    }else {
+        String message = Validate.validateDivOrg(divOrgsIterator,userRequest);
+        if(message != null) {
+            return message;
+        }
+    }
+    if(!Validate.validateDivGeo(country,userRequest)) {
+        return "generic.vehicle.vehicledata.divgeoInvalid";
+    }
+    
+    // Chequeo que las divisiones organizacionales del driver estén incluidas en las del filtro del usr
+/*    if (driver !=null) {
+	    Iterator divOrgsIteratorDriver = this.driver.getDivOrgsIterator();
+	    if(divOrgsIteratorDriver == null) {
+	        return "generic.vehicle.vehicledata.divorgDriverInvalid";
+	    }else {
+	        String message = Validate.validateDivOrg(divOrgsIteratorDriver,userRequest);
+	        if(message != null) {
+	            return message;
+	        }
+	    }
+	    if(!Validate.compareDivGeoData(this.driver.getCountry(),userRequest.getFilter().getUserGeoLabelData())) {
+	        return "generic.vehicle.vehicledata.divgeoDriverInvalid";
+	    }    
+    }
+*/	
+	return null;
+}
+    
+	private boolean empty(String value) {
+		return (value == null || value.trim().length() == 0);
+	}
+	
+	/**
+	 * 
+	 * @param index
+	 * @param j
+	 * @return
+	 */
+    public String getData(int index, int j) {
+        Iterator it = getDivOrgsIterator();
+        DivOrgData data = null;
+        for(int i = 0; i < index; i++) {
+            data = (DivOrgData)it.next();
+        }
+        LabelItemData label = data.getDivOrgLevels(); 
+        for(int i = 1; i < j; i++) {
+            label = ((ItemData)label.getItemIterator().next()).getSubItems();
+        }
+        return ((ItemData)label.getItemIterator().next()).getName();
+    }
+
+    /**
+     * 
+     * @param index
+     * @param j
+     * @return
+     */
+    public Integer getIdData(int index, int j) {
+        Iterator it = getDivOrgsIterator();
+        DivOrgData data = null;
+        for(int i = 0; i < index; i++) {
+            data = (DivOrgData)it.next();
+        }
+        LabelItemData label = data.getDivOrgLevels(); 
+        for(int i = 1; i < j; i++) {
+            label = ((ItemData)label.getItemIterator().next()).getSubItems();
+        }
+        return ((ItemData)label.getItemIterator().next()).getId();
+    }
+    
+    public String getCostCenter()
+    {
+    	return this.costCenter;
+    }
+    public void setCostCenter(String costCenter)
+    {
+    	this.costCenter = costCenter;
+    }
+
+	
+	public Date getInclusionDate() {
+		return inclusionDate;
+	}
+
+
+	public void setInclusionDate(Date inclusionDate) {
+		this.inclusionDate = inclusionDate;
+	}
+
+
+    public int compareTo(Object arg0) {
+        return matricula.compareTo(((VehicleData)arg0).matricula);
+    }
+    
+    /**
+     * 
+     * @param type
+     * @param index
+     * @param j
+     * @return
+     */
+    public String getData(int type, int index, int j) {
+        if(type == DIV_ORG) {
+            Iterator it = getDivOrgsIterator();
+            DivOrgData data = null;
+            for(int i = 0; i < index; i++) {
+                data = (DivOrgData)it.next();
+            }
+            LabelItemData label = data.getDivOrgLevels(); 
+            for(int i = 1; i < j; i++) {
+                label = ((ItemData)label.getItemIterator().next()).getSubItems();
+            }
+            return ((ItemData)label.getItemIterator().next()).getName();
+        }else{
+            GeoLabelData label = getCountry(); 
+            for(int i = 1; i < j; i++) {
+                label = ((GeoItemData)label.getItemIterator().next()).getSubItems();
+            }
+           return ((GeoItemData)label.getItemIterator().next()).getName();
+        }
+    }
+
+
+    public void setAbs(boolean abs) {
+        this.abs = abs;
+    }
+
+
+    public void setAirBag(boolean airBag) {
+        this.airBag = airBag;
+    }
+
+
+    public void setAireAcondicionado(boolean aireAcondicionado) {
+        this.aireAcondicionado = aireAcondicionado;
+    }
+
+
+    public void setColour(String colour) {
+        this.colour = colour;
+    }
+
+
+    public void setCorporation(CorporationData corporation) {
+        this.corporation = corporation;
+    }
+
+
+    public void setCover(TypeCoverDataType cover) {
+        this.cover = cover;
+    }
+
+
+    public void setDivOrgs( ArrayList<DivOrgData>  divOrgs) {
+        this.divOrgs = divOrgs;
+    }
+
+    public void setEngine(TypeEngineDataType engine) {
+        this.engine = engine;
+    }
+
+    public void setFuel(TypeFuelDataType fuel) {
+        this.fuel = fuel;
+    }
+
+    public void setModel(String model) {
+        this.model = model;
+    }
+
+    public void setOdometerUnit(TypeDistanceUnitDataType odometerUnit) {
+        this.odometerUnit = odometerUnit;
+    }
+
+    public void setOwnerShip(TypeCenterCostDataType ownerShip) {
+        this.ownerShip = ownerShip;
+    }
+
+    public void setPermissionExpiry(Date permissionExpiry) {
+        this.permissionExpiry = permissionExpiry;
+    }
+
+    public void setPermissionNumber(String permissionNumber) {
+        this.permissionNumber = permissionNumber;
+    }
+
+    public void setPurchaseDate(Date purchaseDate) {
+        this.purchaseDate = purchaseDate;
+    }
+
+    public void setTankCapacity(Integer tankCapacity) {
+        this.tankCapacity = tankCapacity;
+    }
+
+    public void setTankUnit(TypeVolumeUnitDataType tankUnit) {
+        this.tankUnit = tankUnit;
+    }
+
+    public void setTrade(TypeTradeDataType trade) {
+        this.trade = trade;
+    }
+
+    public void setType(TypeVehicleDataType type) {
+        this.type = type;
+    }
+
+    public Date getMtopExpiry() {
+        return mtopExpiry;
+    }
+
+    public String getEnsurance() {
+        return ensurance;
+    }
+
+    public void setEnsurance(String ensurance) {
+        this.ensurance = ensurance;
+    }
+
+    public void setMtopExpiry(Date mtopExpiry) {
+        this.mtopExpiry = mtopExpiry;
+    }
+
+    public Integer getAxisCount() {
+        return axisCount;
+    }
+
+    public EnsuranceDataType getEnsuranceType() {
+        return ensuranceType;
+    }
+
+    public Integer getHp() {
+        return hp;
+    }
+
+    public boolean isOwnerCard() {
+        return ownerCard;
+    }
+
+    public Date getSuctaExpiry() {
+        return suctaExpiry;
+    }
+
+    public void setAxisCount(Integer axisCount) {
+        this.axisCount = axisCount;
+    }
+
+    public void setEnsuranceType(EnsuranceDataType ensuranceType) {
+        this.ensuranceType = ensuranceType;
+    }
+
+    public void setHp(Integer hp) {
+        this.hp = hp;
+    }
+
+    public void setOwnerCard(boolean ownerCard) {
+        this.ownerCard = ownerCard;
+    }
+
+    public void setSuctaExpiry(Date suctaExpiry) {
+        this.suctaExpiry = suctaExpiry;
+    }
+
+    public String getObservations() {
+        return observations;
+    }
+
+    public void setObservations(String observations) {
+        this.observations = observations;
+    }
+
+	public Date getGreenCardExpiry() {
+		return greenCardExpiry;
+	}
+
+	public void setGreenCardExpiry(Date greenCardExpiry) {
+		this.greenCardExpiry = greenCardExpiry;
+	}
+
+	
+	public VehicleOptionalInfoData getOptionalInfo() {
+		return optionalInfo;
+	}
+
+	public void setOptionalInfo(VehicleOptionalInfoData optionalInfo) {
+		this.optionalInfo = optionalInfo;
+	}
+
+    public Integer getDivOrgId(int index) {
+        Iterator it = getDivOrgsIterator();
+        DivOrgData data = null;
+        for(int i = 0; i <= index; i++) {
+        	if(it.hasNext()) {
+        		data = (DivOrgData)it.next();
+        	}else {
+        		return 0;
+        	}
+        }
+        ItemData item = (ItemData)data.getDivOrgLevels().getItemIterator().next();
+        while(item.getSubItems() != null){
+            item = (ItemData)item.getSubItems().getItemIterator().next();
+        }
+        return item.getId();
+    }
+
+    public Integer[] getDivOrgIds() {
+    	Integer[] ids = new Integer[3];
+        Iterator it = getDivOrgsIterator();
+        DivOrgData data = null;
+        for(int i = 0; i < 3; i++) {
+        	if(it.hasNext()) {
+        		data = (DivOrgData)it.next();
+                ItemData item = (ItemData)data.getDivOrgLevels().getItemIterator().next();
+                while(item.getSubItems() != null){
+                    item = (ItemData)item.getSubItems().getItemIterator().next();
+                }
+                ids[i] = item.getId();
+        	}else {
+        		ids[i] = 0;
+        	}
+        }
+        return ids;
+    }
+
+    public Integer getCost() {
+        return cost;
+    }
+
+    public void setCost(Integer cost) {
+        this.cost = cost;
+    }
+
+	public Integer getOdometer() {
+		return odometer;
+	}
+
+	public void setOdometer(Integer odometer) {
+		this.odometer = odometer;
+	}
+
+    public Collection getUnconformities() {
+		return unconformities;
+	}
+
+	public void setUnconformities(Collection unconformities) {
+		this.unconformities = unconformities;
+	}
+
+	public AssignedVehicleDataType getAssignedVehicle() {
+		return assignedVehicle;
+	}
+
+	public void setAssignedVehicle(AssignedVehicleDataType assignedVehicle) {
+		this.assignedVehicle = assignedVehicle;
+	}
+
+	/**
+	 * @return the co2emission
+	 */
+	public Float getCo2emission() {
+		return co2emission;
+	}
+
+	/**
+	 * @param co2emission the co2emission to set
+	 */
+	public void setCo2emission(Float co2emission) {
+		this.co2emission = co2emission;
+	}
+
+	/**
+	 * Contratos de Alquiler de los Vehiculos (Allergan)
+	 * @return the contracts
+	 */
+	public Collection getContracts() {
+		return contracts;
+	}
+
+	/**
+	 * Contratos de Alquiler de los Vehiculos (Allergan)
+	 * @param contracts the contracts to set
+	 */
+	public void setContracts(Collection contracts) {
+		this.contracts = contracts;
+	}
+
+	public Float getConsume() {
+		return consume;
+	}
+
+	public void setConsume(Float consume) {
+		this.consume = consume;
+	}
+
+	public VehicleSMFData getVehicleSMFData() {
+		return vehicleSMFData;
+	}
+
+	public void setVehicleSMFData(VehicleSMFData vehicleSMFData) {
+		this.vehicleSMFData = vehicleSMFData;
+	}
+
+	public void addComment(Object[] data) {
+		String line = "- "+Util.formatDate((Date)data[2]);
+		line += " - "+ data[1]+" - ";
+		switch(((Integer)data[3]).intValue()) {
+			case LogActions.CREATE:
+				line += "CREATE";
+				break;
+			case LogActions.UPDATE:
+				line += "UPDATE";
+				break;
+			case LogActions.DELETE:
+				line += "DELETE";
+				break;
+			case LogActions.INCLUDE:
+				line += "INCLUDE";
+				break;
+			case LogActions.EXCLUDE:
+				line += "EXCLUDE";
+				break;
+		}
+		line += " - " + String.valueOf(data[4]);
+		if(comment == null) {
+			comment = line; 
+		}else {
+			comment += "\n" + line;
+		}
+	}
+
+	public String getComment() {
+		return comment;
+	}
+
+	public boolean getSuspension() {
+		return suspension;
+	}
+
+	public void setSuspension(boolean suspension) {
+		this.suspension = suspension;
+	}
+	
+}

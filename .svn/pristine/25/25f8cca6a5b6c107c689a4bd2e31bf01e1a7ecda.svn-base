@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.vehicle.tables" >
+    <class name="Complaint" table="complaints">
+		
+		 <id column="complaintId" name="complaintId">
+            <generator class="sequence">
+            	<param name="sequence">Complaint_Sequence</param>
+            </generator>
+        </id>
+
+   		<property 	name="date" 	type="java.sql.Date" column="date"	not-null="true"/>
+   		<property 	name="hour" 	type="java.sql.Time" column="time"	/>
+        <property	name="location" type="text" column="location"/>        
+        <property	name="description" type="text" column="description"/>        
+
+		<!-- 
+        <property	name="callType" type="java.lang.Integer" column="calltype"/>
+        -->
+        <many-to-one	name="callType"	
+         	class="persistence.datatype.tables.ComplaintCallType"		
+         	column="calltype"	/>
+       
+        
+        <property	name="specification" type="text" column="specification"/>        
+   		<property 	name="reportDate" 	type="java.sql.Date" column="reportdate"	not-null="true"/>
+        <property	name="ticket" type="java.lang.String" column="ticket"/>        
+        <property	name="phoneId" type="java.lang.String" column="phoneid"/>        
+        <property	name="agent" type="java.lang.String" column="agent"/>        
+                 
+        <property	name="reporterName" type="java.lang.String" column="reportername"/>                      
+        <property	name="reporterPhone" type="java.lang.String" column="reporterphone"/>                      
+        <property	name="reporterMobile" type="java.lang.String" column="reportermobile"/>                      
+        <property	name="reporterEmail" type="java.lang.String" column="reporteremail"/>                      
+        
+        <property	name="options" type="text" column="options"/>        
+        <property	name="actions" type="text" column="actions"/>        
+
+        <many-to-one name="vehicle" class="persistence.vehicle.tables.Vehicle" not-null="true" >
+             <column name="vehicle"></column>
+        </many-to-one>
+
+	 </class>
+
+</hibernate-mapping>

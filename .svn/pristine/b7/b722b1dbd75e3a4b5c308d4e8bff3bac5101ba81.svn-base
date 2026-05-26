@@ -1,0 +1,274 @@
+/*
+ * Created on 01-sep-2005
+ *
+ * TODO To change the template for this generated file go to
+ * Window - Preferences - Java - Code Style - Code Templates
+ */
+package communication.administration.corporation.tables;
+
+import java.io.Serializable;
+import java.util.Calendar;
+import java.util.Date;
+
+import communication.language.Text;
+
+/**
+ * @author fcarriquiry
+ * 
+ */
+public class PointMoveData implements Serializable, Comparable {
+
+    private static final long serialVersionUID = 1L;
+
+    private Integer id;
+
+    private Double amount;
+    private Double actualTotal;
+	private Calendar date;
+	private Integer definition;
+	private String reference;
+	private String description;
+	private Integer account;
+	private String defitionName;
+	private String defitionDescription;
+
+	private String definitionReference;
+	
+	public PointMoveData() {
+	}
+
+
+	public PointMoveData(PointsDefinitionData definitionData, Calendar date, String reference) {
+		definition = definitionData.getId();
+		this.date = date;
+		amount = definitionData.getAmount();
+		this.reference = reference;
+		this.description=definitionData.getDescription();
+	}
+
+
+	public String getDescription() {
+		return description;
+	}
+
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+
+
+	public Double getActualTotal() {
+		return actualTotal;
+	}
+
+
+	public void setActualTotal(Double actualTotal) {
+		this.actualTotal = actualTotal;
+	}
+
+
+	public PointMoveData(Integer id) {
+		this.id = id;
+	}
+
+
+	public String getDefitionDescription() {
+		return defitionDescription;
+	}
+
+
+	public void setDefitionDescription(String defitionDescription) {
+		this.defitionDescription = defitionDescription;
+	}
+
+
+	public Integer getId() {
+		return id;
+	}
+
+
+	public void setId(Integer id) {
+		this.id = id;
+	}
+
+
+	public Calendar getDate() {
+		return date;
+	}
+
+
+	public void setDate(Date data) {
+		Calendar c = Calendar.getInstance();
+		c.setTime(data);
+		this.date = c;
+	}
+
+	public Integer getDefinition() {
+		return definition;
+	}
+
+	public void setDefinition(Integer definition) {
+		this.definition = definition;
+	}
+
+	public Double getAmount() {
+		return amount;
+	}
+
+	public void setAmount(Double amount) {
+		this.amount = amount;
+	}
+
+
+	public String getReference() {
+		return reference;
+	}
+
+
+	public void setReference(String reference) {
+		this.reference = reference;
+	}
+
+
+	public Integer getAccount() {
+		return account;
+	}
+
+
+	public void setAccount(Integer account) {
+		this.account = account;
+	}
+
+
+	public String getDefitionName() {
+		return defitionName;
+	}
+
+
+	public void setDefitionName(String defitionName) {
+		this.defitionName = defitionName;
+	}
+
+
+	public String getDefitionTxt(Text messages) {
+		String value = "---"; 
+		if(definition != null) {
+			value = messages.getText("point.definition."+defitionName.toLowerCase());
+			if(defitionName.equals("FINE") || defitionName.equals("ACTIVITY")) {
+				value += " - "+messages.getText(definitionReference);
+			}
+			if(defitionName.equals(PointsDefinitionData.ASSIGNED) || defitionName.equals(PointsDefinitionData.ASSIGNED_ASSESSMENT) || defitionName.equals(PointsDefinitionData.ASSIGNED_EBTW)
+					 || defitionName.equals(PointsDefinitionData.ASSIGNED_ELEARNING)  || defitionName.equals(PointsDefinitionData.ASSIGNED_OTHER)) {
+				value += " - "+reference;
+			}
+		}
+		return value;
+	}
+
+	public String[] getDefinitionBYR(Text messages) {
+		String[] values = {"",""}; 
+		if(definition != null) {
+			values[0] = messages.getText("point.definition."+defitionName.toLowerCase());
+			if(defitionName.equals("FINE") || defitionName.equals("ACTIVITY")) {
+				values[1] = messages.getText(definitionReference);
+			}else if(defitionName.equals(PointsDefinitionData.EVENTO_NOEVITABLE)
+					|| defitionName.equals(PointsDefinitionData.EVENTO_EVITABLE_MENORCOSTO)
+					|| defitionName.equals(PointsDefinitionData.EVENTO_EVITABLE)
+					|| defitionName.equals(PointsDefinitionData.EVENTO_EVITABLE_FATAL)
+					|| defitionName.equals(PointsDefinitionData.EVENTO_EVITABLE_LESION)
+					|| defitionName.equals(PointsDefinitionData.EVENTO_EVITABLE_COSTO)
+					|| defitionName.equals(PointsDefinitionData.EVENTO_EVITABLE_FATAL_COSTO) 
+					|| defitionName.equals(PointsDefinitionData.EVENTO_EVITABLE_LESION_COSTO)
+					|| defitionName.equals(PointsDefinitionData.TWO_ACCIDENT_YEAR)
+					|| defitionName.equals(PointsDefinitionData.THREE_ACCIDENT_YEAR)) {
+				values[0] = "Siniestro o Accidente";
+				values[1] = messages.getText("point.definition."+defitionName.toLowerCase());
+			}
+			if(defitionName.equals(PointsDefinitionData.ASSIGNED) || defitionName.equals(PointsDefinitionData.ASSIGNED_ASSESSMENT) || defitionName.equals(PointsDefinitionData.ASSIGNED_EBTW)
+					 || defitionName.equals(PointsDefinitionData.ASSIGNED_ELEARNING) || defitionName.equals(PointsDefinitionData.ASSIGNED_OTHER) || defitionName.equals(PointsDefinitionData.EVENT_AWARD)) {
+				values[1] = reference;
+			}
+			if(defitionName.equals(PointsDefinitionData.VEHICLE_MAINTENANCE)) {
+				values[1] = "Ingreso mantenimiento preventivo - Vehículo: "+reference;
+			}
+		}
+		return values;
+	}
+
+	public String getTxt(Text messages) {
+		if(defitionName.trim().length() == 0)
+			return "Total";
+		String value = "---"; 
+		try {
+			value = messages.getText("point.definition."+defitionName.toLowerCase());
+			if(defitionName.equals("FINE") || defitionName.equals("ACTIVITY")) {
+				value += " - "+messages.getText(definitionReference);
+			}
+			if((defitionName.equals(PointsDefinitionData.ASSIGNED) || defitionName.equals(PointsDefinitionData.ASSIGNED_ASSESSMENT) || defitionName.equals(PointsDefinitionData.ASSIGNED_EBTW)) && reference != null) {
+				value += " - "+reference;
+			}
+		}catch (Exception e){
+		}
+		return value;
+	}
+
+	public String getDefinitionReference() {
+		return definitionReference;
+	}
+
+
+	public void setDefinitionReference(String definitionReference) {
+		this.definitionReference = definitionReference;
+	}
+	
+	public String getLink() {
+		if(defitionName.equals(PointsDefinitionData.FINE)) {
+			return "layout.jsp?refer=/event/FineView.jsp?fine="+reference;
+		}
+		if(defitionName.equals(PointsDefinitionData.ASSIGNED)) {
+			return "layout.jsp?refer=/driver/DriverPoints.jsp?move="+id;
+		}
+		if(defitionName.equals(PointsDefinitionData.ACTIVITY)) {
+			return "layout.jsp?refer=/activity/schedule/CEPAActivityScheduleView.jsp?id="+reference;
+		}
+		if(defitionName.equals(PointsDefinitionData.FATAL_ACCIDENT) 
+				|| defitionName.equals(PointsDefinitionData.EVENTO_EVITABLE) 
+				|| defitionName.equals(PointsDefinitionData.EVENTO_EVITABLE_COSTO) 
+				|| defitionName.equals(PointsDefinitionData.EVENTO_EVITABLE_FATAL) 
+				|| defitionName.equals(PointsDefinitionData.EVENTO_EVITABLE_FATAL_COSTO) 
+				|| defitionName.equals(PointsDefinitionData.EVENTO_EVITABLE_LESION) 
+				|| defitionName.equals(PointsDefinitionData.EVENTO_EVITABLE_LESION_COSTO) 
+				|| defitionName.equals(PointsDefinitionData.EVENTO_EVITABLE_MENORCOSTO) 
+				|| defitionName.equals(PointsDefinitionData.INJURED_ACCIDENT_WLOSTDAY) 
+				|| defitionName.equals(PointsDefinitionData.INJURED_ACCIDENT)
+				|| defitionName.equals(PointsDefinitionData.VUELCO) 
+				|| defitionName.equals(PointsDefinitionData.ACCIDENT_WITH_DAMAGE) 
+				|| defitionName.equals(PointsDefinitionData.ACCIDENT)
+				|| defitionName.equals(PointsDefinitionData.COLISION_FRONTAL)
+				|| defitionName.equals(PointsDefinitionData.COLISION_LATERAL)
+				|| defitionName.equals(PointsDefinitionData.COLISION_TRASERA)
+				|| defitionName.equals(PointsDefinitionData.COLISION_TRANSVERSAL)
+				|| defitionName.equals(PointsDefinitionData.OBJETO_FIJO)
+				|| defitionName.equals(PointsDefinitionData.COLISION_ANIMAL)) {
+			return "layout.jsp?refer=/event/EventView.jsp?eventId="+reference;
+		}
+		return null;
+	}
+
+
+	public void setDate(Calendar date) {
+		this.date = date;
+	}
+
+
+	@Override
+	public int compareTo(Object o) {
+		PointMoveData pm = (PointMoveData)o;
+		if(pm.date.get(Calendar.YEAR) == date.get(Calendar.YEAR) && pm.date.get(Calendar.MONTH) == date.get(Calendar.MONTH) && pm.date.get(Calendar.DATE) == date.get(Calendar.DATE)) {
+			if(pm.definition.intValue() == 60863 && definition.intValue() == 60863)
+				return date.compareTo(pm.date);
+			return pm.amount.compareTo(amount);
+		}
+		return date.compareTo(pm.date);
+	}
+}

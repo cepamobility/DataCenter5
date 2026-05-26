@@ -1,0 +1,34 @@
+<ion-view view-title="{{f}}">
+    <loading></loading> 
+	  <ion-content class="padding">
+	    <div class="list card">
+	      <div class="item item-divider">{{txt.na}}</div>
+	      <div class="item item-body" ng-click="openActivitiesNew()" style="cursor:pointer;">
+	        <div>
+	          <p>{{total}}</p>
+	        </div>
+	      </div>
+	    </div>
+ 	     <div class="item item-divider">{{txt.sa}}</div>
+	      <div class="item item-body"  ng-click="openOpen( )" style="cursor:pointer;">
+	        <div>
+	          <p>{{totalOpen}}</p>
+	        </div>
+	      </div>
+	    </div>
+ 	     <div class="item item-divider">{{txt.rfs}}</div>
+	      <div class="item item-body"  ng-click="openSync( )" style="cursor:pointer;">
+	        <div>
+	         <p>{{totalSync}}</p>
+	        </div>
+	      </div>
+	    </div>
+ 	     <div class="item item-divider">{{txt.history}}</div>
+	      <div class="item item-body" " ng-click="openHistory( )" style="cursor:pointer;">
+	        <div>
+	          <p>{{totalHistory}}</p>
+	        </div>
+	      </div>
+	    </div>
+	  </ion-content>
+</ion-view>

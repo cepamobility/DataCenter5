@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>Documento sem t&iacute;tulo</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+
+<body leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
+<table width="559" border="0" align="center" cellpadding="0" cellspacing="0">
+  <tr> 
+    <td height="84" colspan="4"> <table width="90%" border="0" align="center" cellpadding="0" cellspacing="0">
+        <tr> 
+          <td><div align="center"><font size="5" face="Arial, Helvetica, sans-serif"><strong></strong></font></div>
+            <div align="center"></div>
+            <table width="91%" height="63" border="0" align="center" cellpadding="0" cellspacing="0" bgcolor="3B6692">
+              <tr> 
+                <td height="63" align="center" valign="middle"> <font color="#FFFFFF" size="5" face="Arial, Helvetica, sans-serif"><strong><em>Manual 
+                  de Usuario</em></strong></font><br> <font color="#FFFFFF" size="2" face="Arial, Helvetica, sans-serif"><strong>INSTRUCCIONES 
+                  B&Aacute;SICAS DE ACCESO Y USO</strong></font></td>
+              </tr>
+            </table></td>
+        </tr>
+      </table>
+      <div align="right"> </div></td>
+  </tr>
+  <tr valign="top"> 
+    <td height="21" colspan="5"> <hr color="#3B6692"noshade></td>
+  </tr>
+  <tr> 
+    <td colspan="5">&nbsp;</td>
+  </tr>
+  <tr> 
+    <td height="665" colspan="5"> <div align="center"> 
+        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+          <tr> 
+            <td><font size="4" face="Arial, Helvetica, sans-serif"><strong>CONDUCTORES</strong></font></td>
+          </tr>
+          <tr> 
+            <td>&nbsp;</td>
+          </tr>
+          <tr> 
+            <td height="16"> <div align="justify"><font size="2" face="Arial, Helvetica, sans-serif">Esta 
+                funci&oacute;n permite el mantenimiento de datos de los conductores.</font></div></td>
+          </tr>
+          <tr> 
+            <td height="19"> <p>&nbsp;</p></td>
+          </tr>
+          <tr> 
+            <td><font face="Arial, Helvetica, sans-serif"><strong>Conductores/Mantenimiento</strong></font></td>
+          </tr>
+          <tr> 
+            <td>&nbsp;</td>
+          </tr>
+          <tr> 
+            <td height="369"> <table width="90%" height="459" border="1" align="center" cellpadding="0" cellspacing="0" bordercolor="#3B6692">
+                <tr> 
+                  <td height="457"> <div align="justify"></div>
+                    <div align="justify"></div>
+                    <div align="justify"> 
+                      <table width="90%" height="380" border="0" align="center" cellpadding="0" cellspacing="0">
+                        <tr> 
+                          <td width="30%" height="106"><img src="/datacenter/util/imgs/mn_menu_1_es.jpg" width="151" height="106"></td>
+                          <td width="3%">&nbsp;</td>
+                          <td width="67%"><div align="justify"><font size="2" face="Arial, Helvetica, sans-serif">En 
+                              el matenimiento es donde se realizan los ingresos, 
+                              modificaciones de los datos registrados, exclusi&oacute;n 
+                              de los mismos, as&iacute; como activar o desactivar 
+                              alg&uacute;n conductor registrado. Todos los campos 
+                              se&ntilde;alados con un * deben ser completados 
+                              obligatoriamente. </font> </div></td>
+                        </tr>
+                        <tr> 
+                          <td height="217" colspan="3"> <ul>
+                              <li> 
+                                <div align="justify"> <font size="2" face="Arial, Helvetica, sans-serif">Para 
+                                  <strong>incluir</strong> a un nuevo conductor 
+                                  se debe hacer click en Agregar Conductor.</font></div>
+                              </li>
+                              <li> 
+                                <div align="justify"><font face="Arial" size="2"> 
+                                  Para <strong>modificar</strong> un condutor 
+                                  previamente registrado, debe buscarlo mediante 
+                                  una b&uacute;squeda simple o una b&uacute;squeda 
+                                  avanzada. El Data Center exhibir&aacute; una 
+                                  pantalla con los datos del conductor. Hacer 
+                                  click sobre el nombre del conductor y luego 
+                                  sobre el bot&oacute;n Editar; realizar las modificaciones 
+                                  necesarias y hacer clic en el bot&oacute;n &#8220;Salvar&#8221;.</font></div>
+                              </li>
+                              <li> 
+                                <div align="justify"><font size="2" face="Arial, Helvetica, sans-serif">Para 
+                                  <strong>excluir</strong> a un conductor previamente 
+                                  registrado se lo debe buscar mediante una b&uacute;squeda 
+                                  simpe o una b&uacute;squeda avanzada. El Data 
+                                  Center exhibir&aacute; una pantalla con los 
+                                  datos del conductor. Hacer click sobre el nombre 
+                                  del conductor y luego sobre el bot&oacute;n 
+                                  Desactivar. Completar la fecha de exclusi&oacute;n 
+                                  y comentarios (motivo de la exclusi&oacute;n 
+                                  del funcionario) y hacer click sobre el bot&oacute;n 
+                                  &#8220;Desactivar&#8221;.</font></div>
+                              </li>
+                            </ul></td>
+                        </tr>
+                        <tr> 
+                          <td height="19" colspan="3">&nbsp;</td>
+                        </tr>
+                        <tr> 
+                          <td height="19" colspan="3">&nbsp;</td>
+                        </tr>
+                        <tr> 
+                          <td height="19" colspan="3"><font size="1" face="Arial, Helvetica, sans-serif">En 
+                            caso de que el usuario no disponga de la fecha de 
+                            nacimiento del conductor, deber&aacute; ingresar como 
+                            tal 1 de enero de 1925 en el campo correspondiente. 
+                            Para fecha de admisi&oacute;n a la compa&ntilde;&iacute;a 
+                            ingresar 1 de enero de 1940 y para vencimiento de 
+                            la licencia de conducir ingresar 1 de enero del 2050.</font></td>
+                        </tr>
+                      </table>
+                    </div></td>
+                </tr>
+              </table></td>
+          </tr>
+          <tr> 
+            <td>&nbsp;</td>
+          </tr>
+          <tr> 
+            <td><font face="Arial, Helvetica, sans-serif">&nbsp;</font></td>
+          </tr>
+          <tr> 
+            <td><div align="justify"></div></td>
+          </tr>
+          <tr> 
+            <td><div align="center"><font face="Arial, Helvetica, sans-serif">&nbsp;</font><font size="1" face="Arial, Helvetica, sans-serif"><a href="layout.jsp?refer=/manual/spanish/manual1_es.htm" style="color:black;text-decoration:none">Volver 
+                al &Iacute;ndice</a></font></div></td>
+          </tr>
+          <tr> 
+            <td height="19"> <div align="justify"></div></td>
+          </tr>
+        </table>
+      </div></td>
+  </tr>
+  <tr > 
+    <td height="19" colspan="5">&nbsp;</td>
+  </tr>
+</table>
+</body>
+</html>

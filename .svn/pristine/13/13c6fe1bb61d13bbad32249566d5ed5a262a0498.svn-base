@@ -1,0 +1,235 @@
+<%@page language="java" 
+	errorPage="../exception.jsp" 
+	import="business.*"
+	import="business.activity.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.activity.schedule.*" 	
+ 	import="communication.administration.user.*" 	
+ 	import="communication.datatype.tables.ActivityTypeDataType"
+	import="business.vehicle.VehicleReportFacade"
+	import="java.util.*"	
+	import ="org.apache.struts.action.DynaActionForm"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+<!-- VehicleCheckForm -->
+
+
+<%@page import="presentation.translator.web.vehicle.VehicleMaintenanceForm"%><html:html>
+<%!
+	VehicleData vehicle;
+	
+%>
+<%
+	SystemAccess sys = (SystemAccess)session.getAttribute("SystemAccess");
+	UserSessionData userSessionData = sys.getUserSessionData();	
+	
+	String check = Util.checkPermission(sys,SecurityConstants.MODIFY_VEHICLE);	
+	
+	if (check!=null) {
+		response.sendRedirect(request.getContextPath()+check);	
+
+	}else {
+		Text messages=sys.getText();
+	
+		userSessionData.setUrl("vehicle/maintenance.jsp");
+		
+		RequestDispatcher dispatcher = request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+	
+		String id = (String)request.getParameter("id");
+		
+		VehicleReportFacade vehicleReport = sys.getVehicleReportFacade();	
+
+		String type = (String)request.getParameter("type");
+		String action = "/VehicleMaintenance";
+		VehicleData vehicle = null;
+		boolean kms = true;
+		if(Util.empty(type) || type.equals("Create")){
+	vehicle = vehicleReport.findVehicleByPrimaryKey(new Integer(id),userSessionData);
+	action += "Create";
+		}else {
+	VehicleMaintenanceData maintenance = vehicleReport.getVehicleMaintenance(new Integer(id),userSessionData);
+	VehicleMaintenanceForm form = new VehicleMaintenanceForm(maintenance);
+	session.setAttribute("VehicleMaintenanceForm",form);
+	vehicle = maintenance.getVehicle();
+	action += "Edit";
+	kms = (Integer.parseInt(form.getType()) == VehicleMaintenanceData.RUTINA);
+		}
+%>	
+	<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+		<script type="text/javascript">
+			function changeData() {
+				var form = document.forms['VehicleMaintenanceForm'];
+				if(form.type.selectedIndex == 0) {
+					document.getElementById('itemsbox').style.display = 'none'; 
+					document.getElementById('kmsbox').style.display = 'block'; 
+				}else {
+					document.getElementById('itemsbox').style.display = 'block'; 
+					document.getElementById('kmsbox').style.display = 'none'; 
+				}
+			}
+			function confirmDelete(msg) {
+				if(confirm(msg)) {
+					document.forms['VehicleDeleteMaintenanceForm'].submit();
+				}
+			}
+		</script>
+	</head>
+
+	<body>
+		<center>
+			<html:form action="/VehicleMaintenanceDelete">
+				<html:hidden property="id" value='<%=id%>' />
+				<html:hidden property="vehicle" value='<%=String.valueOf(vehicle.getId())%>' />
+			</html:form>
+			<html:form action="<%=action%>">
+				<html:hidden property="id" value='<%=id%>' />
+<%		if(action.equals("/VehicleMaintenanceEdit")) {
+%>				<html:hidden property="vehicle" value='<%=String.valueOf(vehicle.getId())%>' />
+<%		}
+%>	 			<table width="768" border="0" cellspacing="0" cellpadding="0">  
+	 				<tr> 
+	  					<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText("generic.vehicle.maintenance")%>' />
+	 				</tr>
+					<tr>
+						<jsp:include  page="../component/spaceline.jsp" />
+				  	</tr>
+					<tr>
+						<td>
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.vehicledata")%>' />
+							<table>
+								<tr>
+									<td width="270" class="linetwo">
+										<table width="100%">
+											<tr>
+											   	<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.plate")+":"%> </th>
+					         					<td align="right" class="linetwo"><%=vehicle.getMatricula()%></td>
+				         					</tr>
+			      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+											<tr>
+											   	<th align="left" class="linetwo"> <%=messages.getText("generic.vehicle.vehicledata.trade")+":"%> </th>
+					         					<td align="right" class="linetwo"><%=messages.getText(vehicle.getTrade().getResourceBundleId())%></td>
+											</tr>
+										</table>
+									</td>
+									<td width="16"></td>
+									<td width="270">
+										<table width="100%">
+											<tr>
+											   	<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.model")+":"%> </th>
+					         					<td align="right" class="linetwo"><%=vehicle.getModel()%></td>
+											</tr>
+			      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+											<tr>
+											   	<th align="left" class="linetwo"> <%=messages.getText("generic.vehicle.vehicledata.year")+":"%> </th>
+					         					<td align="right" class="linetwo"><%=vehicle.getYear()%></td>
+											</tr>				  
+										</table>
+									</td>
+								</tr>
+							</table>    
+							<jsp:include  page="../component/utilityboxbottom.jsp" />
+						</td>
+					</tr>
+		  			<tr>
+						<jsp:include  page="../component/spaceline.jsp" />
+		  			</tr>
+					<tr>
+						<td>
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.vehicle.maintenancedata")%>' />
+							<table>
+		            			<tr class="linetwo">
+	              					<th align="left" valign="middle"><%=messages.getText("vehicle.maintenance.date") %></th>
+	       							<td align="right" class="linetwo" width="25%">
+	       								<jsp:include  page='<%="../component/dateComponent.jsp?index=1&day=date&month=month&year=year&form=VehicleMaintenanceForm" %>' />
+			          				</td>
+			          				<td>&nbsp;</td>
+	              					<th align="left" valign="middle"><%=messages.getText("vehicle.maintenance.cost") %></th>
+	       							<td align="right" class="linetwo" width="25%">
+	       								<html:text property="cost" styleClass="input"/>
+			          				</td>
+			          			</tr>
+			      				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+		            			<tr class="linetwo">
+	              					<th align="left" valign="middle"><%=messages.getText("vehicle.maintenance.type") %></th>
+	       							<td align="left" class="linetwo" >
+	       								<html:select property="type" styleClass="input" onchange="changeData();">
+	       									<html:option value="<%=String.valueOf(VehicleMaintenanceData.RUTINA)%>"><%=messages.getText("vehicle.maintenancetype.rutina")%></html:option>
+	       									<html:option value="<%=String.valueOf(VehicleMaintenanceData.REPARATION)%>"><%=messages.getText("vehicle.maintenancetype.reparation")%></html:option>
+	       									<html:option value="<%=String.valueOf(VehicleMaintenanceData.INC_ACC)%>"><%=messages.getText("vehicle.maintenancetype.incacc")%></html:option>
+	       								</html:select>
+			          				</td>
+			          				<td>&nbsp;</td>
+			          				<td colspan="2">
+										<div id="kmsbox" <%=(kms) ? "" : "style='display: none;'"%>>
+											<table>
+						            			<tr class="linetwo">
+					              					<th align="left" valign="middle"><%=messages.getText("vehicle.maintenance.kms") %></th>
+					       							<td align="right" class="linetwo" width="25%">
+					       								<html:text property="kms" styleClass="input"/>
+							          				</td>
+							          			</tr>
+							          		</table>
+							          	</div>
+			          				</td>
+			          			</tr>
+			      			</table>
+							<jsp:include  page="../component/utilityboxbottom.jsp" />
+						</td>
+					</tr>
+		  			<tr>
+						<jsp:include  page="../component/spaceline.jsp" />
+		  			</tr>
+					<tr>
+						<td>
+							<div id="itemsbox" <%=(!kms) ? "" : "style='display: none;'"%>>
+								<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("vehicle.maintenancedata.items")%>' />
+								<table width="100%">
+<%			for(int i = 0; i < 3; i++) {
+%>									<tr>
+<%				for(int j = 1; j <= 3; j++) {
+					int item = i*3+j;
+%>										<td width="30%">
+											<html:checkbox property='<%="item"+item%>'><span class="linetwo"><%=messages.getText("vehicle.maintenancedata.item"+item)%></span></html:checkbox>
+										</td>								
+<%				}
+%>			      			
+									</tr>								
+<%			}
+%>			      				</table>
+								<jsp:include  page="../component/utilityboxbottom.jsp" />
+							</div>
+						</td>
+					</tr>
+		  			<tr>
+						<jsp:include  page="../component/spaceline.jsp" />
+		  			</tr>
+        			<tr>   		
+		   				<td align="right">
+		   					<html:submit value='<%=messages.getText("generic.messages.accept") %>' styleClass="input"/>	 		                             
+<%		if(action.equals("/VehicleMaintenanceEdit")) {
+%>							<input type="button" value='<%=messages.getText("generic.messages.delete")%>' onclick="javascript:confirmDelete('<%=messages.getText("vehicle.maintenance.confirmdelete")%>');" />
+<%		}
+%>		   					<html:cancel value='<%=messages.getText("generic.messages.cancel") %>' styleClass="input"/>	 		                             
+            			</td>                 							
+    	  			</tr>              
+ 				</table>
+			</html:form>
+		</center>
+	</body>
+<%		}
+%>	
+</html:html>

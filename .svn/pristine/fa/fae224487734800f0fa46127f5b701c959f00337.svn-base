@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.administration.tables" >
+    <class name="UnconformityDPA" table="unconformitydpa">
+
+        <id
+            name="id"
+            column="id"
+            type="java.lang.Integer"
+        >
+            <generator class="native">
+            </generator>
+        </id>
+        
+		<property
+			name="check"
+			column="vehicleCheckId"
+			type="java.lang.Integer"
+			not-null="false" 
+		/>
+		
+		<property name="userId"></property>
+		<property name="corpId"></property>
+		
+		<many-to-one 
+			name="telematicControl"
+			column="telematicControlId"
+			class="persistence.driver.tables.TelematicControl"
+			not-null="false"
+		/>
+		
+		<property name="driverId" type="java.lang.Integer"></property>
+		
+		<many-to-one 
+			name="type"
+			class="persistence.datatype.tables.UnconformityTypeDPA"
+			not-null="true"
+		/>
+		
+			
+		<set name="items"  cascade="all-delete-orphan">
+			<key column="unconformitydpa" not-null="true"/>
+			<one-to-many class="UnconformityItemDPA" />
+		</set>
+		
+		<property name="date"></property>
+		
+		<property name="comment"></property>
+		<property name="status" type="java.lang.Integer"></property>
+		
+	</class>
+
+</hibernate-mapping>

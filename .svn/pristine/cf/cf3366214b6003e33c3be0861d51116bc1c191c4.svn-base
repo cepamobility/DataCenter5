@@ -1,0 +1,250 @@
+<%@page language="java"
+      errorPage="../../exception.jsp"
+	import="business.*"    
+	import="communication.language.*"	
+	import="java.util.ArrayList"
+	import="communication.activity.tables.*"
+	import="communication.administration.user.tables.*"
+ 	import="communication.administration.user.*" 
+ 	import="communication.administration.corporation.tables.*"
+ 	import="communication.activity.tables.*"
+	import="communication.util.*"
+	import="presentation.translator.web.util.*"
+
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html" 
+%>
+
+<%@ taglib uri="/WEB-INF/struts-bean.tld"
+        prefix="bean" 
+%>
+
+<html:html>
+
+<head>
+<SCRIPT TYPE="text/javascript">
+function popupform(href){	
+	var newWindow = window.open(href, '', 'height=400,width=600,scrollbars=yes,left=(screen.width  - 600)/2;');	
+	return true;
+}
+</SCRIPT>
+
+
+</head>
+
+
+<!--  reportResultReport.jsp -->
+<%
+	Text messages; SystemAccess sys;
+	sys=(SystemAccess)session.getAttribute("SystemAccess");
+	messages = sys.getText();
+	/* Titulo con Logo */
+	boolean conLogo;
+	String titulo = (String)session.getAttribute("tituloReporte");
+	String subtitulo = (String) session.getAttribute("subTituloReporte");
+	String idDriver = request.getParameter("idDriver");
+	String idActivity = request.getParameter("idActivity");
+	if (Util.empty(idActivity)){
+		idActivity = (String) session.getAttribute("idActivity");
+	}
+	if ((String)session.getAttribute("conLogos") != null)
+		conLogo = Boolean.valueOf(((String)session.getAttribute("conLogos")).trim()).booleanValue();
+	else
+		conLogo = false;
+	//System.out.println(conLogo);
+	//System.out.println("."+conLogo+".");
+	//System.out.println("Titulo="+titulo);
+	//System.out.println("Subtitulo="+subtitulo);
+	StringBuffer logoTitulo;
+%>
+
+<body>
+
+<form name="PrintForm">
+<div id="print">
+<%
+	boolean isPrint = false;
+	//Si es para imprimir:
+	String printParameter = request.getParameter("print");	
+	isPrint = (printParameter != null &&
+		Boolean.parseBoolean(printParameter.trim()))?true:false;
+	
+	if (conLogo && (titulo != null))
+	{
+		logoTitulo = new StringBuffer();
+		logoTitulo.append("<body>");		
+		// Si tiene logo de CEPA y titulo (y tal vez logo de la compañía lo muestro 
+		// Para el logo del cliente se puede parametrizar recibiendo el idCorp
+		// y mostrando la imagen que corresponda segun el idCorp.jpg
+		logoTitulo.append(
+	"<div align='left'>	" +
+	"	<table >" +
+	"		<tr>");
+		if (!sys.isCorporation(CorporationData.JJ)) {
+	logoTitulo.append("			<td align='right' width='90' >" +
+		"					<!-- Logo CEPA -->" +
+		"					<img src='/datacenter/util/imgs/logoCEPA.png' width='70px' height='60' alt='CEPA International'/>" +
+		"				</td>");
+		}
+		logoTitulo.append("			<td align='left' valign='center' width='380'>" +
+		  "				<table> " +
+		  "					<tr><td width='20'></td><td align='left' class='titleReport'>" + titulo + "</td></tr>"); 
+		if(subtitulo != null && !subtitulo.equals("")) {
+	logoTitulo.append("				<tr><td width='20'></td><td align='left' class='subtitleReport'>" + subtitulo + "</td></tr>"); 
+		}
+		logoTitulo.append("				</table>"+
+		  "			</td>");		
+		
+		if (sys.isCorporation(CorporationData.MONSANTO)){
+	logoTitulo.append("<td align='right' width='90' ><img src='/datacenter/util/imgs/monsanto_logo.gif' width='100px' height='60' alt='CEPA International'/></td>");
+		}else if (sys.isCorporation(CorporationData.FORESTALORIENTAL)){
+	logoTitulo.append("<td align='right' width='90' ><img src='/datacenter/util/imgs/logoFOSA.jpg' width='100px' height='60' alt='CEPA International'/></td>");
+		} else if (sys.isCorporation(CorporationData.JJ)){				
+	if (!Util.empty(idDriver)){
+	     		logoTitulo.append("<td align='left' width='160' ><img src='/datacenter/util/imgs/logoSafeFleet20.jpg' height='50px' alt='Safe Fleet J&J'/></td>");
+	}
+       	}
+		logoTitulo.append(
+	"		</tr>"+
+	"		<tr>"+
+	"			<td colspan='3'>") ;
+	byte[] mostrarTitulo = logoTitulo.toString().getBytes();
+	for(int i = 0; i < mostrarTitulo.length; i++) {
+	    response.getWriter().write(mostrarTitulo[i]);			
+	}
+	}	
+	
+	
+	/* Contenido del Reporte */
+	byte[] b = (byte[])session.getAttribute("resp");
+	// System.out.println("Byte Array: "+b.length);
+	for(int i = 0; i < b.length; i++) {
+	    response.getWriter().write(b[i]);
+	}
+	
+	
+	// Si tiene logo y titulo
+	if (conLogo && (titulo != null))
+	{
+		logoTitulo = null;
+		logoTitulo = new StringBuffer();
+		logoTitulo.append("	</td></tr></table></div>");
+		byte[] mostrarTitulo = logoTitulo.toString().getBytes();
+		for(int i = 0; i < mostrarTitulo.length; i++) {
+		    response.getWriter().write(mostrarTitulo[i]);			
+		}
+	}
+	
+	/* Inserto Graficas si corresponde */
+	String image = null;
+	ArrayList arrayGraphics = (ArrayList)session.getAttribute("arrayGraficas");
+	if (arrayGraphics != null && arrayGraphics.size() > 0)
+	{
+		for (int i = 0; i < arrayGraphics.size(); i++)
+		{
+	image = "/images/" + (String)arrayGraphics.get(i);
+%>	
+			<div align="center">
+				<br>
+				<img src='<%=image%>' width="400px" height="400"/>
+				<br>
+			</div>
+			
+	<%	}
+	}
+	
+	/* Cierro el html */
+	logoTitulo = null;
+	logoTitulo = new StringBuffer();
+	
+	
+	logoTitulo.append("</body>");
+	if (isPrint){
+		logoTitulo.append("<script>window.print();</script>");
+	}
+	byte[] cierroHtml = logoTitulo.toString().getBytes();
+	for(int i = 0; i < cierroHtml.length; i++) {
+	    response.getWriter().write(cierroHtml[i]);			
+	}
+		
+	%>
+
+
+</div>	
+</form>
+<%	
+
+	if (session.getAttribute("output")!=null && session.getAttribute("output").equals("HTML") && 
+			!(request.getParameter("print") != null && 
+			  Boolean.getBoolean(request.getParameter("print"))) ) {
+
+		session.removeAttribute("output");	
+%>
+	<table>
+	
+		<tr>
+	
+			<td align="right"><font size="2" face="Arial, Helvetica, sans-serif">			
+				<input type="hidden" name="output" value="PDF" />
+				<input class="input" type="button" value='<%=messages.getText("generic.messages.printversion")%>' 
+					onclick="popupform('<%="/datacenter/activity/schedule/reportResultReport.jsp?idDriver="+idDriver+"&idActivity="+idActivity+"&print=true"%>');" />
+				</font>
+			</td>
+	
+		
+			<html:form action="/ActivityReportNew" >	
+				<html:hidden property="output" value="PDF" />
+				<html:hidden property="idActivity" value='<%=idActivity %>' />			
+				<html:hidden property="idDriver" value='<%=idDriver %>' />						
+				
+				<td align="left">			
+					<input type="submit" class="input" value='<%=messages.getText("generic.messages.PDF")%>' />
+				</td>			
+			</html:form>		
+			
+		</tr>
+	</table>
+	
+
+<% 
+	} else if(request.getAttribute("PBTW")!=null){
+		
+		String date = request.getParameter("date");	
+		String nota = request.getParameter("nota");	
+%>
+	<table>
+		
+			<tr>
+		
+				<td align="right"><font size="2" face="Arial, Helvetica, sans-serif">			
+					<input type="hidden" name="output" value="PDF" />
+					<input class="input" type="button" value='<%=messages.getText("generic.messages.printversion")%>' 
+						onclick="popupform('<%="/datacenter/activity/schedule/reportResultReport.jsp?idDriver="+idDriver+"&print=true"%>');" />
+					</font>
+				</td>
+		
+			
+				<html:form action="/ActivityProvisionalBTW" >	
+					<html:hidden property="output" value="PDF" />
+					<html:hidden property="date" value='<%=date %>' /> 		
+					<html:hidden property="result" value='<%=nota %>' />
+					<html:hidden property="idDriver" value='<%=idDriver %>' />						
+					
+					<td align="left">			
+						<input type="submit" class="input" value='<%=messages.getText("generic.messages.PDF")%>' />
+					</td>			
+				</html:form>		
+				
+			</tr>
+		</table>
+<% 
+	} 
+%>
+
+<%@ include file = '../../util/jsp/googleanalytics.jsp' %>	
+
+
+</body>	
+</html:html>

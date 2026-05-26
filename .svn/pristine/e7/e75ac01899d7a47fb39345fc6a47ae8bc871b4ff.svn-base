@@ -1,0 +1,229 @@
+/*
+ * Created on 24-feb-2006
+ *
+ * TODO To change the template for this generated file go to
+ * Window - Preferences - Java - Code Style - Code Templates
+ */
+package presentation.translator.web.reporterjj;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import net.sf.jasperreports.engine.JRExporterParameter;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.export.JRPdfExporter;
+import net.sf.jasperreports.engine.util.JRLoader;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.action.DynaActionForm;
+
+import presentation.translator.web.util.AbstractAction;
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+import business.activity.ActivityABMFacade;
+import business.activity.ActivityReportFacade;
+import business.driver.DriverReportFacade;
+
+import communication.activity.tables.CEPAActivityConstants;
+import communication.activity.tables.CEPAActivityDefinitionData;
+import communication.activity.tables.CEPAActivityScheduleData;
+import communication.activity.tables.CEPAActivityScheduleRegistryData;
+import communication.activity.tables.CheckListData;
+import communication.activity.tables.ItemData;
+import communication.activity.tables.ItemValueData;
+import communication.activity.tables.PointCommentData;
+import communication.activity.tables.PointData;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.DivOrgAttribute;
+import communication.administration.corporation.tables.GeoLabelData;
+import communication.administration.user.UserSessionData;
+import communication.alert.AlertConstants;
+import communication.datatype.tables.ActivityStateDataType;
+import communication.driver.tables.DriverData;
+import communication.language.Text;
+import communication.util.EmptyDataSource;
+import communication.util.MailSender;
+
+public class FeedbackLineManagerAction extends AbstractAction {
+
+		
+	public ActionForward action(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response) throws Exception {
+		
+        HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+		UserSessionData userSessionData = sys.getUserSessionData();
+		Text messages = sys.getText();
+		
+		DynaActionForm formData = (DynaActionForm) form;	
+		ActivityReportFacade activityReport = sys.getActivityReportFacade();
+
+		String activityType = CEPAActivityConstants.FEEDBACK_LINE_MANAGER;
+		Collection to = new LinkedList();
+		
+    	if(sys.isCorporation(CorporationData.BAYER_MX)) {
+	        if(activityReport.existsTodayActivity(userSessionData.getDriverData().getId(), activityType, userSessionData)) {
+	        	return mapping.findForward("back");
+	        }
+    	}
+
+		DriverReportFacade driverReport = sys.getDriverReportFacade(); 
+        DriverData driver = driverReport.findDriverByPrimaryKey(userSessionData.getDriverData().getId(),userSessionData);
+
+		CheckListData checkList = activityReport.findCheckList(CheckListData.FEEDBACK_LINE_MANAGER, userSessionData);
+
+		Date activityDate = Util.getDate(formData.getString("date"), formData.getString("month"), formData.getString("year"));
+		if(activityDate == null) {
+			activityDate = Calendar.getInstance().getTime();
+		}
+
+    	HashMap<String,Object> parameters = new HashMap<String,Object>();
+
+    	Collection itemValueSet = new LinkedList();
+        Collection<PointCommentData> pointObs = new LinkedList<PointCommentData>();
+        Iterator points = checkList.getSortPoints();
+        HashMap values = new HashMap();
+        boolean sendRoadSafety = false;
+        while(points.hasNext()) {
+        	PointData point = (PointData)points.next();
+        	Iterator itemsIt = point.getSortItems();
+        	if(point.getPointOrder() == 1) {
+	            while(itemsIt.hasNext()) {
+	                ItemData item = (ItemData)itemsIt.next();
+	                String insertedValue = request.getParameter("item"+String.valueOf(item.getId()));
+	                if(insertedValue.equals("1")) 
+	                	parameters.put("item"+String.valueOf(item.getId()), "SI");
+	                else
+	                	parameters.put("item"+String.valueOf(item.getId()), "NO");
+	                values.put("i"+item.getId(), "- "+insertedValue);
+	                itemValueSet.add(new ItemValueData(item,new Integer(insertedValue)));
+	            }
+        	}else {
+        		String pointObsValue = request.getParameter("point"+String.valueOf(point.getId()));
+        		pointObs.add(new PointCommentData(point, pointObsValue));
+                ItemData item = (ItemData)itemsIt.next();
+                if(point.getPointOrder() > 7) {
+	                String insertedValue = request.getParameter("item"+String.valueOf(item.getId()));
+	                values.put("i"+item.getId(), insertedValue);
+	                itemValueSet.add(new ItemValueData(item,new Integer(insertedValue)));
+	                if(Integer.parseInt(insertedValue) > 0) {
+	                	parameters.put("item"+String.valueOf(item.getId()), insertedValue+" puntos");
+	                	parameters.put("point"+String.valueOf(point.getId()), pointObsValue);
+	                	sendRoadSafety = true;
+	                }
+                }else {
+                	parameters.put("point"+String.valueOf(point.getId()), pointObsValue);
+	                itemValueSet.add(new ItemValueData(item,new Integer(0)));
+                }
+        	}
+        }
+
+		DivOrgAttribute[] divOrgs = userSessionData.getFilter().getDivOrgsAttrs();
+        Collection list = driver.getDivOrgs();
+        GeoLabelData countrygeo = driver.getCountry();
+
+        CEPAActivityScheduleData activity = new CEPAActivityScheduleData(list,countrygeo,CEPAActivityScheduleData.PREVISTA,null,new CEPAActivityDefinitionData(activityType),
+        		activityType,
+        		new CorporationData(userSessionData.getFilter().getCorporationId()),
+        		formData.getString("city"),activityDate,false,null,0,"",0,"",null, null);        
+
+		
+        //Access ActivityABMFacade
+        ActivityABMFacade activityABM = sys.getActivityABMFacade();				
+        String comment = "Feedback ROAD";
+        Integer activityId = activityABM.createCEPAScheduleActivity(activity,comment,userSessionData);
+        activity.setActivityId(activityId);
+
+ 		CEPAActivityScheduleRegistryData registryData= new CEPAActivityScheduleRegistryData(activity,driver,itemValueSet,pointObs,formData.getString("obs"));
+ 		registryData.setNote("generic.activity.note.approved");
+ 		registryData.setHasResult(true);
+ 		registryData.setInstructor("Feedback ROAD");
+ 		activityABM.createCEPAScheduleActivityRegistry(registryData,userSessionData,false);
+
+        activity.setState(new ActivityStateDataType(CEPAActivityScheduleData.DICTADA));
+        activityABM.updateCEPAScheduleActivity(activity, "", userSessionData);
+
+ 		sys.getDriverABMFacade().completeMitigationPlanActiviy(driver.getId(), CEPAActivityConstants.FEEDBACK_LINE_MANAGER, userSessionData);
+ 		
+    	parameters.put("fondo", AlertConstants.TEMP_DIRECTORY_BAYERMX+"back.png");
+    	
+		String driverName = driver.getFirstName() + " " + driver.getLastName();
+        parameters.put("conductor",  "Nombre: "+driverName);
+        
+        parameters.put("lugar", "Lugar: "+formData.getString("city"));
+        parameters.put("fecha", "Fecha: "+formData.getString("date")+"/"+formData.getString("month")+"/"+formData.getString("year"));
+        parameters.put("nivel", "Nivel: "+formData.getString("level"));
+        parameters.put("obs", formData.getString("obs"));
+
+       // JasperCompileManager.compileReportToFile(AlertConstants.TEMP_DIRECTORY_BAYERMX+"flm.jrxml", AlertConstants.TEMP_DIRECTORY_BAYERMX+"flm.jasper");
+    	FileInputStream input = new FileInputStream(new File(AlertConstants.TEMP_DIRECTORY_BAYERMX+"flm.jasper"));
+
+        JasperReport jasperReport = (JasperReport)JRLoader.loadObject(input);
+
+		Collection<String> files = new LinkedList<String>();
+		Collection<String> names = new LinkedList<String>();
+
+		String fileName = driver.getCorporationId();
+        if(fileName == null || fileName.trim().length() == 0) {
+        	fileName = driverName.replaceAll(" ", "_");
+        }
+        fileName = "FeedbackLineManager_"+fileName+".pdf";
+    	String file = AlertConstants.TEMP_DIRECTORY_BAYERMX+"out/"+fileName;
+        FileOutputStream out = new FileOutputStream(new File(file));
+        JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, new EmptyDataSource());
+
+        files.add(file);
+        names.add(fileName);
+
+        JRPdfExporter exporter = new JRPdfExporter();
+        exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
+        exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, out);
+        exporter.exportReport();       
+        out.flush();
+        out.close();
+
+		Collection addressTo = new LinkedList();
+		addressTo.add("roadsafety@bayer.com");	
+		//addressTo.add("rodriguez.jme@gmail.com");
+		
+		Collection cc = new LinkedList();
+		if(Util.checkEmail(driver.getEmail()))
+			cc.add(driver.getEmail());
+		cc.addAll(sys.getDriverReportFacade().getManagerMonitor(driver.getId(), userSessionData));
+		Collection bcc = new LinkedList();
+		if(sendRoadSafety)
+			bcc.add("maximiliano.miguel@bayer.com");	
+
+		String body = "	<div>" +
+				"<p>Estimado "+driverName+",</p>" +
+				"<p></p>" +
+				"<p>Adjunto el documento Feedback ROAD de la sesión que tuviste con tu Manager, esperamos que los temas discutidos hayan sido de utilidad para adoptar un comportamiento de conducción segura.</p>" +
+				"<p></p>" +
+				"<p>Te invitamos a tener presente y ejecutar los acuerdos consensuados con tu Manager para mitigar tu nivel de riesgo.</p>" +
+				"</div>";
+		sendEmail("Feedback ROAD "+driverName, addressTo, new MailSender(), cc, bcc, body, files, names, sys);
+		return mapping.findForward("next");
+	}
+
+	@Override
+	public ActionForward cancel(HttpSession session, ActionMapping mapping,
+			ActionForm form) {
+    	return mapping.findForward("cancel");
+	}
+
+}

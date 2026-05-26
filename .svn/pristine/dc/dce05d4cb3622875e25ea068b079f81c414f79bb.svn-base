@@ -1,0 +1,139 @@
+<%@page language="java"
+    errorPage="../exception.jsp"
+	import="business.*"
+	import="java.io.*"
+	import="java.text.*"
+	import="java.util.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.util.*"
+ 	import="communication.administration.user.*" 
+	import="communication.util.Filter"
+	import="presentation.translator.web.driver.*"
+ 	import="presentation.translator.web.util.*"
+ 			
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html" 
+%>
+<%	
+	
+	// hace el include de la página que despliega el box que indica el resultado de la operación
+	// el texto que se despliega en el box es el guardado en la variable de sesión bajo la key Msg
+	RequestDispatcher dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+	dispatcher.include(request,response);
+	// Fin manejo de mensajes
+ 	
+	SystemAccess sys = (SystemAccess)session.getAttribute("SystemAccess");
+	Text messages = sys.getText();
+	UserSessionData userSessionData = sys.getUserSessionData();
+
+	if(userSessionData.getValue() != null && userSessionData.getValue() instanceof Hashtable) {
+		Hashtable values = (Hashtable)userSessionData.getValue();
+
+%>
+
+<html:html>
+	<head>
+		<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	</head>
+	<body>
+		<html:form action="/ConfirmInsertWA" method="post" enctype="multipart/form-data" >	
+			<table width="850"  border="0" cellspacing="0" cellpadding="0" align="center"> 
+				<tr class="guide1">
+					<jsp:include  page='<%="../component/titlecomponent.jsp?title=Ingreso de Accidentes Laborales - Confirmación"%>' />
+ 				</tr>
+      			<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+     			</tr>
+				<tr>
+					<td>
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title=Datos del Archivo"%>' />
+						<table width="900"  border="0" align="center" cellpadding="0" cellspacing="0">
+							<tr>
+								<td width='2%' class="guide2" align="center">#</td>
+								<td width='8%' class="guide2" align="center">C.I.</td>
+								<td width='30%' class="guide2">Conductor</td>
+								<td width='20%' class="guide2">Contratista</td>
+								<td width='10%' class="guide2" align="left">Fecha</td>
+								<td width='10%' class="guide2" align="left">Tipo</td>
+								<td width='7%' class="guide2" align="center">Id</td>
+								<td width='7%' class="guide2" align="center">Estado</td>
+							</tr>
+<%		int valids = 0;
+		for(int i = 1; i <= values.size(); i++) {
+			boolean valid = true;
+			if(values.containsKey(new Integer(i))) {
+				Object[] data = (Object[])values.get(new Integer(i));
+%>							<tr class='<%=(i % 2 == 0) ? "lineone" : "linetwo" %>' height="25">
+								<td align="center"><%=String.valueOf(i)%></td>
+								<td align="left"><%=String.valueOf(data[2])%></td>
+<% 				if(((Integer)data[0]).intValue() == -1) {
+					valid = false;
+%>								<td class="required">Conductor no encontrado</td>
+<%				}else {
+%>								<td><%=String.valueOf(data[1])%></td>
+<%				}
+%>
+								<td><%=String.valueOf(data[3])%></td>
+<% 				if(data[5] == null) {				
+					valid = false;
+%>								<td class="required">Error</td>
+<%				}else {
+%>								<td><%=Util.formatDate(((Calendar)data[5]).getTime())%></td>
+<%				}
+				if(data[4] == null) {					
+					valid = false;
+%>								<td class="required">Error</td>
+<%				}else {
+%>								<td><%=String.valueOf(data[6])%></td>
+<%				}
+%>								<td align="center"><%=String.valueOf(data[7])%></td>
+								<td align="center">
+<% 				if(valid) {					
+					valids++;
+%>									<input type='hidden' name='<%="driver"+valids%>' value='<%=String.valueOf(data[0])%>' />
+									<input type='hidden' name='<%="date"+valids%>' value='<%=Util.formatDate(((Calendar)data[5]).getTime())%>' />
+									<input type='hidden' name='<%="definition"+valids%>' value='<%=String.valueOf(data[4])%>' />
+									<input type='hidden' name='<%="id"+valids%>' value='<%=String.valueOf(data[7])%>' />
+									<img src="./images/checked.jpg" width="20">
+<%				}else {
+%>									<img src="./images/unchecked.jpg" width="20">
+<%				}
+%>								</td>
+							</tr>
+<%			}
+		}
+%>						</table>										
+						<jsp:include  page='../component/utilityboxbottom.jsp' />
+					</td>
+				</tr>
+	      		<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+      			</tr>
+				<tr>
+					<td align="left" class="texts" colspan="3">
+						<jsp:include  page="../component/utilitybox4top.jsp" />
+						<table width="100%" class="texts1" border="0" cellpadding="0" cellspacing="0">
+							<tr class="lineone">
+								<td align="left"  class="lineone" width="40%">
+									<html:submit styleClass="input" value='<%=messages.getText("generic.messages.confirm")%>' />
+								</td>
+								<td align="right"  class="lineone" width="40%">
+									<html:cancel styleClass="input" value='<%=messages.getText("generic.messages.cancel")%>' />
+								</td>
+							</tr>
+						</table>
+						<jsp:include  page="../component/utilitybox4bottom.jsp" />
+					</td>
+				</tr>
+			</table>
+			<html:hidden property="valids" value="<%=String.valueOf(valids)%>"/>
+		</html:form>
+	</body>
+</html:html>
+<% }
+%>
+

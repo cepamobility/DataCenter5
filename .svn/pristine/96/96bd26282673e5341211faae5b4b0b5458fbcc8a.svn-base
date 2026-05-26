@@ -1,0 +1,53 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.alert.tables" >
+    <class name="Alert" table="alert">
+		
+		 <id
+            column="alertId"
+            name="alertId"
+        >
+            <generator class="sequence">
+            	<param name="sequence">Alert_Sequence</param>
+            </generator>
+        </id>
+
+        <many-to-one 	name="alertType"	class="persistence.datatype.tables.AlertType"	column="AlertType" not-null="true"/>
+        <property column="description" name="description" type="java.lang.String"/>                          
+        <property column="subject" name="subject" type="java.lang.String" not-null="true"/> 
+        <property column="body" name="body"  type="text" not-null="true"/>   
+        <property column="corporation" name="corporation" type="integer" not-null="true"/>     
+		<property name="startdate" type="java.util.Date" column="startdate" not-null="true"/>
+		<property name="lastdate" type="java.util.Date" column="lastdate" />
+		<property name="nextdate" type="java.util.Date" column="nextdate" not-null="true"/>
+		<property name="enddate" type="java.util.Date" column="enddate" />
+		<many-to-one 	name="alertPriority"	class="persistence.datatype.tables.AlertPriority"	column="AlertPriority" not-null="true"/>
+		<many-to-one 	name="alertFrecuency"	class="persistence.datatype.tables.AlertFrecuency"	column="AlertFrecuency" not-null="true"/>
+  		
+       	<property column="fleetid" name="fleetId" type="java.lang.Integer" /> 
+       	<property column="fleetlist" name="fleetList"  type="java.lang.String" />
+       	<property column="attachment" name="attachment"  type="java.lang.String" />
+       	
+       	
+       	
+      	<property column="dailyFrecuency" name="dailyFrecuency" type="integer"/>
+      
+       <set name="to" cascade="all">
+          <key column="alert" not-null="true"></key>
+          <one-to-many class="persistence.alert.tables.AlertTo"/>            
+       </set> 
+       
+<!--     <set name="extradata" cascade="all">-->
+<!--          <key column="alert" not-null="true"></key>-->
+<!--          <one-to-many class="persistence.alert.tables.AlertExtraInformation"/>            -->
+<!--    </set>     -->
+                    
+
+ 
+	 </class>
+
+</hibernate-mapping>

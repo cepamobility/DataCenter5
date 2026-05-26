@@ -1,0 +1,45 @@
+package communication.driver.tables;
+
+public class MitigationPlanActivityData implements Comparable {
+
+	private Integer activity;
+	private boolean done;
+	
+	public static Integer LETTER = 1;
+	public static Integer HRD = 2;
+	public static Integer BTW = 3;
+	public static Integer MONITOR = 4;
+	public static Integer SECOND_MONITOR = 5;
+	public static Integer FEEDBACK_LINE_MANAGER = 6;
+	public static Integer PREVENTIVE_ACTIONS = 7;
+	public static Integer RST = 8;
+	
+	public MitigationPlanActivityData() {
+	}
+
+	public MitigationPlanActivityData(Integer activity, boolean done) {
+		this.activity = activity;
+		this.done = done;
+	}
+
+	public Integer getActivity() {
+		return activity;
+	}
+
+	public void setActivity(Integer activity) {
+		this.activity = activity;
+	}
+
+	public boolean isDone() {
+		return done;
+	}
+
+	public void setDone(boolean done) {
+		this.done = done;
+	}
+
+	@Override
+	public int compareTo(Object o) {
+		return activity.compareTo(((MitigationPlanActivityData)o).activity);
+	}
+}

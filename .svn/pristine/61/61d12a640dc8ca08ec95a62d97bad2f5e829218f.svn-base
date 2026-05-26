@@ -1,0 +1,350 @@
+<%@page import="communication.activity.tables.CheckListData"%>
+<%@page import="org.apache.struts.action.DynaActionForm"%>
+<%@page language="java" 
+	errorPage="../exception.jsp" 
+	import="business.*"
+	import="business.activity.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.activity.schedule.*" 	
+ 	import="communication.administration.user.*" 	
+ 	import="communication.datatype.tables.ActivityTypeDataType"
+	import="business.vehicle.VehicleReportFacade"
+	import="java.util.*"	
+	import ="org.apache.struts.action.DynaActionForm"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+<!-- VehicleCheckForm -->
+
+<html:html>
+<%!
+	RequestDispatcher dispatcher; 
+	String context;String pathView; String pathMsg; 
+	String pathSearch;
+	String pathLanguage; Text messages; SystemAccess sys;
+	UserSessionData userSessionData; 
+	String idVehicle;
+	VehicleData  vehicle;
+	DynaActionForm vehicleCheckForm; 
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	userSessionData=sys.getUserSessionData();	
+	
+	String check = Util.checkPermission(sys,SecurityConstants.JJ_REPORTER);
+	
+	if (check!=null) {
+		response.sendRedirect(request.getContextPath()+check);	
+
+	}else {
+		messages=sys.getText();
+		pathLanguage="/util/jsp/language.jsp";	
+		dispatcher=request.getRequestDispatcher(pathLanguage);
+		dispatcher.include(request,response);
+	
+		context=request.getContextPath();
+		pathMsg="/util/jsp/message.jsp";
+	
+		dispatcher=request.getRequestDispatcher(pathMsg);
+		dispatcher.include(request,response);
+	
+		idVehicle =(String)request.getParameter("id");
+		if(idVehicle == null) {
+	idVehicle =(String)session.getAttribute("id");
+		}
+		
+		userSessionData.setUrl("VehicleCheckForm.jsp?id="+idVehicle);
+		
+		VehicleReportFacade vehicleReport = sys.getVehicleReportFacade();	
+		VehicleData vehicle = null;
+		
+		if (idVehicle!=null) {				
+	vehicle = vehicleReport.findVehicleByPrimaryKey(new Integer(idVehicle),userSessionData);			
+		}
+
+		String tradeStr = null;
+		String plateStr = null;
+		String modelStr = null;
+		if (vehicle != null) {
+	tradeStr = messages.getText(vehicle.getTrade().getResourceBundleId());
+	plateStr = vehicle.getMatricula();						
+	//System.out.println("VehicleCheckForm - Matricula Vehiculo:"+vehicle.getMatricula());
+	modelStr = messages.getText(vehicle.getModel());						
+		}
+		
+		
+		// Obtengo la cantidad de columnas a dibujar en el formulario:
+		String colu = request.getParameter("columns");
+		int cantCol = 0;
+		if (!Util.empty(colu))
+	cantCol	 = (Integer.parseInt(colu));
+		else
+	cantCol = 1;
+%>	
+	<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+	</head>
+<!-- *************************JCalendar***********************************-->
+ <!-- calendar stylesheet -->
+  <link rel="stylesheet" type="text/css" media="all" href="/datacenter/component/jscalendar-1.0/skins/aqua/theme.css" title="win2k-cold-1" />
+
+  <!-- main calendar program -->
+  <script type="text/javascript" src="/datacenter/component/jscalendar-1.0/calendar.js"></script>
+  <script type="text/javascript" src='/datacenter/js/showHide.js' ></script>
+
+  <!-- language for the calendar-->
+<% if (userSessionData.getLenguage().equals("es")){
+%><script type="text/javascript" src="/datacenter/component/jscalendar-1.0/lang/calendar-es.js"></script>
+<% }else if(userSessionData.getLenguage().equals("en")){
+%><script type="text/javascript" src="/datacenter/component/jscalendar-1.0/lang/calendar-en.js"></script>
+<% }else{
+%><script type="text/javascript" src="/datacenter/component/jscalendar-1.0/lang/calendar-pt.js"></script>
+<%	} %>
+  <!-- the following script defines the Calendar.setup helper function, which makes
+       adding a calendar a matter of 1 or 2 lines of code. -->
+  <script type="text/javascript" src="/datacenter/component/jscalendar-1.0/calendar-setup.js"></script>
+  
+  <!-- **********************end JCalendar ********************************* -->
+
+	<script language="JavaScript" type="text/javascript">
+		function setAction(form){
+			var elements=form.elements;
+			var length=elements.length;
+			var i;
+			var valueCheckboxParamList="";
+			var separator="<";
+			
+			for(i=0;i<length;i++){
+				var element=elements[i];
+				if(((element.type.toLowerCase()=="checkbox") || (element.type.toLowerCase()=="radio")) && element.name!="permanente") {
+					if (element.checked) {	
+						if(valueCheckboxParamList==""){
+							valueCheckboxParamList=element.value;
+						} else {
+							valueCheckboxParamList=element.value+"<"+valueCheckboxParamList;
+						}	
+					}	
+				} 
+			
+			}
+			form.checkboxParamList.value=valueCheckboxParamList;
+			form.submit();
+		}
+	</script>
+	<body>
+	 	<table width="100%" height="90" border="0" cellpadding="0" cellspacing="0" class="default">
+		 	<form name="logout" action="../login.jsp" method="post">
+	 		</form>
+		 	<form name="vehicle" action="vehicle.jsp" method="post">
+	 		</form>
+  			<tr>
+    			<td colspan="2">
+					<table width="100%" border="0" cellspacing="0" cellpadding="0" valign="top">
+      					<tr>
+        					<td><jsp:include  page='<%="../topMenu.jsp?home=true&reporter=true" %>'/></td>
+      					</tr>
+    				</table>	
+    			</td><!--end the top�s table -->
+  			</tr>
+  		</table>
+  		<br>
+  		<br>	
+		<html:form action = "/reporterjj/VehicleCheckcreate2" method="post">
+			<html:hidden property="vehicle" value="<%=idVehicle%>" />
+			<table width="900" border="0" align="center" cellpadding="0" cellspacing="0">
+				<tr class="guide1"> 
+			    	<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText("generic.activity.form.vehiclechecklist")%>' />
+    			</tr>
+			  	<tr> 
+		  			<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+	  			<td colspan="3"> 
+		    		<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.activity.form.tranningonthejob.proofdata")%>' /> 
+					<table width="100%" border="0" align='center' cellpadding="0" cellspacing="0">
+     					<tr class="linetwo"> 
+        					<th width="50%" align="left">        
+        						<%= messages.getText("generic.activity.date")%><%=" ( "+messages.getText("generic.messages.dateformat")+" ) "%>
+							</th>
+							<td width="50%" align="right">
+<%			if(userSessionData.getFilter().getLoginName().equals(SecurityConstants.LOGIN_REPORTERJJ_MX)) {
+				Calendar c = Calendar.getInstance();
+				String day = String.valueOf(c.get(Calendar.DATE));
+				String month = String.valueOf(c.get(Calendar.MONTH)+1);
+				String year = String.valueOf(c.get(Calendar.YEAR));
+%>								<html:hidden property="day" value="<%=day%>" />
+								<html:hidden property="month" value="<%=month%>" />
+								<html:hidden property="year" value="<%=year%>" />
+		    					<%=day+"/"+month+"/"+year%>
+<%			} else {
+%>								<jsp:include  page='<%="../component/dateComponent.jsp?index=1&day=day&month=month&year=year&form=VehicleCheckForm" %>' />
+<%			}
+%>							</td>
+     					</tr>
+   						<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+     					<tr class="linetwo"> 
+        					<th width="50%" align="left">        
+        						<%= messages.getText("generic.driver.name")%>
+							</th>
+							<td width="50%" align="right">
+								<html:text property="name" styleClass="input" />                                     
+					        </td>
+					     </tr>
+   						<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+     					<tr class="linetwo"> 
+        					<th width="50%" align="left">        
+        						<%= messages.getText("generic.driver.licenseNumber")%>
+							</th>
+							<td width="50%" align="right">
+								<html:text property="licenseNumber" styleClass="input" value = '' />                                     
+					        </td>
+					     </tr>     
+   						<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+     					<tr class="linetwo"> 
+        					<th width="50%" align="left">        
+						        <%= messages.getText("generic.activity.dateLicenseExpiry")%><%=" ( "+messages.getText("generic.messages.dateformat")+" ) "%>
+							</th>
+							<td width="50%" align="right">
+<%		if(userSessionData.getFilter().getLoginName().equals(SecurityConstants.LOGIN_REPORTERJJ_MX)) {
+%>								<input type="checkbox" name="permanente"/><span class="linetwo">Permanente</span>&nbsp;
+<%		}
+%>		    					<jsp:include  page='<%="../component/dateComponent.jsp?index=2&day=dayLicenseExpiry&month=monthLicenseExpiry&year=yearLicenseExpiry&form=VehicleCheckForm" %>' />
+							</td>
+					     </tr>
+   						<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+     					<tr class="linetwo"> 
+        					<th width="50%" align="left">        
+        						<%= messages.getText("generic.activity.form.tranningonthejob.trade")%>
+							</th>
+							<td width="50%" align="right">		
+								<html:text property="trade" styleClass="input" value = '<%= tradeStr%>' readonly="true"/>                                     
+					        </td>
+					     </tr>
+   						<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+     					<tr class="linetwo"> 
+        					<th width="50%" align="left">        
+        						<%= messages.getText("generic.vehicle.model")%>
+							</th>
+							<td width="50%" align="right">		
+								<html:text property="model" styleClass="input" value = '<%= modelStr%>' readonly="true" />                                                     
+					        </td>
+					     </tr>     
+   						<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+     					<tr class="linetwo"> 
+        					<th width="50%" align="left">        
+						        <%= messages.getText("generic.activity.form.vehiclecheck.plate")%>
+							</th>
+							<td width="50%" align="right">		
+								<html:text property="plate" styleClass="input" value = '<%=plateStr%>' readonly="true"/>                                             
+					        </td>
+					    </tr>    
+   						<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+      					<tr>
+        					<th width="50%" align="left" class="linetwo">        
+        						<%= messages.getText("generic.vehicle.serie")%>
+							</th>
+							<td width="50%" align="right">		
+								<html:text property="serie" styleClass="input" value = ''/>                                                     
+        					</td>
+     					</tr>     
+   						<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+              			<tr>  
+        					<th width="50%" align="left" class="linetwo">        
+						        <%= messages.getText("generic.vehiclecheck.form.vehicleKm")%>        
+							</th>
+							<td width="50%" align="right">		
+								<html:text property="vehicleKm" styleClass="input" value = ''/>                                                             
+					        </td>                        
+					     </tr>
+					</table>
+	    			<jsp:include page="../component/utilityboxbottom.jsp"/>
+		      	</td>	
+		  	</tr>
+		  	<tr> 
+		    	<jsp:include  page="../component/spaceline.jsp" />
+		  	</tr>
+			<tr>
+				<td colspan="3">
+<%			CheckListData checkList = vehicleReport.findVehicleCheckList(sys.getUserSessionData());
+			session.setAttribute("checkList",checkList);
+			Collection points = checkList.getPoints();
+			int primerPoint, ultimoPoint, totalPoints;
+			totalPoints = points.size();
+	
+			int pointsByCol = Math.round(points.size() / cantCol);
+			primerPoint = 1;
+	
+%>
+    				<table width="100%" border="0" cellspacing="0" cellpadding="0">	
+    					<tr> 
+<%			for (int col=1; col <= cantCol;col++) { 
+				if (col == cantCol) {
+					ultimoPoint = totalPoints;
+				} else {
+					ultimoPoint = primerPoint+pointsByCol-1;
+				}
+
+%>
+        					<td width="768" valign="top"> 		
+								<jsp:include  page='<%="ImprimoCol.jsp?primerPoint="+ primerPoint + "&ultimoPoint=" + ultimoPoint%>' />        				
+							</td>
+<%				if (col < cantCol) {
+%>		        			<td valign="top">&nbsp;</td>
+<%				}
+				primerPoint = col*pointsByCol + 1;
+			}	
+%>		
+
+						</tr>
+					</table>				
+				</td>  
+			</tr>
+			<tr> 
+	  			<td colspan="3"> 
+		    		<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.activity.observations")%>' /> 
+  					<table width="100%" border="0" cellpadding="0" cellspacing="0">
+			            <tr> 
+			              	<td class="linetwo"> 
+			                	<html:textarea property="obs" cols="100" rows="5" />
+			                </td>
+			            </tr>
+       				</table>
+	    			<jsp:include page="../component/utilityboxbottom.jsp"/>
+		      	</td>	
+		  	</tr>
+		  	<tr> 
+		    	<jsp:include  page="../component/spaceline.jsp" />
+		  	</tr>
+        	<tr>   		
+		   		<td align="right" colspan="3">
+					<jsp:include  page="../component/utilitybox4top.jsp" />
+					<table width="100%" class="texts1" border="0" cellpadding="0" cellspacing="0">
+						<tr class="lineone">
+							<td align="right" class="lineone">
+					   		    <html:hidden property="checkboxParamList" />   
+					   			<input name="button2" type="button" value='<%=messages.getText("generic.messages.accept") %>' onClick="javascript:setAction(document.forms['VehicleCheckForm']);" class="input"/>	 		                             
+					   			<input name="cancel" type="button" value='<%=messages.getText("generic.messages.cancel") %>' onClick="document.forms['vehicle'].submit();" class="input"/>	 		                             
+							</td>
+						</tr>
+					</table>
+					<jsp:include  page="../component/utilitybox4bottom.jsp" />
+	        	</td>                 							
+    	  	</tr>              
+ 		</table>
+		</html:form>
+	</body>
+
+<%
+	}	
+%>	
+
+</html:html>

@@ -1,0 +1,167 @@
+/*
+ * Created on 27-oct-2005
+ *
+ * TODO To change the template for this generated file go to
+ * Window - Preferences - Java - Code Style - Code Templates
+ */
+package presentation.translator.web.driver;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+import java.util.StringTokenizer;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import net.sf.jasperreports.engine.JREmptyDataSource;
+import net.sf.jasperreports.engine.JRExporterParameter;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.export.JRPdfExporter;
+import net.sf.jasperreports.engine.util.JRLoader;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.action.DynaActionForm;
+
+import presentation.translator.web.util.AbstractAction;
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+
+import communication.administration.corporation.tables.CorporationData;
+import communication.alert.AlertConstants;
+import communication.driver.tables.DriverData;
+import communication.language.Text;
+import communication.util.MailSender;
+
+/**
+ * @author jrodriguez
+ */
+public class SendAptitudTestAction extends AbstractAction {
+
+	public ActionForward action(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response) throws Throwable {
+
+        HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        Text messages = sys.getText();
+
+        DynaActionForm controlData = (DynaActionForm)form;
+        
+ 		String fileName = controlData.getString("fileName");
+ 		String file = AlertConstants.TEMP_DIRECTORY_GABINETES+"out/"+fileName;
+
+        String date=controlData.getString("date");
+        String expirity=controlData.getString("expiry");
+        String result=controlData.getString("result");
+    	String idDriver=controlData.getString("driver");
+
+        DriverData driver = sys.getDriverReportFacade().findDriverByPrimaryKey(Integer.valueOf(idDriver), sys.getUserSessionData());
+        String driverName = driver.getFirstName() + " " + driver.getLastName();
+
+        StringTokenizer tokenizer = new StringTokenizer(controlData.getString("address"),",");
+		Collection addressTo = new LinkedList();
+		if(tokenizer.countTokens() == 0) {
+	    	session.setAttribute("Msg", messages.getText("generic.sendemail.emptyaddress"));
+	    	sys.getUserSessionData().setUrl("/driver/SendAptitudTest.jsp?idDriver="+idDriver+"&date="+date+"&result="+result+"&expirity="+expirity);
+			return mapping.findForward("success");
+		}else {
+			while(tokenizer.hasMoreTokens()) {
+				String address = tokenizer.nextToken().trim();
+				if(!Util.checkEmail(address)) {
+			    	session.setAttribute("Msg", messages.getText("generic.sendemail.wrongaddress")+": "+address);
+			    	sys.getUserSessionData().setUrl("/driver/SendAptitudTest.jsp?idDriver="+idDriver+"&date="+date+"&result="+result+"&expirity="+expirity);
+					return mapping.findForward("success");
+				}else {
+					addressTo.add(address);
+				}
+			}
+		}
+        
+        HashMap<String,Object> parameters = new HashMap<String,Object>();
+        parameters.put("fondo", AlertConstants.TEMP_DIRECTORY_GABINETES+"gabinetes.jpg");
+        parameters.put("titulo", messages.getText("generic.driver.aptitudtest").toUpperCase());
+        parameters.put("subtitulo", messages.getText("query.activity.generalreport.reportsubtitle"));
+        parameters.put("actividad", messages.getText("generic.activity.activitydata.activitytype").toUpperCase()+": "+messages.getText("generic.driver.aptitudtest"));
+        parameters.put("pais", messages.getText("corporation.country").toUpperCase()+": "+messages.getText(driver.getCountryName()));
+        parameters.put("fecha", messages.getText("generic.activity.activitydata.date").toUpperCase() + ": "+ date);
+        parameters.put("vencimiento", messages.getText("generic.activity.activitydata.activityexpiry").toUpperCase() + ": "+ expirity);
+        parameters.put("conductor", messages.getText("generic.activity.nameandlastnameofparticipant").toUpperCase() + ": "+ driverName);
+        parameters.put("ci", messages.getText("driver.data.ci").toUpperCase() + ": "+ driver.getCorporationId());
+        String contractor = driver.getDivOrgName(1, 1);
+        contractor = Util.borrarForestales(contractor);
+        parameters.put("contratista", messages.getText("datatype.ownership.contract").toUpperCase() + ": "+ contractor);
+        parameters.put("resultado", messages.getText("generic.activity.result").toUpperCase() + ": "+ messages.getText(result));
+        
+
+
+ //       JasperCompileManager.compileReportToFile(AlertConstants.TEMP_DIRECTORY_GABINETES+"gabinetes.jrxml", AlertConstants.TEMP_DIRECTORY_GABINETES+"gabinetes.jasper");
+        FileInputStream input2 = new FileInputStream(new File(AlertConstants.TEMP_DIRECTORY_GABINETES+"gabinetes.jasper"));
+
+        JasperReport jasperReport = (JasperReport)JRLoader.loadObject(input2);
+        FileOutputStream out = new FileOutputStream(new File(file));
+        JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, new JREmptyDataSource(1));
+        
+        JRPdfExporter exporter = new JRPdfExporter();
+        exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
+        exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, out);
+        exporter.exportReport();       
+        out.flush();
+        out.close();
+
+    	MailSender sender = new MailSender();
+		Collection bcc = new LinkedList();
+		String body = Util.toHTMLString(controlData.getString("body"));
+
+		Collection<String> files = new LinkedList<String>();
+		Collection<String> names = new LinkedList<String>();
+		files.add(file);
+		names.add(fileName);
+		
+		boolean sended = false;
+		int count = 0;
+		while(!sended && count < 10) {
+			try {
+		    	String[] mailAddress = sys.getDataTypeReportFacade().getAvailableAddress(CorporationData.REPORTER_JJ, sys.getUserSessionData()); 
+				String mailServer = AlertConstants.MAILSERVER; 
+				if (mailAddress[0] != null && mailAddress[0].contains("cepainternational.com")){
+					mailServer = AlertConstants.MAILSERVER2;
+				}else if (mailAddress[0] != null && mailAddress[0].contains("cepalogistica.com")){
+					mailServer = AlertConstants.MAILSERVER_INMOTION;
+				}
+				if(sender.sendImage(addressTo,
+						mailServer,
+						"CEPA DataCenter", 
+						mailAddress[0],
+						mailAddress[1], 
+						controlData.getString("subject"), body, files,
+						names, 
+						"", "", bcc,null)) {
+					sended = true;
+				}
+			}catch (Exception e) {
+				e.printStackTrace();
+			}
+			count++;
+		}
+
+		session.setAttribute("Msg", messages.getText("generic.sendemail.reportsended"));
+		sys.getUserSessionData().setUrl("/driver/DriverView.jsp?id="+idDriver);
+		return mapping.findForward("success");
+	}
+
+    public ActionForward cancel(HttpSession session,ActionMapping mapping, ActionForm form) {
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        DynaActionForm controlData = (DynaActionForm)form;
+    	String idDriver=controlData.getString("driver");
+		sys.getUserSessionData().setUrl("/driver/DriverView.jsp?id="+idDriver);
+		return mapping.findForward("success");
+    }
+}

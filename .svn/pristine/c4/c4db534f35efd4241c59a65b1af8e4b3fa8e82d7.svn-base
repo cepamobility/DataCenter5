@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+        "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+        "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.administration.corporation.tables">
+    <class name="CorporationMenuException" table="corporationmenuexceptions">
+
+        
+        <composite-id class="CorporationMenuExceptionPK" name="pk" >
+       		<key-property 	name="corporation"	type="java.lang.Integer" column="corporation" />      
+       		<key-property 	name="role"	type="java.lang.String" column="role" />      
+       		<key-many-to-one name="MenuOption" column="id" class="MenuOption" />
+	   </composite-id>
+       
+    </class>
+</hibernate-mapping>

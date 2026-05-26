@@ -1,0 +1,342 @@
+<%@page import="presentation.translator.web.driver.DriverUtil"%>
+<%@page import="communication.driver.tables.DriverData"%>
+<%@page import="persistence.driver.tables.AnualPlan"%>
+<%@page import="java.text.SimpleDateFormat"%>
+<%@page import="communication.driver.tables.MitigationPlanActivityData"%>
+<%@page import="communication.driver.tables.AnualPlanData"%>
+<%@page import="communication.driver.tables.MitigationPlanData"%>
+<%@page import="communication.driver.tables.ReportPlanData"%>
+<%@page import="communication.administration.corporation.tables.CorporationData"%>
+<%@page import="persistence.vehicle.tables.VehicleCheck"%>
+<%@page import="presentation.translator.web.dpa.DPAUnconformityCheckListForm"%>
+<%@page import="communication.administration.dpa.UnconformityDPAData"%>
+<%@page import="communication.administration.dpa.UnconformityItemTypeDPADataType"%>
+<%@page import="communication.datatype.DataTypeConstants"%>
+<%@page import="communication.driver.tables.TelematicControlData"%>
+<%@page import="persistence.driver.tables.TelematicControl"%>
+<%@page import="communication.administration.dpa.UnconformityTypeDPADataType"%>
+<%@page import="presentation.translator.web.dpa.DPAUnconformityForm"%>
+<%@page language="java" 
+	errorPage="../exception.jsp" 
+	import="business.*"
+	import="business.activity.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.activity.schedule.*" 	
+ 	import="presentation.translator.web.vehicle.*"
+ 	import="communication.administration.user.*" 	
+ 	import="communication.datatype.tables.ActivityTypeDataType"
+	import="business.vehicle.VehicleReportFacade"
+	import="java.util.*"	
+	import="org.apache.struts.action.DynaActionForm"
+	import="communication.activity.tables.*"
+%>
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+<%!
+	RequestDispatcher dispatcher; 
+	Text messages; SystemAccess sys;
+	UserSessionData userSessionData; 
+	
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	userSessionData=sys.getUserSessionData();	
+
+	String check = Util.checkPermission(sys,SecurityConstants.VIEW_DRIVER_LIST);
+	if (check!=null) { 
+		response.sendRedirect(request.getContextPath()+check);	
+	}else {
+		messages=sys.getText();
+	
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+
+		String search=(String)request.getParameter("search");
+		String orderStr = request.getParameter("order");
+		if(orderStr == null || orderStr.length() == 0)
+	orderStr = "0";
+		ArrayList<ReportPlanData> report=sys.getDriverReportFacade().getGlobalReportPlan(search,Integer.parseInt(orderStr),sys.getUserSessionData());	
+		
+		Collections.sort((List)report);
+%>	
+
+<html:html>
+	<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+	</head>
+	<script type="text/javascript">
+	function show(id) {
+		var name = "driver_"+id;
+		var element = document.getElementById(name);
+		if(element.style.display == 'none') {
+			element.style.display = '';
+		}else {
+			element.style.display = 'none';
+		}
+	}
+	</script>
+	<body>
+		<center>
+			<form action="layout.jsp?refer=/driver/GlobalDriverPlanForm.jsp" id="formDriverSearch" method="post">
+				<table width="900" border="0" cellspacing="0" cellpadding="0">  
+					<tr class="guide1">
+						<jsp:include  page='<%="../component/titlecomponent.jsp?title=Planes"%>' />
+  					</tr>
+      				<tr>
+						<jsp:include  page="../component/spaceline.jsp" />
+  					</tr>
+  					<tr>
+  						<td  height="40" colspan="3" valign="middle">
+  							<jsp:include  page='../component/utilityboxtop.jsp' />
+  							<table>
+  								<tr>
+  									<th class="linetwo" align="left">
+  										Nombre o Apellido:
+  									</th>
+			  						<td>
+			  							<input name="search" value="" class="input"/>
+			  						</td>
+		  							<td>
+		  								<input type="button" onclick="formDriverSearch.submit()" value="Buscar"  class="input"/>
+		  							</td>
+		  						</tr>
+  								<tr>
+  									<th class="linetwo" align="left">
+  										Ordenar por:
+  									</th>
+			  						<td>
+			  							<select name="order" class="input">
+			  								<option value=0 <%=(orderStr.equals("0")) ? "selected" : ""%>>Nombre y Apellido</option>
+			  								<option value=1 <%=(orderStr.equals("1")) ? "selected" : ""%>>Mitigación/Anual (menor a mayor) </option>
+			  								<option value=2 <%=(orderStr.equals("2")) ? "selected" : ""%>>Anual/Mitigación (menor a mayor) </option>
+			  								<option value=3 <%=(orderStr.equals("3")) ? "selected" : ""%>>Mitigación/Anual (mayor a menor) </option>
+			  								<option value=4 <%=(orderStr.equals("4")) ? "selected" : ""%>>Anual/Mitigación (mayor a menor) </option>
+			  							</select>
+			  						</td>
+		  							<td>
+		  								<input type="button" onclick="formDriverSearch.submit()" value="Reordenar" class="input"/>
+		  							</td>
+		  						</tr>
+		  					</table>
+  							<jsp:include page="../component/utilityboxbottom.jsp"/>
+  						</td>
+  					</tr>
+      				<tr>
+						<jsp:include  page="../component/spaceline.jsp" />
+  					</tr>
+  					<tr>
+  						<td  height="40" colspan="3" valign="middle">
+  							<jsp:include  page='../component/utilityboxtop.jsp' />
+							<table width="100%" height="100%" cellpadding="0" cellspacing="0">
+								<tr>
+									<td class="linetwo">
+										<img src='<%="/datacenter/menu/imgs/calendar.png"%>' width="25"> Prevista
+									</td>
+									<td class="linetwo">
+										<img src='<%="/datacenter/menu/imgs/cancel.png"%>' width="25"> No Aprobada
+									</td>
+									<td class="linetwo">
+										<img src='<%="/datacenter/menu/imgs/correct.png"%>' width="25"> Aprobada
+									</td>
+									<td class="linetwo">
+										<img src='<%="/datacenter/menu/imgs/calendar_1.png"%>' width="25"> Pendiente
+									</td>
+								</tr>
+							</table>
+  							<jsp:include page="../component/utilityboxbottom.jsp"/>
+  						</td>
+  					</tr>
+      				<tr>
+						<jsp:include  page="../component/spaceline.jsp" />
+  					</tr>
+					<tr> 
+						<td height="40"colspan="3" valign="middle">
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+"Planes"%>' />
+							<table width="100%" height="100%" cellpadding="0" cellspacing="0">
+								<tr>
+									<td class="guide2" width="45%">Conductor</td>
+									<td class="guide2" width="25%" align="center">Plan de Mitigación</td>
+									<td class="guide2" width="25%" align="center">Plan Anual</td>
+									<td class="guide2" width="5%" align="center">...</td>
+              					</tr>
+<%
+	Iterator<ReportPlanData> iter=report.iterator();
+		boolean linetwo=true;
+		while(iter.hasNext()){
+	ReportPlanData data=iter.next();
+	MitigationPlanData plan=data.getMitigationPlan();
+	ArrayList<AnualPlanData> anualPlan=data.getAnualPlans();
+	DriverData driver=data.getDriverData();
+%>								<tr valign="top" class='<%=(linetwo) ? "linetwo" : "lineone"%>'>	
+									<td valign="left">
+										<a href='<%="layout.jsp?refer=driver/DriverView.jsp?id="+driver.getId()%>'>
+											<%=driver.getFirstName()+" "+ driver.getLastName()%>
+										</a>	
+									</td>
+<%
+	if(plan==null){
+%>									<td  valign="middle">
+										No hay plan de mitigaci&oacute;n asociado
+									</td>
+<%
+	}else{
+%>									<td align="center" valign="middle">
+										<%=plan.getAdvance()+"% (Venc:"+Util.formatDate(plan.getExpiry())+")"%>
+									</td>
+<%					}
+					if(anualPlan == null || anualPlan.size()==0) {
+%>									<td align="center" valign="middle">
+										No hay plan anual asociado.
+									</td>
+<%					} else {
+%>									<td align="center" valign="middle">
+										<%=String.valueOf(data.getAnualPercent())+"% ("+data.getExpired()+" de "+data.getTotal()+" vencidas)"%>
+									</td>
+<%					}
+					linetwo = !linetwo;
+%>									<td>
+										<input type="button" value="..." onclick='<%="javascript:show("+driver.getId()+")"%>' style="width: 40px; height: 20px;">
+									</td>
+								</tr>					
+								<tr id='<%="driver_"+driver.getId()%>' style="display: none;">
+									<td colspan="4">
+<%					if(plan != null) {
+%>										<table  width="100%" cellpadding="0" cellspacing="0">
+											<tr class="linetwo" height="30" valign="middle" align="left">
+												<th  align="left" colspan="8">Plan de mitigación</th>	
+											</tr>	
+											<tr>	
+												<td>
+													<table width="100%"  cellpadding="0" cellspacing="0" style="border-color: black; border-style: groove; border-width: 0; width: 100%;" >
+														<tr class="guide2">
+															<td width="15%">
+																<table cellpadding="0"  cellspacing="0" style="border-color: black; padding: 0; border-style: groove; border-width: 1; width: 100%;">
+																	<tr class="guide2" height="25px;">
+																		<td>Actividad</td>
+																	</tr>
+																	<tr class="guide2" height="25px;">
+																		<td>Realizada</td>
+																	</tr>
+																</table>
+															</td>
+<% 						Iterator<MitigationPlanActivityData> iterAC=plan.getActivityIterator();
+						boolean linetwo2 = false;
+						while(iterAC.hasNext()){
+							MitigationPlanActivityData activity = iterAC.next();
+							int activityType = activity.getActivity().intValue();
+%>															<td width="15%">
+																<table cellpadding="0"  cellspacing="0" style="border-color: black; padding: 0; border-style: groove; border-width: 1; width: 100%; ">
+																	<tr>
+																		<td align="left"  valign="middle" class="lineone" height="25px;">
+																			<%=messages.getText("driver.mitigationplan.activity"+activityType) %>
+																		</td>
+																	</tr>
+																	<tr class="linetwo">	
+																		<td align="center"  valign="middle"  height="25px;">
+																			<%=(activity.isDone()) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no") %>
+																		</td>
+																	</tr>
+																</table>
+															</td>
+<%						}
+%>
+														</tr>
+													</table>
+												</td>
+											</tr>	
+										</table>
+<%					}
+					if(anualPlan != null) {
+%>
+										<table  width="100%" cellpadding="0" cellspacing="0">
+											<tr class="linetwo" height="30" valign="middle" align="left">
+												<th colspan="8" align="left">Plan anual</th>	
+											</tr>	
+												<td>
+													<table cellpadding="0"  cellspacing="0" style="border-color: black; padding: 0; border-style: groove; border-width: 0; width: 100%; height: 100px;">
+														<tr>
+															<td width="15%">
+																<table  cellpadding="0"  cellspacing="0"  style="border-color: black; border-style: groove; border-width: 1; width: 100%; height: 100px;">
+																	<tr>
+																		<td class="guide2" align="left" width="100%">Actividad</td>
+																	</tr>
+																	<tr>
+																		<td class="guide2" align="left" width="100%">Estado</td>
+																	</tr>
+																	<tr>
+																		<td class="guide2" align="left" width="100%">A partir de</td>
+																	</tr>
+																	<tr>
+																		<td class="guide2" align="left" width="100%">Fecha límite</td>
+																	</tr>
+																</table>
+															</td>
+<%						Iterator<AnualPlanData> activities = anualPlan.iterator();
+						SimpleDateFormat format=new SimpleDateFormat("dd/MM/yyyy");
+						while(activities.hasNext()) {
+							AnualPlanData activity = activities.next();
+%>
+															<td width="15%">
+																<table style="border-color: black; border-style: groove; border-width: 1; width: 100%; height: 100px;">
+																	<tr>
+																		<td align="left" class="lineone" >
+																			<%= activity.getName(messages)%> 
+																		</td>
+																	</tr>
+																	<tr>
+																		<td  class="linetwo" align="center">
+<%							if(activity.getStatus().equals(AnualPlanData.SCHEDULE)){%>
+																			<img src='<%="/datacenter/menu/imgs/calendar.png"%>' width="25">
+<%							}else if(activity.getStatus().equals(AnualPlanData.COMPLETE) && activity.getResullt().equals(AnualPlanData.NO_APROBADO) ){
+%>																			<img src='<%="/datacenter/menu/imgs/cancel.png"%>' width="25">
+<%							}else if(activity.getStatus().equals(AnualPlanData.COMPLETE) && activity.getResullt().equals(AnualPlanData.APROBADO) ){%>
+																			<img src='<%="/datacenter/menu/imgs/correct.png"%>' width="25">
+<%							}else{
+%>																			<img src='<%="/datacenter/menu/imgs/calendar_1.png"%>' width="25">
+<%							}
+%>  																	</td>
+																	</tr>
+																	<tr class="lineone">
+																		<td align="center" class="lineone">
+																			<%=format.format(activity.getDateStart()) %>
+																		</td>
+																	</tr>	
+																	<tr class="linetwo">
+																		<td align="center"  class="linetwo"	>
+																			<%=format.format(activity.getExpiry()) %>
+																		</td>
+																	</tr>		
+																</table>
+															</td>
+<%						}
+%>														</tr>
+														<tr height="15px;"><td></td></tr>
+													</table>
+												</td>	
+										</table>
+<%					}
+%>			
+									</td>
+								</tr>
+<%				}
+%>			
+			 				</table>
+							<jsp:include page="../component/utilityboxbottom.jsp"/>
+						</td>
+					</tr>  
+				</table>
+			</form>
+		</center>
+	</body>
+</html:html>
+<%
+	}
+%>

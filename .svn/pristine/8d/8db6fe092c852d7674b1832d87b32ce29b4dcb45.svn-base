@@ -1,0 +1,323 @@
+<%@page import="java.io.FileInputStream"%>
+<%@page import="communication.administration.corporation.tables.CorporationData"%>
+<%@page import="communication.administration.corporation.tables.DivOrgData"%>
+<%@page import="communication.administration.dpa.UnconformityDPAData"%>
+<%@page import="communication.administration.dpa.UnconformityTypeDPADataType"%>
+<%@page language="java" 
+	errorPage="../exception.jsp" 
+	import="business.*"
+	import="business.activity.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.activity.schedule.*" 	
+ 	import="presentation.translator.web.vehicle.*"
+ 	import="communication.administration.user.*" 	
+ 	import="communication.datatype.tables.ActivityTypeDataType"
+	import="business.vehicle.VehicleReportFacade"
+	import="java.util.*"	
+	import="java.io.*"
+	import="org.apache.struts.action.DynaActionForm"
+	import="communication.activity.tables.*"
+%>
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+<%!
+	RequestDispatcher dispatcher; 
+	Text messages; SystemAccess sys;
+	UserSessionData userSessionData; 
+	VehicleCheckData vehicleCheck;
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	userSessionData=sys.getUserSessionData();	
+	
+	String check = Util.checkPermission(sys,SecurityConstants.CHECKLIST_VEHICLE);
+	String check0 = Util.checkPermission(sys,SecurityConstants.VIEW_VEHICLE_LIST);	
+	
+	if (check!=null && check0!=null) { 
+		response.sendRedirect(request.getContextPath()+check);	
+	} else {
+		messages=sys.getText();
+	
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+
+		String idVehicle = (String)request.getParameter("vehicle");
+		if(idVehicle==null){
+			idVehicle=(String)session.getAttribute("vehicle");
+		}
+		String checkId = (String)request.getParameter("check");
+		if(checkId==null){
+			checkId=(String)session.getAttribute("check");
+		}
+		session.removeAttribute("check");
+		session.removeAttribute("vehicle");
+		
+		UnconformityDPAData unconformity=sys.getCorporationReportFacade().findUnconformityDPAByCheckId(sys.getUserSessionData(), Integer.valueOf(checkId));
+		
+		session.setAttribute("id",idVehicle);
+
+		VehicleReportFacade vehicleReport = sys.getVehicleReportFacade(); 
+		vehicleCheck = vehicleReport.findVehicleCheck(new Integer(checkId),userSessionData);
+		VehicleData vehicleData = vehicleCheck.getVehicle();
+		
+		CheckListData checkList = sys.getVehicleReportFacade().getCheckList(new Integer(vehicleCheck.getName()),sys.getUserSessionData());
+		Iterator points = checkList.getSortPoints();
+		
+%>	
+
+<%@page import="business.vehicle.VehicleReportFacadeBean"%>
+
+<html:html>
+
+<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+
+<body>
+	<form name="edit" action="layout.jsp">
+		<input type="hidden" name="refer" value="/vehicle/SyngentaCheckForm.jsp"/>
+		<input type="hidden" name="id" value="<%=idVehicle%>"/>
+		<input type="hidden" name="check" value="<%=checkId%>" />
+		<input type="hidden" name="type" value="edit" />
+	</form>
+	<center>
+		<table width="768" border="0" cellspacing="0" cellpadding="0">  
+			<tr class="guide1">
+			<%
+				String page14 = "../component/titlecomponent.jsp?title="+messages.getText("checklist.upm.title"+vehicleCheck.getName());
+			%>
+				<jsp:include  page='<%=page14 %>' />
+  			</tr>
+      		<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+  			</tr>
+		<tr> 
+			<td height="40" colspan="3" valign="middle">
+<%
+		String page13 = "../component/utilityboxtop.jsp?title="+messages.getText("generic.activity.form.tranningonthejob.proofdata");
+				%>
+				<jsp:include  page='<%=page13 %>' />
+				<table width="100%" height="60" border="0" cellpadding="0" cellspacing="0">
+					<% if(unconformity!=null) {%>
+					<tr>
+						<td width="100%" colspan="2" align="right" class="texts">
+							<img alt="" src="menu/images/warning.jpg" height="25" width="25" onclick="javascript:document.location.href='layout.jsp?refer=/dpa/DPAUnconformityCheckListForm.jsp?check=<%=checkId%>&mode=new&type=<%=UnconformityTypeDPADataType.TYPE_VEHICLE_CHECK%>&href=/vehicle/VehicleCheckViewDPA.jsp?vehicle=<%=idVehicle%>_check=<%=checkId%>';" style="cursor:pointer;">
+						</td>
+					</tr>	        
+   					<%}%>
+   	 				<tr> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= messages.getText("generic.activity.date")%><%=" ( "+messages.getText("generic.messages.dateformat")+" ) "%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							<%=(vehicleCheck != null && vehicleCheck.getDate() != null) ? Util.formatDate(vehicleCheck.getDate()) : ""%>	
+						</td>
+   					</tr>
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+     				<tr> 
+        				<td width="50%" align="left" class="texts">        
+       						<%= messages.getText("generic.vehicle.vehicledata.plate")%>
+						</td>
+						<td width="50%" align="right" class="linetwo">		
+							<%=(vehicleData == null) ? "---" : vehicleData.getMatricula() %>                                     
+        				</td>
+     				</tr>
+     				<%if(Integer.valueOf(vehicleCheck.getName())==CheckListData.CHECK_LIST_SYNGENTA_BR){ %>
+     				<tr> 
+        				<td width="50%" align="left" class="texts">        
+       						&nbsp;
+						</td>
+						<td width="50%" align="right" class="linetwo">		
+							<a href="DownloadChecklistPDF.do?id=<%=checkId%>">PDF</a>                               
+        				</td>
+     				</tr>
+     				<%} %>
+     				
+<%
+	for(int i = 0; i < 1 && (Integer.valueOf(vehicleCheck.getName())==CheckListData.CHECK_LIST_SYNGENTA_BR); i++) {
+	PointData point = (PointData)points.next();
+	Iterator items = point.getSortItems();
+%>			
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr>
+						<td colspan="2">
+							<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText(point.getText())%>' />
+							<table width="100%" height="60" border="0" cellpadding="0" cellspacing="0">
+<%			while(items.hasNext()) {
+				ItemData item = (ItemData)items.next();
+				String value = vehicleCheck.getValueFromItem(item.getId()).trim();
+%>
+			     				<tr> 
+			        				<th width="50%" align="left" class="lineone">        
+			       						<%= messages.getText(item.getText())%>
+									</th>
+									<td width="50%" align="right" class="lineone">		
+										<%=value%>                                     
+			        				</td>
+			     				</tr>
+<%			}
+%>							</table>
+							<jsp:include  page='../component/utilitybox2bottom.jsp' />
+						</td>
+					</tr>
+				
+<%		}
+%>
+				</table>
+				<jsp:include  page="../component/utilityboxbottom.jsp" />
+			</td>
+		</tr>  
+      	<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+<%		boolean header = false;
+		int pneusIndex = 0;
+%>		<tr>
+			<td valign="top" width="100%">
+				<table width="100%" border="0" cellpadding="0" cellspacing="0">
+<%		String className = "linetwo";
+		boolean first = true;
+		while(points.hasNext()) {
+			PointData point = (PointData)points.next();
+			Iterator items = point.getSortItems();
+			if(items.hasNext()) {
+				ItemData item = (ItemData)items.next();
+				int value = -1;
+				int tag = -1;
+				String pointComment = null;
+				if(vehicleCheck != null) {
+					String checkValue = vehicleCheck.getValueFromItem(item.getId()).trim();
+					value = (checkValue == null ||checkValue.trim().length()==0 ) ? -1 : Integer.parseInt(checkValue);
+					String checkValueTag = vehicleCheck.getValueTagFromItem(item.getId()).trim();
+					tag = (checkValueTag == null ||checkValueTag.trim().length()==0 ) ? -1 : Integer.parseInt(checkValueTag);
+					
+				}
+				pointComment = vehicleCheck.getValueFromCommentPoint(point.getId());
+				if(item.getType().intValue() == 1) {
+					String page12 = "../component/utilityboxtop.jsp?title="+messages.getText(point.getText());
+					if(first) {
+						first = false;
+					}else {
+%>
+							</table>
+							<jsp:include  page='../component/utilityboxbottom.jsp' />
+						</td>
+					</tr>
+				  	<tr>
+						<jsp:include  page="../component/spaceline.jsp" />
+			  		</tr>
+<%					}
+%>
+					<tr>
+						<td valign="top">
+							<jsp:include  page='<%=page12 %>' />
+							<table width="100%" border="0" cellpadding="0" cellspacing="0">
+								<tr>
+									<td align="left" class="guide2" width="40%"><%=messages.getText("syngenta.checklist.condition")%></td>
+									<td align="left" class="guide2" width="40%"><%=messages.getText("syngenta.checklist.observations")%></td>
+									<td align="left" class="guide2" width="5%"></td>
+								</tr>				
+
+<%				}
+%>
+								<tr>
+									<td align="left" class="<%=className%>">
+		   								<%=messages.getText(item.getText())%>
+									</td>	
+									<td align="center" class="<%=className%>">
+										<%=(value == 1) ? messages.getText("checklist.dpa.yes") : messages.getText("checklist.dpa.no")%>
+									</td>	
+									<td align="left" class="<%=className%>">
+										<%=(value == 1 || Util.empty(pointComment) || pointComment.equals("30")) ? "----" : pointComment.trim()%>
+									</td>
+								</tr>
+<%				className = (className.equals("linetwo")) ? "lineone" : "linetwo";
+			}
+		}
+%>
+							</table>
+							<jsp:include  page='../component/utilityboxbottom.jsp' />
+						</td>
+					</tr>
+				  	<tr>
+						<jsp:include  page="../component/spaceline.jsp" />
+			  		</tr>
+					<tr>
+						<td valign="top">
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.messages.observations")%>' />
+							<table width="100%" border="0" cellpadding="0" cellspacing="0">
+								<tr>
+									<td align="left" class="linetwo" width="100%">
+										<%=(Util.empty(vehicleCheck.getObs())) ? "---" : vehicleCheck.getObs()%>
+									</td>
+								</tr>
+							</table>
+							<jsp:include  page='../component/utilityboxbottom.jsp' />
+						</td>
+					</tr>
+				  	<tr>
+						<jsp:include  page="../component/spaceline.jsp" />
+			  		</tr>
+					<tr>
+						<td>
+							<jsp:include  page='../component/utilityboxtop.jsp' />
+							<table width="100%" border="0" cellpadding="2" cellspacing="2">
+								
+								<tr class="linetwo">
+									<th align="left">Email Condutor</th>
+									<td>
+										<%=(vehicleCheck.getSerie() == null) ? "---" : vehicleCheck.getSerie()%>
+									</td>
+								</tr>
+								<tr class="linetwo">
+									<th align="left"><%=messages.getText("generic.activity.result") %></th>
+									<td>
+										<%=(vehicleCheck.getResult().intValue() == 1) ? "SIN FALTAS/FALLS" : ((vehicleCheck.getResult().intValue() == 2) ?"CON FALTAS/FALLAS":"SIN FALTAS/FALLAS CON OBSERVACIONES")%>
+									</td>
+								</tr>
+								<tr class="linetwo">
+									<th align="left"><%=messages.getText("generic.checklist.inspector") %></th>
+									<td>
+										<%=vehicleCheck.getInspectedby()%>
+									</td>
+								</tr>
+							</table>
+							<jsp:include  page='../component/utilityboxbottom.jsp' />
+						</td>
+					</tr>
+				</table>
+			</td>
+		</tr>	
+	  	<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+       	<tr>   		
+	   		<td align="right">
+	   		<% if( !sys.getUserSessionData().isContractor() ||sys.getUserSessionData().isInternalCheckList()){ %>
+	   			<input name="button2" type="button" value='<%=messages.getText("generic.messages.edit")%>' onClick="javascript:document.location.href='layout.jsp?refer=/vehicle/UPMTruckCheckForm.jsp?check=<%=checkId%>&vehicleId=<%=idVehicle%>';" class="input"/>
+	   		<%} %>				   			
+           	</td>             
+   	  	</tr>              
+	</table>
+	</center>
+	</body>
+	<html:form action="/SyngentaReport" method="post" >
+		<html:hidden property="check" value='<%=checkId%>' />	
+	</html:form>
+	<form name="sendReport" action="layout.jsp" >
+		<input type="hidden" name="refer" value='vehicle/SendCheckListDPA.jsp' />	
+		<input type="hidden" name="check" value='<%=checkId%>' />	
+	</form>
+</html:html>
+<%
+	}
+%>

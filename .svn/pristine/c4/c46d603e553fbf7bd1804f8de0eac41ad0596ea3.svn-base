@@ -1,0 +1,182 @@
+<%@page language="java" 
+	errorPage="exception.jsp" 
+	import="java.util.*"
+	import="business.*"
+	import="business.vehicle.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.fleet.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.vehicle.*" 	
+ 	import="communication.administration.user.*" 	
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<%@page import="communication.administration.corporation.tables.CorporationData"%>
+<%@page import="communication.driver.tables.DriverData"%>
+<%@page import="communication.administration.corporation.tables.CountryData"%>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	 	<title> CEPA International</title>
+		<META http-equiv="Cache-Control" content="no-cache">
+		<META http-equiv="Pragma" content="no-cache">
+		<style type="text/css">
+<!--	body {
+			margin-left: 0px;
+			margin-top: 0px;
+			margin-right: 0px;
+			margin-bottom: 0px;
+		}
+		.contain {
+			width: 100%; 
+			height: 100%;
+		}
+ -->
+		</style>
+	</head>
+	<script type="text/javascript">
+		function doNext(value) {
+			var form = document.forms['next'+value];
+			form.submit();
+		}
+		function doBack() {
+			document.forms['back'].submit();
+		}
+	</script>
+
+<%!
+	Text messages; 
+	SystemAccess sys;
+	String attribute; 
+	String value;
+	UserSessionData userSessionData; 
+%>
+<%
+	sys=(SystemAccess)session.getAttribute("SystemAccess");
+	int corporationId = sys.getCorporationId();
+	userSessionData=sys.getUserSessionData();
+	String check = Util.checkPermission(sys,SecurityConstants.JJ_REPORTER);
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		session.setAttribute("url","reporter.jsp");
+		messages=sys.getText();
+		
+		if(!Util.empty(request.getParameter("id")) || sys.getUserSessionData().getDriverData() != null) {
+			DriverData driver = null;
+			String driverId = null;
+			if(sys.getUserSessionData().getDriverData() != null) {
+				driver = sys.getUserSessionData().getDriverData();
+				driverId = String.valueOf(driver.getId());
+			}else {
+				Hashtable parameters = new Hashtable();
+				driverId = request.getParameter("id");
+				parameters.put("id",driverId);
+				Collection drivers = sys.getDriverReportFacade().findDriverReport(parameters,userSessionData);
+				driver = (DriverData)drivers.iterator().next();
+			}
+			userSessionData.setDriver(driver);
+%>	
+	<body>
+	 	<table width="100%" height="90" border="0" cellpadding="0" cellspacing="0" class="default">
+		 	<form name="logout" action="../login.jsp" method="post">
+	 		</form>
+			<form name="next1" action="cd.jsp">
+				<input type="hidden" name="driver" value="<%=driverId%>"/>
+			</form>
+			<form name="next2" action="flm.jsp">
+				<input type="hidden" name="driver" value="<%=driverId%>" />
+			</form>
+			<form name="back" action="driver.jsp">
+				<input type="hidden" name="formType" value="3" />
+			</form>
+  			<tr>
+    			<td colspan="2">
+					<table width="100%" border="0" cellspacing="0" cellpadding="0" valign="top">
+      					<tr>
+        					<td><jsp:include  page='<%="../topMenu.jsp?home=true&reporter=true" %>'/></td>
+      					</tr>
+    				</table>	
+    			</td><!--end the topï¿½s table -->
+  			</tr>
+  		</table>
+  		<br>
+  		<br>	
+		<table width="700" border="0" align="center" cellpadding="0" cellspacing="0">
+			<tr class="guide1"> 
+		    	<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText("reporterjj.commentarydrive.forms")%>' />
+			</tr>
+		  	<tr> 
+	  			<jsp:include  page="../component/spaceline.jsp" />
+		  	</tr>
+			<tr> 
+	  			<td colspan="3"> 
+		    		<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("reporterjj.data.driver")%>' /> 
+					<table width="100%" border="0" align='center' cellpadding="0" cellspacing="0">
+   						<tr  class="linetwo">
+       						<th align="left"> <%=messages.getText("reporterjj.driver.name")%></th>
+       						<td align="right"><%=driver.getFirstName()+" "+driver.getLastName()%></td>
+    					</tr>
+   						<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+						<tr class="linetwo">
+	        				<th align="left" > <%=messages.getText("generic.driver.driverdata.corporationid")%></th>
+       						<td align="right"><%=driver.getCorporationId()%></td>
+	      				</tr>
+					</table>			
+	    			<jsp:include page="../component/utilityboxbottom.jsp"/>
+		      	</td>	
+		  	</tr>
+		  	<tr> 
+		    	<jsp:include  page="../component/spaceline.jsp" />
+		  	</tr>
+			<tr> 
+	  			<td colspan="3"> 
+		    		<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.activity.form.formulario")%>' /> 
+					<table width="100%" border="0" align='center' cellpadding="0" cellspacing="0">
+   						<tr  class="linetwo" height="10"><td></td></tr>
+   						<tr  class="linetwo">
+				            <td class="texts" width="49%" align="center">
+						        <input type="button" value='Conducción Comentada' onclick="doNext(1)"/>
+						    </td>
+				            <td class="texts" width="2%" align="center"></td>
+				            <td class="texts" width="49%" align="center">
+						        <input type="button" value='Feedback ROAD' onclick="doNext(2)"/>
+						    </td>
+						 </tr>
+   						<tr  class="linetwo" height="30"><td></td></tr>
+					</table>			
+	    			<jsp:include page="../component/utilityboxbottom.jsp"/>
+		      	</td>	
+		  	</tr>
+		  	<tr> 
+		    	<jsp:include  page="../component/spaceline.jsp" />
+		  	</tr>
+      		<tr>
+				<td align="left" class="texts" colspan="3">
+					<jsp:include  page="../component/utilitybox4top.jsp" />
+					<table width="100%" class="texts1" border="0" cellpadding="0" cellspacing="0">
+						<tr class="lineone">
+							<td align="right" class="lineone">
+						        <input type="button" value='Cambiar de Conductor' onclick="doBack()"/>
+							</td>
+						</tr>
+					</table>
+					<jsp:include  page="../component/utilitybox4bottom.jsp" />
+				</td>
+			</tr>
+		</table>		
+	</body>
+<%		}
+	}
+%>		
+</html>

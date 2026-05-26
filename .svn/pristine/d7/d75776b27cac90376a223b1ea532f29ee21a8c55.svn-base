@@ -1,0 +1,274 @@
+<%@page import="org.apache.struts.action.DynaActionForm"%>
+<%@page language="java" 
+	errorPage="../exception.jsp"
+	import="java.util.*"
+	import="business.*"
+	import="business.fleet.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.fleet.tables.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.driver.*"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<html:html>
+<%!
+	RequestDispatcher dispatcher; 
+	String pathLanguage; Text messages; SystemAccess sys;
+	Integer pageNum; boolean all; int pageSize; 
+	String checkboxParamList; String target;String fleet;
+%>
+<%
+	String action;
+	sys=(SystemAccess)session.getAttribute("SystemAccess");
+	String check = Util.checkPermission(sys,SecurityConstants.DELETE_FLEET);
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		session.setAttribute("url","fleet/FleetDivisionExclusion.jsp");
+
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+	
+		dispatcher=request.getRequestDispatcher("/util/jsp/language.jsp");
+		dispatcher.include(request,response);
+
+		messages=sys.getText();
+	
+		session.setAttribute("target","fleet/FleetDivisionExclusion");
+
+		if(request.getParameter("checkboxParamList") != null) {
+	checkboxParamList = request.getParameter("checkboxParamList");
+	action = request.getParameter("action");
+	target = request.getParameter("target");
+	fleet = request.getParameter("fleet");		
+		}else {
+		    org.apache.struts.action.DynaActionForm form = 
+		    	(org.apache.struts.action.DynaActionForm)session.getAttribute("FleetDeleteForm");
+	checkboxParamList = (String)form.get("checkboxParamList");
+	action = (String)form.get("action");
+	target = (String)form.get("target");
+	fleet = (String) form.get("fleet");
+		}
+		
+		FleetReportFacade fleetReport = sys.getFleetReportFacade();
+		FleetData data = fleetReport.findFleetByPrimaryKey(new Integer(fleet),sys.getUserSessionData());
+		String width="100%";
+		boolean linetwo = false;
+		switch(sys.getUserSessionData().getFilter().getDivOrgCount()) {
+		    case 1:
+		        width="47%";
+		        break;
+		    case 2:
+		        width="31%";
+		        break;
+		    case 3:
+		        width="24%";
+		        break;
+		}
+		List list = sys.getFleetReportFacade().getFleetDivisions(
+		checkboxParamList.replaceAll("<",","),
+		sys.getUserSessionData());
+		session.setAttribute("List_divisions_fleet",list);
+%>
+
+
+<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+<head>
+	<META http-equiv="Cache-Control" content="no-cache">
+	<META http-equiv="Pragma" content="no-cache">
+	<META http-equiv="Expires" content="-1">		
+</head>
+
+<script language="JavaScript" type="text/javascript">
+
+// Valida que el Comentario no sea vacío.
+function validarComentario(){
+	form1 = document.forms['FleetDivisionExclusion'];
+	form2 = document.forms['FleetDeleteDivisionForm'];	
+	if (form1.comment.value != "")
+	{
+		// Hago el submit del form de Struts:
+		form2.fleet.value = form1.fleet.value;
+		form2.comment.value = form1.comment.value;
+		form2.checkboxParamList.value = form1.checkboxParamList.value;
+		form2.action.value = form1.action.value;
+		<%if(action.equals("exclude")) {%>      	
+		form2.exclusionDate.value = form1.exclusionDate.value;
+		form2.exclusionMonth.value = form1.exclusionMonth.value 
+		form2.exclusionYear.value = form1.exclusionYear.value
+		<%}%>
+		form2.submit();
+	}
+	else
+	{
+		alert('<%=messages.getText("generic.event.comment.empty")%>')
+	}
+}
+</script>
+
+
+
+<body bgcolor="#FFFFFF">
+	<form name="FleetDivisionExclusion">
+		<input type="hidden" name="fleet" value='<%=fleet%>' />
+		<input type="hidden" name="checkboxParamList" value='<%=checkboxParamList%>'/>
+		<input type="hidden" name="action" value='<%=action%>'/>
+		<table width="600" border="0" align="center" cellpadding="0" cellspacing="0">
+			<tr class="guide1">
+				<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText("web.fleet.divisionfleet."+action)%>' />
+	  		</tr>
+    	  	<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+	      	</tr>
+<%
+	if(action.equals("exclude")) {
+%>      	<tr  class="linetwo">
+				<th align="left">&nbsp;&nbsp;<%=messages.getText("generic.driver.driverdata.exclusiondate")%></th>
+				<td align="left">
+			    	<input type="text" name="exclusionDate" style="width:20;" styleClass="input" maxlength="2"/>&nbsp;&nbsp;
+			        <input type="text" name="exclusionMonth" style="width:20;" styleClass="input" maxlength="2"/>&nbsp;&nbsp;
+		    	    <input type="text" name="exclusionYear" style="width:40;" styleClass="input" maxlength="4"/>
+			    </td>
+				<td><%="  ( "+messages.getText("generic.messages.dateformat")+" )"%></td>
+			</tr>
+	      	<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+      		</tr>
+<%
+	}
+%>        	<tr>
+    	    	<td colspan="3">
+					<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.fleet.divisions")%>' />
+					<table width='100%' border="0" align='center' cellpadding="0" cellspacing="0">
+						<tr>
+							<td class="guide2"><%=messages.getText("corporation.divgeo.countries")%></td>				            				
+<!--  Dibujo Columnas -->
+<%
+	int[][] divOrgs = sys.getUserSessionData().getFilter().getAllDivOrgs();			
+	String[] attrs = sys.getUserSessionData().getFilter().getDivOrgLabels();
+	for(int i = 0; i < divOrgs.length; i++) {
+	    int[] index = divOrgs[i];
+	    if(!(sys.getUserSessionData().getFilter().getCorporationId().intValue() == 1 && i > 3)) {
+%>							
+							<td class="guide2"><%=messages.getText(attrs[(index[0]-1)*3+(index[1]-1)])%></td>				    
+<%
+				    	}
+				    		    	}
+
+				    		    //Columna de VehicleType y Odometros
+				    		    	if(data.getType().intValue() == FleetData.COLECTIVE) {
+				    %>							<td class="guide2" align="center"><%=messages.getText("fleet.division.vehicletype")%></td>				            				
+<%
+				            					}else{
+				            				%>							<td class="guide2" align="center"><%=messages.getText("fleet.division.odometertype")%></td>
+<%
+	}
+%>
+							<td class="guide2" align="center"><%=messages.getText("generic.driver.driverdata.exclusiondate")%></td>
+						</tr>
+
+<!--  Coloco el contenido de las Columnas, las diferentes lineas de datos -->
+<%
+	Iterator it = list.iterator();
+	linetwo = false;
+	
+	if(it.hasNext()) {
+		while(it.hasNext()) {
+	FleetDivisionData divisionData = (FleetDivisionData)it.next();
+	String [] divisionLabels = divisionData.getDivOrgLabels();
+%>						<tr>							
+							<td class='<%=(linetwo) ? "linetwo" : "lineone"%>' width='<%=width%>'>
+								<%=divisionData.getGeoLabel(messages)%>
+							</td>	
+							
+<%
+									for(int i = 0; i < divOrgs.length; i++) {
+																	    int[] index = divOrgs[i];
+																	    if(!(sys.getUserSessionData().getFilter().getCorporationId().intValue() == 1 && i > 3)) {
+								%>								<td class='<%=(linetwo)?"linetwo":"lineone"%>' width='<%=width%>' align="center"><%=divisionLabels[(index[0]-1)*3+(index[1]-1)]%></td>				    
+<%
+				    	}
+				    		    			}												
+
+				    		    			if(data.getType().intValue() == FleetData.COLECTIVE) {
+				    %>							<td class='<%=(linetwo) ? "linetwo" : "lineone"%>' width='<%=width%>'>
+								<%=messages.getText(divisionData.getVehicleType().getResourceBundleId())%>
+							</td>
+<%
+	}else{
+%>							<td class='<%=(linetwo) ? "linetwo" : "lineone"%>' width='<%=width%>'>
+								<%=messages.getText(divisionData.getOdometer().getResourceBundleId())%>
+							</td>
+<%
+	}
+%>
+							<td align="center"  class='<%=(linetwo) ? "linetwo" : "lineone"%>' width='<%=width%>'>
+								<%=(divisionData.getExclusionDate()== null) ? "-" : Util.formatDate(divisionData.getExclusionDate())%>
+							</td>
+						</tr>
+<%					linetwo = !linetwo;
+				}
+			}
+%>
+
+					</table>
+   					<jsp:include page="../component/utilityboxbottom.jsp"/>	
+				</td>
+	      	</tr>
+    	  	<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+	      	</tr>
+			<tr>
+				<td width="100%" colspan="3">
+					<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.comment")+"*"%>' />
+					<table width="100%" cellpadding="0" cellspacing="0">
+						<tr>
+							<td width="9" background="/datacenter/util/imgs/left_gray.gif">&nbsp;</td>
+      						<td><textarea name="comment" style="width:100%" rows="4"></textarea></td>
+	   						<td width="9" background="/datacenter/util/imgs/right_gray.gif">&nbsp;</td>    
+						</tr>
+					</table>
+					<jsp:include  page="../component/utilityboxbottom.jsp" />
+				</td>
+			</tr>
+			<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+ 			</tr>
+			<tr  class="linetwo">
+				<td colspan="2">&nbsp;</td>
+				<td align="right">
+					<input name="btnAction" type="button" value='<%=messages.getText("web.driver.message."+action)%>'
+					 onClick="javascript:validarComentario();" class="input"/>	 		                             
+					<input name="btnCancel" type="button" value='<%=messages.getText("generic.messages.cancel")%>'
+					 onClick="history.back(-1);" class="input"/>
+				</td>
+			</tr>
+	    </table>
+	</form>    
+	<html:form action="/Fleetdeletedivision">
+		<html:hidden property="fleet" value='<%=fleet %>' />
+		<html:hidden property="checkboxParamList" value='<%=checkboxParamList%>'/>
+		<html:hidden property="action" value='<%=action%>'/>
+		<html:hidden property="comment" value="comment" />
+<%
+		if(action.equals("exclude")) {
+%>      	<html:hidden property="exclusionDate" value="exclusionDate"/>
+			<html:hidden property="exclusionMonth" value="exclusionMonth"/>
+			<html:hidden property="exclusionYear" value="exclusionYear"/>
+<%	
+		}
+%>
+	</html:form>
+</body>
+<%					
+	}	
+%></html:html>

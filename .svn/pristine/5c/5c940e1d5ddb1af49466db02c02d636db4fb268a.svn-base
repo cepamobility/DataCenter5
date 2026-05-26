@@ -1,0 +1,150 @@
+/**
+ * Created on 14-ago-2006
+ * CEPA
+ * DataCenter 5
+ */
+package communication.fleet.tables;
+
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
+import java.util.List;
+
+import communication.datatype.tables.TypeFuelDataType;
+import communication.vehicle.tables.VehicleData;
+
+public class OdometerData implements Serializable {
+
+	public static final int START_ODOMETER = 25;
+	public static final int START_ODOMETER_MONSANTO_CONOSUR = 25;
+	
+	public static final int END_ODOMETER_JJ = 10;
+	public static final int END_ODOMETER_MONSANTO_ARG = 5;
+	public static final int END_ODOMETER_MONSANTO_BR = 5;
+	public static final int END_ODOMETER_ALLERGAN = 7;
+	
+    private FleetData fleet;
+    private VehicleData vehicle;
+    private Integer period;
+    private Integer year;
+    private Integer accidents;
+    private Integer odometer;
+    private Integer incidents;
+    private Integer nearmiss;
+    
+    private Integer fuel;
+    private TypeFuelDataType fuelType;
+
+    private Collection history;
+    
+    public OdometerData() {
+        history = new LinkedList();
+    }
+
+    public OdometerData(Object[] odometerValues) {
+        vehicle = new VehicleData((Integer)odometerValues[0]);
+        period = (Integer)odometerValues[1];
+        year = (Integer)odometerValues[2];
+        odometer = (Integer)odometerValues[3];
+        accidents = (Integer)odometerValues[4];
+        incidents = (Integer)odometerValues[5];        
+        fuel = (Integer)odometerValues[6];
+        fuelType = (odometerValues[7] == null) ? null : new TypeFuelDataType((String) odometerValues[7]);
+        nearmiss = (Integer)odometerValues[8];
+        history = new LinkedList();
+    }
+
+    public Integer getAccidents() {
+        return accidents;
+    }
+
+    public FleetData getFleet() {
+        return fleet;
+    }
+
+    public Integer getIncidents() {
+        return incidents;
+    }
+
+    public Integer getOdometer() {
+        return odometer;
+    }
+
+    public Integer getPeriod() {
+        return period;
+    }
+
+    public VehicleData getVehicle() {
+        return vehicle;
+    }
+
+    public Integer getYear() {
+        return year;
+    }
+
+    public void setFleet(FleetData fleetData) {
+        fleet = fleetData;
+    }
+
+    public void setVehicle(VehicleData vehicleData) {
+        vehicle = vehicleData;
+    }
+
+    public void setPeriod(Integer period) {
+        this.period = period;
+    }
+
+    public void setYear(Integer year) {
+        this.year = year;
+    }
+
+    public void setAccidents(Integer accidents) {
+        this.accidents = accidents;
+    }
+
+    public void setOdometer(Integer odometer) {
+        this.odometer = odometer;
+    }
+
+    public void setIncidents(Integer incidents) {
+        this.incidents = incidents;
+    }
+
+    public void addPrevious(Integer period, Integer year, Integer odometer) {
+        history.add(new OdometerValue(period,year,odometer));
+    }
+
+    public Integer getLastOdometer() {
+        if(history.size() > 0) {
+            Collections.sort((List)history);
+            return ((OdometerValue)history.iterator().next()).getOdometer();
+        }
+        return new Integer(0);
+    }
+
+    public Integer getFuel() {
+        return fuel;
+    }
+
+    public TypeFuelDataType getFuelType() {
+        return fuelType;
+    }
+
+    public void setFuel(Integer fuel) {
+        this.fuel = fuel;
+    }
+
+    public void setFuelType(TypeFuelDataType fuelType) {
+        this.fuelType = fuelType;
+    }
+
+	public Integer getNearmiss() {
+		return nearmiss;
+	}
+
+	public void setNearmiss(Integer nearmiss) {
+		this.nearmiss = nearmiss;
+	}
+
+}

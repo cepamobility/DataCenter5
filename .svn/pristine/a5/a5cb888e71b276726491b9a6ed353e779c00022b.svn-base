@@ -1,0 +1,1622 @@
+<%@page language="java"
+	errorPage="../../exception.jsp"
+	import="java.util.*"
+	import="business.*"
+	import="business.activity.*" 
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.administration.corporation.tables.ItemData"
+	import="communication.administration.user.tables.*"
+	import="communication.activity.tables.*"
+	import="communication.activity.tables.CEPAActivityConstants"
+	import="communication.util.*"	
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.activity.schedule.*"
+	import="communication.administration.user.UserSessionData" 	
+	import="communication.driver.tables.DriverData" 		
+	import="communication.driver.tables.DriverData" 		
+	import="presentation.translator.web.util.Util"
+	import="communication.activity.tables.*"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<%! RequestDispatcher dispatcher; 
+	
+	Text messages; 
+	SystemAccess sys; 
+	CEPAActivityScheduleData data; 
+	ActivityReportFacade activityReport;
+	UserSessionData userSessionData;		
+	boolean isCommentaryDrive = false;
+	Collection drivers = new LinkedList();
+	
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	
+	String idDrivers = "";
+	String idActivity = "";
+	
+	userSessionData =sys.getUserSessionData();
+	
+	String check = Util.checkPermission(sys,SecurityConstants.VIEW_CEPASCHEDULE_ACTIVITY);
+	String check1 = Util.checkPermission(sys,SecurityConstants.MODIFY_CD_ACTIVITY);
+	
+	if ((check!=null) && (check1!=null))  {	
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		messages=sys.getText();
+
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+
+		idActivity = request.getParameter("id");
+		if(Util.empty(idActivity)) {
+			idActivity = request.getParameter("idActivity"); // Refactoring.
+			if (Util.empty(idActivity)){
+		    	idActivity = (String)session.getAttribute("id");
+		    	session.removeAttribute("id");
+			}
+		}
+		
+		// Refactoring:
+		// session.setAttribute("url","activity/schedule/CEPAActivityScheduleView.jsp?id="+idActivity);
+		userSessionData.setUrl("activity/schedule/CEPAActivityScheduleView.jsp?idActivity="+idActivity);
+		
+		if (session.getAttribute("from") != null) { //Variable seteada en la pg. de CommentaryForm y utilizada en VehicleCreateForm
+			session.removeAttribute("from");
+		}		
+		
+		if(idActivity != null){	
+			session.setAttribute("target","ActivityView");
+
+			activityReport=sys.getActivityReportFacade();
+			data = activityReport.findCEPAActivityScheduleByPrimaryKey(new Integer(idActivity),userSessionData); 
+			String definition = data.getDefinition().getResourceKeyName();
+			boolean hasNewReports = data.hasNewReports();
+			if(data != null) {
+				drivers = activityReport.getParticipants(new Integer(idActivity),userSessionData);
+				
+				// Veo si es o no una Actividad de Tipo: Commentary Drive 
+				// o que tenga un unico driver y pase automaticamente a estado dictada	
+				isCommentaryDrive =	( definition.equals(CEPAActivityConstants.COMMENTARYDRIVE) || 
+						definition.equals(CEPAActivityConstants.COMMENTARYDRIVEOTHER) ||
+						definition.equals(CEPAActivityConstants.COMMENTARYDRIVEHIGHRISK) ||
+						definition.equals(CEPAActivityConstants.COMMENTARYDRIVEARGENTINA) ||
+						definition.equals(CEPAActivityConstants.COMMENTARYDRIVE_NOVARTIS) ||
+						definition.equals(CEPAActivityConstants.COMMENTARYDRIVE_JJ2) ||
+						definition.equals(CEPAActivityConstants.COMMENTARYDRIVE_RENOVATION) ||
+						definition.equals(CEPAActivityConstants.INITIAL_FOREIGN_EVALUATION) ||
+						definition.equals(CEPAActivityConstants.COMMENTARYDRIVEARGENTINA_NUEVO) ||
+									
+									// CEPA SYSTEM ENTRENADORES, un unico driver (y pasa a dictada automaticamente, no va mas)
+									// pero no Pepsico, cambio solicitado el 19/10/2010 por Dennis
+									(definition.equals(CEPAActivityConstants.CEPA_SYSTEM_COURSE_2_ENTRENADORES)
+										&& data.getCorpooration().getId().intValue() != CorporationData.PEPSICO 
+										&& data.getCorpooration().getId().intValue() != CorporationData.CEPA)						
+									) ;
+			
+				ActivityForm activityForm = ActivityUtil.createActivityForm(data,ActivityUtil.VIEW,messages);
+				session.setAttribute("ActivityForm",activityForm); 
+
+				if(session.getAttribute("Breadcrumb") != null) {
+				    Hashtable parameters = new Hashtable();
+				    parameters.put("id",data.getActivityId().toString());
+				    parameters.put("name",messages.getText(definition)+" "+Util.formatDate(data.getDate()));
+				    ((Breadcrumb)session.getAttribute("Breadcrumb")).addItem(Breadcrumb.ACTIVITY_EDIT,parameters);
+				}
+				
+				// Link para agregar instructores a la actividad>
+				String hrefInstructor = "layout.jsp?refer=/user/InstructorSearchForActivity.jsp?idActivity="+idActivity; 
+%>
+
+<%@page import="communication.administration.RoleData"%><script language="javascript" src='/datacenter/menu/js/driverFunctions.js' type='text/javascript' >
+</script>
+<script language="javascript" src='/datacenter/util/js/Prepared_Parameters.js' type='text/javascript' >
+</script>
+<script type="text/javascript" language="javascript" >
+	function reportAllPDF(form){		
+		<% 
+			idDrivers ="";
+			if (drivers.size() > 0){
+				Iterator it = drivers.iterator();
+				while (it.hasNext()){
+					DriverData driver = (DriverData)it.next();
+					idDrivers += driver.getId().toString()+";";
+				}
+				idDrivers = idDrivers.substring(0,idDrivers.length()-1);
+			}
+		%>
+		
+		form.idDrivers.value = '<%=idDrivers%>';
+		form.idActivity.value = '<%=idActivity%>';
+		form.activityType.value = '<%=data.getType().getResourceBundleId()%>';
+		form.checklist.value = '<%=data.getDefinition().getCheckList().getId().toString()%>';
+		form.submit();	
+	}	
+	
+	function setAction(form,action){
+		form.action.value=action;
+	}
+	
+	function deleteIFConfirm(form,msg){
+		form.submit();
+	} 
+	
+	function setDelete(form,action){
+		if(preparedCheckboxParameters(form)) {
+			form.action.value=action;
+			form.submit();
+		}
+	}
+	function openCertificate(driver) {
+		var form = document.forms['ActivityCertificateForm'];
+		form.driver.value = driver;
+		form.submit();
+	}
+	function openNewReport(driver,type) {
+		var form = document.forms['ActivityReportFormVersion2'];
+		form.driver.value = driver;
+		form.type.value = type;
+		form.submit();
+	}
+	function openCarnet(driver) {
+		var form = document.forms['ActivityCarnetForm'];
+		form.driver.value = driver;
+		form.submit();
+	}
+	
+	function reportAll(form1,form2,action){
+		var list="";		
+		var elements=form1.elements;
+		for(i = 0; i < elements.length; i++){
+			var element=elements[i];
+			if(element.type.toLowerCase()=="checkbox"){
+				if(element.checked){
+					if(list==""){
+						list=element.value;
+					}else{
+						list=element.value+"<"+list;
+					}	
+				}	
+			} 		
+		}
+		if(list.length > 0){
+			form2.idDrivers.value=list;
+			form2.submit();
+		}
+	}
+	function viewAttendanceList() {
+		var list = document.getElementById('attendanceList');
+		if(list.style.display == "none") {
+			list.style.display = "";
+		}else {
+			list.style.display = "none";
+		}
+	}
+</script>
+		<form action="layout.jsp?refer=/activity/schedule/CEPAActivityScheduleExclusion.jsp" 
+			name="delete" method="post" >
+			<input type="hidden" name="checkboxParamList" value='<%=idActivity%>' />		
+			<input type="hidden" name="action" />					
+		</form>
+		<form action="layout.jsp?refer=/activity/schedule/DivideActivity.jsp" name="divide" method="post" >
+			<input type="hidden" name="activity" value='<%=idActivity%>' />		
+		</form>
+		<form action="layout.jsp?refer=/activity/schedule/sendReports.jsp" name="sendReports" method="post" >
+			<input type="hidden" name="activity" value='<%=idActivity%>' />		
+		</form>
+		<form action="layout.jsp?refer=/activity/schedule/CEPAActivityScheduleEdit.jsp" name='edit' method="post">
+			<input type="hidden" name="idActivity" value='<%=idActivity%>' />			
+		</form>	
+		<form action="layout.jsp?refer=/activity/schedule/CEPAActivityTemporals.jsp" name='resolvetemporals' method="post">
+			<input type="hidden" name="idActivity" value='<%=idActivity%>' />			
+		</form>	
+		<form action="layout.jsp?refer=/activity/schedule/ActivityList.jsp" name='cancel' method="post">
+		</form>		
+		<!-- Formulario para Reporte Total -->
+		<html:form action="/ActivityReportAllDrivers"  method="post" >
+			<html:hidden property="idDrivers" value="" />
+			<html:hidden property="idActivity" value='<%=idActivity%>' />
+			<html:hidden property="checklist" value="" />
+			<html:hidden property="activityType" value="" />
+		</html:form>		
+		<html:form action="/InductionTrainingReportAll"  method="post" >
+			<html:hidden property="idDrivers" value="" />
+			<html:hidden property="idActivity" value='<%=idActivity%>' />
+		</html:form>		
+		<!-- Formulario para Reporte Total de Actividades Old-->
+		<html:form action="/ActivityReportAllDriversOld"  method="post" >
+			<html:hidden property="idDrivers" value="" />
+			<html:hidden property="idActivity" value='<%=idActivity%>' />
+		</html:form>	
+		<html:form action="/ActivityCertificate"  method="post" >
+			<html:hidden property="driver" />
+			<html:hidden property="activity" value='<%=idActivity%>' />
+		</html:form>	
+		<html:form action="/ActivityCarnet"  method="post" >
+			<html:hidden property="driver" />
+			<html:hidden property="activity" value='<%=idActivity%>' />
+		</html:form>	
+		<html:form action="/ActivityReportVersion2"  method="post" >
+			<html:hidden property="driver" />
+			<html:hidden property="activity" value='<%=idActivity%>' />
+			<html:hidden property="type" />
+		</html:form>	
+		<html:form action="/ActivitySmallCertificate" method="post" >
+			<html:hidden property="activity" value='<%=idActivity%>' />	
+			<html:hidden property="list"/>	
+		</html:form>	
+		<html:form action="/ActivityAllSmallCertificate" method="post" >
+			<html:hidden property="activity" value='<%=idActivity%>' />	
+		</html:form>	
+		<html:form action="/ActivityAllReport" method="post" >
+			<html:hidden property="activity" value='<%=idActivity%>' />	
+		</html:form>	
+		<html:form action="/ActivityAllCertificate" method="post" >
+			<html:hidden property="activity" value='<%=idActivity%>' />	
+		</html:form>	
+		<table width="850" border="0" align="center" cellpadding="0" cellspacing="0">
+  			<tr>
+   				<jsp:include  page='<%="../../component/titlecomponent.jsp?colspan=3&title="+messages.getText("web.activity.view")			+" "+messages.getText(data.getType().getResourceBundleId())+" "+messages.getText(data.getCountryName())+" " + Util.formatDate(data.getDate()) %>' />			
+    		</tr>
+  			<tr>
+    			<jsp:include  page="../../component/spaceline.jsp" />
+			</tr>
+<%			boolean line = true;	
+%>			
+			<tr>
+    			<td colspan = "3" valign="top">
+					<jsp:include  page='<%="../../component/utilitybox3top.jsp?title="+messages.getText("generic.messages.options")%>' />		
+					<table width="100%" border="0" cellpadding="0" cellspacing="0" class="texts1" >
+					
+					<!--  EDITAR ACTIVIDAD: -->
+<%				if(userSessionData.checkPermission(SecurityConstants.MODIFY_CEPASCHEDULEACTIVITY) || 
+					userSessionData.checkPermission(SecurityConstants.MODIFY_CD_ACTIVITY) && userSessionData.canModifyActivityRegitry(data.getType().getResourceBundleId())) {								
+					if (isCommentaryDrive) {					
+						if (userSessionData.checkPermission(SecurityConstants.MODIFY_CD_ACTIVITY)) {
+							line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+						<td style="width:50%">
+							<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+							<a href="#" onClick="javascript:document.forms['edit'].submit()" class="texts" >
+								<%=messages.getText("generic.messages.edit")%>
+							</a>
+						</td>							
+					<%=(line) ? "</tr>" : "" %>							
+<%						}
+					}else { 
+						// Si es instructor, puede editar la actividad solo 
+						// si esta en estado planificado:
+						if (userSessionData.checkPermission(SecurityConstants.MODIFY_CEPASCHEDULEACTIVITY) && userSessionData.canModifyActivityRegitry(data.getType().getResourceBundleId())) {
+							if (userSessionData.isInstructor()){
+								if (data.getState().getResourceBundleId().equals("datatype.scheduledactivitystate.prevista")) { 
+							line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+							<td style="width:50%">									
+								<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="#" onClick="javascript:document.forms['edit'].submit()" class="texts" >
+									<%=messages.getText("generic.messages.edit")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : "" %>							
+							<!-- Agregar Instructor -->	
+<%							line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+							<td style="width:50%">
+	                			<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="<%=hrefInstructor %>#" onClick="javascript:document.forms['addInstructor'].submit()" class="texts" >
+									<%=messages.getText("generic.messages.addinstructor")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : "" %>							
+<%								}						
+							}else {
+							// Los demas que tienen permiso de modificacion, puede
+							// editar la actividad en cualquier estado
+								line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+						<td style="width:50%">
+	                			<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="#" onClick="javascript:document.forms['edit'].submit()" class="texts" >
+									<%=messages.getText("generic.messages.edit")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : "" %>							
+							<!-- Agregar Instructor -->	
+<%							line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>														
+							<td style="width:50%">
+	                			<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="<%=hrefInstructor %>#" onClick="javascript:document.forms['addInstructor'].submit()" class="texts" >
+									<%=messages.getText("generic.messages.addinstructor")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : "" %>							
+<%							}
+					  	}
+					 }
+				}
+				// Fin Editar Actividad
+
+				// OPCION: DELETE
+				if((userSessionData.checkPermission(SecurityConstants.DELETE_CEPASCHEDULEACTIVITY) || 
+						userSessionData.checkPermission(SecurityConstants.DELETE_CD_ACTIVITY)) && 
+						!data.getIsOld() && userSessionData.canModifyActivityRegitry(data.getType().getResourceBundleId())) {	
+					// Puedo borrar una actividad UNICAMENTE si no tiene conductores asignados.
+					if (drivers.size() == 0) {	
+						// Si es MonsantoAdministrator, solo puede borrar la actividad
+						// si es CommentaryDrive.
+    					if (isCommentaryDrive) {
+							if (userSessionData.checkPermission(SecurityConstants.DELETE_CD_ACTIVITY)) {
+							line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+						<td style="width:50%">
+							<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+							<%
+								String href1 = "javascript:setAction(document.forms['delete'],'delete');deleteIFConfirm(document.forms['delete'],'"+ messages.getText("generic.driver.driverdata.confirmdelete") + "');";
+							%>
+							<a href="<%=href1 %>" class="texts">
+								<%=messages.getText("generic.messages.delete")%>
+							</a>
+						</td>	
+					<%=(line) ? "</tr>" : "" %>							
+<%							}
+						}else {
+							if (userSessionData.checkPermission(SecurityConstants.DELETE_CEPASCHEDULEACTIVITY)) {							
+							line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+						<td style="width:50%">
+        					<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+        					<%
+        					String href2 = "javascript:setAction(document.forms['delete'],'delete');deleteIFConfirm(document.forms['delete'],'" + messages.getText("generic.driver.driverdata.confirmdelete") + "');";
+        					%>
+							<a href='<%=href2%>' class="texts">
+								<%=messages.getText("generic.messages.delete")%>
+							</a>
+						</td>								
+					<%=(line) ? "</tr>" : "" %>							
+<%							}
+						}	
+%>					</tr>
+<%					}					
+				}
+				if((userSessionData.checkPermission(SecurityConstants.EDIT_CEPASCHEDULEACTIVITYREGISTRY) || 
+						userSessionData.checkPermission(SecurityConstants.MODIFY_CD_ACTIVITY))
+						&& !data.getIsOld()  && userSessionData.canModifyActivityRegitry(data.getType().getResourceBundleId()) && 
+						!data.getState().getResourceBundleId().equals(CEPAActivityConstants.DICTADA)) {						
+					if (!isCommentaryDrive) {
+						if (userSessionData.checkPermission(SecurityConstants.EDIT_CEPASCHEDULEACTIVITYREGISTRY)
+							|| (userSessionData.isGerente() && (definition.equals(CEPAActivityConstants.INITIAL_FOREIGN_EVALUATION)
+							|| definition.equals(CEPAActivityConstants.SAFE_FLEET_MULTIPLIER_SPEECH)))) {
+							if (userSessionData.isInstructor()){
+								
+								if (data.getState().getResourceBundleId().equals("datatype.scheduledactivitystate.prevista") 
+										&& !data.getType().getResourceBundleId().equals(CEPAActivityConstants.SECURITY_TALK_KIDS)) { 
+							line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+						<td style="width:50%">
+							<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+							<%
+								String href3 = "layout.jsp?refer=/driver/DriverSearchForActivity.jsp?idActivity="+idActivity;
+							%>
+							<a href='<%=href3%>' class="texts">
+								<%=messages.getText("generic.activity.addriver")%>
+							</a>
+						</td>
+					<%=(line) ? "</tr>" : "" %>							
+<%								} 
+							}else {
+								if (!data.getType().getResourceBundleId().equals(CEPAActivityConstants.SECURITY_TALK_KIDS)) { 
+									line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+						<td style="width:50%">
+							<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+							<%
+								String href4 = "layout.jsp?refer=/driver/DriverSearchForActivity.jsp?idActivity="+idActivity;
+							%>
+							<a href='<%=href4%>' class="texts">
+								<%=messages.getText("generic.activity.addriver")%>
+							</a>
+						</td>		
+					<%=(line) ? "</tr>" : "" %>							
+<%								}
+							}
+						}							
+					}
+				}
+				if((userSessionData.checkPermission(SecurityConstants.MODIFY_CEPASCHEDULEACTIVITY) || userSessionData.checkPermission(SecurityConstants.MODIFY_CD_ACTIVITY) )  && userSessionData.canModifyActivityRegitry(data.getType().getResourceBundleId())){								
+							line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+						<td style="width:50%">
+							<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+							<a href="#" onClick="javascript:document.forms['divide'].submit()" class="texts" >
+								<%=messages.getText("generic.messages.divideactivity")%>
+							</a>
+						</td>							
+					<%=(line) ? "</tr>" : "" %>							
+<%				}
+				line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+						<td style="width:50%">
+                			<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+							<a href="#" onClick="javascript:document.forms['cancel'].submit()" class="texts">
+								<%=messages.getText("generic.messages.cancel")%>
+							</a>
+						</td>
+					</tr>
+					</table>
+					<jsp:include page="../../component/utilitybox3bottom.jsp"/>
+				</td>
+			</tr>
+  		<tr>
+			<jsp:include  page="../../component/spaceline.jsp" />
+  		</tr>   
+    	<tr>
+    		<td valign="top" width="49%">
+    			<table width="100%" border="0" cellpadding="0" cellspacing="0">
+					<tr>
+						<td>     
+							<jsp:include  page='<%="../../component/utilityboxtop.jsp?title="+messages.getText("generic.messages.administrativedata")%>' />
+							<table width="100%" cellpadding="0" cellspacing="0" border="0">
+								<tr>
+									<td align="left" class="texts"><%=messages.getText("generic.activity.activitydata.date")%><%=" ("+messages.getText("generic.messages.dateformat")+")"%></td>
+									<td align="right" class="linetwo"><%=activityForm.getDay()+"-"+activityForm.getMonth()+"-"+activityForm.getYear() %></td>			
+								</tr>										
+								<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+								<tr>
+									<td align="left" class="texts"><%=messages.getText("generic.activity.activitydata.type")%></td>
+									<td align="right" class="linetwo"><%=activityForm.getType()%></td>
+								</tr>
+								<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+								<tr>
+									<td align="left" class="texts"><%=messages.getText("generic.activity.activitydata.city")%></td>
+									<td align="right" class="linetwo"><%=activityForm.getCity()%></td>
+								</tr>				
+								<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+								<tr>
+									<td align="left" class="texts"><%=messages.getText("generic.activity.activitydata.state")%></td>
+									<td align="right" class="linetwo"><%=activityForm.getState()%></td>
+								</tr>
+								<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+								<tr>
+									<td align="left" class="texts"><%=messages.getText("generic.activity.activitydata.duration")%></td>
+									<td align="right" class="linetwo"><%=Util.formatHour(data.getDuration())%></td>
+								</tr>
+<%					if(definition.equals(CEPAActivityConstants.SECURITY_TALK_KIDS)) {					
+%>								<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+								<tr>
+									<td align="left" class="texts"><%=messages.getText("generic.activity.activitydata.participantcount")%></td>
+									<td align="right" class="linetwo"><%=activityForm.getParticipants()%></td>
+								</tr>
+<%					}					
+					if(sys.isCorporation(new int[]{CorporationData.FORESTALORIENTAL,CorporationData.MONTES_DE_PLATA}) && definition.equals(CEPAActivityConstants.SECURITY_TALK)) {					
+%>								<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+								<tr>
+									<td align="left" class="texts"><%=messages.getText("generic.activity.activitydata.theme")%></td>
+									<td align="right" class="linetwo"><%=activityForm.getTheme()%></td>
+								</tr>
+<%					}					
+					if(sys.isCorporation(new int[]{CorporationData.DOW})) {					
+%>								<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+								<tr>
+									<td align="left" class="texts"><%=messages.getText("user.data.vehicle")%></td>
+									<td align="right" class="linetwo"><%=messages.getText(activityForm.getTheme())%></td>
+								</tr>
+<%					}					
+%>							</table>
+							<jsp:include page="../../component/utilityboxbottom.jsp"/>
+						</td>
+					</tr>
+					<tr>
+						<jsp:include  page="../../component/spaceline.jsp" />
+  					</tr>   	
+					<tr>
+	    				<td>
+							<jsp:include  page='<%="../../component/utilityboxtop.jsp?title="+messages.getText("generic.vehicle.divgeo")%>' />
+<%				if(data.getCountrygeo() != null) {
+					GeoItemData geoItem1 = (GeoItemData)data.getCountrygeo().getItemIterator().next();
+%>							<table width="100%">
+								<tr>
+									<td align="left" class="texts"><%=messages.getText(data.getCountrygeo().getResourceKey())%> </td>
+									<td align="right" class="linetwo">
+										<%=(geoItem1.getSubItems() != null) ? geoItem1.getName() : messages.getText(geoItem1.getName()) %>
+									</td>
+								</tr>
+<%					if(geoItem1.getSubItems() != null) {
+						GeoItemData geoItem2 = (GeoItemData)geoItem1.getSubItems().getItemIterator().next();
+%>								<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+								<tr>
+									<td align="left" class="texts"><%=messages.getText(geoItem1.getSubItems().getResourceKey())%> </td>
+									<td align="right" class="linetwo">
+										<%=(geoItem2.getSubItems() != null) ? geoItem2.getName() : messages.getText(geoItem2.getName()) %>
+									</td>
+								</tr>
+<%						if(geoItem2.getSubItems() != null) {
+							GeoItemData geoItem3 = (GeoItemData)geoItem2.getSubItems().getItemIterator().next();
+%>								<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+								<tr>
+									<td align="left" class="texts"><%=messages.getText(geoItem2.getSubItems().getResourceKey())%> </td>
+									<td align="right" class="linetwo"><%=messages.getText(geoItem3.getName())%></td>
+								</tr>
+<%						}
+					}
+				}
+%>							</table>	
+							<jsp:include page="../../component/utilityboxbottom.jsp"/>
+						</td>
+    				</tr>
+    <!-- Fin Division Geografica -->
+  					<tr>
+						<jsp:include  page="../../component/spaceline.jsp" />
+  					</tr>
+				</table>
+			</td>
+    		<td width="2%">&nbsp;</td>
+    		<td width="49%" valign="top" >
+    <!--  Division Organizacional -- Se puede hacer un componente con esto !!-->
+				<table width="100%" height="100%"  cellpadding="0" cellspacing="0">
+<%				Iterator it = data.getDivOrgsIterator();
+				while(it.hasNext()) {		
+					DivOrgData divOrgData = (DivOrgData)it.next();
+					if(divOrgData.getDivOrgLevels() != null) {
+						ItemData item1 = (ItemData)divOrgData.getDivOrgLevels().getItemIterator().next();
+						String pageTitulo = "../../component/utilityboxtop.jsp?title="+messages.getText(divOrgData.getName());
+%>					<tr>
+						<td valign="top" width="50%">	
+							<!--  Dibujo titulo de <%=messages.getText(divOrgData.getDivOrgLevels().getName())%> -->
+							<jsp:include  page='<%=pageTitulo%>' />
+							<table width="100%" cellpadding="0" cellspacing="0">
+								<tr class="linetwo" valign="top">
+									<th align="left"> <%=messages.getText(divOrgData.getDivOrgLevels().getName())%> </th>
+									<td align="right"><%=item1.getName()%></td>
+								</tr>
+<%	    				if(item1.getSubItems() != null) {
+							ItemData item2 = (ItemData)item1.getSubItems().getItemIterator().next();
+%>								<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(item1.getSubItems().getName())%> </th>
+									<td align="right"><%=item2.getName()%></td>
+								</tr>
+<%				    		if(item2.getSubItems() != null) {
+								ItemData item3 = (ItemData)item2.getSubItems().getItemIterator().next();
+%>								<tr  class="space"><td align="right">&nbsp;</td><td align="right">&nbsp;</td></tr>
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(item2.getSubItems().getName())%> </th>
+									<td align="right"><%=item3.getName()%></td>
+								</tr>
+<%							} // end if(item2.getSubItems() != null)
+						} // end if(item1.getSubItems() != null) 
+%>							</table>
+   							<jsp:include page="../../component/utilityboxbottom.jsp"/>	
+	   					</td>
+	   				</tr>
+	   				<tr><td height="5"><img src="x" width="1" height="1"></td></tr>
+<%					}
+				}
+%>				</table>	
+			</td>
+  		</tr>
+<%	    // Actividad para niños, no lleva cantidad de conductores		
+		if (!data.getType().getResourceBundleId().equals(CEPAActivityConstants.SECURITY_TALK_KIDS)) { 
+			boolean hasTemporal = false;
+%>
+  		<tr>
+			<jsp:include  page='<%="../../component/spaceline.jsp?colspan=5" %>'/>
+  		</tr>
+  		
+  		<!-- Seccion Condutores -->
+    	<tr>
+    		<td colspan="3" valign="top">
+				<jsp:include  page='<%="../../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.drivers")%>' />
+					<form  action="layout.jsp?refer=/activity/schedule/CEPAActivityScheduleRegistryExclusion.jsp"  name = "delete_driver" method="post">
+						<input type="hidden" name="activity" value='<%=idActivity%>' />
+						<table width="100%">
+							
+<%				// Borrar Driver:
+				if(!sys.isCorporation(CorporationData.FEMSA_BR) && (definition.equals(CEPAActivityConstants.INDUCTION_TRAINING) || 
+						definition.equals(CEPAActivityConstants.DEMO_DIGI_CAM) ||
+						definition.equals(CEPAActivityConstants.CEPA_SYSTEM_COURSE_1_LIVIANOS) ||
+						definition.equals(CEPAActivityConstants.CEPA_SYSTEM_COURSE_2_ENTRENADORES) ||
+						definition.equals(CEPAActivityConstants.SECURITY_TALK) ||
+						definition.equals(CEPAActivityConstants.SECURITY_TALK_PMF))) {
+						
+%>						
+							<tr>
+								<td class="guide2" width='5%' align="center"></td>
+								<td class="guide2" align="center" width="35%">
+									<%=messages.getText("generic.driver.driverdata.firstname")%>
+								</td>
+								<td class="guide2" align="center" width="35%">
+									<%=messages.getText("generic.driver.driverdata.lastname")%>
+								</td>
+								<td class="guide2" align="center" width="20%">
+									<%=messages.getText("generic.activityregistry.hasobservations")%>								
+								</td>								
+								<td class="guide2" align="center" width="20%">
+									<%=messages.getText("generic.activityregistry.istemporaldriver")%>								
+								</td>
+								
+							</tr>									
+<%					if(drivers.size() == 0) {
+%>							<tr>
+   								<td colspan="4">
+   									<span class="linetwo"><%=messages.getText("generic.activity.nodrivers")%></span>
+   								</td>								
+   							</tr>
+<%					}else {
+						if(definition.equals(CEPAActivityConstants.CEPA_SYSTEM_COURSE_1_LIVIANOS) ||
+								definition.equals(CEPAActivityConstants.CEPA_SYSTEM_COURSE_1_PESADOS) ||
+								definition.equals(CEPAActivityConstants.RECERTIFICACION_CEPA_SYSTEM) ||
+								definition.equals(CEPAActivityConstants.CEPA_SYSTEM_COURSE_2_CEPA) ||
+								definition.equals(CEPAActivityConstants.CEPA_SYSTEM_COURSE_2_ENTRENADORES)) {
+    	  					Iterator itObservations = drivers.iterator();
+	    					while(itObservations.hasNext()) {
+    							DriverData driver = (DriverData)itObservations.next();
+								boolean hasResult = activityReport.hasResult(new Integer(idActivity),driver.getId(),sys.getUserSessionData());
+%>							<tr class="linetwo">
+								<td width='5%' align="center">
+									<input type='checkbox' name='<%=driver.getId()%>' value='<%=driver.getId()%>' >
+								</td>
+								<td align="center">
+<%									String href5 = "layout.jsp?refer=/activity/schedule/AddCEPAActivityScheduleRegistry.jsp?idDriver="+ driver.getId()+"&idActivity="+ idActivity;
+
+									if(sys.getUserSessionData().isGerente()) {
+										href5 = "layout.jsp?refer=/activity/schedule/cdsView.jsp?idDriver="+ driver.getId()+"&idActivity="+ idActivity;
+										if (definition.equalsIgnoreCase(CEPAActivityConstants.CEPA_SYSTEM_COURSE_1_LIVIANOS)) {
+											href5 += "&check=40";
+										} else if (definition.equalsIgnoreCase(CEPAActivityConstants.CEPA_SYSTEM_COURSE_1_PESADOS)
+											|| definition.equalsIgnoreCase(CEPAActivityConstants.RECERTIFICACION_CEPA_SYSTEM)) {
+											href5 += "&check=35";
+										} else if (definition.equalsIgnoreCase(CEPAActivityConstants.CEPA_SYSTEM_COURSE_2_ENTRENADORES) || 
+												definition.equalsIgnoreCase(CEPAActivityConstants.CEPA_SYSTEM_COURSE_2_CEPA)) {
+											href5 += "&check=36";
+										}
+									}
+%>
+									<a href='<%=href5 %>' >
+										<%=driver.getFirstName()%> 
+									</a>
+								</td>	
+								<td align="center">
+									<%=driver.getLastName()%> 
+								</td>	
+								<td align="center">
+									<%=(hasResult) ? messages.getText("generic.messages.yes").toUpperCase() : messages.getText("generic.messages.no").toUpperCase()%> 
+								</td>	
+	      					</tr>		
+<%							}
+						}else {
+							Object[][] observations = activityReport.getParticipantsRegistryObservations(new Integer(idActivity),userSessionData);
+    	  					Iterator itObservations = drivers.iterator();
+	    					while(itObservations.hasNext()) {
+    							DriverData driver = (DriverData)itObservations.next();
+    							boolean result = false;
+    							boolean found = false;
+    							boolean temporal = false;
+								for(int i = 0; i < observations.length && !found; i++) {
+								    if(observations[i][0].equals(driver.getId())) {
+							    	    found = true;
+							        	result = !Util.empty((String)observations[i][1]);
+							        	temporal = driver.isTemporal();
+							    	}
+								}
+%>							<tr class="linetwo">
+								<td width='5%' align="center">
+									<input type='checkbox' name='<%=driver.getId()%>' value='<%=driver.getId()%>' >
+								</td>
+								<td align="center">
+<%
+								String href6 = "layout.jsp?refer=/activity/schedule/simpleForm.jsp?idDriver="+ driver.getId()+ "&idActivity=" + idActivity; 
+%>
+ 									<a href='<%=href6%>'>
+										<%=driver.getFirstName()%> 
+									</a>
+								</td>	
+								<td align="center">
+									<%=driver.getLastName()%> 
+								</td>	
+								<td align="center">
+									<%=(result) ? messages.getText("generic.messages.yes").toUpperCase() : messages.getText("generic.messages.no").toUpperCase()%> 
+								</td>	
+								<td align="center">
+<% 								if (temporal) { 
+									//hasTemporal = true;
+%>										<a href='<%= "layout.jsp?refer=/driver/TemporalDriverList.jsp?idTemporalDriver="+ driver.getId() + "&idActivity=" + idActivity + "&temporal=true&first=1"%>' >
+											<%= messages.getText("generic.messages.yes").toUpperCase() %>
+										</a>
+<% 								}else{ 
+%>										 <%= messages.getText("generic.messages.no").toUpperCase() %>
+<% 								} 
+%>								</td>	
+	      					</tr>		
+<%	    					}
+						}
+					}
+				}else { 
+				
+					// Seccion condutores, otros cursos, BTW, etcc...
+				
+				%>
+					
+						<tr>				
+<%					if((userSessionData.checkPermission(SecurityConstants.DELETE_CEPASCHEDULEACTIVITYREGISTRY) || 
+						userSessionData.checkPermission(SecurityConstants.DELETE_CD_ACTIVITY))
+						&& !data.getIsOld() && userSessionData.canModifyActivityRegitry(data.getType().getResourceBundleId()) &&
+						!data.getState().getResourceBundleId().equals(CEPAActivityConstants.DICTADA))	{	
+						if (isCommentaryDrive) {
+							if (userSessionData.checkPermission(SecurityConstants.DELETE_CD_ACTIVITY)) {
+%>								<td width='5%' class="guide2"></td>
+<%							}
+						}else {
+							if (userSessionData.checkPermission(SecurityConstants.DELETE_CEPASCHEDULEACTIVITYREGISTRY) && userSessionData.canModifyActivityRegitry(data.getType().getResourceBundleId())) {
+							// Si soy instructor, solo puedo borrar driver si estoy en estado planificado
+								if (userSessionData.isInstructor()){
+									if (data.getState().getResourceBundleId().equals("datatype.scheduledactivitystate.prevista")) { 
+%>								<td width='5%' class="guide2"></td>
+<%									}
+								}else {
+%>								<td width='5%' class="guide2"></td>
+<%								} 
+							}
+						}
+					}	
+					if(data.getState().getResourceBundleId().equals(CEPAActivityConstants.DICTADA)) {
+%>								<td width='3%' class="guide2"></td>
+<%						if(sys.getUserSessionData().getLenguage().equals("es") && data.getDefinition().getTimeExpiry() > 0) {
+%>								<td width='3%' class="guide2"></td>
+<%						}
+						if(hasNewReports) {
+%>								<td width='3%' class="guide2"></td>
+								<td width='3%' class="guide2"></td>
+<%						}
+					}
+%>								<td width='35%' class="guide2" align="center">
+									<%=messages.getText("generic.driver.driverdata.firstname")%>
+								</td>
+								<td width='35%' class="guide2" align="center">
+									<%=messages.getText("generic.driver.driverdata.lastname")%>
+								</td>
+<% 					if (!data.getState().getResourceBundleId().equals(CEPAActivityConstants.DICTADA) || 
+		definition.equals(CEPAActivityConstants.COMMENTARYDRIVENALCO)) {
+%>								<td width='10%' class="guide2" align="center">
+									<%=messages.getText("generic.activityregistry.hasresult")%>								
+								</td>	
+								<td class="guide2" align="center" width="10%">
+									<%=messages.getText("generic.activityregistry.istemporaldriver")%>								
+								</td>
+																
+<%					} 
+%>							</tr>
+<%					if(drivers.size() == 0) {
+%>							<tr>
+								<td colspan="3">
+									<span class="linetwo"><%=messages.getText("generic.activity.nodrivers")%></span>
+								</td>								
+							</tr>
+<%					}else {
+    					Iterator itObservations = drivers.iterator();
+		    			boolean lineone = false;
+	    				while(itObservations.hasNext()) {
+    						DriverData driver = (DriverData)itObservations.next();
+    						String hasResultStr = messages.getText("generic.activityregistry.hasresult.no");
+    						boolean temporal = driver.isTemporal();
+    						CEPAActivityScheduleRegistryData registry = activityReport.getRegistry(new Integer(idActivity),driver.getId(),sys.getUserSessionData());
+    						boolean hasResult = (registry != null ) ? registry.getHasResult() : false;
+    						if (hasResult || data.getIsOld()) {
+    							hasResultStr = messages.getText("generic.activityregistry.hasresult.yes");				
+    						}    				
+%>							<tr align=center align="right" class='<%=(lineone) ? "lineone" : "linetwo"%>'>
+<%						// Borrar Driver:
+							if((userSessionData.checkPermission(SecurityConstants.DELETE_CEPASCHEDULEACTIVITYREGISTRY) || 
+								userSessionData.checkPermission(SecurityConstants.DELETE_CD_ACTIVITY)) && userSessionData.canModifyActivityRegitry(data.getType().getResourceBundleId()) &&  
+								!data.getIsOld() && !data.getState().getResourceBundleId().equals(CEPAActivityConstants.DICTADA)) {	
+							// Si es MonsantoAdministrator, solo puede borrar drivers si la actividad
+							// es CommentaryDrive.				
+								if (isCommentaryDrive) {
+									if (userSessionData.checkPermission(SecurityConstants.DELETE_CD_ACTIVITY)) {	
+%>								<td width='5%' align="center"><input type='checkbox' name='<%=driver.getId()%>' value='<%=driver.getId()%>' ></td>
+<%									}							
+								}else {	
+									if (userSessionData.checkPermission(SecurityConstants.DELETE_CEPASCHEDULEACTIVITYREGISTRY) && userSessionData.canModifyActivityRegitry(data.getType().getResourceBundleId())) {
+								// Si soy instructor, solo puedo borrar driver si estoy en estado planificado
+										if (userSessionData.isInstructor()){
+											if (data.getState().getResourceBundleId().equals("datatype.scheduledactivitystate.prevista")) { 
+%>								<td width='5%' align="center"><input type='checkbox' name='<%=driver.getId()%>' value='<%=driver.getId()%>' ></td>
+<%											}
+										}else { 
+%>								<td width='5%' align="center"><input type='checkbox' name='<%=driver.getId()%>' value='<%=driver.getId()%>' ></td>
+<%										}
+									}
+								}
+							}		
+							if(data.getState().getResourceBundleId().equals(CEPAActivityConstants.DICTADA)) {
+%>								<td width='3%'>
+<%
+								if(!data.isCommentaryDrive() 
+										&& !userSessionData.getLenguage().equals("en") 
+										&& !definition.startsWith("datatype.scheduledactivitytype.outtraining")
+										&& (registry != null && (!data.getDefinition().isHaveNote() || registry.isApprouved()))) {
+%>									<a href='javascript:openCertificate(<%=String.valueOf(driver.getId())%>);'>
+										<img alt="Certificado" src="menu/images/certificate.jpg" height="15" >
+									</a>
+<%								}
+%>								</td>
+<%								if(sys.getUserSessionData().getLenguage().equals("es") && data.getDefinition().getTimeExpiry() > 0) {
+%>								<td width='3%'>
+									<a href='javascript:openCarnet(<%=String.valueOf(driver.getId())%>);'>
+										<img alt="Carnet" src="menu/images/smallcertificate.png" height="15" >
+									</a>
+								</td>
+<%								}
+								if(hasNewReports) {
+%>								<td width='3%'>
+									<a href='javascript:openNewReport(<%=String.valueOf(driver.getId())%>,1);'>
+										<img alt="Carnet" src="menu/images/reporte_simple.jpg" height="15" >
+									</a>
+								</td>
+								<td width='3%'>
+									<a href='javascript:openNewReport(<%=String.valueOf(driver.getId())%>,2);'>
+										<img alt="Carnet" src="menu/images/reporte_completo.jpg" height="15" >
+									</a>
+								</td>
+<%								}
+							}
+%>           					<td align="center">
+<%							if (data.getIsOld() && !definition.equals("datatype.scheduledactivitytype.commentarydriveother")) {
+								HashMap params = new java.util.HashMap();
+								params.put("idActivity", idActivity);
+								params.put("idDriver", driver.getId().toString());		
+								params.put("output","HTML");
+								pageContext.setAttribute("paramsName", params);										
+%>									<html:link action="/ActivityReportOld" name= "paramsName">
+									 	<%=driver.getFirstName()%> 										 
+									</html:link> 										
+<%							}else {
+								// Actividad nueva
+								if (hasResult) {
+									// Si estï¿½ dictada despliego reporte
+									if (data.getState().getResourceBundleId().equals("datatype.scheduledactivitystate.dictada")) {
+										HashMap params = new java.util.HashMap();
+										params.put("idActivity", idActivity);
+										params.put("idDriver", driver.getId().toString());		
+										params.put("output","HTML");
+										pageContext.setAttribute("paramsName", params);
+							
+									// Si es Commentary Drive Other (J&J y otras empresas - NO Monsanto) 
+									// o BTW Thailandia
+									// o Evaluacion en Cabina Pesados
+									// No muestro reporte sino el formulario deshabilitado
+										if ((definition.
+												equals(CEPAActivityConstants.COMMENTARYDRIVEOTHER) ||
+												definition.
+												equals(CEPAActivityConstants.EVALUACIONENCABINAPESADO) ||
+												definition.
+												equals(CEPAActivityConstants.CURSOPESADOS) ||  
+												definition.
+												equals(CEPAActivityConstants.BTWPESADOSCONEVALUACIONENCABINA) ||
+											data.getDefinition().getCheckList().getId().intValue() == 14	&& 
+											!data.getIsOld()) || 
+								    	    (!data.getDefinition().isHaveIndividualReport()) ){ 
+%>									<a href="layout.jsp?refer=/activity/schedule/AddCEPAActivityScheduleRegistry.jsp?idDriver=<%=driver.getId()%>&idActivity=<%=new Integer(idActivity)%>&enabled=false" >
+										<%=driver.getFirstName()%> 
+									</a>						
+<%										}else if (definition.
+												equals("datatype.scheduledactivitytype.commentarydriveother") 
+												&& data.getIsOld()) { 
+									// No Monsanto - Pero las actividades son viejas:
+%>									<html:link action="/ActivityReportNew" name= "paramsName">
+									 	<%=driver.getFirstName()%> 										 
+									</html:link> 
+<%										}else if (definition.
+											equals(CEPAActivityConstants.COMMENTARYDRIVEARGENTINA)) { 
+%>									<a href="layout.jsp?refer=/activity/schedule/CommentaryDriveArgentinaView.jsp?idDriver=<%=driver.getId()%>&idActivity=<%=new Integer(idActivity)%>&enabled=false" >
+										<%=driver.getFirstName()%> 
+									</a>						
+<%										}else if (definition.
+											equals(CEPAActivityConstants.COMMENTARYDRIVEARGENTINA_NUEVO)) { 
+%>									<a href="layout.jsp?refer=/activity/schedule/CDArgentinaView.jsp?idDriver=<%=driver.getId()%>&idActivity=<%=new Integer(idActivity)%>&enabled=false" >
+										<%=driver.getFirstName()%> 
+									</a>						
+<%										}else if (definition.equals(CEPAActivityConstants.COMMENTARYDRIVEHIGHRISK)) { 
+%>									<a href="layout.jsp?refer=/activity/schedule/CommentaryDriveRiskView.jsp?idDriver=<%=driver.getId()%>&idActivity=<%=new Integer(idActivity)%>&enabled=false" >
+										<%=driver.getFirstName()%> 
+									</a>						
+<%										}else if (definition.equals(CEPAActivityConstants.COMMENTARYDRIVENALCO)) { 
+%>									<a href="layout.jsp?refer=/activity/schedule/CommentaryDriveNalcoView.jsp?idDriver=<%=driver.getId()%>&idActivity=<%=new Integer(idActivity)%>&enabled=false" >
+										<%=driver.getFirstName()%> 
+									</a>						
+<%										}else if (definition.equals(CEPAActivityConstants.COMMENTARYDRIVE_NOVARTIS)) { 
+%>									<a href="layout.jsp?refer=/activity/schedule/cdNovartisView.jsp?idDriver=<%=driver.getId()%>&idActivity=<%=new Integer(idActivity)%>&enabled=false" >
+										<%=driver.getFirstName()%> 
+									</a>						
+<%										}else if (definition.equals(CEPAActivityConstants.COMMENTARYDRIVE_JJ2)) { 
+%>									<a href="layout.jsp?refer=/activity/schedule/cdJJ2View.jsp?idDriver=<%=driver.getId()%>&idActivity=<%=new Integer(idActivity)%>&enabled=false" >
+										<%=driver.getFirstName()%> 
+									</a>						
+<%										}else if (definition.equals(CEPAActivityConstants.COMMENTARYDRIVE_RENOVATION)
+												|| definition.equals(CEPAActivityConstants.INITIAL_FOREIGN_EVALUATION)) { 
+%>									<a href="layout.jsp?refer=/activity/schedule/RenovationJJView.jsp?idDriver=<%=driver.getId()%>&idActivity=<%=new Integer(idActivity)%>&enabled=false" >
+										<%=driver.getFirstName()%> 
+									</a>						
+<%										}else{
+											if(hasNewReports) {
+%>									<a href='javascript:openNewReport(<%=String.valueOf(driver.getId())%>,1);'>
+									 	<%=driver.getFirstName()%> 										 
+									</a>
+<%											} else {
+%>									<html:link action="/ActivityReportNew" name= "paramsName">
+									 	<%=driver.getFirstName()%> 										 
+									</html:link> 
+<% 											}
+										}
+									}else { 
+//						  			si No esta en estado Dictada										
+										if (isCommentaryDrive) {
+										// es commentary drive lo dejo editar:
+											if (userSessionData.checkPermission(SecurityConstants.MODIFY_CD_ACTIVITY)) {						
+%>
+									<% 
+										String href9 = "layout.jsp?refer=/activity/schedule/ViewCEPAActivityScheduleRegistry.jsp?idDriver="+driver.getId()+"&idActivity="+idActivity+"&enabled=true";
+									%>
+									<a href='<%=href9 %>' > 
+										<%=driver.getFirstName()%> 
+									</a>
+<%											}else { 
+%>									<%=driver.getFirstName()%>
+<%											} 		
+										}else {
+											// Si tiene permiso de edicion muestro el link para editar sino no.									
+											if(data.getDefinition().getHasForm() && userSessionData.checkPermission(SecurityConstants.EDIT_CEPASCHEDULEACTIVITYREGISTRY)) {
+												// Si el usuario es Instructor y esta en estado previsto lo puedo editar:									
+												if (userSessionData.isInstructor()){
+													if (data.getState().getResourceBundleId().equals("datatype.scheduledactivitystate.prevista")) {
+%>									<a href='layout.jsp?refer=/activity/schedule/ViewCEPAActivityScheduleRegistry.jsp?idDriver=<%=driver.getId()%>&idActivity=<%=new Integer(idActivity)%>' > 
+										<%=driver.getFirstName()%> 
+									</a>
+<%													}else { 
+%>									<%=driver.getFirstName()%>
+<%													} 												
+												}else {
+										// si no es instructor, la puede editar tanto si estï¿½ prevista como si estï¿½ en supervisiï¿½n
+%>									<a href='layout.jsp?refer=/activity/schedule/ViewCEPAActivityScheduleRegistry.jsp?idDriver=<%=driver.getId()%>&idActivity=<%=new Integer(idActivity)%>'>
+										<%=driver.getFirstName()%>
+									</a>
+<%												} 
+											}else {
+%>									<%=driver.getFirstName()%>
+<%											}												
+										}
+									}											
+								}else {		
+								// Si no tiene resultado ingresado,despliego form de registro de resultado
+									if((userSessionData.checkPermission(SecurityConstants.EDIT_CEPASCHEDULEACTIVITYREGISTRY) || userSessionData.checkPermission(SecurityConstants.MODIFY_CD_ACTIVITY)) && !data.getIsOld()) {
+//									 Si tiene permiso de edicion y no es una actividad vieja, muestro el link para editar sino no.									
+										if (isCommentaryDrive) {
+											if (userSessionData.checkPermission(SecurityConstants.MODIFY_CD_ACTIVITY)) {
+%>									<a href='layout.jsp?refer=/activity/schedule/AddCEPAActivityScheduleRegistry.jsp?idDriver=<%=driver.getId()%>&idActivity=<%=new Integer(idActivity)%>&enabled=true' > 
+										<%=driver.getFirstName()%> 
+									</a>																					
+<%											}else {
+%>									<%=driver.getFirstName()%>
+<%											}
+										}else {
+										// Es una actividad distinta de commentary
+											if(userSessionData.checkPermission(SecurityConstants.EDIT_CEPASCHEDULEACTIVITYREGISTRY) || definition.equals(CEPAActivityConstants.SAFE_FLEET_MULTIPLIER_SPEECH)) {	
+											// Si el usuario es Instructor y esta en estado previsto lo puedo editar:									
+												if (userSessionData.isInstructor()){															
+												    if (data.getState().getResourceBundleId().equals("datatype.scheduledactivitystate.prevista")){ 
+%>									<a href='layout.jsp?refer=/activity/schedule/AddCEPAActivityScheduleRegistry.jsp?idDriver=<%=driver.getId()%>&idActivity=<%=new Integer(idActivity)%>' > 
+										<%=driver.getFirstName()%> 
+									</a>									
+<%													}else { 
+%>									<%=driver.getFirstName()%>
+<%													} 
+												}else{
+										// Si no es instructor la puedo editar
+%>									<a href='layout.jsp?refer=/activity/schedule/AddCEPAActivityScheduleRegistry.jsp?idDriver=<%=driver.getId()%>&idActivity=<%=new Integer(idActivity)%>'>
+										<%=driver.getFirstName()%> 
+									</a>
+<%												}
+											}else  { 
+%>									<%=driver.getFirstName()%>
+<%											} 
+										} 
+									}else { 
+%>									<%=driver.getFirstName()%>
+<%									}
+								}
+							}	
+%>								</td>						            
+					            <td width='20%' align="center"><%=driver.getLastName()%> </td>						
+<% 							if (!data.getState().getResourceBundleId().equals(CEPAActivityConstants.DICTADA) || definition.equals(CEPAActivityConstants.COMMENTARYDRIVENALCO)) {
+%>					            <td width='8%' align="center"><%=hasResultStr%> </td>		
+								<!--  Conductor Temporal ? -->
+								<td align="center">
+<% 								if (temporal) { 
+									//hasTemporal = true;
+%>										<a href='<%= "layout.jsp?refer=/driver/TemporalDriverList.jsp?idTemporalDriver="+ driver.getId() + "&idActivity=" + idActivity + "&temporal=true&first=1" %>' >
+											<%= messages.getText("generic.messages.yes").toUpperCase() %>
+										</a>
+<% 								}else{ 
+%>										 <%= messages.getText("generic.messages.no").toUpperCase() %>
+<% 								} 
+%>								</td>	
+<%							} 
+%>   						</tr>
+<% 		   					lineone = !lineone;
+	   					}
+					}
+				}
+%>						</table>
+            			<input type="hidden" name="checkboxParamList" />      
+              		</form>
+            		<table width='100%'  border="0" cellpadding="0" cellspacing="0" class="default">
+              			<tr>
+                			<td class="linetwo" align="right">
+<%				if((userSessionData.checkPermission(SecurityConstants.DELETE_CEPASCHEDULEACTIVITYREGISTRY) || 
+					userSessionData.checkPermission(SecurityConstants.DELETE_CD_ACTIVITY)) && userSessionData.canModifyActivityRegitry(data.getType().getResourceBundleId()) && 
+					!data.getIsOld() && !data.getState().getResourceBundleId().equals(CEPAActivityConstants.DICTADA)) {	
+	// Borrar Driver:
+					if (isCommentaryDrive) {					
+						if (userSessionData.checkPermission(SecurityConstants.MODIFY_CD_ACTIVITY)) {
+%>								<input name="button2" type="button" onClick="javascript:setDelete(document.forms['delete_driver'],'delete');" value='<%=messages.getText("generic.messages.delete")%>' class="input"/>                    					
+<%						}					
+					}else {
+						if (userSessionData.checkPermission(SecurityConstants.DELETE_CEPASCHEDULEACTIVITYREGISTRY)  && userSessionData.canModifyActivityRegitry(data.getType().getResourceBundleId())) {
+							// Si soy instructor, solo puedo borrar driver si estoy en estado planificado
+							if (userSessionData.isInstructor()){
+								if (data.getState().getResourceBundleId().equals("datatype.scheduledactivitystate.prevista")){ 
+%>								<input name="button2" type="button" onClick="javascript:setDelete(document.forms['delete_driver'],'delete');" value='<%=messages.getText("generic.messages.delete")%>' class="input"/>                    					
+<%								}
+							}else {
+%>								<input name="button2" type="button" onClick="javascript:setDelete(document.forms['delete_driver'],'delete');" value='<%=messages.getText("generic.messages.delete")%>' class="input"/>                    															
+<%       					}
+						}	
+					}	
+				}else {
+					if((definition.equals(CEPAActivityConstants.INDUCTION_TRAINING) || 
+							definition.equals(CEPAActivityConstants.DEMO_DIGI_CAM) ||
+							definition.equals(CEPAActivityConstants.SECURITY_TALK) ||
+							definition.equals(CEPAActivityConstants.SECURITY_TALK_PMF))
+					        && data.getState().getResourceBundleId().equals(CEPAActivityConstants.DICTADA)) {
+%>								<input name="button2" type="button" onClick="javascript:setDelete(document.forms['delete_driver'],'delete');" value='<%=messages.getText("generic.messages.delete")%>' class="input"/>                    															
+<%					}
+					if(definition.equals(CEPAActivityConstants.INDUCTION_TRAINING)) {
+%>								<input name="button2" type="button" onClick="javascript:reportAll(document.forms['delete_driver'],document.forms['InductionTrainingReportAllForm']);" value='<%=messages.getText("generic.messages.reportselectdrivers")%>' class="input"/>                    															
+<%					}
+				}
+%>		    				</td>
+<%  			// Imprimir PDF con los reportes de todos los drivers:
+				// Al momento solo imprimo todos si se cumplen estas condiciones:
+				// 1. Esta en estado dictada
+				// 2. Es una actividad nueva (!isOld), no migrada del DC4
+				// 3. No es CommentaryDriveOther o BTWThailand, porque para estas actividades no se hicieron reportes aun, porque no se especificaron.
+				if (data.getState().getResourceBundleId().equals(CEPAActivityConstants.DICTADA)  && !data.getIsOld() && 
+						!definition.equals(CEPAActivityConstants.COMMENTARYDRIVEOTHER) && 	
+						!definition.equals(CEPAActivityConstants.COMMENTARYDRIVENALCO) && 	
+						!definition.equals(CEPAActivityConstants.COMMENTARYDRIVE_NOVARTIS) && 	
+						!definition.equals(CEPAActivityConstants.COMMENTARYDRIVE_JJ2) && 	
+						!definition.equals(CEPAActivityConstants.COMMENTARYDRIVE_RENOVATION) && 	
+						!definition.equals(CEPAActivityConstants.INITIAL_FOREIGN_EVALUATION) && 	
+						!definition.equals(CEPAActivityConstants.COMMENTARYDRIVEARGENTINA) &&
+						!definition.equals(CEPAActivityConstants.COMMENTARYDRIVEARGENTINA_NUEVO) &&
+						!definition.equals(CEPAActivityConstants.COMMENTARYDRIVEHIGHRISK) &&
+						data.getDefinition().isHaveIndividualReport() && drivers.size() > 0 ){
+%>							<td  align="right">
+<%					if(sys.isCorporation(new int[] {CorporationData.DOW,CorporationData.FORESTALORIENTAL,CorporationData.MONTES_DE_PLATA})) {
+%>								<input name="btnSmallCertificate" type="button" onClick="javascript:document.forms['ActivitySmallCertificateForm'].submit();"  value='<%=messages.getText("generic.messages.smallcertificate")%>' class="input"/>                    															
+<%					}
+%>
+								<input name="btnSendReports" type="button" onClick="javascript:document.forms['sendReports'].submit();"  value='<%=messages.getText("generic.messages.sendreports")%>' class="input"/>                    															
+								<!-- input name="btnAllDrivers" type="button" onClick="javascript:reportAllPDF(document.forms['ActivityReportFormAllDrivers']);"  value='<%=messages.getText("generic.messages.reportalldrivers")%>' class="input"/-->                    															
+							</td>			
+<%				}					
+				// Imprimir PDF con los reportes de todos los drivers:
+				// Al momento solo imprimo todos si se cumplen estas condiciones:
+				// 1. Esta en estado dictada
+				// 2. Es una actividad OLD (isOld), migrada del DC4 u otras definidas con otro formato de reporte
+				// 3. No es CommentaryDriveOther o BTWThailand, porque para estas actividades no se hicieron reportes aun, porque no se especificaron.
+				if (false && data.getState().getResourceBundleId().equals(CEPAActivityConstants.DICTADA)  && data.getIsOld() && 
+						!definition.equals(CEPAActivityConstants.COMMENTARYDRIVEOTHER) &&
+						!definition.equals(CEPAActivityConstants.COMMENTARYDRIVEARGENTINA) &&
+						!definition.equals(CEPAActivityConstants.COMMENTARYDRIVEARGENTINA_NUEVO) &&
+						!definition.equals(CEPAActivityConstants.COMMENTARYDRIVE_NOVARTIS) && 	
+						!definition.equals(CEPAActivityConstants.COMMENTARYDRIVE_JJ2) && 	
+						!definition.equals(CEPAActivityConstants.COMMENTARYDRIVE_RENOVATION) && 	
+						!definition.equals(CEPAActivityConstants.INITIAL_FOREIGN_EVALUATION) && 	
+						!definition.equals(CEPAActivityConstants.COMMENTARYDRIVENALCO) && 	
+						!definition.equals(CEPAActivityConstants.COMMENTARYDRIVEHIGHRISK) &&
+						data.getDefinition().isHaveIndividualReport() && drivers.size() > 0){
+%>							<td  align="right">
+								<input name="btnAllDrivers2" type="button" onClick="javascript:reportAllPDF(document.forms['ActivityReportFormAllDriversOld']);"  value='<%=messages.getText("generic.messages.reportalldrivers")%>' class="input"/>                    															
+							</td>			
+<%				}
+				if(hasTemporal) {
+%>							<td  align="right">
+								<input name="btnTemporal" type="button" onClick="javascript:document.forms['resolvetemporals'].submit();"  value='<%=messages.getText("generic.messages.resolvetemporals")%>' class="input"/>                    															
+							</td>			
+<%				}
+%>						</tr>
+<%				if(data.getState().getResourceBundleId().equals(CEPAActivityConstants.DICTADA)) {
+%>				  		<tr>   
+							<jsp:include  page='<%="../../component/spaceline.jsp?colspan=5"  %>'/>
+				  		</tr>
+						<tr>
+							<td colspan="3">
+								<jsp:include  page='<%="../../component/utilitybox2top.jsp?title="+messages.getText("generic.messages.downloads")%>' />
+								<table width="100%" cellspacing="0" cellpadding="0" class="lineone">
+									<tr class="lineone">
+										<td align="right" class="lineone" width="100%">
+											<input name="btnAllCertificate" type="button" onClick="javascript:document.forms['ActivityAllCertificateForm'].submit();"  value='<%=messages.getText("generic.messages.allcertificate")%>' class="input"/>
+<%					if(data.getDefinition().getHasForm()) {
+%>											<input name="btnAllReport" type="button" onClick="javascript:document.forms['ActivityAllReportForm'].submit();"  value='<%=messages.getText("generic.messages.allreports")%>' class="input"/>
+<%					}
+					if(sys.isCorporation(new int[] {CorporationData.DOW,CorporationData.FORESTALORIENTAL,CorporationData.MONTES_DE_PLATA})) {
+%>											<input name="btnSmallCertificate" type="button" onClick="javascript:document.forms['ActivityAllSmallCertificateForm'].submit();"  value='<%=messages.getText("generic.messages.smallcertificate")%>' class="input"/>
+<%					}
+%>										</td>
+									</tr>
+								</table>
+								<jsp:include page="../../component/utilitybox2bottom.jsp"/>	
+							</td>	
+						</tr>
+<%				}
+%>
+          			</table>              				
+				<jsp:include page="../../component/utilityboxbottom.jsp"/>	
+			</td>
+    		<td width="5">&nbsp;</td>
+    		<td>&nbsp;</td>
+  		</tr>
+  		
+<%	    // fin conductores		
+		} 
+%>
+		<!-- Archivo de la actividad  -->
+		
+  		<tr>   
+			<jsp:include  page='<%="../../component/spaceline.jsp?colspan=5"  %>'/>
+  		</tr>
+  		<tr>
+  		<td colspan="3" >
+				<jsp:include  page='<%="../../component/utilityboxtop.jsp?title="+messages.getText("generic.supportmaterial.reports.file")%>' />
+				<table width="100%">
+				<tr>
+					<td width='100%' class="guide2" align="center">
+<%		if(activityForm.getFile()!=null && activityForm.getFile().trim().length()>0){ 
+%>						<a href="ServletActivityFileDownload?idActivity=<%=idActivity%>" class="texts">
+							<%=messages.getText("generic.supportmaterial.reports.file") %>
+						</a>
+<%		} 
+%>					</td>
+				</tr>
+				</table>
+				<jsp:include page="../../component/utilityboxbottom.jsp"/>	
+			</td>							
+			</tr>
+  		<!--  Instructores para la Actividad -->
+<%		if(sys.isCorporation(CorporationData.FORESTALORIENTAL) && definition.equals(CEPAActivityConstants.SECURITY_TALK)) {
+			Collection<ActivityAttendanceData> list = activityReport.getAttendanceList(new Integer(idActivity),userSessionData);
+%>  		
+  		<tr>   
+			<jsp:include  page='<%="../../component/spaceline.jsp?colspan=5"  %>'/>
+  		</tr>
+  		<tr>
+	  		<td colspan="3" >
+				<jsp:include  page='<%="../../component/utilityboxtop.jsp?title="+messages.getText("generic.activity.attendancelist")%>' />
+				<table width="100%">
+					<tr>
+						<td class="linetwo" align="left"><%="<b>"+messages.getText("activity.attendance.count")+":</b> "+list.size()%></td>
+						<td class="linetwo" align="right">
+							<a href="javascript:viewAttendanceList()">
+								<%=messages.getText("generic.messages.list")%>
+							</a>
+						</td>
+					</tr>
+					<tr>
+						<td colspan="2">
+							<div id="attendanceList" style="display:none;">
+								<table width="100%">
+									<tr>
+										<td width='5%' class="guide2" align="center"></td>
+										<td width='25%' class="guide2" align="center">
+											<%=messages.getText("generic.driver.driverdata.corporationid")%>
+										</td>
+										<td width='30%' class="guide2" align="center">
+											<%=messages.getText("generic.driver.driverdata.firstname")%>
+										</td>
+										<td width='30%' class="guide2" align="center">
+											<%=messages.getText("generic.driver.driverdata.lastname")%>
+										</td>
+										<td width='10%' class="guide2" align="center"></td>
+									</tr>								
+<%			Iterator<ActivityAttendanceData> itList = list.iterator();
+			boolean lineone = true;
+			while(itList.hasNext()) {
+				ActivityAttendanceData attendance = itList.next();
+				String img = (attendance.isLinked()) ? "/datacenter/menu/imgs/correct.png" : "/datacenter/menu/imgs/cancel.png";
+%>				
+									<tr class='<%=(lineone) ? "lineone" : "linetwo"%>'>
+	    								<td align="center">
+	              							<img src='<%=img%>' width="25">
+              							</td>
+	    								<td align="center">
+	              							<%=attendance.getCi()%>
+              							</td>
+	    								<td align="center">
+	              							<%=attendance.getFirstName()%>
+              							</td>
+	    								<td align="center">
+	              							<%=attendance.getLastName()%>
+              							</td>
+	    								<td align="center">
+	              							<input type="button" value="..." />
+              							</td>
+              						</tr>
+<%				lineone = !lineone;
+			}
+%>								</table>
+							</div>
+						</td>
+					</tr>
+				</table>
+				<jsp:include page="../../component/utilityboxbottom.jsp"/>	
+			</td>
+		</tr>
+<%		}
+%>  		
+  		<tr>   
+			<jsp:include  page='<%="../../component/spaceline.jsp?colspan=5"  %>'/>
+  		</tr>
+  		<tr>
+  		<td colspan="3" >
+				<jsp:include  page='<%="../../component/utilityboxtop.jsp?title="+messages.getText("generic.activity.instructors")%>' />
+				<table width="100%">
+					
+							<% if (data != null && data.getInstructorsOrdered() != null && data.getInstructorsOrdered().size() > 0 ){ 
+								%>
+								<tr>
+									<td width='50%' class="guide2" align="center">
+											<%=messages.getText("generic.driver.driverdata.firstname")%>
+									</td>
+									<td width='50%' class="guide2" align="center">
+											<%=messages.getText("generic.driver.driverdata.lastname")%>
+									</td>												
+								</tr>
+								<%	
+										 // Muestro listado de instructores:
+										Iterator it8 = data.getInstructorsOrdered().iterator();
+										while (it8.hasNext()){
+												CEPAScheduleActivityInstructorData instructor = (CEPAScheduleActivityInstructorData) it8.next();
+												if (instructor != null && instructor.getUser() != null && instructor.getUser().getFirstName() != null &&
+														instructor.getUser().getLastName() != null){
+							%>
+											<tr>	
+												<td class="linetwo" align="center">
+													<%=instructor.getUser().getFirstName().toUpperCase() %>
+												</td> 
+												<td class="linetwo" align="center">
+													<%=instructor.getUser().getLastName().toUpperCase() %>
+												</td>
+											
+											</tr>
+							<%				}
+										}
+									} else{ %>
+								 	<tr><td>
+									<span class="linetwo"><%=messages.getText("generic.event.noinstructors")%></span>
+									</td></tr>
+							<% } %>
+					
+				</table>
+				<jsp:include page="../../component/utilityboxbottom.jsp"/>	
+			</td>							
+			</tr>
+  		<!-- Fin instructores de la actividad -->
+  		
+  		<!-- Observaciones de la actividad -->
+  		<% if (sys.getCorporationId() == CorporationData.JJ){
+  				// Por ahora para J&J, pero se puede habilitar para todas las empresas
+				// si se requiere.
+  		%>  		
+  		<tr>   
+			<jsp:include  page='<%="../../component/spaceline.jsp?colspan=5"  %>'/>
+  		</tr>
+  		<tr>
+  			<td colspan="3" >
+				<jsp:include  page='<%="../../component/utilityboxtop.jsp?title="+messages.getText("generic.activity.activityobservations")%>' />
+				<table>
+					<tr>
+						<td class="linetwo">
+							<% if (data.getObservations() != null && data.getObservations().trim() != "" ){ %>
+									<%=data.getObservations().trim() %>
+							<% } else{ %>
+									<span class="linetwo"><%=messages.getText("generic.event.noobservations")%></span>
+							<% } %>
+						</td>
+					</tr>
+				</table>
+				<jsp:include page="../../component/utilityboxbottom.jsp"/>	
+			</td>							
+			</tr>
+  		<%
+  			} // fin si es JJ observaciones
+  		%>
+  		
+  		<tr>   
+			<jsp:include  page='<%="../../component/spaceline.jsp?colspan=5"  %>'/>
+  		</tr>		
+<% 				if (!userSessionData.isGerente() && !userSessionData.getRole().isContractor()) { 
+%>		<tr>
+    		<td colspan="3" valign="top">
+				<jsp:include  page='<%="../../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.observations")%>' />
+				<table width="100%">
+					<tr>
+						<td width='24%' class="guide2" align="center">
+							<%=messages.getText("generic.driver.observation.date")%>
+							<%=" ("+messages.getText("generic.messages.dateformat")+")"%>
+						</td>
+						<td width='24%' class="guide2" align="center">
+							<%=messages.getText("generic.driver.observation.action")%>
+						</td>
+						<td width='24%'	class="guide2" align="center">
+							<%=messages.getText("generic.driver.observation.user")%>
+						</td>
+	    				<td width='24%'	class="guide2" align="center">
+	    					<%=messages.getText("generic.driver.observation.comment")%>
+	    				</td>
+					</tr>
+<%					Collection observations = activityReport.getObservations(new Integer(idActivity),userSessionData);
+					if(observations == null || observations.size() == 0) {
+%>					<tr>
+						<td colspan="3">
+							<span class="linetwo"><%=messages.getText("generic.event.noobservations")%></span>
+						</td>								
+				</tr>
+<%					}else {
+			    		Iterator  itObservations = observations.iterator();
+    					boolean lineone = false;
+			    		while(itObservations.hasNext()) {
+    						ActivityObservationData observation = (ActivityObservationData)itObservations.next();
+%>				<tr align=center align="right" class='<%=(lineone) ? "lineone" : "linetwo"%>'>
+	    			<td width='24%' align="right">
+	              		<%=Util.formatDate(observation.getDate())%>
+              		</td>
+<%							switch(observation.getAction().intValue()) {
+								case LogActions.CREATE:
+%>						<td width='24%' align="right"><%=messages.getText("generic.log.create")%> </td>
+<%									break;
+								case LogActions.UPDATE:
+%>						<td width='24%' align="right"><%=messages.getText("generic.log.update")%> </td>
+<%									break;
+								case LogActions.DELETE:
+%>						<td width='24%' align="right"><%=messages.getText("generic.log.delete")%> </td>
+<%									break;
+								case LogActions.INCLUDE:
+%>						<td width='24%' align="right"><%=messages.getText("generic.log.include")%> </td>
+<%									break;
+								case LogActions.EXCLUDE:
+%>						<td width='24%' align="right"><%=messages.getText("generic.log.exclude")%> </td>
+<%									break;
+								}
+%>				        <td width='24%' align="right"><%=observation.getUser()%> </td>						                
+					   	<td width='24%' align="right"><%=(observation.getComment()==null)?"----":observation.getComment()%> </td>						                
+					</tr>
+<%    							lineone = !lineone;
+				   			}
+						}
+%>				</table>
+				<jsp:include page="../../component/utilityboxbottom.jsp"/>	
+			</td>
+  		</tr>
+<% 					}
+%>			<tr>
+    			<jsp:include  page="../../component/spaceline.jsp" />
+			</tr>
+<%			line = true;	
+%>			
+			<tr>
+    			<td colspan = "3" valign="top">
+					<jsp:include  page='<%="../../component/utilitybox3top.jsp?title="+messages.getText("generic.messages.options")%>' />		
+					<table width="100%" border="0" cellpadding="0" cellspacing="0" class="texts1" >
+					
+					<!--  EDITAR ACTIVIDAD: -->
+<%				if(userSessionData.checkPermission(SecurityConstants.MODIFY_CEPASCHEDULEACTIVITY) || 
+					userSessionData.checkPermission(SecurityConstants.MODIFY_CD_ACTIVITY)   && userSessionData.canModifyActivityRegitry(data.getType().getResourceBundleId())) {								
+					if (isCommentaryDrive) {					
+						if (userSessionData.checkPermission(SecurityConstants.MODIFY_CD_ACTIVITY)) {
+							line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+						<td style="width:50%">
+							<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+							<a href="#" onClick="javascript:document.forms['edit'].submit()" class="texts" >
+								<%=messages.getText("generic.messages.edit")%>
+							</a>
+						</td>							
+					<%=(line) ? "</tr>" : "" %>							
+<%						}
+					}else { 
+						// Si es instructor, puede editar la actividad solo 
+						// si esta en estado planificado:
+						if (userSessionData.checkPermission(SecurityConstants.MODIFY_CEPASCHEDULEACTIVITY)  && userSessionData.canModifyActivityRegitry(data.getType().getResourceBundleId())) {
+							if (userSessionData.isInstructor()){
+								if (data.getState().getResourceBundleId().equals("datatype.scheduledactivitystate.prevista")) { 
+							line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+							<td style="width:50%">									
+								<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="#" onClick="javascript:document.forms['edit'].submit()" class="texts" >
+									<%=messages.getText("generic.messages.edit")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : "" %>							
+							<!-- Agregar Instructor -->	
+<%							line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+							<td style="width:50%">
+	                			<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="<%=hrefInstructor %>#" onClick="javascript:document.forms['addInstructor'].submit()" class="texts" >
+									<%=messages.getText("generic.messages.addinstructor")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : "" %>							
+<%								}						
+							}else {
+							// Los demas que tienen permiso de modificacion, puede
+							// editar la actividad en cualquier estado
+								line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+						<td style="width:50%">
+	                			<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="#" onClick="javascript:document.forms['edit'].submit()" class="texts" >
+									<%=messages.getText("generic.messages.edit")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : "" %>							
+							<!-- Agregar Instructor -->	
+<%							line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>														
+							<td style="width:50%">
+	                			<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="<%=hrefInstructor %>#" onClick="javascript:document.forms['addInstructor'].submit()" class="texts" >
+									<%=messages.getText("generic.messages.addinstructor")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : "" %>							
+<%							}
+					  	}
+					 }
+				}
+				// Fin Editar Actividad
+
+				// OPCION: DELETE
+				if((userSessionData.checkPermission(SecurityConstants.DELETE_CEPASCHEDULEACTIVITY) || 
+						userSessionData.checkPermission(SecurityConstants.DELETE_CD_ACTIVITY)) && 
+						!data.getIsOld()  && userSessionData.canModifyActivityRegitry(data.getType().getResourceBundleId())) {	
+					// Puedo borrar una actividad UNICAMENTE si no tiene conductores asignados.
+					if (drivers.size() == 0) {	
+						// Si es MonsantoAdministrator, solo puede borrar la actividad
+						// si es CommentaryDrive.
+    					if (isCommentaryDrive) {
+							if (userSessionData.checkPermission(SecurityConstants.DELETE_CD_ACTIVITY)  && userSessionData.canModifyActivityRegitry(data.getType().getResourceBundleId())) {
+							line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+						<td style="width:50%">
+							<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+							<%
+								String href1 = "javascript:setAction(document.forms['delete'],'delete');deleteIFConfirm(document.forms['delete'],'"+ messages.getText("generic.driver.driverdata.confirmdelete") + "');";
+							%>
+							<a href='<%=href1 %>' class="texts">
+								<%=messages.getText("generic.messages.delete")%>
+							</a>
+						</td>	
+					<%=(line) ? "</tr>" : "" %>							
+<%							}
+						}else {
+							if (userSessionData.checkPermission(SecurityConstants.DELETE_CEPASCHEDULEACTIVITY)  && userSessionData.canModifyActivityRegitry(data.getType().getResourceBundleId())) {							
+							line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+						<td style="width:50%">
+        					<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+        					<%
+        					String href2 = "javascript:setAction(document.forms['delete'],'delete');deleteIFConfirm(document.forms['delete'],'" + messages.getText("generic.driver.driverdata.confirmdelete") + "');";
+        					%>
+							<a href='<%=href2%>' class="texts">
+								<%=messages.getText("generic.messages.delete")%>
+							</a>
+						</td>								
+					<%=(line) ? "</tr>" : "" %>							
+<%							}
+						}	
+%>					</tr>
+<%					}					
+				}
+				if((userSessionData.checkPermission(SecurityConstants.EDIT_CEPASCHEDULEACTIVITYREGISTRY) || 
+						userSessionData.checkPermission(SecurityConstants.MODIFY_CD_ACTIVITY))
+						&& !data.getIsOld()   && userSessionData.canModifyActivityRegitry(data.getType().getResourceBundleId()) && 
+						!data.getState().getResourceBundleId().equals(CEPAActivityConstants.DICTADA)) {						
+					if (!isCommentaryDrive) {
+						if (userSessionData.checkPermission(SecurityConstants.EDIT_CEPASCHEDULEACTIVITYREGISTRY)
+								|| (userSessionData.isGerente() && (definition.equals(CEPAActivityConstants.INITIAL_FOREIGN_EVALUATION)
+								|| definition.equals(CEPAActivityConstants.SAFE_FLEET_MULTIPLIER_SPEECH)))) {
+
+							if (userSessionData.isInstructor()){
+								
+								if (data.getState().getResourceBundleId().equals("datatype.scheduledactivitystate.prevista") 
+										&& !data.getType().getResourceBundleId().equals(CEPAActivityConstants.SECURITY_TALK_KIDS)) { 
+							line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+						<td style="width:50%">
+							<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+							<%
+								String href3 = "layout.jsp?refer=/driver/DriverSearchForActivity.jsp?idActivity="+idActivity;
+							%>
+							<a href='<%=href3%>' class="texts">
+								<%=messages.getText("generic.activity.addriver")%>
+							</a>
+						</td>
+					<%=(line) ? "</tr>" : "" %>							
+<%								} 
+							}else {
+								if (!data.getType().getResourceBundleId().equals(CEPAActivityConstants.SECURITY_TALK_KIDS)) { 
+									line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+						<td style="width:50%">
+							<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+							<%
+								String href4 = "layout.jsp?refer=/driver/DriverSearchForActivity.jsp?idActivity="+idActivity;
+							%>
+							<a href='<%=href4%>' class="texts">
+								<%=messages.getText("generic.activity.addriver")%>
+							</a>
+						</td>		
+					<%=(line) ? "</tr>" : "" %>							
+<%								}
+							}
+						}							
+					}
+				}
+				if((userSessionData.checkPermission(SecurityConstants.MODIFY_CEPASCHEDULEACTIVITY) || userSessionData.checkPermission(SecurityConstants.MODIFY_CD_ACTIVITY) )  && userSessionData.canModifyActivityRegitry(data.getType().getResourceBundleId())){								
+							line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+						<td style="width:50%">
+							<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+							<a href="#" onClick="javascript:document.forms['divide'].submit()" class="texts" >
+								<%=messages.getText("generic.messages.divideactivity")%>
+							</a>
+						</td>							
+					<%=(line) ? "</tr>" : "" %>							
+<%				}
+				line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+						<td style="width:50%">
+                			<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+							<a href="#" onClick="javascript:document.forms['cancel'].submit()" class="texts">
+								<%=messages.getText("generic.messages.cancel")%>
+							</a>
+						</td>
+					</tr>
+					</table>
+					<jsp:include page="../../component/utilitybox3bottom.jsp"/>
+				</td>
+			</tr>
+  		<tr>
+			<jsp:include  page="../../component/spaceline.jsp" />
+  		</tr>   
+	</table>
+<%				}else {
+%>	<jsp:include  page='<%="/util/allowedData.jsp?message=activity.error.access.activity" %>'/>
+<%			}
+		}else{
+			dispatcher = request.getRequestDispatcher("/activity/schedule/CEPAActivityScheduleList.jsp");
+			dispatcher.forward(request,response);	
+		}
+	}
+
+	session.removeAttribute("ActivityForm"); 
+%>	

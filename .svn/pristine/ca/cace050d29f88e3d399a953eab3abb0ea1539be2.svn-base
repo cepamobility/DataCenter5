@@ -1,0 +1,10 @@
+VehicleABMFacade.java
+VehicleABMFacadeHome.java
+VehicleABMFacadeSession.java
+VehicleABMFacadeUtil.java
+VehicleReportFacade.java
+VehicleReportFacadeHome.java
+VehicleReportFacadeLocal.java
+VehicleReportFacadeLocalHome.java
+VehicleReportFacadeSession.java
+VehicleReportFacadeUtil.java

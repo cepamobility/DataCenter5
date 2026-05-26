@@ -1,0 +1,817 @@
+<%@page language="java" errorPage="../exception.jsp"
+	import="java.util.*" 
+	import="business.*" 
+	import="business.vehicle.*"
+	import="business.administration.user.*"
+	import="communication.language.*" 
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.vehicle.tables.*" 
+	import="communication.util.*"
+	import="presentation.translator.web.util.*"
+	import="presentation.translator.web.vehicle.*"
+	import="communication.administration.user.*"
+	
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld" prefix="html" %>
+
+
+<html:html>
+<%!RequestDispatcher dispatcher;
+	String context;
+	String pathView;
+	String pathMsg;
+	String pathSearch;
+	String pathLanguage;
+	Text messages;
+	SystemAccess sys;
+	Integer pageNum;
+	boolean all;
+	int pageSize;
+	String attribute;
+	String value;
+	UserSessionData userSessionData;%>
+<%
+	sys = (SystemAccess) session.getAttribute("SystemAccess");
+		userSessionData = sys.getUserSessionData();
+		String check = null;
+		if (sys.getUserSessionData().isDriver()) {
+	check = Util.checkPermission(sys,
+	SecurityConstants.DRIVER_VIEW_VEHICLE);
+		} else {
+	check = Util.checkPermission(sys,
+	SecurityConstants.VIEW_VEHICLE_LIST);
+		}
+		if (check != null) {
+	response.sendRedirect(request.getContextPath() + check);
+		} else {
+	session.setAttribute("url", "vehicle/VehicleList.jsp");
+
+	context = request.getContextPath();
+	pathMsg = "/util/jsp/message.jsp";
+	dispatcher = request.getRequestDispatcher(pathMsg);
+	dispatcher.include(request, response);
+
+	pathLanguage = "/util/jsp/language.jsp";
+
+	dispatcher = request.getRequestDispatcher(pathLanguage);
+	dispatcher.include(request, response);
+
+	messages = sys.getText();
+
+	session.setAttribute("target", "VehicleList");
+
+	boolean advanced = (request.getParameter("advanced") != null);
+
+	String status = String.valueOf(VehicleData.ACTIVE);
+	if (!Util.empty(request.getParameter("status"))) {
+		status = request.getParameter("status");
+	}
+
+	attribute = "matricula";
+
+	if (!advanced) {
+		if (request.getParameter("pageNum") != null) {
+	pageNum = new Integer(request.getParameter("pageNum"));
+		} else {
+	pageNum = new Integer(1);
+		}
+	} else {
+		if (session.getAttribute("vehicleForm") != null) {
+	pageNum = new Integer(
+			((VehicleAdvancedSearchForm) session.getAttribute("vehicleForm")).getPageNum());
+		} else {
+	if (request.getParameter("pageNum") != null) {
+		pageNum = new Integer(request.getParameter("pageNum"));
+	} else {
+		pageNum = new Integer(1);
+	}
+		}
+	}
+
+	if (request.getParameter("attribute") != null) {
+		attribute = request.getParameter("attribute");
+	}
+	
+	value = "";
+	if (request.getParameter("value") != null) {
+		value = request.getParameter("value");
+	}
+	
+	pageSize = 10;
+	if (session.getAttribute("vehicleForm") != null) {
+		pageSize = (new Integer(
+		((VehicleAdvancedSearchForm) session.getAttribute("vehicleForm")).getCount())).intValue();
+	}else if (request.getParameter("pageSize") != null) {
+		pageSize = Integer.parseInt(request.getParameter("pageSize"));
+	}
+	
+	int first = 0; //  + ((pageNum-1) * pageSize);
+	
+	int count = pageSize;
+	
+	all = !Util.empty(request.getParameter("all"))
+	&& request.getParameter("all").equals("true");
+	if (all) {
+		count = -1;
+	} else {
+		first = (pageNum.intValue() - 1) * pageSize;
+	}
+	VehicleReportFacade vehicleReportFacade = sys.getVehicleReportFacade();
+	String link = "/datacenter/vehicle/VehicleList.jsp";
+	if (!advanced) {
+		session.setAttribute("vehicleSearchList",
+		vehicleReportFacade.findVehicleList(attribute,
+				value, first, count, Integer.parseInt(status), userSessionData));
+	}else {
+		VehicleAdvancedSearchForm form = null;
+		if(session.getAttribute("vehicleForm") != null) {
+		    form = (VehicleAdvancedSearchForm)session.getAttribute("vehicleForm");
+		}else {
+		    form = new VehicleAdvancedSearchForm();
+		    form.setPageNum((String)request.getParameter("pageNum"));
+		    form.setCount((String)request.getParameter("pageSize"));
+		    form.setStatus((String)request.getParameter("status"));
+		    form.setNextLink(link);
+		}
+		session.setAttribute("VehicleAdvancedSearchForm",form);			
+		
+	}
+	int[][] principalDivOrgs = userSessionData.getFilter()
+	.getPrincipalDivOrgs();
+	String[] principalLabels = sys.getUserSessionData()
+	.getFilter().getPrincipalLabels();
+	
+	boolean isMonsanto = (sys.getCorporationId() == CorporationData.MONSANTO);
+	
+	
+	int corporationId = sys.getCorporationId();
+//			Datos Opcionales de Vehiculos (Camiones Brasil), en particular para KLABIN
+	boolean hasOptionalData = false;
+	if (corporationId == CorporationData.KLABIN || 
+	corporationId == CorporationData.YOLI ||
+	        corporationId == CorporationData.CIMSA ||
+	        corporationId == CorporationData.PEPSICO){
+		// Cimsa y Pepsico usan la matricula como numero economico
+		// y el campo prefijo de optionaInfo como matricula
+		
+		hasOptionalData = true;
+	}
+%>
+
+<script language="javascript"
+	src='/datacenter/menu/js/driverFunctions.js' type='text/javascript'>
+</script>
+<script language="javascript"
+	src='/datacenter/util/js/Prepared_Parameters.js' type='text/javascript'>
+</script>
+<script language="JavaScript" type="text/javascript">
+function submitPagination(page,all) {
+	document.forms[2].all.value = all;
+	document.forms[2].pageNum.value = page;
+	document.forms[2].submit();
+}
+
+function setAction(form,action){
+	if(preparedCheckboxParameters(form)) {
+		form.action.value=action;
+		form.submit();
+	}
+}
+</script>
+<!-- VehicleList.jsp -->
+<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+<head>
+<META http-equiv="Cache-Control" content="no-cache">
+<META http-equiv="Pragma" content="no-cache">
+<META http-equiv="Expires" content="-1">
+</head>
+
+<body bgcolor="#FFFFFF">
+
+<table width='<%=(isMonsanto)?"900":"850"%>' border='0' align='center' cellpadding='0' cellspacing='0'>
+	<tr class="guide1">
+		<jsp:include
+			page='<%="../component/titlecomponent.jsp?title="
+									+ messages
+											.getText("web.vehicle.vehiclelist.systemvehicles")%>' />
+	</tr>
+	<tr>
+		<jsp:include page="../component/spaceline.jsp" />
+	</tr>
+	<tr>
+		<td>
+		<table width="100%" border="0" align="center" cellpadding="0"
+			cellspacing="0">
+			<tr>
+				<%
+					if (!advanced) {
+				%>
+				<td width="100%" valign="top"><jsp:include
+					page='<%="../component/utilitybox3top.jsp?title="
+								+ messages.getText("generic.messages.options")%>' />
+				<%
+					if (!sys.getUserSessionData().isDriver() &&
+											userSessionData.checkPermission(SecurityConstants.CREATE_VEHICLE)) {
+				%>
+				<table width="100%" height="40" cellpadding="0" cellspacing="0"
+					border="0">
+					<tr>
+						<td valign="middle" width="5%" align="left"><img
+							align="middle" border="0"
+							src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;</td>
+						<td valign="middle" align="left" width="95%"><a
+							href="layout.jsp?refer=/vehicle/create.jsp?target=VehicleList"
+							class="texts"> <%=messages.getText("generic.messages.addvehicle")%>
+						</a></td>
+					</tr>
+
+				</table>
+
+				<%
+					} // not driver && permiso para crear vehiculos
+				%> <jsp:include page="../component/utilitybox3bottom.jsp" /></td>
+				<%
+					}
+				%>
+			</tr>
+			<%
+				if (advanced) {
+			%>
+
+			<tr>
+				<td width="100%" valign="top" colspan="3"><jsp:include
+					page='<%="../component/utilitybox3top.jsp?title="
+								+ messages.getText("generic.messages.options")%>' />
+				<%
+					if (sys.getUserSessionData().isDriver()) {
+													if (userSessionData
+															.checkPermission(SecurityConstants.DRIVER_CREATE_VEHICLE)) {
+				%>
+				<table width="100%" height="40" cellpadding="0" cellspacing="0"
+					border="0">
+					<tr>
+						<td valign="middle" width="5%" align="left"><img
+							align="middle" border="0"
+							src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;</td>
+						<td valign="middle" width="95%"><a
+							href="layout.jsp?refer=/vehicle/create_vehicle_data.jsp"
+							class="texts"> <%=messages
+														.getText("generic.messages.addvehicle")%>
+						</a></td>
+					</tr>
+				</table>
+				<%
+					}
+												} else {
+													if (userSessionData
+															.checkPermission(SecurityConstants.CREATE_VEHICLE)) {
+				%>
+				<table width="100%" height="40" cellpadding="0" cellspacing="0"
+					border="0">
+					<tr>
+						<td valign="middle" width="5%" align="left"><img
+							align="middle" border="0"
+							src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;</td>
+						<td valign="middle" width="95%"><a
+							href="layout.jsp?refer=/vehicle/create.jsp?target=VehicleList"
+							class="texts"> <%=messages
+														.getText("generic.messages.addvehicle")%>
+						</a></td>
+					</tr>
+				</table>
+				<%
+					}
+												}
+				%> <jsp:include page="../component/utilitybox3bottom.jsp" /></td>
+			</tr>
+			<%
+				}
+			%>
+
+		</table>
+		</td>
+	</tr>
+	<tr>
+		<jsp:include page="../component/spaceline.jsp" />
+	</tr>
+	<tr>
+		<td valign="top" <%=(advanced) ? "colspan=3" : "width='60%'"%>
+			height="100%"><jsp:include
+			page='<%="../component/utilityboxtop.jsp?title="
+							+ messages.getText("generic.messages.search")%>' />
+		<table width="100%" height="100%" border="0" cellpadding="0"
+			cellspacing="0">
+			<tr>
+				<td width="100%">
+				<%
+					if (advanced) {
+				%> <jsp:include
+					page='<%="../vehicle/advancedSearch.jsp?pageNum="
+								+ first + "&count=" + count + "&status="
+								+ status%>' />
+
+				<%
+					} else {
+				%>
+				<form id="VehicleList" name="VehicleList"
+					action="layout.jsp?refer=/vehicle/VehicleList.jsp" method="post">
+				<table width="100%" height="100%" border="0" cellpadding="0"
+					cellspacing="0">
+					<tr>
+						<td width="13%" align="left" class="texts"><input
+							type="hidden" name="pageNum" value='<%=String.valueOf(pageNum)%>' />
+						<input type="hidden" name="all" <%=(all) ? "value='all'" : ""%> />
+						<%=messages
+												.getText("generic.vehicle.vehicledata.registrationNumber")%>:
+						</td>
+						<td width="87%" colspan="2" align="left"><input type="text"
+							name="value" value='<%=value%>' size="40" class="input">
+						<input type="hidden" name="pageSize" value='<%=pageSize%>'>
+						</td>
+					</tr>
+					<tr>
+						<td height="20" colspan="3" align="left" valign="top"
+							class="texts">
+						<table width="87%" border="0" align="right" cellpadding="0"
+							cellspacing="0" class="specialarea">
+							<tr>
+								<td width="12%" valign="middle"><input type="radio"
+									class="specialarea" name="status"
+									value='<%=VehicleData.ACTIVE%>'
+									<%=(Integer.parseInt(status) == VehicleData.ACTIVE) ? "checked"
+										: ""%>>
+								<%=messages.getText("generic.messages.active")%></td>
+								<td width="15%" valign="middle"><input type="radio"
+									class="specialarea" name="status"
+									value='<%=VehicleData.EXCLUDED%>'
+									<%=(Integer.parseInt(status) == VehicleData.EXCLUDED) ? "checked"
+										: ""%>>
+								<%=messages
+												.getText("generic.messages.excluded")%></td>
+								<td width="73%" align="left" valign="middle"><input
+									type="radio" class="specialarea" name="status"
+									value='<%=VehicleData.ALL%>'
+									<%=(Integer.parseInt(status) == VehicleData.ALL) ? "checked"
+										: ""%> />
+								<%=messages.getText("generic.messages.all.pl")%></td>
+							</tr>
+						</table>
+						</td>
+					</tr>
+					<tr>
+						<td height="10" colspan="3"><img src="x" width="1" height="1">
+						</td>
+					</tr>
+					<tr>
+						<td align="right" colspan="3">
+						<table width="100%" height="100%" border="0" cellspacing="0"
+							cellpadding="0">
+							<tr>
+								<td align="left" width="5%" valign="middle"><img
+									align="middle" border="0"
+									src="/datacenter/util/imgs/icon1.jpg" width="12" height="12"></td>
+
+								<td align="left" width="60%" valign="middle">
+									<a href='layout.jsp?refer=/vehicle/VehicleList.jsp?advanced=true&pageNum=<%=String.valueOf(pageNum)%>' class="texts"><%=messages
+												.getText("generic.messages.advancedsearch")%>
+								</a></td>
+								<td height="14" width="35%" align="right" valign="bottom">
+								<input name="button" type="button"
+									onClick="javascript:document.forms[2].submit();"
+									value='<%=messages.getText("generic.messages.search")%>'
+									class="input" /></td>
+							</tr>
+						</table>
+						</td>
+					</tr>
+				</table>
+				</form>
+				<%
+					}
+				%>
+				</td>
+			</tr>
+		</table>
+		<jsp:include page="../component/utilityboxbottom.jsp" /></td>
+		<%
+			if (!advanced) {
+		%>
+
+		<%
+			}
+		%>
+	</tr>
+	<%
+		if (advanced) {
+	%>
+
+
+	<%
+		}
+	%>
+	<tr>
+		<jsp:include page="../component/spaceline.jsp" />
+	</tr>
+	<tr>
+		<td colspan="3"><jsp:include
+			page='<%="../component/utilityboxtop.jsp?title="
+									+ messages
+											.getText("web.vehicle.vehiclelist.systemvehicles")%>' />
+		<table width="100%" border="0" align='center' cellpadding="0"
+			cellspacing="0">
+			<tr>
+				<td width="100%">
+	<%!
+	ListResult col;
+	Iterator iter;
+	//		VehicleMainAttributes vehicle;
+	VehicleData vehicle;
+	int i;
+	String uid;
+	int pageMax;
+	int contIter;
+	int total;
+
+	String division = "";
+	String subdivision = "";%>
+<%
+	col = (ListResult) session.getAttribute("vehicleSearchList");
+ 	total = col.getTotal();
+ 	if (all) pageSize = total; // Added 4/Set/2006		
+ 	if (col != null && col.getElements().isEmpty()) {
+%>
+				<table width="100%" border="0">
+					<tr align="center">
+						<td width='5%' class="guide2"></td>
+						<td width='19%' class="guide2">
+							<%=messages.getText("generic.vehicle.vehicledata.registrationNumber")%>
+						</td>
+						<%
+							if (corporationId == CorporationData.PEPSICO){ 
+																// Para los que tienen numero economico en matricula, agrego el prefijo
+																// para mostrar la matricula:
+						%>												
+						<td width='19%' class="guide2">
+							<%=messages.getText("generic.vehicle.vehicledata.prefix")%>
+						</td>
+						<%
+							}
+						%>					
+												
+						<td width='19%' class="guide2">
+							<%=messages.getText("generic.vehicle.vehicledata.year")%>
+						</td>
+						<td width='19%' class="guide2">
+							<%=messages.getText("generic.vehicle.vehicledata.country")%>
+						</td>
+						<td width='19%' class="guide2">
+							<%=messages.getText("generic.driver.driverdata.exclusiondate")%>
+							<%=" "+ messages.getText("generic.messages.dateformat")%>
+						</td>
+					</tr>
+				</table>
+				<%=messages.getText("generic.messages.notresult")%> <%
+ 	} else {
+   				if (col != null) {
+   					contIter = 0;
+   					iter = col.getElements().iterator();
+   					contIter = 0;
+ %>
+				<form name="VehicleExclusion" action="layout.jsp?refer=/vehicle/VehicleExclusion.jsp"
+					method="post">
+				<table width="100%" border="0">
+					<tr align="center">
+						<%
+							if (userSessionData
+																					.checkPermission(SecurityConstants.DELETE_VEHICLE)
+																					|| userSessionData
+																							.checkPermission(SecurityConstants.MODIFY_VEHICLE)) {
+						%>
+						<td width='5%' class="guide2"></td>
+						<%
+							}
+						%>
+						<td width='10%' class="guide2"><%=messages
+													.getText("generic.vehicle.vehicledata.registrationNumber")%>
+						</td>
+						<%
+							if (corporationId == CorporationData.PEPSICO){ 
+																// Para los que tienen numero economico en matricula, agrego el prefijo
+																// para mostrar la matricula:
+						%>												
+						<td width='10%' class="guide2">
+							<%=messages.getText("generic.vehicle.vehicledata.prefix")%>
+						</td>
+						<%
+							}
+						%>	
+						
+						
+						<td width='<%=(isMonsanto)?"10%":"13%"%>' class="guide2"><%=messages
+													.getText("generic.vehicle.vehicledata.year")%></td>
+						<td width='<%=(isMonsanto)?"10%":"14%"%>' class="guide2"><%=messages
+													.getText("generic.vehicle.vehicledata.country")%></td>
+						<%
+							for (int i = 0; i < principalLabels.length; i++) {
+						%>
+						<td width='<%=(isMonsanto)?"10%":"14%"%>' class="guide2"><%=messages.getText(principalLabels[i])%></td>
+						<%
+							}
+						%>
+
+						<%
+							if (sys.getCorporationId() == CorporationData.MONSANTO){
+															// si es monsanto muestro inclusionDate.
+						%>
+						<td width='<%=(isMonsanto)?"13%":"13%"%>' class="guide2">
+							<%=messages.getText("generic.driver.driverdata.inclusiondate")%>
+							<%=" "+ messages.getText("generic.messages.dateformat")%>
+						</td>
+						<%
+							} // fin monsanto
+						%>
+
+
+						<td width='<%=(isMonsanto)?"12%":"13%"%>' class="guide2"><%=messages
+													.getText("generic.driver.driverdata.exclusiondate")%><%=" "
+											+ messages
+													.getText("generic.messages.dateformat")%></td>
+					</tr>
+					<%
+						while (iter.hasNext()
+																		&& (contIter < pageSize || all)) {
+																	contIter++;
+																	//    				vehicle=(VehicleMainAttributes)iter.next();
+																	vehicle = (VehicleData) iter.next();
+					%>
+					<tr align=center align="right"
+						class='<%=((contIter % 2) == 0) ? "lineone"
+												: "linetwo"%>'>
+						<%
+							if (userSessionData.checkPermission(SecurityConstants.DELETE_VEHICLE)
+																|| userSessionData.checkPermission(SecurityConstants.MODIFY_VEHICLE)) {
+						%>
+						<td width='5%' align="center"><input type='checkbox'
+							name='<%=vehicle.getId()%>' value='<%=vehicle.getId()%>'></td>
+						<%
+							}
+						%>
+						<td width='10%' align="right">
+						<%
+							if (userSessionData.checkPermission(SecurityConstants.EDIT_VEHICLE)
+															|| (userSessionData.isDriver() && 
+																	userSessionData.checkPermission(SecurityConstants.DRIVER_EDIT_VEHICLE))) {
+						%> <a href='layout.jsp?refer=/vehicle/VehicleView.jsp?id=<%=vehicle.getId()%>'>
+								
+								<%=vehicle.getMatricula()%> </a> <%
+ 	} else {
+ %> <%=vehicle.getMatricula()%> <%
+ 	}
+ %>
+						</td>
+						
+						<%
+													if (corporationId == CorporationData.PEPSICO){ 
+																												// Para los que tienen numero economico en matricula, agrego el prefijo
+																												// para mostrar la matricula:
+												%>												
+						<td width='10%' align="right">
+							<%=(vehicle.getOptionalInfo() != null && 
+									vehicle.getOptionalInfo().getPrefix() != null &&
+									vehicle.getOptionalInfo().getPrefix().trim() != "") ? 
+										vehicle.getOptionalInfo().getPrefix():"---"%>
+						</td>
+						<%
+							}
+						%>	
+						
+						<td width='<%=(isMonsanto)?"10%":"13%"%>' align="right"><%=vehicle.getYear()%></td>
+						<td width='14%' align="right"><%=messages.getText(vehicle
+												.getCountryName())%>
+						</td>
+
+						<%
+							for (int i = 0; i < principalLabels.length; i++) {
+																					division = vehicle.getData(
+																							VehicleData.DIV_ORG,
+																							principalDivOrgs[i][0],
+																							principalDivOrgs[i][1]);
+						%>
+						<td width='<%=(isMonsanto)?"10%":"14%"%>' align='right'><%=division%></td>
+
+						<%
+							}
+						%>
+
+						<%
+							if (sys.getCorporationId() == CorporationData.MONSANTO){
+															// si es monsanto muestro inclusionDate.
+						%>
+						<td width='<%=(isMonsanto)?"13%":"13%"%>' align="right">
+							<%=( (vehicle.getInclusionDate() == null) ? "---"
+								: Util.formatDate(vehicle.getInclusionDate()))%>
+						</td>
+						<%
+							} // fin monsanto
+						%>
+						
+
+						<td width='<%=(isMonsanto)?"12%":"13%"%>' align="right">
+						<%=(vehicle.getExclusionDate() == null ? "---"
+										: Util.formatDate(vehicle.getExclusionDate()))%>
+
+						</td>
+					</tr>
+					<%
+						}
+					%>
+				</table>
+				<input type="hidden" name="checkboxParamList" /> 
+				<input type="hidden" name="action" />
+			</form>
+				<table width='100%' border="0" cellpadding="0" cellspacing="0" class="default">
+					<tr>
+						<td class="linetwo" align="right">
+						<%
+							if (userSessionData.checkPermission(SecurityConstants.MODIFY_VEHICLE)) {
+						%>
+						<input name="button2" type="button"
+							onClick="javascript:setAction(document.forms[3],'exclude');"
+							value='<%=messages
+														.getText("generic.driver.exclude")%>'
+							class="input" /> <input name="button2" type="button"
+							onClick="javascript:setAction(document.forms[3],'include');"
+							value='<%=messages
+														.getText("generic.messages.include")%>'
+							class="input" /> <%
+ 	}
+ 					if (userSessionData
+ 							.checkPermission(SecurityConstants.DELETE_VEHICLE)) {
+ %> <input name="button2" type="button"
+							onClick="javascript:setAction(document.forms[3],'delete');"
+							value='<%=messages.getText("generic.messages.delete")%>'
+							class="input" /> <%
+ 	}
+ %>
+						</td>
+					</tr>
+				</table>
+				</td>
+			</tr>
+			<tr>
+				<td>
+				<%
+					Hashtable paginationParameters = new Hashtable();
+									paginationParameters.put("attribute", attribute);
+									paginationParameters.put("value", value);
+									paginationParameters.put("advanced", String
+											.valueOf(advanced));
+									paginationParameters.put("status", String
+											.valueOf(2));
+									session.setAttribute("paginationParameters",
+											paginationParameters);
+				%> <jsp:include
+					page='<%="../util/pagination2.jsp?size="
+									+ pageSize + "&num="
+									+ String.valueOf(pageNum) + "&total="
+									+ String.valueOf(total) + "&link=" + link%>' />
+				</td>
+			</tr>
+			<%
+				}
+						}
+			%>
+		</table>
+		<jsp:include page="../component/utilityboxbottom.jsp" /></td>
+	</tr>
+	<tr>
+		<jsp:include page="../component/spaceline.jsp" />
+	</tr>
+	<tr>
+		<td>
+		<table width="100%" border="0" align="center" cellpadding="0"
+			cellspacing="0" dwcopytype="CopyTableCell">
+			<tr>
+				<%
+					if (!advanced) {
+				%>
+				<td width="100%" valign="top"><jsp:include
+					page='<%="../component/utilitybox3top.jsp?title="
+								+ messages.getText("generic.messages.options")%>' />
+				<%
+					if (sys.getUserSessionData().isDriver()) {
+									//				if(userSessionData.checkPermission(SecurityConstants.DRIVER_CREATE_VEHICLE)) {	
+									if (false) {
+				%>
+				<table width="100%" height="40" cellpadding="0" cellspacing="0"
+					border="0">
+					<tr>
+						<td valign="middle" width="5%" align="left"><img
+							align="middle" border="0"
+							src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;</td>
+						<td valign="middle" align="left" width="95%" align="left">
+							<a	href='layout.jsp?refer=/vehicle/create_vehicle_data.jsp'
+							class="texts" > <%=messages
+														.getText("generic.messages.addvehicle")%>
+						</a></td>
+					</tr>
+				</table>
+				<%
+					}
+								} else {
+									if (userSessionData
+											.checkPermission(SecurityConstants.CREATE_VEHICLE)) {
+				%>
+				<table width="100%" height="40" cellpadding="0" cellspacing="0"
+					border="0">
+					<tr>
+						<td align="left" width="5%" valign="middle"><img
+							align="middle" border="0"
+							src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;</td>
+						<td valign="middle" align="left" width="95%" align="left"><a
+							href='layout.jsp?refer=/vehicle/create.jsp?target=VehicleList'
+							class="texts" > <%=messages.getText("generic.messages.addvehicle")%>
+						</a></td>
+					</tr>
+
+				</table>
+
+				<%
+					}
+								}
+				%> <jsp:include page="../component/utilitybox3bottom.jsp" /></td>
+				<%
+					}
+				%>
+			</tr>
+			<%
+				if (advanced) {
+			%>
+			<tr>
+				<td valign="top" colspan="3"><jsp:include
+					page='<%="../component/utilitybox3top.jsp?title="
+								+ messages.getText("generic.messages.options")%>' />
+				<%
+					if (sys.getUserSessionData().isDriver()) {
+									if (userSessionData
+											.checkPermission(SecurityConstants.DRIVER_CREATE_VEHICLE)) {
+				%>
+				<table width="100%" height="40" cellpadding="0" cellspacing="0"
+					border="0">
+					<tr>
+						<td align="left" width="5%" valign="middle"><img
+							align="middle" border="0"
+							src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;</td>
+						<td align="left" width="95%" valign="middle"><a
+							href='layout.jsp?refer=/vehicle/create_vehicle_data.jsp'
+							class="texts"> <%=messages
+														.getText("generic.messages.addvehicle")%>
+						</a></td>
+					</tr>
+				</table>
+				<%
+					}
+								} else {
+									if (userSessionData
+											.checkPermission(SecurityConstants.CREATE_VEHICLE)) {
+				%>
+				<table width="100%" height="40" cellpadding="0" cellspacing="0"
+					border="0">
+					<tr>
+						<td align="left" width="5%" valign="middle"><img
+							align="middle" border="0"
+							src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;</td>
+						<td align="left" width="95%"><a
+							href='layout.jsp?refer=/vehicle/create.jsp?target=VehicleList'
+							class="texts"> <%=messages.getText("generic.messages.addvehicle")%>
+						</a></td>
+					</tr>
+				</table>
+				<%
+					}
+								}
+				%> <jsp:include page="../component/utilitybox3bottom.jsp" /></td>
+			</tr>
+
+			<%
+				}
+			%>
+			<tr>
+				<jsp:include page="../component/spaceline.jsp" />
+			</tr>
+		</table>
+		</td>
+	</tr>
+</table>
+
+</td>
+</table>
+</body>
+<%
+	}
+%>
+</html:html>

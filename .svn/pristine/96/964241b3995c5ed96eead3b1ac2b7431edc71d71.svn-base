@@ -1,0 +1,198 @@
+package communication.driver.report;
+
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.List;
+import java.util.StringTokenizer;
+
+import javax.swing.table.AbstractTableModel;
+
+import communication.language.Text;
+import communication.util.ListResult;
+
+public class HistoryPointQueryData extends AbstractTableModel implements Serializable {
+
+    private static final long serialVersionUID = 1L;
+    
+    private int total = 0;
+    private int cantReg = 0;
+    private HistoryPointDataType[] attributes;
+    private boolean color = true;
+    private Text messages;
+    private Integer lastId = new Integer(0);
+	private boolean excel;
+
+    public HistoryPointQueryData() {
+        total = 0;
+        attributes = new HistoryPointDataType[0];
+        cantReg = 0;
+    }
+    
+    public HistoryPointQueryData(ListResult result, Text messages, boolean excel) {
+    	Collection elements = result.getElements();
+    	Collections.sort((List)elements);
+        attributes = (HistoryPointDataType[])elements.toArray(new HistoryPointDataType[0]);
+        this.cantReg = attributes.length;
+        this.total = result.getTotal();
+        this.messages = messages;
+        this.excel = excel;
+    }
+
+    public int getRowCount() {
+        return cantReg;
+    }
+
+    public int getColumnCount() {
+        return 17;
+    }
+
+    public Object getValueAt(int rowIndex, int columnIndex) {
+    	String result;
+    		    	
+    	
+        switch(columnIndex) {
+            case 0:
+                return String.valueOf(attributes[rowIndex].getId());
+            case 1:	            	
+            	if (!lastId.equals(attributes[rowIndex].getId())){	            		
+            		result = attributes[rowIndex].getFirstname();
+            	}else{
+            		result = "";
+            	}	            		
+                return (result != null)?result:"";
+            case 2:
+            	if (lastId.equals(attributes[rowIndex].getId()))
+            		result = "";
+            	else
+            		result = attributes[rowIndex].getDivorg1();
+                return (result != null) ? result : "";
+            case 3:
+            	if (lastId.equals(attributes[rowIndex].getId()))
+            	 	result = "";
+            	else
+                    result = attributes[rowIndex].getDivorg2();
+                return (result != null)?result:"";
+            case 4:
+            	if (lastId.equals(attributes[rowIndex].getId()))
+            		result = "";
+            	else
+                    result = attributes[rowIndex].getDivorg3();
+                return (result != null)?result:"";
+            case 5:            	
+            	if (lastId.equals(attributes[rowIndex].getId()))
+            		result = "";
+            	else
+            		result = messages.getText(attributes[rowIndex].getCountry());
+            	return (result != null) ? result:"";
+            case 6:   
+	            if (!lastId.equals(attributes[rowIndex].getId())){
+	            	color = !color;
+	            }
+                return new Boolean(color);
+            case 7:
+            	return new Integer(total);
+            case 8:
+                if (!excel && !lastId.equals(attributes[rowIndex].getId())){
+                    lastId = attributes[rowIndex].getId();
+                }
+            	return attributes[rowIndex].getDate();
+            case 9:
+            	result = messages.getText(attributes[rowIndex].getType());
+            	return (result != null)?result:"";
+            case 10:
+            	result = messages.getText(attributes[rowIndex].getClasification());
+            	return (result != null)?result:"";
+            case 11:
+            	result = messages.getText(attributes[rowIndex].getResult());	            	            	
+            	return (result != null)?result:"";
+            case 12:
+            	if (lastId.equals(attributes[rowIndex].getId()))
+            		result = "";
+            	else
+                    result = attributes[rowIndex].getDivorg4();
+                return (result != null)?result:"";
+            case 13:	            	
+            	if (!lastId.equals(attributes[rowIndex].getId())){	            		
+            		result = attributes[rowIndex].getLastname();
+            	}else{
+            		result = "";
+            	}	            		
+                return (result != null)?result:"";
+            case 14:	            	
+            	if (!lastId.equals(attributes[rowIndex].getId())){	            		
+            		result = attributes[rowIndex].getCorporationId();
+            	}else{
+            		result = "";
+            	}	            		
+                return (result != null)?result:"";
+            case 15:	            	
+            	if (!lastId.equals(attributes[rowIndex].getId())){	            		
+            		return (attributes[rowIndex].getTotal() == null) ? "0" : String.valueOf(attributes[rowIndex].getTotal());
+            	}else{
+            		return "";
+            	}	            		
+            case 16:	            	
+            	return (attributes[rowIndex].getPoints() == null) ? "" : String.valueOf(attributes[rowIndex].getPoints());
+        }
+        return "";
+    }
+
+    public String getColumnName(int column) {
+        switch(column) {
+            case 0:
+                return "id";
+            case 1:
+                return "firstname";
+            case 2:
+                return "divorg1";
+            case 3:
+                return "divorg2";
+            case 4:
+                return "divorg3";
+            case 5:
+            	return "country";
+            case 6:
+            	return "color";
+            case 7:
+            	return "total";
+            case 8:
+            	return "date";
+            case 9:
+            	return "type";
+            case 10:
+            	return "clasification";
+            case 11:
+            	return "result";
+            case 12:
+                return "divorg4";
+            case 13:
+                return "lastname";
+            case 14:
+                return "corporationId";
+            case 15:
+                return "totalPoints";
+            case 16:
+                return "points";
+        }
+        return "";
+    }
+    
+	public int getTotal() {
+		return total;
+	}
+
+    private String transformDate(String date) {
+        String result = "";
+        StringTokenizer tokenizer = new StringTokenizer(date,"-");
+        if(tokenizer.hasMoreTokens()) {
+            result = tokenizer.nextToken();
+            while(tokenizer.hasMoreTokens()) {
+                result = tokenizer.nextToken() + "/" + result;
+            }
+        }
+        return result;
+    }
+}
+
+

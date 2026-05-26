@@ -1,0 +1,49 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.log.driver">
+    <class name="DriverLog" table="driverlog">
+
+       <composite-id class="DriverLogPK" name="pk" >
+	        <key-property	name="driver"	type="java.lang.Integer"		column="driver"/>
+	        <key-property	name="userId"	type="java.lang.String"		column="userid"/>
+	        <key-property	name="date"		type="java.util.Date"		column="date"/>
+       </composite-id>
+        
+        <property	name="action"			type="java.lang.Integer"		column="action"		not-null="true" />
+        <property	name="comment"			type="java.lang.String"		column="comment"	not-null="true" />
+
+        <property	name="firstName"			type="java.lang.String"		column="firstName"		not-null="true" />
+        <property	name="lastName"			type="java.lang.String"		column="lastName"		not-null="true" />
+        <property	name="birthDate"			type="java.util.Date"		column="birthDate"		not-null="true" />
+        <property 	name="sex" 				type="java.lang.String"		column="sex" not-null="true"/>
+        <property	name="nationality"		type="java.lang.String"		column="nationality"	 />
+        <property	name="city"				type="java.lang.String"		column="city"			/>
+        <property	name="personalAddress"	type="java.lang.String"		column="personalAddress"/>
+
+
+        <property 	name="corporation" 		type="java.lang.Integer" 	column="corporation" not-null="true"/>
+        <property 	name="country" 			type="java.lang.Integer" 	column="country" not-null="true"/>
+        <property 	name="geoLevel1" 		type="java.lang.Integer" 	column="geolevel1" />
+        <property	name="divOrg1"			type="java.lang.Integer"		column="divorg1"	/>
+        <property	name="divOrg2"			type="java.lang.Integer"		column="divorg2"	/>
+        <property	name="divOrg3"			type="java.lang.Integer"		column="divorg3"	/>
+         
+        <property	name="corporationId"		type="java.lang.String"		column="corporationId" />
+        <property	name="email"			type="java.lang.String"		column="email"			/>
+        <property	name="inclusionDate"	type="java.util.Date"		column="inclusionDate" />
+        <property	name="phoneNumber"		type="java.lang.String"		column="phoneNumber"	/>
+        <property	name="officeAddress"		type="java.lang.String"		column="officeAddress"	/>
+        <property	name="exclusionDate"	type="java.util.Date"		column="exclusionDate"	/>
+
+        <property	name="licenseNumber"	type="java.lang.String"		column="licenseNumber"/>
+        <property	name="licenseCategory"	type="java.lang.String"		column="licenseCategory"/>
+        <property	name="licenseExpiry"	type="java.util.Date"		column="licenseExpiry"	/>
+        <property	name="licenseGet"		type="java.util.Date"		column="licenseGet"		/>
+        <property	name="vehicleAllowed"	type="java.lang.String"		column="vehicleAllowed"	/>
+
+
+    </class>
+</hibernate-mapping>

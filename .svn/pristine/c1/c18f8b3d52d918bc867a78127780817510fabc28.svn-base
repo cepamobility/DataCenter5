@@ -1,0 +1,426 @@
+<%@page language="java" 
+	errorPage="../../exception.jsp"
+	import="business.*"
+	import="business.activity.*"
+	
+	
+	import="business.datatype.*"
+	import="communication.datatype.*"
+	import="communication.datatype.tables.*"
+	
+	
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.activity.tables.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.util.*"
+	import="communication.driver.tables.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.activity.schedule.*" 	
+ 	import="communication.administration.user.*" 	
+ 	import="communication.datatype.tables.ActivityTypeDataType"
+	import="business.activity.ActivityReportFacade"
+	import="java.util.*"	
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+<!-- Btw1NewForm.jsp  -->
+
+<%!
+	RequestDispatcher dispatcher; 
+	boolean esMonsanto;
+	String context;String pathView; String pathMsg; 
+	String pathSearch;
+	String pathLanguage; Text messages; SystemAccess sys;
+	Integer pageNum; boolean all; int pageSize; 
+	String attribute; String value;
+	UserSessionData userSessionData; 
+	ActivityReportFacade activityReport;
+	String str1, str2, str3,col, idActivity, idDriver;
+	CEPAActivityScheduleData  activityData;
+	
+	String enabled, url = "";
+	int columns;
+	DriverData driver;
+	CEPAActivityScheduleRegistryData registryData;
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	userSessionData=sys.getUserSessionData();	
+	String check = Util.checkPermission(sys,SecurityConstants.CREATE_CEPASCHEDULEACTIVITYREGISTRY);	
+	String check1 = Util.checkPermission(sys,SecurityConstants.CREATE_CD_ACTIVITY);		
+	
+	if ((check!=null) && (check1!=null)) 
+	{
+		response.sendRedirect(request.getContextPath()+check);
+	}
+	else 
+	{
+		messages=sys.getText();
+		pathLanguage="/util/jsp/language.jsp";	
+		dispatcher=request.getRequestDispatcher(pathLanguage);
+		dispatcher.include(request,response);
+	
+		context=request.getContextPath();
+		pathMsg="/util/jsp/message.jsp";
+	
+			
+		dispatcher=request.getRequestDispatcher(pathMsg);
+		dispatcher.include(request,response);
+
+		idActivity =(String)request.getParameter("idActivity");
+		if(Util.empty(idActivity)){
+			idActivity=(String)session.getAttribute("id");			
+		}
+		// session.setAttribute("id",idActivity); 
+		System.out.println("idActivity "+idActivity);
+		
+		idDriver = (String)request.getParameter("idDriver");
+		
+		if (!Util.empty(idDriver)){
+			driver = sys.getDriverReportFacade().findDriverByPrimaryKey(Integer.valueOf(idDriver),sys.getUserSessionData());
+		}
+		System.out.println("idDriver "+idDriver);
+		
+		// session.setAttribute("url","activity/schedule/CEPAActivityScheduleView.jsp");
+		url = "activity/schedule/CEPAActivityScheduleView.jsp";
+		userSessionData.setUrl(url+"?idActivity="+idActivity+"&idDriver="+idDriver);
+		
+		
+		// enabled: formulario editable
+		enabled =(String)request.getParameter("enabled");
+		if (Util.empty(enabled)){
+			enabled="true";
+		}else {
+			if (enabled.equals("true")) {
+				session.setAttribute("from","commentaryAdd");
+			}
+		}
+		
+		
+		// Para traer Instructores:
+		activityData = sys.getActivityReportFacade().
+				findCEPAActivityScheduleByPrimaryKey(new Integer(idActivity),userSessionData); 
+			
+		
+		CEPAActivityScheduleRegistryData registryData =
+			(idActivity != null && idDriver != null) ? 
+			sys.getActivityReportFacade().getCompleteResult(
+				new Integer(idActivity),new Integer(idDriver),sys.getText(),sys.getUserSessionData()) : null;
+		session.setAttribute("registryData",registryData);
+		
+		
+%>
+
+<html:html>
+<LINK REL=StyleSheet HREF="../../util/css/estilo.css" TYPE="text/css">
+
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+<script language="JavaScript" type="text/javascript">
+
+//17/04/2012
+function preparedCheckboxRadioParameters(form){
+
+		var elements=form.elements;
+		var length=elements.length;
+		var i;
+		var valueCheckboxParamList="";
+		var obs = "";
+		var valuePointObservationList="";
+		
+		var separator="<";
+		for(i=0;i<length;i++){
+			var element=elements[i];
+			if((element.type.toLowerCase()=="checkbox") || (element.type.toLowerCase()=="radio")) {
+				if(element.checked){
+					if (element.value.indexOf("-") !== -1){
+							// Si encuentro un - es porque es un punto-observacion
+							if (valuePointObservationList  == "")
+								valuePointObservationList = element.value;
+							else
+								valuePointObservationList = element.value + "<" + valuePointObservationList;
+					}else if (element.value.indexOf("og") !== -1){
+							// Observaciones Generales: og
+							if (obs == "") obs = element.value;
+							else obs = element.value + "<" + obs;
+					}else{
+							if (valueCheckboxParamList == "")
+								// Si no tiene un - es porque es un item:							
+								valueCheckboxParamList=element.value;
+							else
+								// Si no tiene un - es porque es un item:							
+								valueCheckboxParamList=element.value+"<"+valueCheckboxParamList;
+					}	
+				}	
+			} 
+		
+		} // FOR
+
+		form.obs.value = obs;
+		alert("Obs: "+obs);
+		form.checkboxParamList.value = valueCheckboxParamList;
+		form.pointCommentList.value = valuePointObservationList;		
+		return true;
+}
+
+// Action ajustado para el formulario BTW2 Tablets
+function setAction(form1,form2){
+	if(preparedCheckboxRadioParameters(form1)) {
+		form2.checkboxParamList.value = form1.checkboxParamList.value;
+		//form2.commentaryDriveOther.value = "";
+		form2.note.value = form1.note.value;
+		form2.obs.value = form1.obs.value;		
+		form2.instructor.value = form1.instructor.value;	
+	   	//form2.partner.value = "";	
+		//form2.cepaCourse.value = form1.cepaCourse.value;	
+		//form2.plate.value = "";	   
+		//form2.conductionType.value = "";
+		//form2.skidcar.value = "";
+		form2.pointCommentList.value = form1.pointCommentList.value;
+		form2.idDriver.value = '<%=idDriver%>';
+		form2.idActivity.value = '<%=idActivity%>';
+		form2.url.value = '<%=url%>';
+		form2.submit();
+	}
+}
+
+// Deshabilita algunos items del form:
+// 17/04/2012
+function deshabilitar(ids, form){
+	var elements = form.elements;
+	var length =(elements != undefined)?elements.length:0;
+	var i;
+	var valueCheckboxParamList="";
+	var separator="<";
+
+	var idsArray = ids.split(",");
+
+	if (length > 0){
+		for(i=0;i<length;i++){
+			var element = elements[i];
+			if(element.type.toLowerCase()=="checkbox")  {
+	
+				element.disabled = ""; // habilito el checkbox
+				
+				for (j = 0; j < idsArray.length; j++){
+					if (element.id == idsArray[j]){
+						element.disabled = "disabled"; // deshabilito el checkbox
+						element.checked = ""; // saco el check
+					}				
+				}		
+			} // fin if element type checkbox	
+		}
+	}
+}
+
+</script>	
+
+<body>
+<div align="center">
+
+
+  
+  <form name="ActivityForm1" method="post" action="">
+  		<jsp:include  page="ThreeColumnNewForm.jsp?idActivity=<%=idActivity%>&idDriver=<%=idDriver%>" />
+
+		<!-- Instructor -->
+		<table width="630px" border="0" cellpadding="0" cellspacing="0">
+					<tr> 
+    					<td width="9" valign="top">
+    						<img src="/datacenter/util/imgs/left_form.gif" >
+    					</td>    	
+        				<td background="/datacenter/util/imgs/center_form.gif" valign="top"> 
+        					<div align="center">
+        						<!--  Cambiar esto por un estilo !! -->
+        						<font color="#FFFFFF" size="1" face="Arial, Helvetica, sans-serif"><strong>
+        						<%=messages.getText("generic.activity.otherdata")%>
+        						</strong></font>
+        					</div>
+        				</td>
+        				<td width="9" valign="top">
+        					<img src="/datacenter/util/imgs/right_form.gif" >        	
+        				</td>
+     				</tr> 
+     				<tr> 
+      					<td width="9" background="/datacenter/util/imgs/line_left.gif">&nbsp;
+        				</td>
+        				<td>  		
+							<% 
+		     				LinkedList instructorsOptions = new LinkedList();
+		     				if (activityData != null && activityData.getInstructorsOrdered() != null && 
+		     						activityData.getInstructorsOrdered().size() > 0){
+		     					Iterator it = activityData.getInstructorsOrdered().iterator();
+		     					%>
+		     						 <font size="1" face="Arial, Helvetica, sans-serif"> 
+		     						<%=messages.getText("generic.activity.instructor")%>:
+		     						
+		     						<select id="instructor"  name="instructor" class="input"> 
+		     			<%		while (it.hasNext()){
+		     						CEPAScheduleActivityInstructorData ins = (CEPAScheduleActivityInstructorData) it.next();
+		     						String instructor = (registryData != null && registryData.getInstructor() != null) ? registryData.getInstructor(): "";
+		     						String selected="";
+		     						if (instructor.equalsIgnoreCase(ins.getUser().getFirstName()+" "+ ins.getUser().getLastName())){
+		     							selected="selected='selected'";
+		     						}
+		     			%>	
+		     							<option class="input"  <%=selected %> value="<%=ins.getUser().getFirstName()+" "+ ins.getUser().getLastName() %>" >
+		     									<%=ins.getUser().getFirstName()+" "+ ins.getUser().getLastName() %>
+		     							</option>			
+		     			<%	} %>
+		     						</select>     
+		     						</font>
+		     			<%} else{	%>
+		     				 <font size="1" face="Arial, Helvetica, sans-serif"> 
+		     					<%=messages.getText("generic.activity.therearenotinstructorsforthisactivity") %>
+		     					</font>
+        				<% } %>
+        			</td>
+        			<td width="9" background="/datacenter/util/imgs/line_right.gif">&nbsp;
+        			</td>
+     			</tr>
+     			<!--  NOTA -->
+     			<tr> 
+      					<td width="9" background="/datacenter/util/imgs/line_left.gif">&nbsp;
+        				</td>
+        				<td>
+<%				if(sys.isCorporation(CorporationData.MONSANTO) 
+					&& activityData.getType().getResourceBundleId().equals(CEPAActivityConstants.BTW2_NEW_FORM_TABLET)
+					&& (activityData.getCountryName().equals(CountryData.COLOMBIA))) {
+%>             				<select name="note" class="input">
+<%					for(int i = 1; i < 7; i++) {  
+           				String selected = (registryData != null && registryData.getClasification().intValue() == i) ? "selected" : "";
+%>		       					<option value='<%=i%>' <%=selected%>><%= messages.getText("activity.clasification.text"+i) %></option>
+<%       			}
+%>		      				</select> 
+<%				}else {
+              		DataTypeReportFacade dataTypeReportFacade = sys.getDataTypeReportFacade();		
+        			Collection notes = dataTypeReportFacade.findAll(DataTypeConstants.TYPECEPAACTIVITYNOTE,userSessionData);
+              		if (notes != null && notes.size() > 0){ 
+		              			
+		              	%>
+		              		 <font size="1" face="Arial, Helvetica, sans-serif"> 
+		              	<%= messages.getText("generic.activity.note") %>
+		              		<select name="note" id="note" class="input">
+		              		
+		              		<%
+		              			Iterator it = notes.iterator();
+		              			while (it.hasNext()){
+		              				String activityNote = ((CEPAActivityNoteDataType) it.next()).getResourceBundleId();
+		              				String note = (registryData != null && registryData.getNote() != null) ? registryData.getNote(): "";
+		              				String selected="";
+		     						if (note.equalsIgnoreCase(activityNote)){
+		     							selected="selected='selected'";
+		     						}
+
+		              		%>
+		               			  <option value='<%= activityNote %>' class="input"   <%=selected %>><%= messages.getText(activityNote) %></option>
+		               		<%
+		               			}%>
+		                	</select> 
+		                	</font>
+<%					}
+		         }
+%>					</td>
+        			<td width="9" background="/datacenter/util/imgs/line_right.gif">&nbsp;
+        			</td>
+     			</tr>
+     			
+     			
+     			<!--  Dibujo linea inferior de los cuadrantes -->
+			 	 <tr> 
+			        <td width="9" valign="top"><img src="/datacenter/util/imgs/left_base_form.gif" width="9" height="11"></td>
+			        <td background="/datacenter/util/imgs/center_base.gif">&nbsp;</td>
+			        <td width="9" valign="top"><img src="/datacenter/util/imgs/right_base_form.gif" width="9" height="11"></td>
+			     </tr>
+			     <!--  dejo una linea en blanco entre cuadrante y cuadrante -->
+			     <tr>
+			     	<td>&nbsp;</td>
+			     </tr>      
+							
+		</table> 				
+			
+		
+			
+			
+				
+
+		<!--  Footer: Boton Aceptar -->
+		<table width="630px" border="0" cellpadding="0" cellspacing="0">
+        	<tr>   		
+		   		<td align="right">
+		   		    <input type="hidden" name="checkboxParamList" /> 				
+		   		    <input type="hidden" name="skidcar" value="" />
+		   		    <!--  TODO: 
+		   		    En este campo luego iran las observaciones vinculadas a todo el 
+		   		    registro del participante (no puntos)-->
+		   		    <input type="hidden" name="obs" value=""; />
+		   		    
+		   		    
+		   		    <!--  Lista de Comentarios de los Puntos: -->
+		   		    <input type="hidden" name="pointCommentList" value="" />		   		    
+		   			
+			   			<!-- Boton de Retorno -->
+			   			<input name="button2" type="button" 
+			   			value='<%=messages.getText("generic.messages.back") %>' 
+			   				onClick="javascript:history.back(-1);" class="input"/>			   			
+			   			
+			   			<!-- Boton de Guardar CD -->
+			   			<%	String button2 = "javascript:setAction(document.forms['ActivityForm1'] ,document.forms['ActivityRegistryForm'])";%>
+			   			<input name="button2" type="button" 
+			   			value='<%=messages.getText("generic.messages.save") %>' 
+			   			onClick="<%=button2%>" class="input"/>   			
+			   					   				   					   					   			
+            	</td>                 							
+    	  	</tr>              
+	    </table>
+
+   </form>       
+</div>
+ 
+<%
+	String action2 = "layout.jsp?refer=/activity/schedule/CEPAActivityScheduleView.jsp?idActivity=" + idActivity;
+%>
+
+<html:form action = "/ActivityRegistrycreate" method="post">
+	<html:hidden property="idDriver" value='' />
+	<html:hidden property="idActivity" value='' />
+	<html:hidden property="url" value='' />
+	<html:hidden property="checkboxParamList" value="checkboxParamList" />
+	<html:hidden property="obs" value="obs" />	
+	<html:hidden property="note" value="note" />	
+	<html:hidden property="instructor" value="instructor" />	
+	<html:hidden property="partner" value="partner" />	
+	<html:hidden property="cepaCourse" value="cepaCourse" />	
+	<html:hidden property="conductionType" value="conductionType" />
+	<html:hidden property="plate" value="plate" />	
+	<html:hidden property="skidcar" value="skidcar" />	
+	<html:hidden property="pointCommentList" value="pointCommentList" />
+	<html:hidden property="trade" value="" />	
+	<html:hidden property="initialKm" value="-1" />
+	<html:hidden property="finalKm" value="-1" />
+	<html:hidden property="initialHr" />
+	<html:hidden property="finalHr" />	
+	<html:hidden property="initialMinute" />
+	<html:hidden property="finalMinute" />						
+	<html:hidden property="vehicleType" value="" />									
+	<html:hidden property="circulationAreaHighWay" value="false" />
+	<html:hidden property="circulationAreaRoad" value="false" />		
+	<html:hidden property="circulationAreaSubUrban" value="false" />		
+	<html:hidden property="circulationAreaUrban" value="false" />												
+	<html:hidden property="velocityBox" value="" />											
+	<html:hidden property="light" value="" />
+	<html:hidden property="commentaryDriveOther" value="commentaryDriveOther" />					
+	<html:hidden property="frenaje"/>		
+</html:form>
+
+</body>
+</html:html>
+<%
+	}
+%>

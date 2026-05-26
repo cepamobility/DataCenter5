@@ -1,0 +1,15 @@
+<ion-view view-title="{{f}}">
+  <ion-content>
+   <ion-scroll id="scroll"  zooming="true" direction="xy" ><!--direction="xy" style="width:250px;height:300px;" -->
+	 <loading></loading> 
+	<div id="reportview" style="width: 100%;">
+		<div id="reportview1" style="width: 100%;">
+		</div>
+		<div id="reportview2" style="width: 100%;">
+		</div>
+		<div id="reportview3" style="width: 100%;">
+		</div>
+	</div>
+	</ion-scroll>
+  </ion-content>
+</ion-view>

@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.travel.tables" >
+	<class name="CheckPoint" table="checkpoints">
+        
+		<id column="id" name="id">
+            <generator class="sequence">
+            	<param name="sequence">CheckPoint_Sequence</param>
+            </generator>
+        </id>		 
+		
+	   	<many-to-one class="persistence.event.tables.Travel" name="travel" not-null="true"/>
+
+   		<property 	name="date" 	type="java.sql.Date" column="date"		/>
+   		<property 	name="hour" 	type="java.sql.Time" column="time"		/>
+       	<property 	name="number" 		type="java.lang.Integer"	column="number"/>
+
+        <property 	name="local"	type="java.lang.String"		column="local"/>
+
+       	<property 	name="way" 		type="java.lang.String"	column="way"/>
+       	<property 	name="communication" 		type="java.lang.String"	column="communication"/>
+        <property 	name="incidents" />
+        <property 	name="comment"	type="text"		column="comment"/>
+
+    </class>
+</hibernate-mapping>

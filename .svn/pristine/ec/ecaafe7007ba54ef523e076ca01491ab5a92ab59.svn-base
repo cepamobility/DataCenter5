@@ -1,0 +1,50 @@
+package persistence.event.tables;
+
+import java.io.Serializable;
+
+public class EventFile implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+
+	private Integer id;
+	private Integer event;
+	private String name;
+	
+	
+	public EventFile() {
+	}
+
+	public EventFile(Integer event) {
+		this.event = event;
+	}
+
+	public Integer getId() {
+		return id;
+	}
+
+
+	public void setId(Integer id) {
+		this.id = id;
+	}
+
+
+	public String getName() {
+		return name;
+	}
+
+
+	public void setName(String name) {
+		this.name = name;
+	}
+
+
+	public Integer getEvent() {
+		return event;
+	}
+
+
+	public void setEvent(Integer event) {
+		this.event = event;
+	}
+
+}

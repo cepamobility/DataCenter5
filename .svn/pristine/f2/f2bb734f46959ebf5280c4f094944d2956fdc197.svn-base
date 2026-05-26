@@ -1,0 +1,102 @@
+/*
+ * Created on 31-oct-2005
+ *
+ * TODO To change the template for this generated file go to
+ * Window - Preferences - Java - Code Style - Code Templates
+ */
+package presentation.translator.web.driver;
+
+import java.util.Calendar;
+import java.util.Date;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.action.DynaActionForm;
+
+import presentation.translator.web.util.AbstractAction;
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+import business.administration.corporation.CorporationABMFacade;
+
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.PointsDefinitionData;
+import communication.administration.user.UserSessionData;
+import communication.language.Text;
+/**
+ * @author jrodriguez
+ */
+public class DriverAssignPointsAction extends AbstractAction {
+	
+	public ActionForward action(ActionMapping mapping, ActionForm form,HttpServletRequest request, HttpServletResponse response) throws Throwable {
+
+        HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        Text messages = sys.getText();
+        UserSessionData userSessionData = sys.getUserSessionData();
+
+        DynaActionForm driverForm = (DynaActionForm) form;
+        Date assignDate = Util.getDate(driverForm.getString("date"), driverForm.getString("month"), driverForm.getString("year"));
+        Calendar c = Calendar.getInstance();
+        if(assignDate != null)
+        	c.setTime(assignDate);
+        String driver = (String) driverForm.get("driver");
+        Integer account = new Integer((String) driverForm.get("account"));
+        int points = Integer.parseInt((String) driverForm.get("points"));
+        if(points == 0) {
+            if(!Util.isNumber((String)driverForm.get("otherPoint"))) {
+    			userSessionData.setMsg(messages.getText("driver.error.invalidpoints"));
+    	        userSessionData.setUrl("/driver/DriverPoints.jsp?driver="+driver);
+    	        return mapping.findForward("next");
+            }
+        	points = Integer.parseInt((String) driverForm.get("otherPoint"));
+        }
+        if(Integer.parseInt((String) driverForm.get("type")) == 0) {
+        	points = points * -1;
+        }
+        String comment = (String) driverForm.get("comment");
+        if(Util.empty(comment)) {
+			userSessionData.setMsg(messages.getText("driver.error.invalidcomment"));
+	        userSessionData.setUrl("/driver/DriverPoints.jsp?driver="+driver);
+        }else {
+	        CorporationABMFacade facade = sys.getCorporationABMFacade();
+	        String asignMove = PointsDefinitionData.ASSIGNED;
+	        if(sys.isCorporation(CorporationData.BAYER_MX)) {
+	        	switch(Integer.parseInt(driverForm.getString("assignType"))) {
+	        		case 1:
+	        			asignMove = PointsDefinitionData.ASSIGNED_EBTW;
+	        			break;
+	        		case 2:
+	        			asignMove = PointsDefinitionData.ASSIGNED_ASSESSMENT;
+	        			break;
+	        		case 3:
+	        			asignMove = PointsDefinitionData.ASSIGNED_ELEARNING;
+	        			break;
+	        		case 4:
+	        			asignMove = PointsDefinitionData.ASSIGNED_OTHER;
+	        			break;
+	        	}
+	        }
+	        facade.addMove(c,account,points,asignMove,comment,userSessionData);
+	        facade.updatePointAccount(account, userSessionData);
+
+	        userSessionData.setUrl("/driver/DriverView.jsp?id="+driver);
+	        session.removeAttribute("DriverAssignPointsForm");
+        }
+        return mapping.findForward("next");
+    }
+
+    public ActionForward cancel(HttpSession session,ActionMapping mapping, ActionForm form) {
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        UserSessionData userSessionData = sys.getUserSessionData();
+
+        DynaActionForm driverForm = (DynaActionForm) form;
+        String driver = (String) driverForm.get("driver");
+        userSessionData.setUrl("/driver/DriverView.jsp?id="+driver);
+        return mapping.findForward("next");
+    }
+}

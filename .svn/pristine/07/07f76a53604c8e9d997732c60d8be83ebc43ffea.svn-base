@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.driver.tables">
+	<class name="ProvisionalBTW" table="provisionalbtws">
+		
+       	<composite-id class="ProvisionalBTWPK" name="pk" >
+       		<key-property  name="driver" column="id"  type="java.lang.Integer"	/>
+	        <key-property 	name="expiry"	type="java.util.Date"	column="expiry" />
+		</composite-id>
+		
+        <property column="result" name="result" type="java.lang.String" not-null="true" />
+        <property column="date" name="date" type="java.util.Date" not-null="true" />
+		
+  	</class>
+</hibernate-mapping>

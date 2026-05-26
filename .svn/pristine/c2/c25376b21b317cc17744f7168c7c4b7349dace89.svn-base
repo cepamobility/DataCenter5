@@ -1,0 +1,96 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.log.vehicle">
+    <class name="VehicleLog" table="vehiclelog">
+
+       <composite-id class="VehicleLogPK" name="pk" >
+	        <key-property	name="vehicle"	type="java.lang.Integer"	column="vehicle"/>
+	        <key-property	name="userId"	type="java.lang.String"	column="userid"/>
+	        <key-property	name="date"	type="java.util.Date"	column="date"/>
+       </composite-id>        
+        <property	name="action"	type="java.lang.Integer"		column="action"		not-null="true" />
+        <property	name="comment"			type="java.lang.String"		column="comment"	not-null="true" />        
+        <property	name="divOrg1"	type="java.lang.Integer"		column="divorg1"	/>
+        <property	name="divOrg2"	type="java.lang.Integer"		column="divorg2"	/>
+        <property	name="divOrg3"	type="java.lang.Integer"		column="divorg3"	/>
+        <property 	name="geoLevel1" 		type="java.lang.Integer" 	column="geolevel1" />      
+    
+        <property 	name="corporationId" 			type="java.lang.Integer" 	column="corporationId" not-null="true"/>	              
+        
+        <property 	name="country" 			type="java.lang.Integer" 	column="country" not-null="true"/>	    
+	    
+        <property	name="matricula"	type="java.lang.String"		column="matricula"	not-null="true" />
+        
+        <property	name="model"	type="java.lang.String"		column="model" not-null="true" />        
+        
+        <property 	name="trade" 				type="java.lang.String"		column="trade" not-null="true"/>        
+        
+        <property 	name="cover" 				type="java.lang.String"		column="cover"/>                
+        
+        <property 	name="type" 				type="java.lang.String"		column="type" not-null="true"/>                
+        
+        <property	name="year"	type="java.lang.Integer" column="year"	not-null="true" />
+
+        <property	name="colour"	type="java.lang.String"		column="colour"/>
+        
+        <property	name="permissionNumber"	 type="java.lang.String" column="permissionNumber"	/>        
+        
+        <property 	name="use" 				type="java.lang.String"		column="use" not-null="true"/>        
+
+        <property	name="permissionExpiry"	type="java.util.Date"		column="permissionExpiry"/>
+        
+        <property 	name="ownership" 				type="java.lang.String"		column="ownership" />                
+        
+        <property 	name="fuel" 				type="java.lang.String"		column="fuel" />                        
+        
+        <property	name="purchaseDate"	type="java.util.Date"		column="purchaseDate"/>        
+        
+        <property	name="chasisNumber"	type="java.lang.String" column="chasisNumber"	/>                
+        
+        <property 	name="engine" 				type="java.lang.String"		column="engine"/>                                
+        
+        <property	name="tankCapacity"	type="java.lang.Integer" column="tankCapacity"	/>                        
+        
+        <property 	name="tankUnit" 	type="java.lang.String"		column="tankUnit"/>                                        
+
+        <property	name="abs"	type="java.lang.Boolean" column="abs"	/>                        
+        
+        <property	name="airBag"	type="java.lang.Boolean" column="airBag"/>                                
+        
+        <property	name="aireAcondicionado"	type="java.lang.Boolean" column="aireAcondicionado"/>                                        
+
+        <property 	name="odometerUnit" 		type="java.lang.String"		column="odometerUnit" />                                
+             
+        <property 	name="driver" 		type="java.lang.Integer" 	column="driver" />        
+        
+        <property 	name="costCenter"	type="java.lang.String"		column="costCenter" />
+        <property 	name="exclusionDate"	type="java.util.Date"	column="exclusionDate" />
+        <property 	name="inclusionDate"	type="java.util.Date"	column="inclusionDate" />
+        
+        
+        <property 	name="mtopExpiry" 		type="java.util.Date" 	column="mtopExpiry" />
+        <property 	name="suctaExpiry"		type="java.util.Date"	column="suctaExpiry" />
+        
+        <property name="ownerCard" type="java.lang.Boolean">
+		    <column name="ownerCard" default="false"/>
+		</property>
+        
+	   	<property 	name="ensurance"		type="java.lang.String" 	column="ensurance" />
+	   	
+		<property	name="axisCount"	type="java.lang.Integer" >
+			<column name="axisCount" default="0" />
+		</property>
+		
+		<property 	name="hp"	type="java.lang.Integer">
+			<column name="hp"  default="0" />
+		</property>		
+		<property 	name="ensuranceType"	type="java.lang.String"		column="ensuranceType"  />
+		<property	name="observations"		type="java.lang.String"		column="observations" />
+		<property   name="optionalInfo"     type="java.lang.Integer"  	column="optionalInfo"  />
+    
+        
+    </class>
+</hibernate-mapping>

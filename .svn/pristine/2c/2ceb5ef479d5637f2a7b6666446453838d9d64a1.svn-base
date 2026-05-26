@@ -1,0 +1,136 @@
+package business.ws;
+
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.util.Calendar;
+
+import javax.ejb.Stateless;
+import javax.jws.WebMethod;
+import javax.jws.WebParam;
+import javax.jws.WebService;
+
+import business.SystemAccessRemote;
+import business.ws.cache.CacheManager;
+import business.ws.client.security.User;
+import communication.administration.corporation.WSResultData;
+import communication.administration.corporation.tables.ContractorPlateFOSAData;
+
+@Stateless(mappedName = "WSLDCFosaAPI")
+@WebService(name="WSLDCFosaAPI")
+public class WSLDCFosaAPI{
+		
+	
+	private static Object o=new Object();
+	private static Calendar lastCall=Calendar.getInstance();
+	
+	@WebMethod(operationName="newPlate")
+   	public WSResultData newPlate(@WebParam(name = "u") String u, @WebParam(name = "p")String p,@WebParam(name = "fosaId")Integer fosaId, @WebParam(name = "plate")String plate) throws Exception{
+   		WSResultData result=new WSResultData(0,"OK");
+   		if(!(u.equalsIgnoreCase("fowsus") && p.equals("132_6X9ZP!"))){
+   			System.out.println("WSFO:Usuario invalido llega usu("+u+") pass("+p+")");
+			throw new Exception("User Invalid");
+		}
+   		
+   		
+   			try{
+   	   			User user=new User("wstelematicmdp","132543");
+   	   			SystemAccessRemote sys=CacheManager.getInstance().getSys(user);
+   	   			ContractorPlateFOSAData contractor=new ContractorPlateFOSAData();
+   	   			contractor.setPlate(plate);
+   	   			contractor.setFosaId(fosaId);
+   	   			
+   	   			return sys.getCorporationABMFacade().newFOSAPlate(contractor, sys.getUserSessionData());
+   	   			
+   	   		} catch (Exception e) {
+   	   			e.printStackTrace();
+   	   			result.setCode(1);
+   	   			result.setDescription(e.getMessage());
+   			}
+   			
+   			return result;
+   	}
+   	
+	@WebMethod(operationName="removePlate")
+   	public WSResultData removePlate(@WebParam(name = "u") String u, @WebParam(name = "p")String p,@WebParam(name = "plate") String plate)  throws Exception{
+   		WSResultData result=new WSResultData(0,"OK");
+   		if(!(u.equalsIgnoreCase("fowsus") && p.equals("132_6X9ZP!"))){
+   			System.out.println("WSFO:Usuario invalido llega usu("+u+") pass("+p+")");
+			throw new Exception("User Invalid");
+		}
+   		try{
+   		 
+   			
+   			User user=new User("wstelematicmdp","132543");
+   			SystemAccessRemote sys=CacheManager.getInstance().getSys(user);
+   			return sys.getCorporationABMFacade().removeFOSAPlate(plate, sys.getUserSessionData());
+   		} catch (Exception e) {
+   			e.printStackTrace();
+    		result.setCode(1);
+    		result.setDescription(e.getMessage());
+		}	
+   		
+   		return result;
+   	}
+   	
+   	
+	@WebMethod(operationName="suspendedPlate")
+   	public WSResultData suspendedPlate(@WebParam(name = "u") String u, @WebParam(name = "p")String p,@WebParam(name = "plate")String plate,@WebParam(name = "hours")Integer hours,@WebParam(name = "reasonDescription")String reasonDescription,@WebParam(name = "reasonCode")Integer reasonCode,@WebParam(name = "dateHourStartPenalty")String dateHourStartPenalty,@WebParam(name = "typeOfPenalty")Integer typeOfPenalty)  throws Exception{
+   		WSResultData result=new WSResultData(0,"OK");
+   		if(!(u.equalsIgnoreCase("fowsus") && p.equals("132_6X9ZP!"))){
+   			System.out.println("WSFO:Usuario invalido llega usu("+u+") pass("+p+")");
+			throw new Exception("User Invalid");
+		}
+   		
+   		boolean next=false;
+   		synchronized (o) {
+			Calendar calNow=Calendar.getInstance();
+			calNow.add(Calendar.SECOND, -10);
+			if(calNow.compareTo(lastCall)<0){
+				next=true;
+				Thread.sleep(1000);
+			}
+		}
+   		
+   		if(!next){
+	   		try{
+	   			lastCall=Calendar.getInstance();
+	   			User user=new User("wstelematicmdp","132543");
+	   			SystemAccessRemote sys=CacheManager.getInstance().getSys(user);
+	   			return sys.getCorporationABMFacade().suspendedPlate(plate, hours, reasonDescription, reasonCode, dateHourStartPenalty, typeOfPenalty, sys.getUserSessionData());
+	   			
+	   		} catch (Exception e) {
+	   			e.printStackTrace();
+	   			StringWriter errors = new StringWriter();
+	   			e.printStackTrace(new PrintWriter(errors));
+	   			 
+	   			result.setCode(1);
+	    		result.setDescription(errors.toString());
+			}	
+	   		return result;
+   		}else{
+   			return suspendedPlate(u, plate, plate, hours, reasonDescription, reasonCode, dateHourStartPenalty, typeOfPenalty);
+   		}
+   		
+   	}
+   	
+	@WebMethod(operationName="activePlate")
+   	public WSResultData activePlate(@WebParam(name = "u") String u, @WebParam(name = "p")String p,@WebParam(name = "plate")String plate)  throws Exception{
+   		WSResultData result=new WSResultData(0,"OK");
+   		if(!(u.equalsIgnoreCase("fowsus") && p.equals("132_6X9ZP!"))){
+   			System.out.println("WSFO:Usuario invalido llega usu("+u+") pass("+p+")");
+			throw new Exception("User Invalid");
+		}
+   		try{
+   			User user=new User("wstelematicmdp","132543");
+   			SystemAccessRemote sys=CacheManager.getInstance().getSys(user);
+   			return sys.getCorporationABMFacade().activePlate(plate, sys.getUserSessionData());
+   		} catch (Exception e) {
+   			e.printStackTrace();
+			result.setCode(1);
+    		result.setDescription(e.getMessage());
+		}	
+   		
+   		return result;
+   	}
+	
+}

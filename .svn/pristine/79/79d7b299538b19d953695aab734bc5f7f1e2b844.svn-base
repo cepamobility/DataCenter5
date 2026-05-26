@@ -1,0 +1,159 @@
+<%@page language="java" 
+	errorPage="../exception.jsp"
+	import="java.util.*"
+	import="business.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.util.*"
+	import="communication.administration.user.*"
+	import="communication.administration.user.tables.*"
+	import="communication.administration.corporation.tables.CorporationData"
+	import="presentation.translator.web.util.*"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+<%
+	try {
+	SystemAccess sys=(SystemAccess)session.getAttribute("SystemAccess");
+	session.setAttribute("url","reports/historyPoints.jsp");
+
+	if(session.getAttribute("Msg")!=null){
+		session.removeAttribute("Msg");
+	}
+
+	RequestDispatcher dispatcher = request.getRequestDispatcher("/util/jsp/language.jsp");
+	dispatcher.include(request,response);
+
+	Text messages=sys.getText();
+	Collection<Object[]> values = (Collection<Object[]>)sys.getUserSessionData().getValue();
+	
+%>
+<script type="text/javascript" src="https://www.google.com/jsapi"></script>
+<style>
+	.header {
+		border: solid 0px;
+		margin: 10px;
+		font-family: 'Verdana';
+    	font-size: 12px;
+		background-color: #CDCDCD;
+		color: black;
+		font-weight: bold; 
+	}
+	.cell0 {
+		border: solid 0px;
+		margin: 10px;
+		font-family: 'Verdana';
+    	font-size: 12px;
+		background-color: #FFFFFF;
+		color: black;
+	}
+	.cell1 {
+		border: solid 0px;
+		margin: 10px;
+		font-family: 'Verdana';
+    	font-size: 12px;
+		background-color: #EEEEEE;
+		color: black;
+	}
+	.plan0 {
+		background-color: green;
+		color: white;
+		font-weight: bold; 
+	}
+	.plan1 {
+		background-color: yellow;
+		color: black;
+		font-weight: bold; 
+	}
+	.plan2 {
+		background-color: red;
+		color: white;
+		font-weight: bold; 
+	}
+	.plan3 {
+		background-color: black;
+		color: white;
+		font-weight: bold; 
+	}
+</style>
+<body>
+	<table width="1200" border="0" align="center" cellpadding="0" cellspacing="0">
+		<tr class="guide1">
+			<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText("general.report.mitigationplans")%>' />
+	  	</tr>
+		<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+	  	</tr>
+		<tr>
+			<td width="49%" valign="top">
+				<table class="table table-bordered table-hover table-condensed table-striped table-custom">
+				<thead>
+					<tr class="header">
+						<td><%=messages.getText("generic.driver.driverdata.firstname")%></td>
+  						<td><%=messages.getText("generic.driver.driverdata.lastname")%></td>
+  						<td><%=messages.getText("generic.driver.driverdata.corporationid")%></td>
+<%      String[] labels = sys.getUserSessionData().getFilter().getDivOrgLabels(); 
+		for(int i = 0; i < labels.length; i++) {
+%>		                <td><%=messages.getText(labels[i])%></td>
+<%      }
+%>
+						<td><%=messages.getText("generic.activity.activitydata.type")%></td>
+						<td><%=messages.getText("driver.query.advance")%></td>
+						<td><%=messages.getText("driver.query.status")%></td>
+						<td><%=messages.getText("generic.activity.activitydata.activityexpiry")%></td>
+					</tr>
+  				</thead>
+  				<tbody>              		
+<%		if(values.size() == 0){
+%>		        	<tr>
+        	    		<td colspan="6" class="cell0"><%=messages.getText("generic.messages.notresult")%></td>
+            	  	</tr>
+<%		} else {
+			Iterator<Object[]> it = values.iterator();
+			Calendar now = Calendar.getInstance();
+			boolean cellLine = false;
+			while(it.hasNext()) {	
+				Object[] line = it.next();
+				cellLine = !cellLine;
+				String link = "layout.jsp?refer=driver/DriverView.jsp?id="+String.valueOf(line[0]);
+%>					<tr class='<%=(cellLine) ? "cell0" : "cell1"%>'>
+						<td><a href='<%=link%>'><%=String.valueOf(line[1])%></a></td>
+						<td><a href='<%=link%>'><%=String.valueOf(line[2])%></a></td>
+						<td><a href='<%=link%>'><%=String.valueOf(line[3])%></a></td>
+<%         		for(int ii = 4; ii < line.length; ii++) {
+					switch(ii) {
+						case 13:
+%>						<td class='<%="plan"+String.valueOf(line[ii])%>'><%=messages.getText("driver.mitigation.plan"+String.valueOf(line[ii]))%></td>
+<%						break;
+						case 14:
+%>						<td><%=String.valueOf(line[ii])+"%"%></td>
+<%							break;
+						case 15:
+%>						<td><%=messages.getText("driver.mitigationplan.status"+String.valueOf(line[ii]))%></td>
+<%							break;
+						case 16:
+%>						<td><%=Util.formatDate((Date)line[ii])%></td>
+<%							break;	
+						default:
+%>				   		<td><%=String.valueOf(line[ii])%></td>
+<%					}
+            	}
+%>					    
+                	</tr>
+<%			}
+		}
+%>
+				</tbody>
+				</table>
+			</td>
+		</tr>
+	</table>
+</body>      
+<% } catch (Exception e) {
+	e.printStackTrace();
+}
+
+%>

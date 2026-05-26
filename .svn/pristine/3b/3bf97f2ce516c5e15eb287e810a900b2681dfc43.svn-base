@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.log.activity">
+    <class name="ActivityRegistryLog" table="activityregistrylog">
+
+       <composite-id class="ActivityRegistryLogPK" name="pk" >
+	        <key-property	name="registry"	type="java.lang.Integer"	column="registry"/>
+	        <key-property	name="userId"	type="java.lang.String"	column="userid"/>
+	        <key-property	name="date"	type="java.util.Date"	column="date"/>
+       </composite-id>
+        
+        <property	name="action"	type="java.lang.Integer"		column="action"		not-null="true" />
+        <property	name="comment"	type="java.lang.String"		column="comment"	not-null="true" />        
+
+        <property	name="activity"	type="java.lang.Integer"		column="activity"	/>
+        <property	name="driver"	type="java.lang.Integer"		column="driver"	/>
+       
+        <property 	name="obs" 	type="java.lang.String"		column="obs" />                   
+
+        <property 	name="note" type="java.lang.String"		column="note" />                
+	    
+        <property	name="instructor" type="java.lang.String"		column="instructor" />
+        
+        
+    </class> 
+</hibernate-mapping>

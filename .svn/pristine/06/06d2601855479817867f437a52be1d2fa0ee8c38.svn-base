@@ -1,0 +1,177 @@
+package persistence.vehicle.tables;
+
+import java.io.Serializable;
+import java.util.Date;
+
+import org.hibernate.Session;
+
+import communication.vehicle.tables.VehicleMaintenanceData;
+
+public class VehicleMaintenance implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+
+	private Integer vehicleMaintenanceId;
+	
+	protected Vehicle vehicle;
+	
+	protected Date date;
+	protected Integer cost;
+	protected Integer type;
+
+	protected boolean item1;
+	protected boolean item2;
+	protected boolean item3;
+	protected boolean item4;
+	protected boolean item5;
+	protected boolean item6;
+	protected boolean item7;
+	protected boolean item8;
+	protected boolean item9;
+	
+	protected Integer kms;
+
+	public VehicleMaintenance() {
+	}
+
+	public Integer getVehicleMaintenanceId() {
+		return vehicleMaintenanceId;
+	}
+
+	public void setVehicleMaintenanceId(Integer vehicleMaintenanceId) {
+		this.vehicleMaintenanceId = vehicleMaintenanceId;
+	}
+
+	public Vehicle getVehicle() {
+		return vehicle;
+	}
+
+	public void setVehicle(Vehicle vehicle) {
+		this.vehicle = vehicle;
+	}
+
+	public Date getDate() {
+		return date;
+	}
+
+	public void setDate(Date date) {
+		this.date = date;
+	}
+
+	public Integer getCost() {
+		return cost;
+	}
+
+	public void setCost(Integer cost) {
+		this.cost = cost;
+	}
+
+	public Integer getType() {
+		return type;
+	}
+
+	public void setType(Integer type) {
+		this.type = type;
+	}
+
+	public boolean isItem1() {
+		return item1;
+	}
+
+	public void setItem1(boolean item1) {
+		this.item1 = item1;
+	}
+
+	public boolean isItem2() {
+		return item2;
+	}
+
+	public void setItem2(boolean item2) {
+		this.item2 = item2;
+	}
+
+	public boolean isItem3() {
+		return item3;
+	}
+
+	public void setItem3(boolean item3) {
+		this.item3 = item3;
+	}
+
+	public boolean isItem4() {
+		return item4;
+	}
+
+	public void setItem4(boolean item4) {
+		this.item4 = item4;
+	}
+
+	public boolean isItem5() {
+		return item5;
+	}
+
+	public void setItem5(boolean item5) {
+		this.item5 = item5;
+	}
+
+	public boolean isItem6() {
+		return item6;
+	}
+
+	public void setItem6(boolean item6) {
+		this.item6 = item6;
+	}
+
+	public boolean isItem7() {
+		return item7;
+	}
+
+	public void setItem7(boolean item7) {
+		this.item7 = item7;
+	}
+
+	public boolean isItem8() {
+		return item8;
+	}
+
+	public void setItem8(boolean item8) {
+		this.item8 = item8;
+	}
+
+	public boolean isItem9() {
+		return item9;
+	}
+
+	public void setItem9(boolean item9) {
+		this.item9 = item9;
+	}
+
+	public Integer getKms() {
+		return kms;
+	}
+
+	public void setKms(Integer kms) {
+		this.kms = kms;
+	}
+
+	public void setData(VehicleMaintenanceData data,Session session) {
+		vehicle = (Vehicle) session.load(Vehicle.class, data.getVehicle().getId());
+		date = data.getDate();
+		cost = data.getCost();
+		type = data.getType();
+		item1 = data.isItem1();
+		item2 = data.isItem2();
+		item3 = data.isItem3();
+		item4 = data.isItem4();
+		item5 = data.isItem5();
+		item6 = data.isItem6();
+		item7 = data.isItem7();
+		item8 = data.isItem8();
+		item9 = data.isItem9();
+		kms = data.getKms();
+	}
+
+	public VehicleMaintenanceData getData() {
+		return new VehicleMaintenanceData(vehicleMaintenanceId, vehicle.getVehicleData(),date,cost,type,item1,item2,item3,item4,item5,item6,item7,item8,item9,kms);
+	}
+}

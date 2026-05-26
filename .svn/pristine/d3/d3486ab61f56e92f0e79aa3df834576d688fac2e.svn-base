@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.cenapra.log" >
+    <class name="CENAPRAActivityRegistryLog" table="cenapraactivityregistrylog">
+		
+       <composite-id class="CENAPRAActivityRegistryLogPK" name="pk" >
+	        <key-property	name="id"			type="java.lang.Integer"	column="id"/>
+	        <key-property	name="userId"		type="java.lang.String"		column="userid"/>
+	        <key-property	name="date"			type="java.util.Date"		column="date"/>
+       </composite-id>
+
+        <property name="action" 		type="java.lang.Integer" column="action" />        
+
+        <property name="activity" 		type="java.lang.Integer" column="activity" />        
+        <property name="participant" 	type="java.lang.Integer" column="participant" />
+
+        <property name="observations" 	type="java.lang.String" column="observations" />
+       	<property name="result" />
+
+	 </class>
+
+</hibernate-mapping>

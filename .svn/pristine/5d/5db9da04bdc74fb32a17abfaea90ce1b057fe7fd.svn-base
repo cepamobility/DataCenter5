@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.administration.corporation.tables" >
+    <class
+        name="GeoLabel"
+        table="geolabels"
+    >
+
+        <id
+            name="id"
+            column="id"
+            type="java.lang.Integer"
+        >
+            <generator class="native">
+            </generator>
+        </id>
+
+		<many-to-one name="corporation" column="corporation" not-null="true"/>
+
+        <property column="resourcekey" name="resourceKey" type="java.lang.String" not-null="true" />
+        <property column="level" name="level" type="java.lang.Integer" not-null="true" />
+        
+    </class>
+
+</hibernate-mapping>

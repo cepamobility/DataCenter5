@@ -1,0 +1,766 @@
+package presentation.translator.web.activity.report;
+
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Graphics2D;
+import java.awt.geom.Rectangle2D;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.MalformedURLException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.StringTokenizer;
+
+import org.jfree.chart.ChartFactory;
+import org.jfree.chart.JFreeChart;
+import org.jfree.chart.plot.CategoryPlot;
+import org.jfree.chart.plot.PlotOrientation;
+import org.jfree.chart.renderer.category.BarRenderer;
+import org.jfree.chart.renderer.category.StandardBarPainter;
+import org.jfree.data.category.DefaultCategoryDataset;
+
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+
+import com.itextpdf.awt.DefaultFontMapper;
+import com.itextpdf.text.BaseColor;
+import com.itextpdf.text.Document;
+import com.itextpdf.text.DocumentException;
+import com.itextpdf.text.Element;
+import com.itextpdf.text.Font;
+import com.itextpdf.text.FontFactory;
+import com.itextpdf.text.Image;
+import com.itextpdf.text.PageSize;
+import com.itextpdf.text.Paragraph;
+import com.itextpdf.text.Phrase;
+import com.itextpdf.text.pdf.BaseFont;
+import com.itextpdf.text.pdf.ColumnText;
+import com.itextpdf.text.pdf.PdfContentByte;
+import com.itextpdf.text.pdf.PdfPCell;
+import com.itextpdf.text.pdf.PdfPTable;
+import com.itextpdf.text.pdf.PdfTemplate;
+import com.itextpdf.text.pdf.PdfWriter;
+import communication.activity.report.ActivityReportTabletDataType;
+import communication.activity.tables.CEPAActivityConstants;
+import communication.activity.tables.CEPAActivityScheduleRegistryData;
+import communication.activity.tables.CEPAScheduleActivityRegistryObservationSelectedData;
+import communication.activity.tables.CheckListData;
+import communication.activity.tables.ItemData;
+import communication.activity.tables.PointData;
+import communication.activity.tables.PointObservationSelectedData;
+import communication.alert.AlertConstants;
+import communication.language.Text;
+
+public class ActivityReportBTW {
+
+	private CEPAActivityScheduleRegistryData result;
+	private Text messages;
+	private SystemAccess sys;
+	private ActivityReportTabletDataType dataType;
+	private String activityTitle;
+	
+	private HashMap<String, Integer> media;
+	private HashMap<String, Integer> values;
+	
+	private static Font catFont = FontFactory.getFont(AlertConstants.FONT_REPORT_NAME, 18, Font.BOLD);
+	private static Font whiteFont = FontFactory.getFont(AlertConstants.FONT_REPORT_NAME, 16, Font.NORMAL, BaseColor.WHITE);
+	private static Font obsFont = FontFactory.getFont(AlertConstants.FONT_REPORT_NAME, 12, Font.BOLD);
+	private static Font subFont = FontFactory.getFont(AlertConstants.FONT_REPORT_NAME, 10, Font.NORMAL);
+	private static Font cell = FontFactory.getFont(AlertConstants.FONT_REPORT_NAME, 7, Font.NORMAL);
+	private static Font cellBold = FontFactory.getFont(AlertConstants.FONT_REPORT_NAME, 8, Font.NORMAL);
+
+	private int prePoints = 4;
+	private int toPoints = -1;
+	private String activityType;
+	private boolean onBoard;
+	private boolean sixPoints = false;
+	
+	public ActivityReportBTW(CEPAActivityScheduleRegistryData completeResult, ActivityReportTabletDataType dataType, SystemAccess sys, HashMap<String,Integer> media) {
+		this.result = completeResult;
+		this.sys = sys;
+		this.messages = sys.getText();
+		this.dataType = dataType;
+		this.media = media;
+		values = new HashMap<String, Integer>();
+		activityType = result.getActivity().getType().getResourceBundleId();
+		activityTitle = Util.activityName(messages.getText(activityType));
+    	prePoints = 4;
+    	onBoard = activityType.equals(CEPAActivityConstants.BTW1ONBOARD_TABLET) || activityType.equals(CEPAActivityConstants.BTW2ONBOARD_TABLET) 
+    			 || activityType.equals(CEPAActivityConstants.BTWPLUS1ONBOARD_TABLET)  || activityType.equals(CEPAActivityConstants.BTWPLUS2ONBOARD_TABLET)  
+    			 || activityType.equals(CEPAActivityConstants.TRANSIT_BEHAVIOUR_TABLET) ||activityType.equals(CEPAActivityConstants.TRAINING_ON_THE_JOB_TABLET) 
+    			|| activityType.equals(CEPAActivityConstants.PHRD_TABLET) || activityType.equals(CEPAActivityConstants.EVALUACION_EN_CABINA_TABLET) || activityType.equals(CEPAActivityConstants.TOJ_ECONOMIC_TABLET)
+    			 || activityType.equals(CEPAActivityConstants.TRAINING_ON_THE_JOB_4X4_TABLET) || activityType.equals(CEPAActivityConstants.SPECIALDAYOFTRAINING_TABLET)
+    			  || activityType.equals(CEPAActivityConstants.BTW3_VIA_PUBLICA_TABLET) || activityType.equals(CEPAActivityConstants.BTW2REFRESHONBOARD_TABLET);
+    	if(onBoard || sixPoints)
+    		prePoints = 0;
+	}
+
+	public void executeReport(OutputStream out, int type) {
+		try {
+			Document document = new Document();
+			PdfWriter writer = PdfWriter.getInstance(document, out);
+			document.open();
+  
+			TableHeader header = new TableHeader(activityTitle,Util.formatDate(result.getActivity().getDate()),result.getDriver().getFirstName()+" "+result.getDriver().getLastName());
+			writer.setPageEvent(header);
+			
+			addTitlePage(document);
+			
+			addHeader(writer, document);
+			
+			System.out.println("sdss "+  result.getNote());
+			if(!result.getNote().equals("generic.activity.note.practicepending")) {
+				if(activityType.equals(CEPAActivityConstants.SAFE_DRIVE_TABLET)) {
+					prePoints = 4;
+					toPoints = 18;
+					addMainChart(writer, document);
+					addTechnicalAspects(writer, document);
+					addMainObservations(writer);
+					
+					if(type == 1) {
+						document.newPage();
+				        CheckListData checkListData = result.getActivity().getDefinition().getCheckList();
+					    Iterator itPoints = checkListData.getSortPoints();
+					    int index = 1;
+				        while(itPoints.hasNext()) {
+				        	PointData point = (PointData)itPoints.next();
+				        	if(index > prePoints && (toPoints == -1 || index < toPoints)) {
+				        		addPointDescription(writer, document, point);
+			        			document.newPage();
+				        	}
+				        	index++;
+				        }
+					}			
+	
+					prePoints = 17;
+					toPoints = -1;
+	
+					addMainChartOnBoard(writer, document);
+					addMainObservations(writer);
+					
+					if(type == 1) {
+						document.newPage();
+				        CheckListData checkListData = result.getActivity().getDefinition().getCheckList();
+					    Iterator itPoints = checkListData.getSortPoints();
+					    int index = 1;
+				        while(itPoints.hasNext()) {
+				        	PointData point = (PointData)itPoints.next();
+				        	if(index > prePoints && (toPoints == -1 || index < toPoints)) {
+				        		addPointDescription(writer, document, point);
+				        		if(itPoints.hasNext())
+				        			document.newPage();
+				        	}
+				        	index++;
+				        }
+					}			
+	
+				} else {
+					if(onBoard) {
+						addMainChartOnBoard(writer, document);
+					}else {
+						addMainChart(writer, document);
+					}
+	
+					addTechnicalAspects(writer, document);
+					addMainObservations(writer);
+					
+					if(type == 1) {
+						document.newPage();
+				        CheckListData checkListData = result.getActivity().getDefinition().getCheckList();
+					    Iterator itPoints = checkListData.getSortPoints();
+					    int index = 1;
+				        while(itPoints.hasNext()) {
+				        	PointData point = (PointData)itPoints.next();
+				        	if(index > prePoints && (toPoints == -1 || index < toPoints)) {
+				        		addPointDescription(writer, document, point);
+				        		if(itPoints.hasNext())
+				        			document.newPage();
+				        	}
+				        	index++;
+				        }
+					}			
+				}
+			}
+			document.close();
+		} catch (Exception e) {
+			e.printStackTrace();
+	    }
+	}
+
+	private void addHeader(PdfWriter writer, Document document) throws Exception {
+		
+		Image back = Image.getInstance(AlertConstants.TEMP_DIRECTORY_JASPERREPORT+"images//back1.jpg");
+		int line1 = 700;
+		back.setAbsolutePosition(20,line1);
+        document.add(back);
+
+        boolean expiry = result.getActivity().getDefinition().getTimeExpiry() > 0;
+        
+        absText(writer, messages.getText("generic.activity.activitydata.activitytype")+": "+activityTitle, 25, line1+7, 10);
+        absText(writer, messages.getText("query.activity.generalreport.date")+": "+Util.formatDate(result.getActivity().getDate()), 280, line1+7, 10);
+        if(expiry) {
+        	absText(writer, messages.getText("generic.activity.activitydata.activityexpiry")+": "+Util.formatDate(result.getActivity().getDateExpiry()), (int)PageSize.A4.getWidth()-20, line1+7, 10, true);
+        }else {
+	        String instructor = messages.getText("generic.activity.instructor")+": ";
+	        instructor += (result.getInstructor() != null) ? result.getInstructor() : "---";
+	        absText(writer, instructor, (int)PageSize.A4.getWidth()-20, line1+7, 10,true);
+        }
+		int line2 = 675;
+        
+		absText(writer, messages.getText("generic.corporation")+": "+result.getActivity().getCorpooration().getName(), 25, line2+10, 10);
+        absText(writer, messages.getText("generic.activity.activitydata.city")+": "+result.getActivity().getCity(), 280, line2+10, 10);
+        absText(writer, messages.getText("generic.country")+": "+messages.getText(result.getActivity().getCountryName()), (int)PageSize.A4.getWidth()-20, line2+10, 10,true);
+
+        String[] labels = sys.getUserSessionData().getFilter().getPrincipalLabels();
+        int[][] principalDivOrgs = sys.getUserSessionData().getFilter().getPrincipalDivOrgs();
+
+        Image back2 = Image.getInstance(AlertConstants.TEMP_DIRECTORY_JASPERREPORT+"images//back1.jpg");
+		int line3 = 655;
+		back2.setAbsolutePosition(20,line3);
+        document.add(back2);
+        absText(writer, messages.getText(labels[0])+": "+result.getActivity().getDivOrg(principalDivOrgs[0]), 25, line3+7, 10);
+        if(labels.length > 1)
+	        absText(writer, messages.getText(labels[1])+": "+result.getActivity().getDivOrg(principalDivOrgs[1]), 280, line3+7, 10);
+
+		int line4 = line3;
+        if(labels.length > 2) {
+        	line4 -= 20;
+	        absText(writer, messages.getText(labels[2])+": "+result.getActivity().getDivOrg(principalDivOrgs[2]), 25, line4+4, 10);
+        }
+        if(labels.length > 3)
+	        absText(writer, messages.getText(labels[3])+": "+result.getActivity().getDivOrg(principalDivOrgs[3]), 280, line4+4, 10);
+        
+        int line5 = line4 - 45;
+        Image back3 = Image.getInstance(AlertConstants.TEMP_DIRECTORY_JASPERREPORT+"images//back2.jpg");
+		back3.setAbsolutePosition(20,line5);
+        document.add(back3);
+        
+        String participant = messages.getText("generic.activity.participantname")+": "+ result.getDriver().getFirstName()+" "+result.getDriver().getLastName();
+        absText(writer, participant, 25, line5+12, 14);
+
+        int line6 = line5 - 35;
+        if(result.getActivity().getDefinition().isHaveNote()) {
+	        String resultTxt = messages.getText("generic.activity.result")+": "+ messages.getText(result.getNote());
+	        absText(writer, resultTxt, 25, line6+12, 14);
+	        
+	        if(expiry) {
+		        String instructor = messages.getText("generic.activity.instructor")+": ";
+		        instructor += (result.getInstructor() != null) ? result.getInstructor() : "---";
+		        absText(writer, instructor, (int)PageSize.A4.getWidth()-20, line6+12, 10,true);
+	        }
+        }else {
+            if(expiry) {
+		        String instructor = messages.getText("generic.activity.instructor")+": ";
+		        instructor += (result.getInstructor() != null) ? result.getInstructor() : "---";
+		        absText(writer, instructor, (int)PageSize.A4.getWidth()-20, line6+12, 10,true);
+            }
+        }
+        
+	}
+
+	private void addTitlePage(Document document) throws DocumentException, MalformedURLException, IOException {
+		Paragraph preface = new Paragraph();
+		// We add one empty line
+		preface.add(new Paragraph(" "));
+		
+		Image imgHeader = Image.getInstance(AlertConstants.TEMP_DIRECTORY_JASPERREPORT+"images/header.jpg");
+		imgHeader.setAbsolutePosition(0,PageSize.A4.getHeight()-imgHeader.getHeight());
+        document.add(imgHeader);
+        
+		Image logo = Image.getInstance(AlertConstants.TEMP_DIRECTORY_JASPERREPORT+"images/logo.jpg");
+		logo.setAbsolutePosition(PageSize.A4.getWidth()-(logo.getWidth()+20),PageSize.A4.getHeight()-(logo.getHeight()+30));
+        document.add(logo);
+
+        preface.add(new Paragraph(" "));
+		// Lets write a big header
+        Paragraph title = new Paragraph(messages.getText("activity.newreport.title"), catFont);
+        title.setAlignment(Element.ALIGN_CENTER);
+		preface.add(title);
+		for(int i = 0; i < 26; i++)
+			preface.add(new Paragraph(" "));
+		
+		document.add(preface);
+	}
+	
+	public void addMainChart(PdfWriter writer, Document document) throws Exception {
+		
+		absText(writer, messages.getText("activity.newreport.executiveresume"), 220, 520, 14);
+        CheckListData checkListData = result.getActivity().getDefinition().getCheckList();
+
+		int width = 400;
+		int height = 200;
+	    //Number[][] data = new Integer[2][checkListData.getPoints().size()-4];
+        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+
+	    PdfPTable table = new PdfPTable(1);
+	    table.setHeaderRows(0);
+	    Iterator itPoints = checkListData.getSortPoints();
+	    int index = 1;
+        while(itPoints.hasNext()) {
+        	PointData point = (PointData)itPoints.next();
+        	if(index > prePoints && (toPoints == -1 || index < toPoints)) {
+                String pointIndex = String.valueOf(index-prePoints);
+                String phraseIndex = (sixPoints) ? messages.getText(point.getText()) : pointIndex+" - "+messages.getText(point.getText());
+
+                PdfPCell pdfCell = new PdfPCell(new Phrase(phraseIndex, cell));
+        		pdfCell.setBorder(0);
+        		table.addCell(pdfCell);
+        		
+        		int total = point.getRelevantItems(dataType).size();
+        		int wrong = dataType.getPointCount(point.getId());
+        		Integer wrongValue = wrong * 100 / total;
+                Integer rightValue = 100 - wrongValue.intValue();
+                if(rightValue.intValue() > 0)
+                	dataset.addValue(rightValue, "A", pointIndex);
+                if(wrongValue.intValue() > 0)
+                	dataset.addValue(wrongValue, "B", pointIndex);
+                values.put(String.valueOf(point.getId()), rightValue);
+        	}
+        	index++;
+        }		    
+
+        PdfPCell space = new PdfPCell(new Phrase(" ",cellBold));
+		space.setBorder(0);
+        table.addCell(space);
+        PdfPCell cell = new PdfPCell(new Phrase("-- "+messages.getText("activity.report.fleetmedia"),cellBold));
+		cell.setBorder(0);
+        table.addCell(cell);
+	        
+        JFreeChart chart =  ChartFactory.createStackedBarChart(
+	                "",  // chart title
+	                "", "",
+	                dataset,      // data
+	                PlotOrientation.VERTICAL,
+	                true,         // include legend
+	                true,
+	                true
+	            );
+	        
+        final CategoryPlot plot = chart.getCategoryPlot();
+        BarRenderer br = (BarRenderer) plot.getRenderer();
+        br.setMaximumBarWidth(.03f);
+        
+        plot.setBackgroundPaint(Color.WHITE);
+        plot.setOutlineVisible(false);
+        chart.setBorderPaint(Color.WHITE);
+        chart.setBorderStroke(null);
+        chart.setBorderVisible(false);
+        chart.getLegend().setVisible(false);
+        
+	    plot.getRenderer().setSeriesPaint(1, new Color(183, 87, 87));
+	    plot.getRenderer().setSeriesPaint(0, new Color(87, 179, 93));
+        ((BarRenderer) plot.getRenderer()).setBarPainter(new StandardBarPainter());
+        
+        PdfContentByte contentByte = writer.getDirectContent();
+        PdfTemplate template = contentByte.createTemplate(width, height);
+        Graphics2D graphics2d = template.createGraphics(width, height, new DefaultFontMapper());
+        Rectangle2D rectangle2d = new Rectangle2D.Double(0, 0, width, height);
+		chart.draw(graphics2d, rectangle2d);
+ 
+		graphics2d.setColor(Color.BLACK);
+		graphics2d.setStroke(new BasicStroke(2));
+	    itPoints = checkListData.getSortPoints();
+	    index = 1;
+	    int x = 0;
+	    if(activityType.equals(CEPAActivityConstants.BTW1_NEW_FORM_TABLET) || activityType.equals(CEPAActivityConstants.BTWPLUS1_TABLET)) {
+	    	x = 38;
+	    } else if(activityType.equals(CEPAActivityConstants.BTW2_NEW_FORM_TABLET) || activityType.equals(CEPAActivityConstants.BTWPLUS2_TABLET)) {
+	    	x = 40;
+	    }
+	    
+        while(itPoints.hasNext()) {
+        	PointData point = (PointData)itPoints.next();
+    		if(index > prePoints && (toPoints == -1 || index < toPoints)) {
+    			String pointKey = point.getPointKey(dataType);
+	        	Integer value = (media.containsKey(pointKey)) ? 100 - media.get(pointKey) : 100; 
+	        	if(activityType.equals(CEPAActivityConstants.BTW1_NEW_FORM_TABLET) || activityType.equals(CEPAActivityConstants.BTWPLUS1_TABLET)) {
+	        		x += 24;
+	        		if(index == 7) {
+	        			x+=1;
+	        		}else if(index != 6 && (index % 4 == 0 || index % 5 == 0)) {
+	        			x+=1;
+        			}
+	        		int y = 170-Math.round(value*152/100);
+	        		graphics2d.drawLine(x,y,x+9,y);
+	    	    } else if(activityType.equals(CEPAActivityConstants.BTW2_NEW_FORM_TABLET) || activityType.equals(CEPAActivityConstants.BTWPLUS2_TABLET)) {
+	        		x += 20;
+	        		if(index % 7 == 0)
+	        			x--;
+	        		int y = 170-Math.round(value*152/100);
+	        		graphics2d.drawLine(x,y,x+10,y);
+	        	}
+    		}
+        	index++;
+        }
+         
+        graphics2d.dispose();
+        contentByte.addTemplate(template, 20, 315);
+	 
+        table.setTotalWidth(150);
+        table.writeSelectedRows(0, -1, 430, 520, writer.getDirectContent());
+	}
+	
+	public void addMainChartOnBoard(PdfWriter writer, Document document) throws Exception {
+		
+		absText(writer, messages.getText("activity.newreport.executiveresume"), 220, 520, 14);
+        CheckListData checkListData = result.getActivity().getDefinition().getCheckList();
+
+		int width = 350;
+		int height = 200;
+	    //Number[][] data = new Integer[2][checkListData.getPoints().size()-4];
+        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+
+	    PdfPTable table = new PdfPTable(1);
+	    table.setHeaderRows(0);
+	    Iterator itPoints = checkListData.getSortPoints();
+	    int index = 1;
+        while(itPoints.hasNext()) {
+        	PointData point = (PointData)itPoints.next();
+        	if(index > prePoints && (toPoints == -1 || index < toPoints)) {
+            	StringTokenizer tokenizer = new StringTokenizer(messages.getText(point.getText()));
+            	String pointIndex = tokenizer.nextToken();
+            	if(pointIndex.endsWith(".")) {
+            		pointIndex = pointIndex.substring(0,pointIndex.indexOf("."));
+            	}
+            	String phraseIndex = messages.getText(point.getText());
+
+                PdfPCell pdfCell = new PdfPCell(new Phrase(phraseIndex, cell));
+        		pdfCell.setBorder(0);
+        		table.addCell(pdfCell);
+        		
+        		int total = point.getRelevantItems(dataType).size();
+        		int wrong = dataType.getPointCount(point.getId());
+        		Integer wrongValue = wrong * 100 / total;
+                Integer rightValue = 100 - wrongValue.intValue();
+                if(rightValue.intValue() > 0)
+                	dataset.addValue(rightValue, "A", pointIndex);
+                if(wrongValue.intValue() > 0)
+                	dataset.addValue(wrongValue, "B", pointIndex);
+                values.put(String.valueOf(point.getId()), rightValue);
+        	}
+        	index++;
+        }		    
+
+        PdfPCell space = new PdfPCell(new Phrase(" ",cellBold));
+		space.setBorder(0);
+        table.addCell(space);
+        PdfPCell cell = new PdfPCell(new Phrase("-- "+messages.getText("activity.report.fleetmedia"),cellBold));
+		cell.setBorder(0);
+        table.addCell(cell);
+	        
+        JFreeChart chart =  ChartFactory.createStackedBarChart(
+	                "",  // chart title
+	                "", "",
+	                dataset,      // data
+	                PlotOrientation.VERTICAL,
+	                true,         // include legend
+	                true,
+	                true
+	            );
+	        
+        final CategoryPlot plot = chart.getCategoryPlot();
+        BarRenderer br = (BarRenderer) plot.getRenderer();
+        br.setMaximumBarWidth(.05f);
+        
+        plot.setBackgroundPaint(Color.WHITE);
+        plot.setOutlineVisible(false);
+        chart.setBorderPaint(Color.WHITE);
+        chart.setBorderStroke(null);
+        chart.setBorderVisible(false);
+        chart.getLegend().setVisible(false);
+        
+	    plot.getRenderer().setSeriesPaint(1, new Color(183, 87, 87));
+	    plot.getRenderer().setSeriesPaint(0, new Color(87, 179, 93));
+        ((BarRenderer) plot.getRenderer()).setBarPainter(new StandardBarPainter());
+        
+        PdfContentByte contentByte = writer.getDirectContent();
+        PdfTemplate template = contentByte.createTemplate(width, height);
+        Graphics2D graphics2d = template.createGraphics(width, height, new DefaultFontMapper());
+        Rectangle2D rectangle2d = new Rectangle2D.Double(0, 0, width, height);
+		chart.draw(graphics2d, rectangle2d);
+ 
+		graphics2d.setColor(Color.BLACK);
+		graphics2d.setStroke(new BasicStroke(2));
+	    itPoints = checkListData.getSortPoints();
+	    index = 1;
+	    int x =  60;
+	    
+        while(itPoints.hasNext()) {
+        	PointData point = (PointData)itPoints.next();
+    		if(index > prePoints && (toPoints == -1 || index < toPoints)) {
+    			String pointKey = point.getPointKey(dataType);
+	        	Integer value = (media.containsKey(pointKey)) ? 100 - media.get(pointKey) : 100; 
+        		int y = 170-Math.round(value*152/100);
+        		graphics2d.drawLine(x,y,x+12,y);
+        		x += (index % 3 == 0) ? 30 : 31;
+    		}
+        	index++;
+        }
+         
+        graphics2d.dispose();
+        contentByte.addTemplate(template, 20, 315);
+	 
+        table.setTotalWidth(200);
+        table.writeSelectedRows(0, -1, 380, 480, writer.getDirectContent());
+	}
+
+	private void addTechnicalAspects(PdfWriter writer, Document document) throws Exception {
+		
+		Image back = Image.getInstance(AlertConstants.TEMP_DIRECTORY_JASPERREPORT+"images//back1.jpg");
+		int line1 = 270;
+		back.setAbsolutePosition(20,line1);
+        document.add(back);
+        
+        absText(writer, messages.getText("generic.activity.technicalaspectsvalued"), 200, line1+8, 12);
+        
+        Paragraph technical = new Paragraph(messages.getText("query.activity.generalreport.technicalaspecttextNew"), subFont);
+        technical.setAlignment(Element.ALIGN_LEFT);
+		document.add(technical);
+	}
+	
+	private void addMainObservations(PdfWriter writer) {
+		if(result.getObsSelected() != null) {
+		    Iterator<CEPAScheduleActivityRegistryObservationSelectedData> observations = result.getObsSelected().iterator();
+		    if(observations.hasNext()) {
+		        PdfPTable tableObs = new PdfPTable(1);
+		        tableObs.setHeaderRows(1);
+			    PdfPCell cellHeader = new PdfPCell(new Phrase(messages.getText("generic.activity.observations"),obsFont));
+			    cellHeader.setBorder(0);
+			    tableObs.addCell(cellHeader);
+		        while(observations.hasNext()) {
+		    	    PdfPCell cellObs = new PdfPCell(new Phrase(messages.getText(observations.next().getObservation().getText()),subFont));
+		    	    cellObs.setBorder(0);
+		        	tableObs.addCell(cellObs);
+		        }
+		        tableObs.setTotalWidth(580);
+		        tableObs.writeSelectedRows(0, -1, 20, 190, writer.getDirectContent());
+		    }
+		}
+	}
+	
+	private void addPointDescription(PdfWriter writer, Document document, PointData point) throws Exception {
+
+		Image back = Image.getInstance(AlertConstants.TEMP_DIRECTORY_JASPERREPORT+"images//back1.jpg");
+		int line1 = 740;
+		back.setAbsolutePosition(20,line1);
+        document.add(back);
+        
+        String title = messages.getText(point.getText());
+        int xTitle = (580 - (title.length()*6)) / 2;
+        absText(writer, title, xTitle, line1+8, 12);
+        
+        document.add(new Paragraph(" "));
+        document.add(new Paragraph(" "));
+        document.add(new Paragraph(" "));
+        document.add(new Paragraph(" "));
+        String text = messages.getText(point.getText()+".concept");
+        int extra = 0;
+        if(text.length() < 200) {
+        	extra = -30;
+        } else if (text.length() < 400) {
+        	extra = -15;
+        } else if (text.length() > 600) {
+        	extra = 30;
+        } else if (text.length() > 500) {
+        	extra = 15;
+        }
+        Paragraph technical = new Paragraph(text, subFont);
+        technical.setAlignment(Element.ALIGN_LEFT);
+		document.add(technical);
+        
+        for(int i = 0; i < 5; i++)
+        	document.add(new Paragraph(" "));
+        PdfPTable table = new PdfPTable(3);
+	    table.setHeaderRows(1);
+	    PdfPCell cell1 = new PdfPCell(new Phrase(""));
+	    cell1.setBorderColor(BaseColor.LIGHT_GRAY);
+	    cell1.setBorderWidthLeft(0);
+	    cell1.setBorderWidthTop(0);
+   		cell1.setFixedHeight(25f);
+	    table.addCell(cell1);
+	    PdfPCell cell2 = new PdfPCell(new Phrase("P",whiteFont));
+	    cell2.setBackgroundColor(new BaseColor(87, 179, 93));
+   		cell2.setVerticalAlignment(Element.ALIGN_MIDDLE);
+   		cell2.setHorizontalAlignment(Element.ALIGN_CENTER);
+	    cell2.setBorder(0);
+	    table.addCell(cell2);
+	    PdfPCell cell3 = new PdfPCell(new Phrase("N",whiteFont));
+	    cell3.setBackgroundColor(new BaseColor(183, 87, 87));
+   		cell3.setVerticalAlignment(Element.ALIGN_MIDDLE);
+   		cell3.setHorizontalAlignment(Element.ALIGN_CENTER);
+	    cell3.setBorder(0);
+	    table.addCell(cell3);
+	    table.setWidths(new int[]{300,30,30});
+	   // table.setPaddingTop(10);
+	    Collection<ItemData> items = point.getRelevantItems(dataType);
+	    Collections.sort((List)items);
+	    Iterator itItems = items.iterator();
+        while(itItems.hasNext()) {
+            document.add(new Paragraph(" "));
+        	ItemData item = (ItemData)itItems.next();
+       		PdfPCell pdfCell = new PdfPCell(new Phrase("  "+messages.getText(item.getText()), subFont));
+       		pdfCell.setBorderWidthLeft(0);
+       		pdfCell.setBorderWidthTop(0);
+       		pdfCell.setBorderColor(BaseColor.LIGHT_GRAY);
+       		pdfCell.setVerticalAlignment(Element.ALIGN_MIDDLE);
+       		pdfCell.setFixedHeight(20f);
+       		table.addCell(pdfCell);
+       		boolean error = dataType.isItem(point.getId(),item.getId());
+       		if(error) {
+           		PdfPCell pdfCell1 = new PdfPCell(new Phrase(""));
+           		pdfCell1.setBorderColor(BaseColor.LIGHT_GRAY);
+           		Image img = Image.getInstance(AlertConstants.TEMP_DIRECTORY_JASPERREPORT+"images//rojo.jpg");
+           		img.setPaddingTop(5);
+           		PdfPCell pdfCell2 = new PdfPCell(img);
+           		pdfCell2.setBorderColor(BaseColor.LIGHT_GRAY);
+           		pdfCell2.setVerticalAlignment(Element.ALIGN_MIDDLE);
+           		pdfCell2.setHorizontalAlignment(Element.ALIGN_CENTER);
+           		table.addCell(pdfCell1);
+           		table.addCell(pdfCell2);
+       		}else {
+           		PdfPCell pdfCell1 = new PdfPCell(new Phrase(""));
+           		pdfCell1.setBorderColor(BaseColor.LIGHT_GRAY);
+           		Image img = Image.getInstance(AlertConstants.TEMP_DIRECTORY_JASPERREPORT+"images//verde.jpg");
+           		img.setAbsolutePosition(5, 5);
+           		PdfPCell pdfCell2 = new PdfPCell(img);
+           		pdfCell2.setVerticalAlignment(Element.ALIGN_MIDDLE);
+           		pdfCell2.setHorizontalAlignment(Element.ALIGN_CENTER);
+           		pdfCell2.setBorderColor(BaseColor.LIGHT_GRAY);
+           		table.addCell(pdfCell2);
+           		table.addCell(pdfCell1);
+       		}
+        }		    
+        table.setTotalWidth(360);
+        table.writeSelectedRows(0, -1, 20, 670-extra, writer.getDirectContent());
+        
+		int width = 150;
+		int height = 40+items.size()*20;
+	    Number[][] data = new Integer[2][2];
+	    
+	    data[0][0] = values.get(String.valueOf(point.getId()));
+	    data[1][0] = 100 - values.get(String.valueOf(point.getId())).intValue();
+
+	    String pointKey = point.getPointKey(dataType);
+	    if((media.containsKey(pointKey))) {
+		    data[1][1] = media.get(pointKey);
+		    data[0][1] = 100 - media.get(pointKey).intValue();
+	    }else {
+		    data[0][1] = 100;
+		    data[1][1] = 0;
+	    }
+        //CategoryDataset dataset = DatasetUtilities.createCategoryDataset("A", "", data);
+        DefaultCategoryDataset dataset = new DefaultCategoryDataset();
+
+        if(data[0][0].intValue() >= 0)
+        	dataset.addValue(data[0][0], "A", messages.getText("activity.report.performance"));
+        if(data[1][0].intValue() >= 0)
+        	dataset.addValue(data[1][0], "B", messages.getText("activity.report.performance"));
+
+        
+        if(data[0][1].intValue() >= 0)
+        	dataset.addValue(data[0][1], "A", messages.getText("activity.report.media"));
+        if(data[1][1].intValue() >= 0)
+        	dataset.addValue(data[1][1], "B", messages.getText("activity.report.media"));
+        
+        
+        JFreeChart chart =  ChartFactory.createStackedBarChart(
+	                "",  // chart title
+	                "", "",
+	                dataset,      // data
+	                PlotOrientation.VERTICAL,
+	                false,         // include legend
+	                true,
+	                true
+	            );
+	        
+        final CategoryPlot plot = chart.getCategoryPlot();
+        BarRenderer br = (BarRenderer) plot.getRenderer();
+        br.setMaximumBarWidth(.2f);
+        
+        plot.setBackgroundPaint(Color.WHITE);
+        plot.setOutlineVisible(false);
+        plot.getRangeAxis().setTickLabelsVisible(false);
+        plot.getRangeAxis().setTickMarksVisible(false);
+        plot.getDomainAxis().setTickLabelFont(new java.awt.Font(AlertConstants.FONT_REPORT_NAME, java.awt.Font.PLAIN, 7));
+        plot.getDomainAxis().setMaximumCategoryLabelLines(2);
+        chart.setBorderPaint(Color.WHITE);
+        chart.setBorderStroke(null);
+        chart.setBorderVisible(false);
+        //chart.getLegend().setVisible(false);
+        
+	    plot.getRenderer().setSeriesPaint(1, new Color(183, 87, 87));
+	    plot.getRenderer().setSeriesPaint(0, new Color(87, 179, 93));
+        ((BarRenderer) plot.getRenderer()).setBarPainter(new StandardBarPainter());
+        
+        PdfContentByte contentByte = writer.getDirectContent();
+        PdfTemplate template = contentByte.createTemplate(width, height);
+        Graphics2D graphics2d = template.createGraphics(width, height, new DefaultFontMapper());
+        Rectangle2D rectangle2d = new Rectangle2D.Double(0, 0, width, height);
+		chart.draw(graphics2d, rectangle2d);
+ 
+		graphics2d.setColor(Color.BLACK);
+		graphics2d.setStroke(new BasicStroke(.5f));
+        int x = 20;
+   		int y = 8 + height/20;
+   		y += data[1][1].intValue() * (height/100);
+   		//graphics2d.drawLine(x,y,x+110,y);
+         
+        graphics2d.dispose();
+        contentByte.addTemplate(template, 400, 640 - (extra + items.size()*20));
+
+	    Iterator<PointObservationSelectedData> observations = result.getPointObservations(point).iterator();
+	    if(observations.hasNext()) {
+	        document.add(new Paragraph(" "));
+	        PdfPTable tableObs = new PdfPTable(1);
+	        tableObs.setHeaderRows(1);
+		    PdfPCell cellHeader = new PdfPCell(new Phrase(messages.getText("generic.activity.observations"),obsFont));
+		    cellHeader.setBorder(0);
+		    tableObs.addCell(cellHeader);
+	        while(observations.hasNext()) {
+	            document.add(new Paragraph(" "));
+	    	    PdfPCell cellObs = new PdfPCell(new Phrase(" - "+messages.getText(observations.next().getObservation().getText()),subFont));
+	    	    cellObs.setBorder(0);
+	        	tableObs.addCell(cellObs);
+	        }
+	        tableObs.setTotalWidth(540);
+	        tableObs.writeSelectedRows(0, -1, 32, 670-(extra+40+(items.size()*20)), writer.getDirectContent());
+	    }
+
+        Paragraph recomendationTxt = new Paragraph(messages.getText("generic.messages.recomendation"), obsFont);
+        recomendationTxt.setAlignment(Element.ALIGN_LEFT);
+		document.add(recomendationTxt);
+
+        Paragraph recomendation = new Paragraph(messages.getText(point.getText()+".recomendation"), subFont);
+        recomendation.setAlignment(Element.ALIGN_LEFT);
+		document.add(recomendation);
+	}
+	
+	private void absText(PdfWriter writer, String text, int x, int y, int size) {
+		absText(writer, text, x, y, size, false);
+	}
+	
+	private void absText(PdfWriter writer, String text, int x, int y, int size, boolean right) {
+	    try {
+	    	PdfContentByte cb = writer.getDirectContent();
+	    	BaseFont bf = BaseFont.createFont(AlertConstants.FONT_REPORT_NAME, BaseFont.CP1252, BaseFont.NOT_EMBEDDED);
+	    	cb.saveState();
+	    	cb.beginText();
+	    	cb.setFontAndSize(bf, size);
+	    	if(right) {
+	    		ColumnText.showTextAligned(cb, Element.ALIGN_RIGHT, new Phrase(text, subFont), x, y, 0);
+	    	}else {	
+	    		cb.moveText(x, y);
+	    		cb.showText(text);
+	    	}
+	    	cb.endText();
+	    	cb.restoreState();
+	    } catch (DocumentException e) {
+	    	e.printStackTrace();
+	    } catch (IOException e) {
+	    	e.printStackTrace();
+	    }
+	}
+}

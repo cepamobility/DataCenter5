@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.administration.tables" >
+    <class name="UserCorporation" table="usercorporations">
+
+       <composite-id class="UserCorporationPK" name="pk" >
+       		<key-many-to-one
+       			 name="corporation"
+       			 column="id"
+       			 class="persistence.administration.corporation.tables.Corporation"
+       	 	/>
+       	 	<key-many-to-one
+       	 		 name="user"
+       	 		 column="loginname"
+       	 		 class="persistence.administration.user.tables.User"
+       	 	/>
+       </composite-id>
+       
+		<many-to-one 
+			name="role"
+			class="Role"
+			not-null="false"
+		/>
+		
+    	<set name="permissions" table="userpermissions" cascade="all">
+			<key>
+					<column name="corporationId" /> 
+					<column name="userId" />
+			</key>
+	        <many-to-many column="permission" class="Permission"/>
+	    </set>
+
+	</class>
+
+</hibernate-mapping>

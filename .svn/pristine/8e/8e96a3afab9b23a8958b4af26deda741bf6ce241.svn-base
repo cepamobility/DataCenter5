@@ -1,0 +1,370 @@
+package persistence.activity.tables;
+
+import java.io.Serializable;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.Set;
+
+import org.hibernate.Session;
+
+import communication.activity.tables.CEPAActivityDefinitionData;
+import communication.activity.tables.CEPAActivitySubFamilyData;
+import communication.activity.tables.CEPAScheduleActivityRegistryObservationData;
+
+public class CEPAActivityDefinition implements Serializable {
+	
+	private static final long serialVersionUID = 1L;
+
+	// Representa el formulario asociado la actividad 
+	protected CheckList checkList;
+	
+	/**
+	 * Nombre ej: BTW1...
+	 */
+	protected String resourceKeyName;
+	
+	/**
+	 * Ej: BTW, Multiplicadores,.....
+	 */
+	protected String category;
+	
+	// Categoría que permite agrupar a los cursos que se renuevan mutuamente (por ejemplo BTW1 y BTW2) 
+	protected String categoryForExpiry;
+	
+	/**
+	 * Utiliza reporte global
+	 */
+	protected boolean haveGlobalReport;
+	
+	/**
+	 * Uriliza reporte individual
+	 */
+	protected boolean haveIndividualReport;
+	
+	/**
+	 * Utiliza sistema de notas
+	 */
+	protected boolean haveNote;
+	
+	/**
+	 * Tiene formulario
+	 */
+	protected boolean hasForm;
+	
+	protected boolean hasTeoricoAsistence;
+	protected boolean hasPracticoAsistence;
+	
+	
+	/**
+	 * Duración en días
+	 */
+	protected int last;
+	
+	/**
+	 * Vigencia en Años
+	 * valor 0 no expira
+	 * valor -1 depende de la evaluación
+	 * valor > 0 tiempo en años para la expiración 
+	 */
+	protected int timeExpiry;
+	
+	
+	/**
+	 * Nuevos Campos para Ajuste de Familias de Actividades
+	 */	
+	protected CEPAActivitySubFamily subFamily; // la subfamilia incluye a la familia
+	protected boolean isBTW; // indica si la actividad se toma dentro del grupo de los BTW
+	
+	
+	protected String version; // version del formulario de esta actividad.
+	
+	/**
+	 * Conjunto de Observaciones Generales Predefinidas
+	 * para el tipo de actividad en concreto.
+	 */
+	protected Set<CEPAScheduleActivityRegistryObservation> generalObservationsSet;
+	
+	/**
+	 * 
+	 */
+	public CEPAActivityDefinition() {		
+	}
+	
+	
+	/**
+	 * 
+	 * @param data
+	 * @param session
+	 */
+	public CEPAActivityDefinition(CEPAActivityDefinitionData data, Session session) {
+		this.haveGlobalReport=data.isHaveGlobalReport();
+		this.haveIndividualReport=data.isHaveIndividualReport();
+		this.haveNote=data.isHaveNote();
+		this.last=data.getLast();
+		this.timeExpiry=data.getTimeExpiry();
+		this.resourceKeyName=data.getResourceKeyName();
+		
+		if (data.getCheckList() != null){
+			this.checkList = (CheckList)session.load(
+					CheckList.class,data.getCheckList().getId());
+		}else{
+			this.checkList = null;
+		}
+		
+		this.hasForm=data.getHasForm();
+		this.hasTeoricoAsistence = data.getHasTeoricoAsistence();
+		this.hasPracticoAsistence = data.getHasPracticoAsistence();
+		
+		if (data.getSubFamily() != null){
+			this.subFamily = (CEPAActivitySubFamily)session.load(
+					CEPAActivitySubFamily.class, data.getSubFamily().getId());
+		}else{
+			this.subFamily = null;
+		}
+		
+		this.isBTW = data.getIsBTW();
+		
+		
+		// Observaciones Generales
+		if (data.getGeneralObservations() != null && data.getGeneralObservations().size() > 0){
+			this.generalObservationsSet = new HashSet<CEPAScheduleActivityRegistryObservation>();
+			Iterator<CEPAScheduleActivityRegistryObservationData> it = data.getGeneralObservations().iterator();
+			while (it.hasNext()){
+				CEPAScheduleActivityRegistryObservationData obsData = it.next();
+				if (obsData != null){
+					CEPAScheduleActivityRegistryObservation obs = (CEPAScheduleActivityRegistryObservation)
+						session.load(CEPAScheduleActivityRegistryObservation.class, obsData.getIdObservation());
+					if (obs != null){
+						this.generalObservationsSet.add(obs);
+					}
+				}
+			}
+		}
+		
+		
+	}
+
+
+	public boolean isHaveGlobalReport() {
+		return haveGlobalReport;
+	}
+
+	public void setHaveGlobalReport(boolean haveGlobalReport) {
+		this.haveGlobalReport = haveGlobalReport;
+	}
+
+	public boolean isHaveIndividualReport() {
+		return haveIndividualReport;
+	}
+
+	public void setHaveIndividualReport(boolean haveIndividualReport) {
+		this.haveIndividualReport = haveIndividualReport;
+	}
+
+	public boolean isHaveNote() {
+		return haveNote;
+	}
+
+	public void setHaveNote(boolean haveNote) {
+		this.haveNote = haveNote;
+	}
+
+	public int getLast() {
+		return last;
+	}
+
+	public void setLast(int last) {
+		this.last = last;
+	}
+
+	public String getResourceKeyName() {
+		return resourceKeyName;
+	}
+
+	public void setResourceKeyName(String resourceKeyName) {
+		this.resourceKeyName = resourceKeyName;
+	}
+
+
+	/**
+	 * Vigencia en Meses
+	 * valor 0 no expira
+	 * valor -1 depende de la evaluación
+	 * valor > 0 tiempo en meses para la expiración 
+	 */
+	public int getTimeExpiry() {
+		return timeExpiry;
+	}
+
+	/**
+	 * Vigencia en Meses
+	 * valor 0 no expira
+	 * valor -1 depende de la evaluación
+	 * valor > 0 tiempo en meses para la expiración 
+	 */
+	public void setTimeExpiry(int timeExpiry) {
+		this.timeExpiry = timeExpiry;
+	}
+	
+	/**
+	 * 
+	 * @return
+	 */
+	public CEPAActivityDefinitionData getCEPAActivityDefinitionData(){
+		
+		CEPAActivitySubFamilyData subFamilyData = (subFamily == null) ? null : this.subFamily.getCEPAActivitySubFamilyData();
+		LinkedList<CEPAScheduleActivityRegistryObservationData> obsGenerales = null;
+		if (this.generalObservationsSet != null && this.generalObservationsSet.size() > 0){
+			obsGenerales = new LinkedList<CEPAScheduleActivityRegistryObservationData>();
+			Iterator<CEPAScheduleActivityRegistryObservation> it = this.generalObservationsSet.iterator();
+			while (it.hasNext()){
+				CEPAScheduleActivityRegistryObservation obs = it.next();
+				if (obs != null){
+					obsGenerales.add(obs.getData());
+				}
+			}
+		}
+						
+		
+		CEPAActivityDefinitionData data =  new CEPAActivityDefinitionData(
+				resourceKeyName,checkList.getCheckListData(),
+				haveGlobalReport,haveIndividualReport,haveNote,
+				last,timeExpiry,hasForm,hasTeoricoAsistence,hasPracticoAsistence,
+				subFamilyData,isBTW,obsGenerales);		
+		return data;
+	}
+
+	/**
+	 * @return Returns the checkList.
+	 */
+	public CheckList getCheckList() {
+		return checkList;
+	}
+
+	/**
+	 * @param checkList The checkList to set.
+	 */
+	public void setCheckList(CheckList checkList) {
+		this.checkList = checkList;
+	}
+
+	/**
+	 * @return Returns the category.
+	 */
+	public String getCategory() {
+		return category;
+	}
+
+	/**
+	 * @param category The category to set.
+	 */
+	public void setCategory(String category) {
+		this.category = category;
+	}
+
+	public String getCategoryForExpiry() {
+		return categoryForExpiry;
+	}
+
+	public void setCategoryForExpiry(String categoryForExpiry) {
+		this.categoryForExpiry = categoryForExpiry;
+	}
+
+	public boolean getHasForm() {
+		return hasForm;
+	}
+
+	public void setHasForm(boolean hasForm) {
+		this.hasForm = hasForm;
+	}
+
+	public boolean getHasPracticoAsistence() {
+		return hasPracticoAsistence;
+	}
+
+	public void setHasPracticoAsistence(boolean hasPracticoAsistence) {
+		this.hasPracticoAsistence = hasPracticoAsistence;
+	}
+
+	public boolean getHasTeoricoAsistence() {
+		return hasTeoricoAsistence;
+	}
+
+	public void setHasTeoricoAsistence(boolean hasTeoricoAsistence) {
+		this.hasTeoricoAsistence = hasTeoricoAsistence;
+	}
+
+	/**
+	 * @return the subFamily
+	 */
+	public CEPAActivitySubFamily getSubFamily() {
+		return subFamily;
+	}
+
+	/**
+	 * @param subFamily the subFamily to set
+	 */
+	public void setSubFamily(CEPAActivitySubFamily subFamily) {
+		this.subFamily = subFamily;
+	}
+
+	/**
+	 * @return the isBTW
+	 */
+	public boolean getIsBTW() {
+		return isBTW;
+	}
+
+	/**
+	 * @param isBTW the isBTW to set
+	 */
+	public void setIsBTW(boolean isBTW) {
+		this.isBTW = isBTW;
+	}
+
+
+	/**
+	 * @return the version
+	 */
+	public String getVersion() {
+		return version;
+	}
+
+
+	/**
+	 * @param version the version to set
+	 */
+	public void setVersion(String version) {
+		this.version = version;
+	}
+
+
+	/**
+	 * @param isBTW the isBTW to set
+	 */
+	public void setBTW(boolean isBTW) {
+		this.isBTW = isBTW;
+	}
+
+
+	/**
+	 * @return the generalObservationsSet
+	 */
+	public Set<CEPAScheduleActivityRegistryObservation> getGeneralObservationsSet() {
+		return generalObservationsSet;
+	}
+
+
+	/**
+	 * @param generalObservationsSet the generalObservationsSet to set
+	 */
+	public void setGeneralObservationsSet(Set<CEPAScheduleActivityRegistryObservation> generalObservationsSet) {
+		this.generalObservationsSet = generalObservationsSet;
+	}
+	
+	
+	
+	
+
+}

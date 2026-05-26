@@ -1,0 +1,781 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE jboss PUBLIC "-//JBoss//DTD JBOSS 4.0//EN" "http://www.jboss.org/j2ee/dtd/jboss_4_0.dtd">
+
+<jboss>
+
+   <security-domain>java:/jaas/datacenter</security-domain>
+
+   <enterprise-beans>
+
+<message-driven>
+         <ejb-name>AlertsMDB</ejb-name>                       
+         <destination-jndi-name>topic/DayAlertTopic</destination-jndi-name>
+</message-driven>
+
+      <session>
+         <ejb-name>DataTypeReport</ejb-name>
+         <jndi-name>ejb/DataTypeReport</jndi-name>
+         <local-jndi-name>DataTypeReportLocal</local-jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>CENAPRAABM</ejb-name>
+         <jndi-name>ejb/CENAPRAABM</jndi-name>
+         <local-jndi-name>CENAPRAABMLocal</local-jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>UserReportFacade</ejb-name>
+         <jndi-name>ejb/UserReportFacade</jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/UserReport</ejb-ref-name>
+            <jndi-name>ejb/UserReport</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>ActivityABM</ejb-name>
+         <jndi-name>ejb/ActivityABM</jndi-name>
+         <local-jndi-name>ActivityABMLocal</local-jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>DriverABMFacade</ejb-name>
+         <jndi-name>ejb/DriverABMFacade</jndi-name>
+         <local-jndi-name>DriverABMFacadeLocal</local-jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/DriverABM</ejb-ref-name>
+            <jndi-name>ejb/DriverABM</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/DriverReport</ejb-ref-name>
+            <jndi-name>ejb/DriverReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/UserABM</ejb-ref-name>
+            <jndi-name>ejb/UserABM</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/VehicleABM</ejb-ref-name>
+            <jndi-name>ejb/VehicleABM</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/VehicleReport</ejb-ref-name>
+            <jndi-name>ejb/VehicleReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/CorporationReport</ejb-ref-name>
+            <jndi-name>ejb/CorporationReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/ActivityReport</ejb-ref-name>
+            <jndi-name>ejb/ActivityReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/ActivityABM</ejb-ref-name>
+            <jndi-name>ejb/ActivityABM</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>External</ejb-name>
+         <jndi-name>ejb/External</jndi-name>
+         <local-jndi-name>ExternalLocal</local-jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>CorporationReportFacade</ejb-name>
+         <jndi-name>ejb/CorporationReportFacade</jndi-name>
+         <local-jndi-name>CorporationReportFacadeLocal</local-jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/CorporationReport</ejb-ref-name>
+            <jndi-name>ejb/CorporationReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/DriverReport</ejb-ref-name>
+            <jndi-name>ejb/DriverReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/VehicleReport</ejb-ref-name>
+            <jndi-name>ejb/VehicleReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/EventReport</ejb-ref-name>
+            <jndi-name>ejb/EventReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/ActivityReport</ejb-ref-name>
+            <jndi-name>ejb/ActivityReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/ActivityReport</ejb-ref-name>
+            <jndi-name>ejb/ActivityReport</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>AlertReport</ejb-name>
+         <jndi-name>ejb/AlertReport</jndi-name>
+         <local-jndi-name>AlertReportLocal</local-jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>CorporationReport</ejb-name>
+         <jndi-name>ejb/CorporationReport</jndi-name>
+         <local-jndi-name>CorporationReportLocal</local-jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/CorporationABM</ejb-ref-name>
+            <jndi-name>ejb/CorporationABM</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>EventABMFacade</ejb-name>
+         <jndi-name>ejb/EventABMFacade</jndi-name>
+         <local-jndi-name>EventABMFacadeLocal</local-jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/EventABM</ejb-ref-name>
+            <jndi-name>ejb/EventABM</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/VehicleReport</ejb-ref-name>
+            <jndi-name>ejb/VehicleReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/DriverReport</ejb-ref-name>
+            <jndi-name>ejb/DriverReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/DataTypeReport</ejb-ref-name>
+            <jndi-name>ejb/DataTypeReport</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>GroupReport</ejb-name>
+         <jndi-name>ejb/GroupReport</jndi-name>
+         <local-jndi-name>GroupReportLocal</local-jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>RoleReportFacade</ejb-name>
+         <jndi-name>ejb/RoleReportFacade</jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/RoleReport</ejb-ref-name>
+            <jndi-name>ejb/RoleReport</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>BIReport</ejb-name>
+         <jndi-name>ejb/BIReport</jndi-name>
+         <local-jndi-name>BIReportLocal</local-jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/CorporationReport</ejb-ref-name>
+            <jndi-name>ejb/CorporationReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/CorporationABM</ejb-ref-name>
+            <jndi-name>ejb/CorporationABM</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>DriverReport</ejb-name>
+         <jndi-name>ejb/DriverReport</jndi-name>
+         <local-jndi-name>DriverReportLocal</local-jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>FleetABMFacade</ejb-name>
+         <jndi-name>ejb/FleetABMFacade</jndi-name>
+         <local-jndi-name>FleetABMFacadeLocal</local-jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/FleetABM</ejb-ref-name>
+            <jndi-name>ejb/FleetABM</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/FleetReport</ejb-ref-name>
+            <jndi-name>ejb/FleetReport</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>ExternalFacade</ejb-name>
+         <jndi-name>ejb/ExternalFacade</jndi-name>
+         <local-jndi-name>ExternalFacadeLocal</local-jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/VehicleReport</ejb-ref-name>
+            <jndi-name>ejb/VehicleReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/DriverReport</ejb-ref-name>
+            <jndi-name>ejb/DriverReport</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>VehicleABM</ejb-name>
+         <jndi-name>ejb/VehicleABM</jndi-name>
+         <local-jndi-name>VehicleABMLocal</local-jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>AlertReportFacade</ejb-name>
+         <jndi-name>ejb/AlertReportFacade</jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/AlertReport</ejb-ref-name>
+            <jndi-name>ejb/AlertReport</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>GroupABM</ejb-name>
+         <jndi-name>ejb/GroupABM</jndi-name>
+         <local-jndi-name>GroupABMLocal</local-jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>AlertABM</ejb-name>
+         <jndi-name>ejb/AlertABM</jndi-name>
+         <local-jndi-name>AlertABMLocal</local-jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>LangugeReport</ejb-name>
+         <jndi-name>ejb/LangugeReport</jndi-name>
+         <local-jndi-name>LangugeReportLocal</local-jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>CENAPRAReportFacade</ejb-name>
+         <jndi-name>ejb/CENAPRAReportFacade</jndi-name>
+         <local-jndi-name>CENAPRAReportFacadeLocal</local-jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/CENAPRAReport</ejb-ref-name>
+            <jndi-name>ejb/CENAPRAReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/ActivityReport</ejb-ref-name>
+            <jndi-name>ejb/ActivityReport</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>EventReportFacade</ejb-name>
+         <jndi-name>ejb/EventReportFacade</jndi-name>
+         <local-jndi-name>EventReportFacadeLocal</local-jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/EventReport</ejb-ref-name>
+            <jndi-name>ejb/EventReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/DriverReport</ejb-ref-name>
+            <jndi-name>ejb/DriverReport</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>DataTypeReportFacade</ejb-name>
+         <jndi-name>ejb/DataTypeReportFacade</jndi-name>
+         <local-jndi-name>DataTypeReportFacadeLocal</local-jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/DataTypeReport</ejb-ref-name>
+            <jndi-name>ejb/DataTypeReport</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>DriverReportFacade</ejb-name>
+         <jndi-name>ejb/DriverReportFacade</jndi-name>
+         <local-jndi-name>DriverReportFacadeLocal</local-jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/DriverReport</ejb-ref-name>
+            <jndi-name>ejb/DriverReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/DriverABM</ejb-ref-name>
+            <jndi-name>ejb/DriverABM</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/EventReport</ejb-ref-name>
+            <jndi-name>ejb/EventReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/ActivityReport</ejb-ref-name>
+            <jndi-name>ejb/ActivityReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/FleetReport</ejb-ref-name>
+            <jndi-name>ejb/FleetReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/EventReport</ejb-ref-name>
+            <jndi-name>ejb/EventReport</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>ActivityABMFacade</ejb-name>
+         <jndi-name>ejb/ActivityABMFacade</jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/ActivityABM</ejb-ref-name>
+            <jndi-name>ejb/ActivityABM</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/ActivityReport</ejb-ref-name>
+            <jndi-name>ejb/ActivityReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/CorporationReport</ejb-ref-name>
+            <jndi-name>ejb/CorporationReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/DriverReport</ejb-ref-name>
+            <jndi-name>ejb/DriverReport</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>LanguageABM</ejb-name>
+         <jndi-name>ejb/LanguageABM</jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>CorporationABMFacade</ejb-name>
+         <jndi-name>ejb/CorporationABMFacade</jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/CorporationABM</ejb-ref-name>
+            <jndi-name>ejb/CorporationABM</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/UserABM</ejb-ref-name>
+            <jndi-name>ejb/UserABM</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/LanguageABM</ejb-ref-name>
+            <jndi-name>ejb/LanguageABM</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/CorporationReport</ejb-ref-name>
+            <jndi-name>ejb/CorporationReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/DataTypeReport</ejb-ref-name>
+            <jndi-name>ejb/DataTypeReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/DataTypeABM</ejb-ref-name>
+            <jndi-name>ejb/DataTypeABM</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/DriverABM</ejb-ref-name>
+            <jndi-name>ejb/DriverABM</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/VehicleReport</ejb-ref-name>
+            <jndi-name>ejb/VehicleReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/ActivityReport</ejb-ref-name>
+            <jndi-name>ejb/ActivityReport</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>VehicleABMFacade</ejb-name>
+         <jndi-name>ejb/VehicleABMFacade</jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/VehicleABM</ejb-ref-name>
+            <jndi-name>ejb/VehicleABM</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/UserReport</ejb-ref-name>
+            <jndi-name>ejb/UserReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/VehicleReport</ejb-ref-name>
+            <jndi-name>ejb/VehicleReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/VehicleReportFacade</ejb-ref-name>
+            <jndi-name>ejb/VehicleReportFacade</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/DriverABM</ejb-ref-name>
+            <jndi-name>ejb/DriverABM</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/DriverReport</ejb-ref-name>
+            <jndi-name>ejb/DriverReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/CorporationABM</ejb-ref-name>
+            <jndi-name>ejb/CorporationABM</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/CorporationABMFacade</ejb-ref-name>
+            <jndi-name>ejb/CorporationABMFacade</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/CorporationReport</ejb-ref-name>
+            <jndi-name>ejb/CorporationReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/DataTypeReport</ejb-ref-name>
+            <jndi-name>ejb/DataTypeReport</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>EventABM</ejb-name>
+         <jndi-name>ejb/EventABM</jndi-name>
+         <local-jndi-name>EventABMLocal</local-jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>CENAPRAABMFacade</ejb-name>
+         <jndi-name>ejb/CENAPRAABMFacade</jndi-name>
+         <local-jndi-name>CENAPRAABMFacadeLocal</local-jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/CENAPRAABM</ejb-ref-name>
+            <jndi-name>ejb/CENAPRAABM</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/CENAPRAReport</ejb-ref-name>
+            <jndi-name>ejb/CENAPRAReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/ActivityABM</ejb-ref-name>
+            <jndi-name>ejb/ActivityABM</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>LanguageReportFacade</ejb-name>
+         <jndi-name>ejb/LanguageReportFacade</jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/LangugeReport</ejb-ref-name>
+            <jndi-name>ejb/LangugeReport</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>GroupReportFacade</ejb-name>
+         <jndi-name>ejb/GroupReportFacade</jndi-name>
+         <local-jndi-name>GroupReportFacadeLocal</local-jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/GroupReport</ejb-ref-name>
+            <jndi-name>ejb/GroupReport</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>RoleReport</ejb-name>
+         <jndi-name>ejb/RoleReport</jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>EventReport</ejb-name>
+         <jndi-name>ejb/EventReport</jndi-name>
+         <local-jndi-name>EventReportLocal</local-jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>BIReportFacade</ejb-name>
+         <jndi-name>ejb/BIReportFacade</jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/BIReport</ejb-ref-name>
+            <jndi-name>ejb/BIReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/CorporationReport</ejb-ref-name>
+            <jndi-name>ejb/CorporationReport</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>CENAPRAReport</ejb-name>
+         <jndi-name>ejb/CENAPRAReport</jndi-name>
+         <local-jndi-name>CENAPRAReportLocal</local-jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>FleetReportFacade</ejb-name>
+         <jndi-name>ejb/FleetReportFacade</jndi-name>
+         <local-jndi-name>FleetReportFacadeLocal</local-jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/FleetReport</ejb-ref-name>
+            <jndi-name>ejb/FleetReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/EventReport</ejb-ref-name>
+            <jndi-name>ejb/EventReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/DriverReport</ejb-ref-name>
+            <jndi-name>ejb/DriverReport</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>UserReport</ejb-name>
+         <jndi-name>ejb/UserReport</jndi-name>
+         <local-jndi-name>UserReportLocal</local-jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>DriverABM</ejb-name>
+         <jndi-name>ejb/DriverABM</jndi-name>
+         <local-jndi-name>DriverABMLocal</local-jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/DataTypeReport</ejb-ref-name>
+            <jndi-name>ejb/DataTypeReport</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>VehicleReportFacade</ejb-name>
+         <jndi-name>ejb/VehicleReportFacade</jndi-name>
+         <local-jndi-name>VehicleReportFacadeLocal</local-jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>VehicleReport</ejb-name>
+         <jndi-name>ejb/VehicleReport</jndi-name>
+         <local-jndi-name>ejb/VehicleReportLocal</local-jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>UserABM</ejb-name>
+         <jndi-name>ejb/UserABM</jndi-name>
+         <local-jndi-name>UserABMLocal</local-jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>GroupABMFacade</ejb-name>
+         <jndi-name>ejb/GroupABMFacade</jndi-name>
+         <local-jndi-name>GroupABMFacadeLocal</local-jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/GroupABM</ejb-ref-name>
+            <jndi-name>ejb/GroupABM</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/GroupReport</ejb-ref-name>
+            <jndi-name>ejb/GroupReport</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>UserABMFacade</ejb-name>
+         <jndi-name>ejb/UserABMFacade</jndi-name>
+         <local-jndi-name>UserABMFacadeLocal</local-jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/UserABM</ejb-ref-name>
+            <jndi-name>ejb/UserABM</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/UserReport</ejb-ref-name>
+            <jndi-name>ejb/UserReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/RoleReport</ejb-ref-name>
+            <jndi-name>ejb/RoleReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/GroupABM</ejb-ref-name>
+            <jndi-name>ejb/GroupABM</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/GroupReport</ejb-ref-name>
+            <jndi-name>ejb/GroupReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/DriverReport</ejb-ref-name>
+            <jndi-name>ejb/DriverReport</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>ActivityReportFacade</ejb-name>
+         <jndi-name>ejb/ActivityReportFacade</jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/ActivityReport</ejb-ref-name>
+            <jndi-name>ejb/ActivityReport</jndi-name>
+         </ejb-ref>
+         <ejb-ref>
+            <ejb-ref-name>ejb/DriverReport</ejb-ref-name>
+            <jndi-name>ejb/DriverReport</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>AlertABMFacade</ejb-name>
+         <jndi-name>ejb/AlertABMFacade</jndi-name>
+         <ejb-ref>
+            <ejb-ref-name>ejb/AlertABM</ejb-ref-name>
+            <jndi-name>ejb/AlertABM</jndi-name>
+         </ejb-ref>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>DataTypeABM</ejb-name>
+         <jndi-name>ejb/DataTypeABM</jndi-name>
+         <local-jndi-name>DataTypeABMLocal</local-jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>FleetReport</ejb-name>
+         <jndi-name>ejb/FleetReport</jndi-name>
+         <local-jndi-name>ejb/FleetReportLocal</local-jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>ActivityReport</ejb-name>
+         <jndi-name>ejb/ActivityReport</jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>FleetABM</ejb-name>
+         <jndi-name>ejb/FleetABM</jndi-name>
+         <local-jndi-name>FleetABMLocal</local-jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+      <session>
+         <ejb-name>CorporationABM</ejb-name>
+         <jndi-name>ejb/CorporationABM</jndi-name>
+
+        <method-attributes>
+        </method-attributes>
+      </session>
+
+    <!--
+      write a merge file jboss-webservices.ent for webservice-description 
+    -->
+
+   </enterprise-beans>
+
+     <!--
+       To specify your own assembly descriptor info here, add a file to your
+       XDoclet merge directory called jboss-assembly-descriptor.xml that contains
+       the <assembly-descriptor></assembly-descriptor> markup.
+     -->
+   <assembly-descriptor>
+    <!-- message destinations -->
+     <!--
+       To specify additional message-destination elements, add a file in the merge
+       directory called jboss-message-destinations.ent that contains them.
+     -->
+   </assembly-descriptor>
+
+   <resource-managers>
+   </resource-managers>
+
+  <!--
+    | for container settings, you can merge in jboss-container.xml
+    | this can contain <invoker-proxy-bindings/> and <container-configurations/>
+  -->
+
+</jboss>

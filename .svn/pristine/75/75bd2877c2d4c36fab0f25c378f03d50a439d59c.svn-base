@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.driver.tables">
+	<class name="MitigationPlan" table="mitigationplans">
+		
+       <id	column="id"	name="id"	type="java.lang.Integer">
+            <generator class="sequence">
+            	<param name="sequence">MitigationPlan_Sequence</param>
+            </generator>
+        </id>
+        <many-to-one 	name="driver"  class="persistence.driver.tables.Driver"	column="driver"/>
+        <property		name="date"	   type="java.util.Date"		column="date"		not-null="true" />
+        <property		name="expiry"	   type="java.util.Date"		column="expiry"		not-null="true" />
+        <property		name="type"	   type="java.lang.Integer"		column="type"		not-null="true" />
+        <property		name="status"	   type="java.lang.Integer"		column="status"		not-null="true" />
+        <property		name="advance"	   type="java.lang.Integer"		column="advance"		not-null="true" />
+        
+		<set inverse="true" name="activitySet"  cascade="all-delete-orphan">
+			<key column="id" not-null="true"/>
+			<one-to-many class="MitigationPlanActivity" />
+		</set>
+   	</class>
+</hibernate-mapping>

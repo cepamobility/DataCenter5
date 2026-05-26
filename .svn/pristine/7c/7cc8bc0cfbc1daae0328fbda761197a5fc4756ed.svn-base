@@ -1,0 +1,73 @@
+<html>
+<head>
+<style type="text/css">
+
+.style1 {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 11px;
+	color: #000000;
+}
+.style5 {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px; color: #153F65;
+ 	font-weight: bold;
+ }
+
+</style>
+</head>
+
+<body>
+<DIV align="center">
+  <table width="600"  height="438" border="0" cellpadding="0" cellspacing="0">
+    <tr> 
+      <td height="219" valign="top"><img src="/datacenter/util/imgs/home_top.jpg" width="600" height="219"></td>
+    </tr>
+    <tr> 
+      <td height="199" align="center" valign="top" background="/datacenter/util/imgs/home_middle.jpg"> 
+        <table width="96%" border="0" cellpadding="1">
+          <tr valign="top"> 
+            <td width="33%"><span class="style5">Novo Layout</span><br> <span class="style1">Projetado 
+              para facilitar a navega&ccedil;&atilde;o e melhorar sensivelmente 
+              a velocidade de execu&ccedil;&atilde;o de tarefas.<br>
+              <br>
+              </span> <span class="style5">Desenvolvimento Pr&oacute;prio <br>
+              </span><span class="style1">Contando com o apoio de uma excelente 
+              equipe de profissionais, o CEPA desenvolveu um sistema gerenciador 
+              de banco de dados mais s&oacute;lido, com melhor arquitetura e maior 
+              seguran&ccedil;a. </span></td>
+            <td width="34%"><span class="style5">Novas Funcionalidades</span><br> 
+              <span class="style1"> <IMG SRC="/datacenter/util/imgs/icon2.jpg" NAME="gr&aacute;ficos1" ALIGN=BOTTOM WIDTH=8 HEIGHT=8 BORDER=0> 
+              Cria&ccedil;&atilde;o r&aacute;pida de relat&oacute;rios e informes.<br>
+              <IMG SRC="/datacenter/util/imgs/icon2.jpg" NAME="gr&aacute;ficos1" ALIGN=BOTTOM WIDTH=8 HEIGHT=8 BORDER=0> 
+              Gest&atilde;o mais &aacute;gil de dados, que utiliza um processo 
+              mais intuitivo e permite maior variedade nas consultas on-line.<br>
+              <IMG SRC="/datacenter/util/imgs/icon2.jpg" NAME="gr&aacute;ficos1" ALIGN=BOTTOM WIDTH=8 HEIGHT=8 BORDER=0> 
+              Novos elementos que simplificam o trabalho.<br>
+              <IMG SRC="/datacenter/util/imgs/icon2.jpg" NAME="gr&aacute;ficos1" ALIGN=BOTTOM WIDTH=8 HEIGHT=8 BORDER=0> 
+              Respostas mais r&aacute;pidas &agrave;s novas exig&ecirc;ncias do mercado.<br>
+              </span> </td>
+            <td width="33%"><span class="style5">Tecnologia e Velocidade</span><br> 
+              <span class="style1">Desenvolvido com tecnologia de ponta, o novo 
+              Data Center &eacute; um sistema mais robusto, r&aacute;pido e seguro. 
+              <br>
+              </span><span class="style5">Novos Servi&ccedil;os em Desenvolvimento</span> 
+              <br> <span class="style1"><IMG SRC="/datacenter/util/imgs/icon2.jpg" NAME="gr&aacute;ficos1" ALIGN=BOTTOM WIDTH=8 HEIGHT=8 BORDER=0> 
+              Gest&atilde;o Integral de Frotas<br>
+              <IMG SRC="/datacenter/util/imgs/icon2.jpg" NAME="gr&aacute;ficos1" ALIGN=BOTTOM WIDTH=8 HEIGHT=8 BORDER=0> 
+              Gest&atilde;o Integral de Acidentes de Trabalho<br>
+              <IMG SRC="/datacenter/util/imgs/icon2.jpg" NAME="gr&aacute;ficos1" ALIGN=BOTTOM WIDTH=8 HEIGHT=8 BORDER=0> 
+              Business Intelligence Module que permite realizar diversas 
+              consultas detalhadas, definidas pelo cliente. </span></td>
+          </tr>
+        </table></td>
+    </tr>
+    <tr>
+      <td height="19" align="left" valign="top"><img src="/datacenter/util/imgs/home_bottom.jpg" width="600" height="21"></td>
+    </tr>
+  </table>
+</DIV>
+<p>
+	<br>
+</p>
+</body>
+</html>

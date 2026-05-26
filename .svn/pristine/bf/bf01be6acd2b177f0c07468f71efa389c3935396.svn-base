@@ -1,0 +1,38 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.vehicle.tables" >
+    <class name="VehicleMaintenance" table="vehiclemaintenance">
+		
+		 <id column="VehicleMaintenanceId" name="VehicleMaintenanceId" >
+            <generator class="sequence">
+            	<param name="sequence">VehicleMaintenance_Sequence</param>
+            </generator>
+        </id>
+        
+        <many-to-one name="vehicle" class="persistence.vehicle.tables.Vehicle" not-null="true" >
+             <column name="vehicle"></column>
+        </many-to-one>
+
+        <property	name="date" type="java.util.Date" column="date"/>              
+        <property	name="cost" type="java.lang.Integer" column="cost"/>
+        <property	name="type" type="java.lang.Integer" column="type"/>
+
+        <property	name="item1"/>        
+        <property	name="item2"/>        
+        <property	name="item3"/>        
+        <property	name="item4"/>        
+        <property	name="item5"/>        
+        <property	name="item6"/>        
+        <property	name="item7"/>        
+        <property	name="item8"/>        
+        <property	name="item9"/>        
+        
+        <property	name="kms" type="java.lang.Integer" column="kms"/>
+        <property	name="description" type="java.lang.String" column="description"/>
+       </class>
+
+</hibernate-mapping>

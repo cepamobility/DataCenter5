@@ -1,0 +1,25 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.vehicle.tables">
+	<class name="VehicleContract" table="vehiclecontract">
+		
+       <composite-id class="VehicleContractPK" name="pk" >
+       		<key-many-to-one
+       			 name="vehicle"
+       			 column="id"
+       			 class="Vehicle"
+       	 	/>
+	        <key-property name="date"	type="java.util.Date"	column="date" />
+       </composite-id>
+		
+		<many-to-one name="type"	
+				class="persistence.datatype.tables.VehicleContractType"	
+				column="type" />
+        <property name="saved" />
+		
+  	</class>
+</hibernate-mapping>

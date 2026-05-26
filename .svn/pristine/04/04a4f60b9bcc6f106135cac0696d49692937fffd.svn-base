@@ -1,0 +1,57 @@
+<ion-view view-title="{{f}}">
+    <loading></loading> 
+	<ion-content class="padding">
+        <input type="text" placeholder="{{txt.driverSearch}}" ng-model="sdTxt">
+	    <button class="button button-small"  ng-click="searchDriver(sdTxt)">
+	      &nbsp;&nbsp;&nbsp;&nbsp;{{txt.driverSearchBtnTit}}&nbsp;&nbsp;&nbsp;&nbsp;
+	    </button>
+	    <button class="button button-small"  ng-click="newDriver($event)">
+	      {{txt.driverNew}}
+	    </button>
+	      <button class="button button-small"  ng-click="back()">
+	      {{txt.back}}
+	    </button>
+		<ul class="list">
+		    <li class="item" ng-repeat="r in drivers">
+		    <button class="button button-small"  ng-click="addDriver(r)">
+		      {{txt.add}}
+		    </button>
+		     {{r.corporationid}} - {{r.firstName}} {{r.lastName}}  
+			</li>
+		</ul>
+  	</ion-content>
+</ion-view>
+
+<script id="my-popover.html" type="text/ng-template">
+  <ion-popover-view>
+    <ion-header-bar>
+      <h1 class="title">{{txt.newDriver}}</h1>
+    </ion-header-bar>
+    <ion-content>
+        <label class="item item-input">
+		   <input type="text" ng-model="fn" placeholder="{{txt.firstName}}">
+		  </label>
+		  <label class="item item-input">
+		    <input type="text" ng-model="ln" placeholder="{{txt.lastName}}">
+		  </label>
+		  <label class="item item-input">
+		    <input type="text" ng-model="ci" placeholder="{{txt.cpid}}">
+		  </label>
+ 		 <label class="item item-input">
+		    <input type="text" ng-model="email" placeholder="{{txt.email}}">
+		  </label>
+	 	 <label class="item item-input">
+			<ion-radio ng-model="sex" ng-value="'h'" tagInput="R"   id="h" >{{txt.male}}</ion-radio>
+	     </label>
+		 <label class="item item-input">
+			<ion-radio ng-model="sex"   ng-value="'m'" tagInput="R"   id="m" >{{txt.female}}</ion-radio>
+	 	 </label>
+		<button class="button button-assertive"  ng-click="cancelNewDriver()">
+	      {{txt.close}}
+	    </button>
+	    <button class="button button-positive"  ng-click="aceptNewDriver(fn,ln,ci,email,sex)">
+	      {{txt.accept}}
+	    </button>
+    </ion-content>
+  </ion-popover-view>
+</script>

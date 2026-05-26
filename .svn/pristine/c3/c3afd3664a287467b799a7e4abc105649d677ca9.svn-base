@@ -1,0 +1,451 @@
+/**
+ * Created on 02-mar-2007
+ * CEPA
+ * DataCenter 5
+ */
+package communication.administration.corporation.util;
+
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.Serializable;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.LinkedList;
+
+import communication.administration.corporation.tables.GeoItemData;
+import communication.administration.corporation.tables.GeoLabelData;
+import communication.administration.corporation.tables.ItemData;
+import communication.administration.corporation.tables.LabelItemData;
+import communication.administration.group.tables.GroupLineData;
+import communication.language.Text;
+import communication.util.ElementData;
+
+public class Util implements Serializable {
+
+    public Util() {
+        super();
+    }
+
+    public static Hashtable[] getDivOrgMap(Collection lines, int divOrgCount) {
+        Hashtable[] elements = new Hashtable[9]; 
+        Iterator it = lines.iterator();
+        while(it.hasNext()) {
+            GroupLineData groupLine = (GroupLineData)it.next();
+            GeoLabelData lid = groupLine.getCountry();
+            GeoItemData country = (GeoItemData)((GeoItemData)lid.getItemIterator().next()).getSubItems().getItemIterator().next();
+            for(int i = 0; i < divOrgCount; i++) {
+                LabelItemData lid1 = groupLine.getDivOrgs()[i];
+                ItemData item1 = (ItemData)lid1.getItemIterator().next();
+                ElementData element = new ElementData(item1.getId(),item1.getName());
+                if(elements[i*3] == null) {
+                    elements[i*3] = new Hashtable();
+                }
+                if(elements[i*3].containsKey(country.getId())) {
+                    Collection divorgs = (Collection)elements[i*3].get(country.getId());
+                    if(!contains(divorgs,element)) {
+                        divorgs.add(element);
+                    }
+                }else {
+                    Collection divorgs = new LinkedList();
+                    divorgs.add(element);
+                    elements[i*3].put(country.getId(),divorgs);
+                }
+                LabelItemData lid2 = item1.getSubItems();
+                if(lid2 != null) {
+                    ItemData item2 = (ItemData)lid2.getItemIterator().next();
+                    element = new ElementData(item2.getId(),item2.getName());
+                    if(elements[i*3+1] == null) {
+                        elements[i*3+1] = new Hashtable();
+                    }
+                    if(elements[i*3+1].containsKey(item1.getId())) {
+                        Collection divorgs = (Collection)elements[i*3+1].get(item1.getId());
+                        if(!contains(divorgs,element)) {
+                            divorgs.add(element);
+                        }
+                    }else {
+                        Collection divorgs = new LinkedList();
+                        divorgs.add(element);
+                        elements[i*3+1].put(item1.getId(),divorgs);
+                    }
+                    LabelItemData lid3 = item2.getSubItems();
+                    if(lid3 != null) {
+                        ItemData item3 = (ItemData)lid3.getItemIterator().next();
+                        element = new ElementData(item3.getId(),item3.getName());
+                        if(elements[i*3+2] == null) {
+                            elements[i*3+2] = new Hashtable();
+                        }
+                        if(elements[i*3+2].containsKey(item2.getId())) {
+                            Collection divorgs = (Collection)elements[i*3+2].get(item2.getId());
+                            if(!contains(divorgs,element)) {
+                                divorgs.add(element);
+                            }
+                        }else {
+                            Collection divorgs = new LinkedList();
+                            divorgs.add(element);
+                            elements[i*3+2].put(item2.getId(),divorgs);
+                        }
+                    }
+                }
+            }
+        }
+        return elements;
+    }
+
+    private static boolean contains(Collection elements, ElementData element) {
+        Iterator it = elements.iterator();
+        while(it.hasNext()) {
+            if(((ElementData)it.next()).getId().equals(element.getId())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public static Hashtable[] getDivOrgMap2(Collection lines, int divOrgCount) {
+        Hashtable[] elements = new Hashtable[9]; 
+        Iterator it = lines.iterator();
+        while(it.hasNext()) {
+            GroupLineData groupLine = (GroupLineData)it.next();
+            GeoLabelData lid = groupLine.getCountry();
+            for(int i = 0; i < divOrgCount; i++) {
+                LabelItemData lid1 = groupLine.getDivOrgs()[i];
+                ItemData item1 = (ItemData)lid1.getItemIterator().next();
+                ElementData element = new ElementData(item1.getId(),item1.getName());
+                if(elements[i*3] == null) {
+                    elements[i*3] = new Hashtable();
+                }
+                Collection divorgs = new LinkedList();
+                divorgs.add(element);
+                elements[i*3].put(item1.getId(),divorgs);
+                LabelItemData lid2 = item1.getSubItems();
+                if(lid2 != null) {
+                    ItemData item2 = (ItemData)lid2.getItemIterator().next();
+                    element = new ElementData(item2.getId(),item2.getName());
+                    if(elements[i*3+1] == null) {
+                        elements[i*3+1] = new Hashtable();
+                    }
+                    if(elements[i*3+1].containsKey(item1.getId())) {
+                        divorgs = (Collection)elements[i*3+1].get(item1.getId());
+                        if(!contains(divorgs,element)) {
+                            divorgs.add(element);
+                        }
+                    }else {
+                        divorgs = new LinkedList();
+                        divorgs.add(element);
+                        elements[i*3+1].put(item1.getId(),divorgs);
+                    }
+                    LabelItemData lid3 = item2.getSubItems();
+                    if(lid3 != null) {
+                        ItemData item3 = (ItemData)lid3.getItemIterator().next();
+                        element = new ElementData(item3.getId(),item3.getName());
+                        if(elements[i*3+2] == null) {
+                            elements[i*3+2] = new Hashtable();
+                        }
+                        if(elements[i*3+2].containsKey(item2.getId())) {
+                            divorgs = (Collection)elements[i*3+2].get(item2.getId());
+                            if(!contains(divorgs,element)) {
+                                divorgs.add(element);
+                            }
+                        }else {
+                            divorgs = new LinkedList();
+                            divorgs.add(element);
+                            elements[i*3+2].put(item2.getId(),divorgs);
+                        }
+                    }
+                }
+            }
+        }
+        return elements;
+    }
+
+    public static String formatDate(Date date,Text messages) {
+        if(date == null) {
+            return "";
+        }
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        return calendar.get(Calendar.DAY_OF_MONTH)+"-"+messages.getText("generic.shortmonth."+(calendar.get(Calendar.MONTH)+1))+"-"+calendar.get(Calendar.YEAR);
+    }
+    
+    /**
+     * DD-MM-YYYY
+     * @param date
+     * @return
+     */
+    public static String formatDate(Date date) {
+        if(date == null) {
+            return "";
+        }
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        return calendar.get(Calendar.DAY_OF_MONTH)+"-"+(calendar.get(Calendar.MONTH)+1)+"-"+calendar.get(Calendar.YEAR);
+    }
+
+    public static String formatHour(Calendar calendar) {
+        if(calendar == null) {
+            return "";
+        }
+        String minute = (calendar.get(Calendar.MINUTE) < 10) ? "0"+String.valueOf(calendar.get(Calendar.MINUTE)) : String.valueOf(calendar.get(Calendar.MINUTE)); 
+        return String.valueOf(calendar.get(Calendar.HOUR_OF_DAY))+":"+minute;
+    }
+
+    public static Date getDate(String date, String month, String year) {
+        try {
+            Calendar calendar = Calendar.getInstance();
+            calendar.set(Calendar.DAY_OF_MONTH,Integer.parseInt(date));
+            calendar.set(Calendar.MONTH,Integer.parseInt(month)-1);
+            calendar.set(Calendar.YEAR,Integer.parseInt(year));
+            
+            calendar.set(Calendar.HOUR,0);
+            calendar.set(Calendar.MINUTE,0);
+            calendar.set(Calendar.SECOND,0);
+            calendar.set(Calendar.MILLISECOND,0);
+            
+            return calendar.getTime();
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+    
+    /**
+     * 
+     * @param text
+     * @param signature
+     * @param email
+     * @return
+     */
+    public static String getCompleteHTMLMail(String text,String signature,String email) {
+        String mail = "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'>"+
+        "<span style='font-family:Arial;'> "+
+        text+
+        "</span> "+
+        "</p> "+
+        "--  "+
+        "<br> "+
+        "<span style='font-size:10.0pt;font-family:Arial;color:navy'>.................................................</span> "+
+        "<br> "+
+        "<em><b><span lang=EN-US style='font-size:10.0pt;font-family:Verdana;color:navy'>"+signature+"</span></b></em>"+
+        "<br> "+
+        "<em><b><span lang=EN-US style='font-size:10.5pt;font-family: Verdana;color:navy;mso-ansi-language:EN-US'> DataCenter&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "+
+        "</span></b></em> "+
+        "<br> "+
+        "<em><b><span lang=EN-US style='font-size:10.0pt;font-family:Verdana;color:blue;mso-ansi-language: "+
+        "EN-US'>CEPA International</span></b></em> "+
+        "<br> "+
+        "<strong><span "+
+        "lang=EN-US style='font-size:7.5pt;font-family:Verdana;mso-ansi-language:EN-US; "+
+        "font-weight:normal'><a href='mailto:"+email+"'>"+email+"</a></span></strong><span "+
+        "lang=EN-US style='font-size:10.0pt;font-family:Arial;mso-ansi-language:EN-US'> </span><span "+
+        "lang=EN-US style='mso-ansi-language:EN-US'></span> "+
+
+        "<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=823 "+
+         "style='width:617.25pt;mso-cellspacing:0cm;mso-padding-alt:0cm 0cm 0cm 0cm'> "+
+         "<tr style='mso-yfti-irow:0;mso-yfti-lastrow:yes;mso-yfti-firstrow: yes'> "+
+          "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+          "<p class=MsoNormal align=center style='mso-margin-top-alt:auto;mso-margin-bottom-alt: "+
+          "auto;text-align:center'><span lang=EN-US style='mso-ansi-language:EN-US'>&nbsp;<o:p></o:p></span></p> "+
+          "</td> "+
+          "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+          "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'><span "+
+          "lang=EN-US style='mso-ansi-language:EN-US'>&nbsp;<o:p></o:p></span></p> "+
+          "</td> "+
+          "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+          "<div class=MsoNormal align=center style='text-align:center'><span "+
+          "style='font-size:7.5pt'> "+
+          "<hr size=2 width='100%' align=center> "+
+          "</span></div> "+
+          "<div align=center> "+
+          "<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=827 "+
+          " style='width:620.25pt;mso-cellspacing:0cm;mso-padding-alt:0cm 0cm 0cm 0cm'> "+
+           "<tr style='mso-yfti-irow:0;mso-yfti-lastrow:yes;mso-yfti-firstrow: yes'> "+
+           "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+            "<p class=MsoNormal align=center style='mso-margin-top-alt:auto;mso-margin-bottom-alt: "+
+            "auto;text-align:center'><span lang=EN-GB style='font-size:7.5pt;color:navy; "+
+            "mso-ansi-language:EN-GB'>&nbsp; *Confidentiality Notice*<br> "+
+            "The information contained in this e-mail and any accompanying documents is "+
+            "confidential, may be privileged. It is intended solely for the person "+
+            "and/or entity to whom it is addressed (i.e. those identified in the "+
+            "&quot;To&quot; and &quot;cc&quot; box). The message and any attachments are "+
+            "the property of CEPA International LLC, its group companies, or clients. "+
+            "Unauthorized review, use, disclosure, or copying of this communication, or "+
+            "any part thereof, is strictly prohibited and may be unlawful. If you have "+
+            "received this e-mail in error, please return it and any attachment to the "+
+            "sender and delete the e-mail and attachments and any copy from your system. "+
+            "</span><span style='font-size:7.5pt;color:navy'>CEPA <span class=SpellE>International</span> "+
+            "<span class=SpellE><span class=spelle>thanks</span></span> <span "+
+            "class=SpellE><span class=spelle>you</span></span> <span class=SpellE><span "+
+            "class=spelle>for</span></span> <span class=SpellE><span class=spelle>your</span></span> "+
+            "<span class=SpellE><span class=spelle>cooperation</span></span>. </span></p> "+
+            "<p align=center style='text-align:center'>&nbsp;</p> "+
+            "</td> "+
+           "</tr> "+
+          "</table> "+
+          "</div> "+
+          "<p class=MsoNormal align=center style='text-align:center'><o:p></o:p></p> "+
+          "</td> "+
+         "</tr> "+
+        "</table> ";
+        return mail;
+    }
+
+    
+	
+	 public static String formatDateHour(Date date) {
+	        if(date == null) {
+	            return "";
+	        }
+	        SimpleDateFormat format=new SimpleDateFormat("dd/MM/yyyy hh:mm aa");
+	        
+	        return format.format(date);
+	    }
+	
+    public static byte[] toByteArray(InputStream is) throws IOException{
+    	ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+    	int nRead;
+    	byte[] data = new byte[16384];
+
+    	while ((nRead = is.read(data, 0, data.length)) != -1) {
+    	  buffer.write(data, 0, nRead);
+    	}
+
+    	buffer.flush();
+
+    	return buffer.toByteArray();
+    }
+
+    public static String toHTMLString(String word) {
+        StringBuffer result = new StringBuffer();
+        for(int i = 0; i < word.length(); i++) {
+            char c = word.charAt(i);
+            int cindex = (int)c;
+            if(cindex < 127 || cindex > 191) {
+	            switch(c) {
+	               case 'á':
+	                    result.append("a");
+	                    break;
+	               case 'â':
+	                   result.append("a");
+		               break;
+	               case 'ã':
+	                   result.append("a");
+	                   break;
+	               case 'ä':
+	                   result.append("a");
+		               break;
+	               case 'é':
+	                   result.append("e");
+	                    break;
+	               case 'ê':
+	                    // Todo
+	                   result.append("e");
+	                    break;
+	               case 'ë':
+	                   result.append("e");
+		               break;
+	               case 'í':
+	                   result.append("i");
+	                    break;
+	               case 'î':
+	                   result.append("i");
+		               break;
+	               case 'ï':
+	                   result.append("i");
+		               break;
+	               case 'ó':
+	                   result.append("o");
+	                    break;
+	               case 'ô':
+	                   result.append("o");
+		               break;
+	               case 'ö':
+	                   result.append("o");
+		               break;
+	               case 'õ':
+	                   result.append("o");
+	                    break;
+	               case 'ú':
+	                   result.append("u");
+	                    break;
+	               case 'û':
+	                   result.append("u");
+		               break;
+	               case 'ü':
+	                   result.append("u");
+		               break;
+	                case 'ç':
+	                    result.append("c");
+	                    break;
+	                default:
+	                    result.append(c);
+	            }
+            }
+        }
+        System.out.println("texto HTML: " + result.toString());
+        return result.toString();
+    }
+
+	
+	public static int getAge(Date date) {
+		Calendar now = Calendar.getInstance();
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(date);
+		int age = now.get(Calendar.YEAR) - calendar.get(Calendar.YEAR);
+		calendar.add(Calendar.YEAR, age);
+		if(calendar.after(now))
+			age--;
+		return age;
+	}
+
+    public static String formatDouble(Double value,int decimals) {
+        String result = String.valueOf(value);
+        int point = result.indexOf('.');
+        if(point > 0) {
+            if(point+1+decimals < result.length()) {                
+                int lastValue = Integer.parseInt(String.valueOf(result.charAt(point+decimals)));
+                if(Integer.parseInt(String.valueOf(result.charAt(point+1+decimals))) >= 5) {
+                    lastValue++;
+                }
+                result = result.substring(0,point+decimals)+String.valueOf(lastValue);
+            }
+        }        
+        return result;
+    }
+
+    public static String cleanString(String word) {
+    	if(word == null)
+    		return "";
+        StringBuffer result = new StringBuffer();
+        for(int i = 0; i < word.trim().length(); i++) {
+            char c = word.charAt(i);
+            int cr = (int)c; 
+            if(cr > 126 && cr < 160) {
+            	result.append(" ");
+            }else {
+            	result.append(c);
+            }
+        }    	
+        return result.toString();
+    }
+    
+    public static String getTiempoReparacion(int checklist,int tag) {
+		// TODO Auto-generated method stub
+		if(checklist==79) return "N/A";
+		
+		switch (tag) {
+		case -1: return "S/P";
+		case 0 :return "Detención inmediata";//Detención inmediata	
+		case 1: return "24 hs";
+		case 2: return "48 hs";
+		case 3: return "72 hs";
+		case 30: return "30 Días";
+		
+		}
+		return null;
+	}
+}

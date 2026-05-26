@@ -1,0 +1,248 @@
+package communication.driver.tables;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.LinkedList;
+
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.PointMoveData;
+
+public class DriverPointData implements Comparable {
+
+	private Integer id;
+	
+	private String firstName;
+	private String lastName;
+	
+	private boolean director;
+	
+	private String country;
+	private String divOrg1;
+	private String divOrg2;
+	private String divOrg3;
+	private String divOrg4;
+	
+	private Integer total;
+	
+	private Integer[] categories;
+	private Collection<PointMoveData> moves;
+	
+	private boolean resumed = true;;
+	
+	private String corporationId;
+	private String manager;
+
+	public DriverPointData() {
+	}
+	
+	public DriverPointData(Object[] data, boolean resumed, int corporation) {
+		id = (Integer) data[0];
+		firstName = (String) data[1];
+		lastName = (String) data[2];
+		director = ((Boolean) data[3]).booleanValue();
+		country = (String) data[4];
+		total = (Integer) data[6];
+		int length = (resumed) ? 8 : 10;
+		categories = new Integer[6];
+		moves = new LinkedList<PointMoveData>();
+		addCategory(data, resumed);
+		if(data.length > length) {
+			divOrg1 = (String) data[length];
+		}
+		length++;
+		if(data.length > length) {
+			divOrg2 = (String) data[length];
+			length++;
+		}
+		if(data.length > length) {
+			divOrg3 = (String) data[length];
+			length++;
+		}
+		if(data.length > length) {
+			divOrg4 = (String) data[length];
+			length++;
+		}
+		if(corporation == CorporationData.BAYER_MX) {
+			corporationId = (String) data[data.length-2];
+			manager = (String) data[data.length-1];
+		}
+		if(corporation == CorporationData.MONTES_DE_PLATA) {
+			corporationId = (String) data[data.length-1];
+		}
+	}
+
+	public DriverPointData(DriverPointData driverPointData, PointMoveData next) {
+		id = driverPointData.id;
+		firstName = driverPointData.firstName;
+		lastName = driverPointData.lastName;
+		director = driverPointData.director;
+		country = driverPointData.country;
+		total = driverPointData.total;
+		moves = new LinkedList<PointMoveData>();
+		moves.add(next);
+		divOrg1 = driverPointData.divOrg1;
+		divOrg2 = driverPointData.divOrg2;
+		divOrg3 = driverPointData.divOrg3;
+		divOrg4 = driverPointData.divOrg4;
+		corporationId = driverPointData.corporationId;
+		manager = driverPointData.manager;
+		resumed = false;
+	}
+
+	public void addCategory(Object[] data, boolean resumed) {
+		if(resumed) {
+			if(categories[((Integer)data[5]).intValue()] == null)
+				categories[((Integer)data[5]).intValue()] = 0;
+			categories[((Integer)data[5]).intValue()] += (Integer) data[7];
+		} else {
+			PointMoveData move = new PointMoveData();
+			move.setAmount(((Double)data[5]).doubleValue());
+			move.setDate((Date) data[7]);
+			move.setDefitionName((String) data[8]);
+			move.setDefinitionReference((String) data[9]);
+			moves.add(move);
+		}
+	}
+
+	public Integer getId() {
+		return id;
+	}
+
+	public void setId(Integer id) {
+		this.id = id;
+	}
+
+	public String getFirstName() {
+		return firstName;
+	}
+
+	public void setFirstName(String firstName) {
+		this.firstName = firstName;
+	}
+
+	public String getLastName() {
+		return lastName;
+	}
+
+	public void setLastName(String lastName) {
+		this.lastName = lastName;
+	}
+
+	public boolean isDirector() {
+		return director;
+	}
+
+	public void setDirector(boolean director) {
+		this.director = director;
+	}
+
+	public String getCountry() {
+		return country;
+	}
+
+	public void setCountry(String country) {
+		this.country = country;
+	}
+
+	public String getDivOrg1() {
+		return divOrg1;
+	}
+
+	public void setDivOrg1(String divOrg1) {
+		this.divOrg1 = divOrg1;
+	}
+
+	public String getDivOrg2() {
+		return divOrg2;
+	}
+
+	public void setDivOrg2(String divOrg2) {
+		this.divOrg2 = divOrg2;
+	}
+
+	public String getDivOrg3() {
+		return divOrg3;
+	}
+
+	public void setDivOrg3(String divOrg3) {
+		this.divOrg3 = divOrg3;
+	}
+
+	public String getDivOrg4() {
+		return divOrg4;
+	}
+
+	public void setDivOrg4(String divOrg4) {
+		this.divOrg4 = divOrg4;
+	}
+
+	public Integer getTotal() {
+		return total;
+	}
+
+	public void setTotal(Integer total) {
+		this.total = total;
+	}
+
+	public Integer[] getCategories() {
+		return categories;
+	}
+
+	public void setCategories(Integer[] categories) {
+		this.categories = categories;
+	}
+
+	@Override
+	public int compareTo(Object o) {
+		DriverPointData d  = (DriverPointData)o;
+		if(resumed) {
+			if(!total.equals(d.total)) {
+				return d.total.compareTo(total);
+			} else if(!firstName.equals(d.firstName)) {
+				return d.firstName.compareTo(firstName);
+			} else if(!lastName.equals(d.lastName)) {
+				return d.lastName.compareTo(lastName);
+			}
+		} else {
+			if(!firstName.equals(d.firstName)) {
+				return d.firstName.compareTo(firstName);
+			} else if(!lastName.equals(d.lastName)) {
+				return d.lastName.compareTo(lastName);
+			}else {
+				d.moves.iterator().next().getDate().compareTo(moves.iterator().next().getDate());
+			}
+		}
+		return 0;
+	}
+
+	public Collection<DriverPointData> getCollection() {
+		Collection<DriverPointData> values = new LinkedList<DriverPointData>();
+		Iterator<PointMoveData> it = moves.iterator();
+		while(it.hasNext()) {
+			values.add(new DriverPointData(this,it.next()));
+		}
+		return values;
+	}
+
+	public PointMoveData getMove() {
+		return moves.iterator().next();
+	}
+
+	public String getCorporationId() {
+		return corporationId;
+	}
+
+	public void setCorporationId(String corporationId) {
+		this.corporationId = corporationId;
+	}
+
+	public String getManager() {
+		return manager;
+	}
+
+	public void setManager(String manager) {
+		this.manager = manager;
+	}
+
+}

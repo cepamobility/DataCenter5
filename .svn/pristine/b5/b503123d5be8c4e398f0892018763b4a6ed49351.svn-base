@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.driver.tables">
+    <class name="CsvEntity" table="csventities">
+
+        <id	column="idcsv"	name="idCsv" type="java.lang.Integer">
+            <generator class="sequence">
+            	<param name="sequence">CsvEntity_Sequence</param>
+            </generator>
+        </id>
+        
+        <property	name="downloadDate"	type="java.util.Date"		column="downloaddate"	/>
+        <property	name="uploadDate"	type="java.util.Date"		column="uploaddate"		/>
+
+        <many-to-one name="entity" 		class="persistence.datatype.tables.CsvEntityType" 
+        	column="entity" not-null="true"/>
+
+		<many-to-one name="user" 		class="persistence.administration.user.tables.User" 
+        	column="loginname" not-null="true"/>
+
+		<set inverse="true" name="fieldSet"  cascade="all-delete-orphan">
+			<key column="id" not-null="true"/>
+			<one-to-many class="CsvEntityField" />
+		</set>
+    </class>
+</hibernate-mapping>

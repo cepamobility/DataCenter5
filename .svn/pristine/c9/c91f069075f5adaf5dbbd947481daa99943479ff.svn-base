@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.administration.tables" >
+    <class
+        name="Role"
+        table="roles"
+    >
+
+        <id
+            name="resourceKey"
+            column="resourcekey"
+            type="java.lang.String"
+        >
+            <generator class="assigned">
+            </generator>
+        </id>
+		
+    	<set name="permissions" table="rolepermissions" cascade="all">
+	        <key>
+    		     <column name="resourcekey"></column>
+        	 </key>
+	        <many-to-many column="permission"
+	            class="Permission"/>
+	    </set>
+
+       	<property name="cepaUser" />
+
+	</class>
+
+</hibernate-mapping>

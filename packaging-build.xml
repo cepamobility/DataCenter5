@@ -1,0 +1,146 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project name="Packaging Generator" default="_packaging_generation_">
+
+	<!-- Incluye Alertas -->
+	<target name="_packaging_generation_" 
+		depends="N65540,N65601,N65618,N65635,N65706,N65731,N65794,N65854"> <!-- WeekAlert: N65829, -->
+		<copyfile  src="packaged archives/DataCenter5.ear" dest="C:/jboss-5.1.0-Juan2/server/default/deploy/DataCenter5.ear"/>
+	</target>	
+	
+	<target name="JBossClear">
+		<delete file="C:/jboss-5.1.0-Juan2/server/default/deploy/DataCenter5.ear"/>
+	</target>
+	  
+ 
+	<!-- No Incluye Alertas
+	<target name="_packaging_generation_" 
+		depends="N65540,N65601,N65618,N65635,N65706,N65731,N65794"
+	/>
+	-->
+	<target name="N65540" description="EJB.jar">
+		<mkdir dir="packaged archives"/>
+		<jar destfile="packaged archives/EJB.jar">
+			<zipfileset dir="src/META-INF" prefix="META-INF">
+				<include name="ejb-jar.xml"/>			
+				<include name="jboss.xml"/>				
+				<include name="destinations-service.xml"/> <!-- Alertas -->
+			</zipfileset>
+			<zipfileset dir="src">				
+				<include name="datacenter-hibernate.xml"/>				
+			</zipfileset>
+			<zipfileset dir="bin" 
+				includes="**/*Bean.class,**/*Session.class" 
+				excludes="communication/*.class"
+			/>
+			<zipfileset dir="bin" 
+				includes="persistence/administration/user/tables/*.*,persistence/administration/corporation/tables/*.*"
+			/>
+		</jar>
+	</target>
+	<target name="N65601" description="Communication.jar">
+		<mkdir dir="packaged archives"/>
+		<jar destfile="packaged archives/Communication.jar">
+			<zipfileset dir="bin" includes="communication/*.class,communication/**/*.class"/>
+		</jar>
+	</target>
+	<target name="N65618" description="EJB-Client.jar">
+		<mkdir dir="packaged archives"/>
+		<jar destfile="packaged archives/EJB-Client.jar">
+			<zipfileset dir="bin" includes="business/**/*.class,persistence/**/*.class" excludes="**/*Bean.class,**/*Session.class,persistence/*/tables/*.class"/>
+		</jar>
+	</target>
+	<target name="N65635" description="Presentation.war">
+		<mkdir dir="packaged archives"/>
+		<jar destfile="packaged archives/Presentation.war">
+			<zipfileset dir="src/WEB-INF" prefix="WEB-INF">
+				<include name="web.xml"/>
+			</zipfileset>
+			<zipfileset dir="src/WEB-INF" prefix="WEB-INF">
+				<include name="jboss-web.xml"/>
+			</zipfileset>
+			<zipfileset dir="lib" prefix="WEB-INF/classes">
+				<include name="jfreereport-ext-0.8.7-9.jar"/>				
+			</zipfileset>
+			 
+			<zipfileset dir="src/presentation/web"/><!--,presentation/web/webstart/*.*,presentation/web/webstart/lib/*.*-->
+			<zipfileset dir="bin" prefix="WEB-INF/classes" includes="presentation/*/*.class,presentation/*/*/*.class,presentation/*/*/*/*.jasper,presentation/*/*/*/*.class,presentation/*/*/*/*/*.class,presentation/*/*/*/*.xml,ws/assessment/datacenter/*.*"/>
+			<zipfileset dir="src/WEB-INF" prefix="WEB-INF"/>
+			<zipfileset dir="src/presentation/web/menu" includes="**/*.*, *.class"/>
+		</jar>
+	</target>
+	<target name="N65706" description="Persistence.har">
+		<mkdir dir="packaged archives"/>
+		<jar destfile="packaged archives/Persistence.har">
+			<zipfileset dir="src/META-INF" prefix="META-INF">
+				<!-- <include name="jboss-service.xml"/> -->
+				<include name="datacenter-hibernate.xml"/>
+			</zipfileset>
+			<zipfileset dir="bin" includes="persistence/**/tables/*.*,persistence/**/tables/**/*.*,persistence/log/**/*.*,persistence/**/log/*.*"/>
+		</jar>
+	</target>
+	<target name="N65731" description="DataCenter5.ear">
+		<mkdir dir="packaged archives"/>
+		<jar destfile="packaged archives/DataCenter5.ear">
+			<zipfileset dir="packaged archives">
+				<include name="Presentation.war"/>
+			</zipfileset>
+			<zipfileset dir="packaged archives">
+				<include name="EJB.jar"/>
+			</zipfileset>
+			<zipfileset dir="packaged archives">
+				<include name="EJB-Client.jar"/>
+			</zipfileset>
+			<zipfileset dir="packaged archives">
+				<include name="Communication.jar"/>
+			</zipfileset>
+			<zipfileset dir="src/META-INF" prefix="META-INF">
+				<include name="application.xml"/>
+			</zipfileset>
+			<zipfileset dir="packaged archives">
+				<include name="Persistence.har"/>
+			</zipfileset>
+			<zipfileset dir="src/META-INF" prefix="META-INF">
+				<include name="jboss-app.xml"/>
+				<include name="jboss.xml" /> <!-- Agregado -->
+			</zipfileset>
+		</jar>
+	</target>
+	<target name="N65794" description="ActiveSessions.sar">
+		<mkdir dir="packaged archives"/>
+		<jar destfile="packaged archives/ActiveSessions.sar">
+			<zipfileset dir="src/persistence/administration/jboss" prefix="META-INF">
+				<include name="jboss-service.xml"/>				
+				<!-- Aca no va: <include name="datacenter-hibernate.xml"/> -->
+			</zipfileset>
+			<zipfileset dir="bin" includes="persistence/administration/jboss/*.class"/>
+		</jar>
+	</target>
+
+	<!-- Alertas -->
+	<!-- WeekAlert
+	<target name="N65829" description="WeekAlert.sar">
+		<mkdir dir="packaged archives"/>
+		<jar destfile="packaged archives/WeekAlert.sar">
+			<zipfileset dir="src/persistence/administration/alert" prefix="META-INF">
+				<include name="jboss-service.xml"/>
+			</zipfileset>
+			<zipfileset dir="bin" includes="persistence/administration/alert/*.class"/>
+		</jar>
+	</target>
+	-->
+	
+	<!-- DayAlert -->
+	<!-- Solo contiene el DayAlert.java y el jboss-service.xml -->
+	<target name="N65854" description="DayAlert.sar">
+		<mkdir dir="packaged archives"/>
+		<jar destfile="packaged archives/DayAlert.sar">
+			<zipfileset dir="src/business/alert/scheduledtask" prefix="META-INF">
+				<include name="jboss-service.xml"/>
+			</zipfileset>
+			<zipfileset dir="bin" includes="business/alert/scheduledtask/*.class"/>
+			
+		</jar>
+	</target>
+	<!-- Fin Alertas -->
+
+</project>

@@ -1,0 +1,295 @@
+/*
+ * Created on 24-feb-2006
+ */
+package presentation.translator.web.activity.schedule;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.util.Calendar;
+import java.util.HashMap;
+import java.util.Iterator;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import net.sf.jasperreports.engine.JRExporterParameter;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.export.JRPdfExporter;
+import net.sf.jasperreports.engine.util.JRLoader;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.action.DynaActionForm;
+
+import presentation.translator.web.util.AbstractAction;
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+import business.activity.ActivityReportFacade;
+
+import communication.activity.tables.ActivityPrincipalAttributes;
+import communication.activity.tables.CEPAActivityConstants;
+import communication.activity.tables.CEPAActivityScheduleData;
+import communication.activity.tables.CEPAActivityScheduleRegistryData;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.CountryData;
+import communication.administration.user.UserSessionData;
+import communication.alert.AlertConstants;
+import communication.driver.tables.DriverData;
+import communication.language.Text;
+import communication.util.EmptyDataSource;
+
+/**
+ * @author fcarriquiry
+ *
+ */
+public class ActivityCertificateAction extends AbstractAction {
+
+    private static final String type = null;
+
+
+	public ActionForward action(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response) throws Exception {
+        
+		HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        UserSessionData userSessionData = sys.getUserSessionData(); 
+        Text messages = sys.getText();
+        
+    	Integer driverId = new Integer(((DynaActionForm)form).getString("driver"));
+    	Integer activityId = new Integer(((DynaActionForm)form).getString("activity"));
+    		
+    	CEPAActivityScheduleRegistryData completeResult = sys.getActivityReportFacade().getCompleteResult(activityId, driverId, sys.getUserSessionData());
+    	CEPAActivityScheduleData activityData = completeResult.getActivity();
+    	if(activityData.getDefinition().isHaveNote() && completeResult.getNote().equals(CEPAActivityConstants.NOTAPRUVED)) {
+			userSessionData.setMsg(messages.getText("activity.driver.notapruved"));
+			userSessionData.setUrl("/activity/schedule/CEPAActivityScheduleView.jsp?id="+activityId);
+			return mapping.findForward("next");
+
+    	} else {
+	    	DriverData driver = completeResult.getDriver();
+	        String fileName = Util.formatDate(activityData.getDate())+"_"+driver.getFirstName().replaceAll(" ","_")+"_"+driver.getLastName().replaceAll(" ","_");
+	
+	    	boolean withContent = (activityData.getType().getResourceBundleId().equals(CEPAActivityConstants.BTW1) 
+	    			&& sys.getUserSessionData().getLenguage().equals("pt") 
+	    			&& sys.isBrasilCorporation() 
+	    			&& !sys.isCorporation(new int[]{CorporationData.MONSANTO,CorporationData.DOW})); 
+	
+	    	String activityKey = activityData.getType().getResourceBundleId();
+	    	
+	    	HashMap<String,Object> parameters = new HashMap<String,Object>();
+	    	boolean sabMillerH = sys.isCorporation(CorporationData.SABMILLER) && activityData.getCountryId().equals(String.valueOf(CountryData.HONDURAS_ID));
+	    	if(sabMillerH) {
+		        if(!Util.empty(driver.getCorporationId())) {
+		        	parameters.put("ci",  driver.getCorporationId());
+		        }else {
+		        	parameters.put("ci",  "----");
+		        }
+	    		parameters.put("fondo", AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+"fondo_sabmillerH.jpg");
+	    	}else {
+	    		parameters.put("fondo", AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+"fondo_"+sys.getUserSessionData().getLenguage()+".jpg");
+	    	}
+	    	
+    		String driverName = driver.getFirstName() + " " + driver.getLastName();
+	        if(!Util.empty(driver.getCorporationId()) && (sys.isForestalUnified() || sys.isCorporation(CorporationData.FORESTALES))) {
+	        	driverName += " (C.I. " + Util.formatCorporationId(driver) + ")";
+	        }
+	        parameters.put("conductor",  driverName);
+	    	String title =  messages.getText(activityKey);
+	    	title = title.replace("(versión Tablets)","");
+	    	title = title.replace("(versão Tablets)","");
+	    	title = title.replace("(version Tablets)","");
+	    	
+	        parameters.put("actividad", title);
+	        if(sabMillerH) {
+	        	Calendar c = Calendar.getInstance();
+	        	c.setTime(activityData.getDate());
+	        	String s = c.get(Calendar.DATE)+" días del mes de "+messages.getText("generic.month."+String.valueOf(c.get(Calendar.MONTH)+1))+" de "+c.get(Calendar.YEAR);
+	        	parameters.put("fecha", s);
+	        }else {
+	        	parameters.put("fecha", Util.formatDate(activityData.getDate()));
+	        }
+	        ActivityReportFacade activityReport = sys.getActivityReportFacade();
+	        int timeExpiry=activityReport.getTimeExpiry(activityData.getDefinition().getResourceKeyName(),activityData.getCountryId(),sys.getUserSessionData());
+	        //String vigencia = (activityData.getDefinition().getTimeExpiry() == 0) ? "---" : activityData.getDefinition().getTimeExpiry() + " "  + messages.getText("generic.messages.years");
+	        if(sys.isCorporation(CorporationData.CEPA) && Integer.parseInt(activityData.getCountryId()) == CountryData.MEXICO_ID.intValue() && activityData.getData(ActivityPrincipalAttributes.DIV_ORG,1,2).equals("FMC")) {
+	        	timeExpiry = 1;
+	        }
+	        
+	        String vigencia = (timeExpiry == 0) ? "---" : timeExpiry + " "  + messages.getText("generic.messages.years");
+	        if(timeExpiry == 1) {
+	        	vigencia = vigencia.substring(0,vigencia.length()-1);
+	        }
+	        
+	        parameters.put("vigencia", vigencia);
+	
+	        String fileNameJasper = (withContent) ? "certificados_br" : "certificados";
+	        if(activityKey.equals(CEPAActivityConstants.BTW3SEGUNDARENOVACION) || activityKey.equals(CEPAActivityConstants.BTW3TERCERARENOVACION) || activityKey.equals(CEPAActivityConstants.CLEAT))
+	        	fileNameJasper = "certificados_largo";
+	    	if(sys.isCorporation(CorporationData.FEMSA_BR)) {
+		        JasperCompileManager.compileReportToFile(AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+"certificados69.jrxml", AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+"certificados69.jasper");
+		        fileNameJasper += String.valueOf(CorporationData.FEMSA_BR);
+	    	}
+	    	if(sys.isCorporation(CorporationData.SABMILLER) && activityData.getCountryId().equals(String.valueOf(CountryData.HONDURAS_ID))) {
+		        fileNameJasper = "certificado_sabmillerH";	    		
+	    	}
+	        //JasperCompileManager.compileReportToFile(AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+fileNameJasper+".jrxml", AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+fileNameJasper+".jasper");
+	    	FileInputStream input2 = new FileInputStream(new File(AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+fileNameJasper+".jasper"));
+	
+	    	if(withContent) {
+		        FileInputStream input = new FileInputStream(new File(AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+"contenido.jasper"));
+		        JasperReport subReport = (JasperReport)JRLoader.loadObject(input);
+				parameters.put("contenido", AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+"contenido_pt.jpg");
+		        parameters.put("contenidoDS", new EmptyDataSource());
+		        parameters.put("subreport", subReport);
+	    	}
+	        JasperReport jasperReport = (JasperReport)JRLoader.loadObject(input2);
+	
+	        response.setHeader("Content-Type", "application/pdf");
+	        fileName = Util.stringToSlug(fileName.replaceAll(" ", "_"));
+	   	 	response.setHeader("Content-Disposition", "inline; filename=\""+fileName);
+	        OutputStream out = response.getOutputStream();
+	        JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, new EmptyDataSource());
+	
+	        JRPdfExporter exporter = new JRPdfExporter();
+	        exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
+	        exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, out);
+	        exporter.exportReport();       
+	        out.flush();
+	        out.close();
+    	}
+	    
+    	return null;
+	}		
+	
+	public ActionForward all(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response) throws Exception {
+    	 
+        HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        Text messages = sys.getText();
+        
+    	//Integer driverId = new Integer(((DynaActionForm)form).getString("driver"));
+    	//Integer activityId = new Integer(((DynaActionForm)form).getString("activity"));
+    		
+        HashMap map = new HashMap();
+        map.put(new Integer(181945), new int[]{262150,209338,209553,261931,209408,211851,209402,203793,209339,261932,262142,262149,203545,262151,203795,203544,203542});
+        map.put(new Integer(181702), new int[]{261450,203524,203248,261488,209410,209364,261467,203608,203251,203778,261489,203247,262051,210852,203529,262015,262014,209362,262013,262012});
+        map.put(new Integer(182166), new int[]{202928,211950,262348,262345,262346,209404,203613,262344,262340,262341,203526});
+        
+        Iterator it = map.keySet().iterator();
+        while(it.hasNext()) {
+        	Integer activityId = (Integer)it.next();
+        	int[] values = (int[]) map.get(activityId);
+        	
+        	for(int i = 0; i < values.length; i++) {
+        		Integer driverId = new Integer(values[i]);
+		    	CEPAActivityScheduleRegistryData completeResult = sys.getActivityReportFacade().getCompleteResult(activityId, driverId, sys.getUserSessionData());
+		    	CEPAActivityScheduleData activityData = completeResult.getActivity();
+		    	DriverData driver = completeResult.getDriver();
+		        String fileName = Util.formatDate(activityData.getDate())+"_"+driver.getFirstName().replaceAll(" ","_")+"_"+driver.getLastName().replaceAll(" ","_");
+		
+		    	boolean withContent = (activityData.getType().getResourceBundleId().equals(CEPAActivityConstants.BTW1) 
+		    			&& sys.getUserSessionData().getLenguage().equals("pt") 
+		    			&& sys.isBrasilCorporation() 
+		    			&& !sys.isCorporation(new int[]{CorporationData.MONSANTO,CorporationData.DOW})); 
+		
+		    	HashMap<String,Object> parameters = new HashMap<String,Object>();
+		    	if(sys.isCorporation(CorporationData.FEMSA_BR)) {
+		    		parameters.put("fondo", AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+"fondo"+CorporationData.FEMSA_BR+".jpg");
+		    	}else if(sys.isCorporation(CorporationData.SABMILLER) && activityData.getCountryId().equals(String.valueOf(CountryData.HONDURAS_ID))) {
+		    		parameters.put("fondo", AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+"fondo_sabmillerH.jpg");
+		    	}else {
+		    		parameters.put("fondo", AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+"fondo_"+sys.getUserSessionData().getLenguage()+".jpg");
+		    	}
+		        String driverName = driver.getFirstName() + " " + driver.getLastName();
+		        if(!Util.empty(driver.getCorporationId()) && (sys.isForestalUnified() || sys.isCorporation(CorporationData.FORESTALES))) {
+		        	driverName += " (C.I. " + Util.formatCorporationId(driver) + ")";
+		        }
+		        parameters.put("conductor",  driverName);
+		    	String title =  messages.getText(activityData.getType().getResourceBundleId());
+		    	title = title.replace("(versión Tablets)","");
+		    	title = title.replace("(versão Tablets)","");
+		    	title = title.replace("(version Tablets)","");
+
+		        parameters.put("actividad", title);
+		        parameters.put("fecha", Util.formatDate(activityData.getDate()));
+		        ActivityReportFacade activityReport = sys.getActivityReportFacade();
+		        int timeExpiry=activityReport.getTimeExpiry(activityData.getDefinition().getResourceKeyName(),activityData.getCountryId(),sys.getUserSessionData());
+		        //String vigencia = (activityData.getDefinition().getTimeExpiry() == 0) ? "---" : activityData.getDefinition().getTimeExpiry() + " "  + messages.getText("generic.messages.years");
+		        if(sys.isCorporation(CorporationData.CEPA) && Integer.parseInt(activityData.getCountryId()) == CountryData.MEXICO_ID.intValue() && activityData.getData(ActivityPrincipalAttributes.DIV_ORG,1,2).equals("FMC")) {
+		        	timeExpiry = 1;
+		        }
+		        
+		        String vigencia = (timeExpiry == 0) ? "---" : timeExpiry + " "  + messages.getText("generic.messages.years");
+		        if(timeExpiry == 1) {
+		        	vigencia = vigencia.substring(0,vigencia.length()-1);
+		        }
+		        
+		        parameters.put("vigencia", vigencia);
+		
+		        String fileNameJasper = (withContent) ? "certificados_br" : "certificados";
+		    	if(sys.isCorporation(CorporationData.FEMSA_BR)) {
+			        JasperCompileManager.compileReportToFile(AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+"certificados69.jrxml", AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+"certificados69.jasper");
+			        fileNameJasper += String.valueOf(CorporationData.FEMSA_BR);
+		    	}
+		        JasperCompileManager.compileReportToFile(AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+fileNameJasper+".jrxml", AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+fileNameJasper+".jasper");
+		    	FileInputStream input2 = new FileInputStream(new File(AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+fileNameJasper+".jasper"));
+		
+		    	if(withContent) {
+			        FileInputStream input = new FileInputStream(new File(AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+"contenido.jasper"));
+			        JasperReport subReport = (JasperReport)JRLoader.loadObject(input);
+					parameters.put("contenido", AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+"contenido_pt.jpg");
+			        parameters.put("contenidoDS", new EmptyDataSource());
+			        parameters.put("subreport", subReport);
+		    	}
+		        JasperReport jasperReport = (JasperReport)JRLoader.loadObject(input2);
+		/*
+		        response.setHeader("Content-Type", "application/pdf");
+		        fileName = Util.stringToSlug(fileName.replaceAll(" ", "_"));
+		   	 	response.setHeader("Content-Disposition", "inline; filename=\""+fileName);
+		        OutputStream out = response.getOutputStream();*/
+		        OutputStream out = new FileOutputStream(new File(AlertConstants.TEMP_DIRECTORY_CERTIFICADOS+"out/"+fileName+".pdf"));
+		        JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, new EmptyDataSource());
+		        
+		        JRPdfExporter exporter = new JRPdfExporter();
+		        exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
+		        exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, out);
+		        exporter.exportReport();       
+		        out.flush();
+		        out.close();
+        	}
+        }
+        return null;
+    }
+
+
+    public ActionForward cancel(HttpSession session,ActionMapping mapping, ActionForm form) {
+        return null;
+    }
+    
+    /*
+    ActivityReportData getReportActivity(CEPAActivityScheduleRegistryData registry) {
+    	
+        Collection items =  registry.getItemSet(); 
+        Collection result = new LinkedList();
+        Iterator iter2 = items.iterator();           
+        while (iter2.hasNext()) {
+        	Item item = (Item) iter2.next();
+        	Point point = getPoint(registry.getActivity().getDefinition().getCheckList().getPoints(),item);
+        	PointItem ip = new PointItem(point,item);
+            result.add(ip);
+        }       
+        return new ActivityReportData(result);        
+    }
+    */
+    
+     
+} 
+    
+
+

@@ -1,0 +1,286 @@
+/*
+ * Created on 24-feb-2006
+ */
+package presentation.translator.web.activity.schedule;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import javax.swing.table.AbstractTableModel;
+
+import net.sf.jasperreports.engine.JRExporterParameter;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.export.JRPdfExporter;
+import net.sf.jasperreports.engine.util.JRLoader;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.action.DynaActionForm;
+import org.jfree.report.JFreeReport;
+import org.jfree.report.JFreeReportBoot;
+import org.jfree.report.modules.output.pageable.base.PageableReportProcessor;
+import org.jfree.report.modules.output.pageable.pdf.PDFOutputTarget;
+
+import presentation.report.ReportFactory;
+import presentation.report.activity.ActivityReportFactory;
+import presentation.report.activity.ActivityReportTabletFactory;
+import presentation.report.activity.EBtwReportFactory;
+import presentation.report.reporterjj.CommentaryDriveDataSource;
+import presentation.report.reporterjj.SelfEvaluationData;
+import presentation.report.reporterjj.SelfEvaluationReportFactory;
+import presentation.translator.web.activity.report.ActivityReportBTW;
+import presentation.translator.web.activity.report.FeedbackLineReport;
+import presentation.translator.web.util.AbstractAction;
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+import business.activity.ActivityReportFacade;
+
+import communication.activity.report.ActivityReportData;
+import communication.activity.report.ActivityReportTabletData;
+import communication.activity.report.ActivityReportTabletDataType;
+import communication.activity.tables.CEPAActivityConstants;
+import communication.activity.tables.CEPAActivityScheduleData;
+import communication.activity.tables.CEPAActivityScheduleRegistryData;
+import communication.activity.tables.CheckListData;
+import communication.alert.AlertConstants;
+import communication.driver.tables.DriverData;
+import communication.language.Text;
+
+/**
+ * @author fcarriquiry
+ *
+ */
+public class ActivityAllReportAction extends AbstractAction {
+
+
+	public ActionForward action(ActionMapping mapping, ActionForm form, 
+    		HttpServletRequest request, HttpServletResponse response) throws Exception {
+    	 
+        HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        Text messages = sys.getText();
+        
+    	Integer activityId = new Integer(((DynaActionForm)form).getString("activity"));
+    	ActivityReportFacade activityReport = sys.getActivityReportFacade();
+    	CEPAActivityScheduleData activity = activityReport.findCEPAActivityScheduleByPrimaryKey(activityId, sys.getUserSessionData());
+		Collection drivers = activityReport.getParticipants(activityId,sys.getUserSessionData());
+		
+    	Iterator itDrivers = drivers.iterator();
+    	String[][] links = new String[drivers.size()][2];
+    	int index = 0;
+    	
+    	File f = new File(AlertConstants.TEMP_DIRECTORY_DOWNLOAD+"reports_"+activityId+".zip");
+        OutputStream outZip = new FileOutputStream(f);
+    	ZipOutputStream zip = new ZipOutputStream(outZip);
+    	HashMap<String,Integer> media = null;
+    	if (activity.hasNewReports()){
+            media = activityReport.getMediaActivity(activity.getType().getResourceBundleId(), new Integer(sys.getCorporationId()), new Integer(activity.getCountryId()), sys.getUserSessionData());
+    	}
+		while(itDrivers.hasNext()) {
+			DriverData driver = (DriverData)itDrivers.next();
+	        CEPAActivityScheduleRegistryData completeResult = activityReport.getCompleteResult(activity.getActivityId(), driver.getId(),messages,sys.getUserSessionData());        
+			String name = Util.formatFile(driver.getFirstName().trim() + " " + driver.getLastName().trim());
+
+	        String link = name;
+	        links[index][0] = name;
+	        links[index][1] = link;
+	        ByteArrayOutputStream out = new ByteArrayOutputStream();
+
+	        String activityType = activity.getDefinition().getResourceKeyName();
+	        
+	        // Si es una actividad de reporter jj, pongo el link para abrir el PDF guardado 
+	        if(activityType.equals(CEPAActivityConstants.REPORTERJJ_COMMENTARYDRIVE) ||
+	        		activityType.equals(CEPAActivityConstants.REPORTERJJ_SELFEVALUATION)) {
+	            int checkListId = (activityType.equals(CEPAActivityConstants.REPORTERJJ_SELFEVALUATION)) ? CheckListData.REPORTERJJ_SELF_EVALUATION : CheckListData.COMMENTARY_DRIVE_JJ2;
+	    		CheckListData checkList = activityReport.findCheckList(checkListId, sys.getUserSessionData());
+	
+	    		if(activityType.equals(CEPAActivityConstants.REPORTERJJ_SELFEVALUATION)) {
+		 			AbstractTableModel data = new SelfEvaluationData(completeResult,checkList,messages);
+			 		ReportFactory factory = new SelfEvaluationReportFactory("ReporterJJ",data,form,sys,activity.getActivityId(),driver);
+			        executeReport(out, factory.createReport());
+		 		}else {
+		 			CommentaryDriveDataSource dataSource = new CommentaryDriveDataSource(completeResult,checkList,sys);
+			
+			        HashMap<String,Object> parameters2 = new HashMap<String,Object>();
+			        parameters2.put("logos", AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"images/logos.jpg");
+			        parameters2.put("header", AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"images/header.jpg");
+			        parameters2.put("footer", AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"images/footer.jpg");
+			        parameters2.put("title", messages.getText("scheduledactivitytype.reporterjj.commentarydrive"));
+			        parameters2.put("tabla1",AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"images/tabla1.jpg");
+			        parameters2.put("tabla2",AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"images/tabla3.jpg");
+			        parameters2.put("tabla3",AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"images/tabla2.jpg");
+			        parameters2.put("tabla4",AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"images/tabla4.jpg");
+			        parameters2.put("tabla5",AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"images/group_header.jpg");
+			        parameters2.put("tabla6",AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"images/tabla5.jpg");
+			        parameters2.put("date", Util.formatDate(completeResult.getDate()));
+			        parameters2.put("drivertxt",messages.getText("generic.driver.driverdata.firstname"));
+			        parameters2.put("wwidtxt",messages.getText("generic.driver.driverdata.wwid").toUpperCase());
+		        	parameters2.put("managertxt",messages.getText("generic.activity.cc.gerente"));
+		        	
+			        parameters2.put("ccdatetxt",messages.getText("generic.activity.date"));
+			        parameters2.put("driver",driver.getFirstName()+" "+driver.getLastName());
+			        parameters2.put("wwid",driver.getCorporationId());
+			        parameters2.put("manager",completeResult.getInstructor());
+			        parameters2.put("ccdate",Util.formatDate(completeResult.getDate()));
+			        parameters2.put("obstext", messages.getText("generic.messages.observations"));
+			        parameters2.put("obsvalue", completeResult.getObs());
+			
+			        //JasperCompileManager.compileReportToFile(AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"jasper/ReporterJJ_CC.jrxml", AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"jasper/ReporterJJ_CC.jasper");
+			        FileInputStream input2 = new FileInputStream(new File(AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"jasper/ReporterJJ_CC.jasper"));
+			
+			        response.setHeader("Content-Type", "application/pdf");
+			        String fileName = "ReporterJJ_"+driver.getFirstName() + " " + driver.getLastName()+".pdf";
+			        fileName.replaceAll(" ", "_");
+			   	 	response.setHeader("Content-Disposition", "inline; filename=\""+fileName);
+			        JasperReport jasperReport = (JasperReport)JRLoader.loadObject(input2);
+			        JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters2, dataSource);
+			        
+			        JRPdfExporter exporter = new JRPdfExporter();
+			        exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
+			        exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, out);
+			        exporter.exportReport();       
+			        out.flush();
+			        out.close();
+			        
+		 		}
+	            return null;
+	
+	        
+	        // Si es una actividad que no tiene reporte, muestro solo el formulario sin 
+	        // posibilidad de editarlo
+	        }else {
+	        	if (activity != null && activity.getDefinition() != null){
+		        
+			        if (	(activity.getDefinition().getResourceKeyName().
+			     			equals("datatype.scheduledactivitytype.commentarydriveother") 
+								&& !activity.getIsOld()) 
+							||
+							(!activity.getDefinition().isHaveIndividualReport())
+							// No tienen Reportes Individuales:
+							// Evaluacion en Cabina PEsados, BTW Thailand, Avanzado, Principiante y 
+							// Principiante.Refreshment
+						) {
+			        	// Si es una actividad que no tiene reporte muestro
+			        	// el formulario sin permitir editarlo.
+			        	session.setAttribute("enabled","false");
+			        	session.setAttribute("page","lastpage");
+			        	return mapping.findForward("readonly");
+			        }
+		        }
+		        
+		
+	        	if (activity.hasNewReports()){
+		            ActivityReportTabletDataType dataType = activityReport.getReportTabletActivity(activityId, driver.getId(),messages, sys.getUserSessionData());
+
+		       	    ActivityReportBTW reportBTW = new ActivityReportBTW(completeResult,dataType,sys,media);
+		       	    reportBTW.executeReport(out, 1);
+
+		        }else if(activity.getType().getResourceBundleId().equals(CEPAActivityConstants.FEEDBACK_LINE_MANAGER)){
+		        	FeedbackLineReport feedBackReport = new FeedbackLineReport(completeResult,sys,out);
+		        }else {
+		        	String type = activity.getType().getResourceBundleId();
+			        ReportFactory factory = null;
+			        if(type != null && (type.equals(CEPAActivityConstants.EBTW))) {
+			        	factory = new EBtwReportFactory(completeResult,activity,driver,"Activity", null,form,sys,messages,"PDF");
+			        }else  if (type != null && type.contains("tablet")){
+			        	// Si la actividad tiene formulario de Tablet llamo a otro Factory para mostrar
+			        	// el reporte de otra manera.
+			        	 ActivityReportTabletData result = activityReport.getReportTabletActivity(activity.getActivityId(), driver.getId(),1,1,messages, sys.getUserSessionData());
+			        	 result.setMessages(messages);
+			        	 result.setType(type);
+			        	 factory = new ActivityReportTabletFactory(completeResult,activity,driver,"Activity", result,form,sys,messages,"PDF");
+			        	 
+			        }else {
+			            ActivityReportData result = activityReport.getReportActivity(activity.getActivityId(), driver.getId(),1,1,sys.getUserSessionData());
+			              
+			            result.setMessages(messages);
+			        	factory = new ActivityReportFactory(completeResult,activity,driver,"Activity", result,form,sys,messages,"PDF");
+			        }
+			        
+			        try{
+			        	JFreeReportBoot.getInstance().start();
+			        }catch(Throwable e){
+			        	e.printStackTrace();
+			        	// Intento de nuevo, porque el primer reporte salta exception al buscar las fuentes (tipos de letras)
+			        	JFreeReportBoot.getInstance().start();
+			        }
+			        executeReport(out, factory.createReport());
+		        }
+	        }
+	        index++;
+	        
+	        zip.putNextEntry(new ZipEntry(name+".pdf"));
+	        zip.write(out.toByteArray());
+	        zip.closeEntry();
+
+
+		}
+    	zip.close();
+
+		response.setContentLength((int)f.length());
+        response.setContentType("application/zip");
+        response.setHeader("Content-Disposition", "attachment; filename=\"reports.zip\"");
+		
+        InputStream input = new FileInputStream(f);
+        copy(input, response.getOutputStream());
+
+		return null;
+    }
+
+
+    private void copy(InputStream input, OutputStream output) throws Exception {
+    	byte[] buffer = new byte[4096];
+    	int read;
+    	while ((read = input.read(buffer)) != -1) {
+    	    output.write(buffer, 0, read);
+    	}
+    	input.close();
+
+	}
+
+
+	public ActionForward cancel(HttpSession session,ActionMapping mapping, ActionForm form) {
+        return null;
+    }
+    
+    public ActionForward executeReport(OutputStream out, JFreeReport report ) throws Exception {  
+    		
+    		try{
+	    		// PDF Report
+	            
+	            PDFOutputTarget target = new PDFOutputTarget(out);
+	            target.configure(report.getReportConfiguration());
+	            target.open();
+	            PageableReportProcessor proc = new PageableReportProcessor(report);            
+	            proc.setOutputTarget(target);
+	            proc.processReport();
+	            target.close();
+	            out.flush();
+	            out.close();
+    		}catch(Exception e){
+    			e.printStackTrace();
+    			//throw e;
+    		}
+    		
+	        return null;
+    }
+     
+} 
+    
+
+

@@ -1,0 +1,360 @@
+package communication.vehicle.tables;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+
+import persistence.util.Util;
+
+import communication.activity.tables.CheckListData;
+import communication.activity.tables.ItemData;
+import communication.activity.tables.PointData;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.user.UserSessionData;
+import communication.language.Text;
+
+public class ForestalCheckListData implements Comparable<ForestalCheckListData> {
+
+	private Integer id;
+	private String plate;
+	private String plate1;
+	private String plate2;
+	private String plate3;
+	private String plate4;
+	private String serie;
+	private String inspectedBy;
+	
+	
+	private Date date;
+	private String contractor;
+	private int type;
+	private Integer result;
+	private HashMap<Integer,Integer> items;
+	private VehicleCheckData vcData;
+	private boolean abs;
+	private boolean airbag;
+	private boolean aire;
+	private boolean suspension;
+	private String control;
+	private String suspension1;
+	private String suspension2;
+	
+	public ForestalCheckListData() {
+	}
+	
+	public ForestalCheckListData(Object[] data, VehicleCheckData vcData ) {
+		id = (Integer)data[0];
+		date = (Date)data[1];
+		type = Integer.parseInt((String)data[2]);
+		plate = (String)data[3];
+		contractor = (String)data[4];
+		
+		result = (Integer)data[5];
+		items = new HashMap<Integer, Integer>();
+		Integer type=(Integer)data[9];
+		this.vcData=vcData;
+		String value=(String)data[7];
+		if(type.equals(1)|| type.equals(2)){
+			items.put((Integer)data[6], Integer.valueOf(value));	
+		}else{
+			String text=(String)data[8];
+			if(text.equals("forestales.check2.h7") ){
+				//Primer Semi Remolque
+				plate1=value;
+			}else if(text.equals("forestales.check2.h8") ){
+				//Segundo Semi Remolque
+				plate2=value;
+			}else if(text.equals("forestales.check2.h9") ){
+				//Camión/Unidad
+				plate3=value;
+			}else if(text.equals("forestales.check2.h10") ){
+				//Zorra
+				plate4=value;
+			}
+		}
+		
+		serie=(String)data[10];
+		abs=(data[11] != null) ? ((Boolean)data[11]).booleanValue() : false;
+		airbag=(data[12] != null) ? ((Boolean)data[12]).booleanValue() : false;
+		aire=(data[13] != null) ? ((Boolean)data[13]).booleanValue() : false;
+		suspension=(data[14] != null) ? ((Boolean)data[14]).booleanValue() : false;
+		inspectedBy=(String)data[15];
+		control=(String)data[16];
+		suspension1=(String)data[17];
+		suspension2=(String)data[18];
+	}
+	
+	public String getPlate1() {
+		return plate1;
+	}
+	
+	public void setPlate1(String plate1) {
+		this.plate1 = plate1;
+	}
+	
+	public String getPlate2() {
+		return plate2;
+	}
+	
+	public void setPlate2(String plate2) {
+		this.plate2 = plate2;
+	}
+	
+	public String getPlate3() {
+		return plate3;
+	}
+	
+	public void setPlate3(String plate3) {
+		this.plate3 = plate3;
+	}
+	
+	public String getPlate4() {
+		return plate4;
+	}
+	
+	public void setPlate4(String plate4) {
+		this.plate4 = plate4;
+	}
+	
+	public Integer getId() {
+		return id;
+	}
+	
+	public void setId(Integer id) {
+		this.id = id;
+	}
+	
+	public String getPlate() {
+		return plate;
+	}
+	
+	public void setPlate(String plate) {
+		this.plate = plate;
+	}
+	
+	public String getContractor() {
+		return contractor;
+	}
+	
+	public void setContractor(String contractor) {
+		this.contractor = contractor;
+	}
+	
+	public int getType() {
+		return type;
+	}
+	
+	public void setType(int type) {
+		this.type = type;
+	}
+	
+	public Integer getResult() {
+		return result;
+	}
+	
+	public void setResult(Integer result) {
+		this.result = result;
+	}
+	
+	public HashMap<Integer, Integer> getItems() {
+		return items;
+	}
+	
+	public void setItems(HashMap<Integer, Integer> items) {
+		this.items = items;
+	}
+	
+	public void addItem(Integer item, String value, String text,Integer type) {
+		boolean ok=false;
+		if(type.equals(1)||type.equals(2))
+			try{
+				Integer valueInt=Integer.valueOf(value);
+				items.put(item, valueInt);
+				ok=true;
+			}catch(NumberFormatException ex){
+			}
+		if(!ok){
+			if(text.equals("forestales.check2.h7") ){
+				//Primer Semi Remolque
+				plate1=value;
+			}else if(text.equals("forestales.check2.h8") ){
+				//Segundo Semi Remolque
+				plate2=value;
+			}else if(text.equals("forestales.check2.h9") ){
+				//Camión/Unidad
+				plate3=value;
+			}else if(text.equals("forestales.check2.h10") ){
+				//Zorra
+				plate4=value;
+			}
+		}
+	}
+	
+	public String typeCheckOrTrailer(){
+		if((plate1!=null && !plate1.trim().equals(".")) || (plate2!=null && !plate2.trim().equals(".")) || (plate4!=null && !plate4.trim().equals("."))){
+			return "Plataforma";
+		}
+		return "Vehiculo";
+	}
+	
+	public ArrayList<String> getLine(CheckListData check, Text messages, UserSessionData userSession) {
+		ArrayList<String> line = new ArrayList<String>();
+		line.add(typeCheckOrTrailer());
+		line.add(plate);
+		if(userSession.isCorporation(CorporationData.FORESTALORIENTAL)) {
+			line.add((abs) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no"));
+			line.add((suspension) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no"));
+		}
+		line.add(plate1);
+		if(userSession.isCorporation(CorporationData.FORESTALORIENTAL)) {
+			line.add((airbag) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no"));
+		}
+		line.add(plate2);
+		if(userSession.isCorporation(CorporationData.FORESTALORIENTAL)) {
+			line.add((aire) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no"));
+		}
+		line.add(plate3);
+		line.add(plate4);
+		
+		line.add(Util.formatDateWithHour(date));
+		line.add(contractor);
+		line.add(serie);
+		line.add(inspectedBy);
+		if(userSession.isCorporation(CorporationData.FORESTALORIENTAL)) {
+			line.add(control);
+			line.add(suspension1);
+			line.add(suspension2);
+		}
+		
+		switch(result) {
+		case 1:
+			line.add(messages.getText("generic.activity.note.approved"));
+			break;
+		case 2:
+			line.add(messages.getText("generic.activity.note.notapproved"));
+			break;
+		case 3:
+			line.add(messages.getText("generic.activity.note.approvedwithobservations"));
+			break;
+		default:
+			line.add("---");
+			break;
+		}
+		Iterator<PointData> pointIt = check.getSortPoints();
+		while(pointIt.hasNext()) {
+			PointData pointData = pointIt.next();
+			Iterator<ItemData> itemIt = pointData.getSortItems();
+			while(itemIt.hasNext()) {
+				ItemData item = itemIt.next();
+				if(item.getType().intValue() == 2 || item.getType().intValue() == 1) {
+					if(items.containsKey(item.getId())) {
+						if(items.get(item.getId()).intValue() == 1) {
+							line.add("");
+						}else {
+							if(vcData==null){
+								line.add("X");
+							}else{
+								String comment =vcData.getValueFromCommentPoint(pointData.getId());
+								if(comment!=null && comment.trim().length()>0){
+									line.add(comment);
+								}else{
+									line.add("X");
+								}
+							}
+						}
+					}else {
+						line.add("---");
+					}
+				}	
+			}
+		}
+		return line;
+	}
+	
+	public ForestalResumeCheckListData getResume() {
+		ForestalResumeCheckListData resume = new ForestalResumeCheckListData();
+		resume.setContractor(contractor);
+		resume.setType(type);
+		int obsCount = 0;
+		Iterator<Integer> it = items.values().iterator();
+		while(it.hasNext()) {
+			if(it.next().intValue() == 2) {
+				obsCount++;
+			}
+		}
+		if(obsCount > 0) {
+			resume.setObservations(1);
+			resume.setObservationCount(obsCount);
+		}
+		resume.addResult(result);
+		return resume;
+	}
+	
+	@Override
+	public int compareTo(ForestalCheckListData o) {
+		if(date.equals(o.date)) {
+			return contractor.compareTo(o.contractor);
+		}
+		return date.compareTo(o.date);
+	}
+
+	public String getSerie() {
+		return serie;
+	}
+
+	public void setSerie(String serie) {
+		this.serie = serie;
+	}
+
+	public Date getDate() {
+		return date;
+	}
+
+	public void setDate(Date date) {
+		this.date = date;
+	}
+
+	public VehicleCheckData getVcData() {
+		return vcData;
+	}
+
+	public void setVcData(VehicleCheckData vcData) {
+		this.vcData = vcData;
+	}
+
+	public boolean isAbs() {
+		return abs;
+	}
+
+	public void setAbs(boolean abs) {
+		this.abs = abs;
+	}
+
+	public boolean isAirbag() {
+		return airbag;
+	}
+
+	public void setAirbag(boolean airbag) {
+		this.airbag = airbag;
+	}
+
+	public boolean isAire() {
+		return aire;
+	}
+
+	public void setAire(boolean aire) {
+		this.aire = aire;
+	}
+
+	public boolean isSuspension() {
+		return suspension;
+	}
+
+	public void setSuspension(boolean suspension) {
+		this.suspension = suspension;
+	}
+	
+	public boolean isMDPInternal() {
+		return (inspectedBy.equals("Gonzalo Ruiz") || inspectedBy.equals("Madelin Rinaldi") || inspectedBy.equals("Pablo Aguiar"));
+	}
+}

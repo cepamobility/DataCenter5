@@ -1,0 +1,47 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.administration.tables" >
+    <class name="LevelOfServiceDriverCourseDPA" table="levelofservicedrivercoursedpa">
+													  
+        <id
+            name="id"
+            column="id"
+            type="java.lang.Integer"
+        >
+            <generator class="sequence">
+            	<param name="sequence">LevelOfServiceDriverCourseDPA_Sequence</param>
+            </generator>
+           
+        </id>
+        
+        <property
+			name="course"
+			column="course"
+			type="java.lang.String"
+			not-null="true" 
+		/>
+		
+		<property
+			name="comment"
+			column="comment"
+			type="java.lang.String"
+			not-null="false" 
+		/>
+		
+		<property
+			name="date"
+			column="date"
+			type="java.util.Date"
+			not-null="true" 
+		/>
+		
+					
+				
+		
+	</class>
+
+</hibernate-mapping>

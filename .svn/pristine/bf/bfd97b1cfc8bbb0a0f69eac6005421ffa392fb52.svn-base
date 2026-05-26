@@ -1,0 +1,334 @@
+/**
+ * Created on 03-jul-2006
+ * CEPA
+ * DataCenter 5
+ */
+package communication.queries.report;
+
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
+
+import javax.swing.table.AbstractTableModel;
+
+import org.jfree.data.category.CategoryDataset;
+import org.jfree.data.category.DefaultCategoryDataset;
+
+import persistence.util.Util;
+
+import com.sun.org.apache.xalan.internal.xsltc.runtime.Hashtable;
+import communication.fleet.util.APMMByDivisionData;
+
+public class ReportAPMMData extends AbstractTableModel 
+	implements Serializable {
+
+    static final long serialVersionUID = 1L;
+    
+    int total;
+    APMMByDivisionData[] attributes;
+    boolean color = true;
+
+    private Hashtable chart1;
+    private Hashtable chart2;
+    private Hashtable chart3;
+    private Hashtable chart4;
+
+    int accidents = 0;
+    int incidents = 0;
+    int nearmiss = 0;
+    int miles = 0;
+    int kms = 0;
+
+    private Integer monthCount;
+
+    private int order1;
+    private int order2;
+    private int order3;
+    private int order4;
+    
+    private boolean isMiles;
+    
+    public ReportAPMMData() {
+        total = 0;
+        attributes = new APMMByDivisionData[0];
+        monthCount = new Integer(0);
+    }
+
+    public ReportAPMMData(Collection details,Integer monthCount,int order1, int order2, int order3, int order4, boolean isMiles) {
+        total = details.size();
+        Collections.sort((List) details);
+        attributes = (APMMByDivisionData[])details.toArray(new APMMByDivisionData[0]);
+        this.monthCount = monthCount;
+        this.order1 = order1;
+        this.order2 = order2;
+        this.order3 = order3;
+        this.order4 = order4;
+        this.isMiles = isMiles;
+    }
+
+    public int getRowCount() {
+        return total;
+    }
+
+    public int getColumnCount() {
+        return 21;
+    }
+
+    public Object getValueAt(int rowIndex, int columnIndex) {
+
+        switch(columnIndex) {
+            case 0:
+                return  attributes[rowIndex].getDivOrg1Id();
+            case 1:
+                return  attributes[rowIndex].getDivOrg1Name();
+            case 2:
+                return  attributes[rowIndex].getDivOrg2Id();
+            case 3:
+                return  attributes[rowIndex].getDivOrg2Name();
+            case 4:
+                return  attributes[rowIndex].getDivOrg3Id();
+            case 5:
+                return  attributes[rowIndex].getDivOrg3Name();
+            case 6:
+                return attributes[rowIndex].getVehicles();
+            case 7:
+            	if(isMiles) {
+            		miles += attributes[rowIndex].getMiles().intValue();
+            		return attributes[rowIndex].getMiles();
+            	}else {
+	            	Integer milesValue = new Integer(String.valueOf(Math.round(attributes[rowIndex].getMiles().floatValue() / Util.KMS_TO_MILES)));
+	                miles += milesValue.intValue();
+	                return milesValue;
+
+            	}
+            case 8:
+                accidents += attributes[rowIndex].getAccidents().intValue();
+                return attributes[rowIndex].getAccidents();
+            case 9:
+                if(attributes[rowIndex].getMiles().doubleValue() == 0) {
+                    return new Double(0);
+                }
+                if(isMiles) {
+                	return new Double(attributes[rowIndex].getAccidents().doubleValue() * 1000000 / attributes[rowIndex].getMiles().doubleValue());
+                }else {
+                	Integer milesValue = new Integer(String.valueOf(Math.round(attributes[rowIndex].getMiles().floatValue() / Util.KMS_TO_MILES)));
+                	return new Double(attributes[rowIndex].getAccidents().doubleValue() * 1000000 / milesValue.doubleValue());
+                }
+            case 10:
+                if(attributes[rowIndex].getVehicles().doubleValue() == 0) {
+                    return new Double(0);
+                }
+                return new Double((attributes[rowIndex].getAccidents().doubleValue() / attributes[rowIndex].getVehicles().doubleValue() * 12 / monthCount.doubleValue()) * 100);
+            case 11:
+                incidents += attributes[rowIndex].getIncidents().intValue();
+                return attributes[rowIndex].getIncidents();
+            case 12:
+                if(attributes[rowIndex].getMiles().doubleValue() == 0) {
+                    return new Double(0);
+                }
+                if(isMiles) {
+                	return new Double(attributes[rowIndex].getIncidents().doubleValue() * 1000000 / attributes[rowIndex].getMiles().doubleValue());
+                }else {
+                	Integer milesValue = new Integer(String.valueOf(Math.round(attributes[rowIndex].getMiles().floatValue() / Util.KMS_TO_MILES)));
+                	return new Double(attributes[rowIndex].getIncidents().doubleValue() * 1000000 / milesValue.doubleValue());
+                }
+            case 13:
+                color = !color;
+                return new Boolean(color);
+            case 14:
+                return  attributes[rowIndex].getDivOrg4Id();
+            case 15:
+                return  attributes[rowIndex].getDivOrg4Name();
+            case 16:{
+            	if(isMiles) {
+	                if (attributes[rowIndex].getInjuries()!=null)
+	                	return new Double(attributes[rowIndex].getInjuries().doubleValue() * 1000000 / attributes[rowIndex].getMiles().doubleValue());
+	                else 
+	                	return new Double(0);
+            	}else {
+	                if (attributes[rowIndex].getInjuries()!=null) {
+	                	Integer milesValue = new Integer(String.valueOf(Math.round(attributes[rowIndex].getMiles().floatValue() / Util.KMS_TO_MILES)));
+	                	return new Double(attributes[rowIndex].getInjuries().doubleValue() * 1000000 / milesValue.doubleValue());
+	                } else 
+	                	return new Double(0);
+            	}
+            }
+            case 17:{
+                if (attributes[rowIndex].getInjuries()!=null)
+                	return attributes[rowIndex].getInjuries().intValue();
+                else return new Integer(0);
+            }
+            case 18:
+                nearmiss += attributes[rowIndex].getNearmiss().intValue();
+                return attributes[rowIndex].getNearmiss();
+            case 19:
+            	if(isMiles) {
+	            	Integer kmsValue = new Integer(String.valueOf(Math.round(attributes[rowIndex].getMiles().floatValue() * Util.KMS_TO_MILES)));
+	                kms += kmsValue.intValue();
+	                return kmsValue;
+            	}else {
+            		kms += attributes[rowIndex].getMiles().intValue();
+            		return attributes[rowIndex].getMiles();
+            	}
+            case 20:
+                if(attributes[rowIndex].getMiles().doubleValue() == 0) {
+                    return new Double(0);
+                }
+                if(isMiles) {
+                	Integer kmsValue = new Integer(String.valueOf(Math.round(attributes[rowIndex].getMiles().floatValue() * Util.KMS_TO_MILES)));
+                	return new Double(attributes[rowIndex].getAccidents().doubleValue() * 1000000 / kmsValue.doubleValue());
+                }else {
+                	return new Double(attributes[rowIndex].getAccidents().doubleValue() * 1000000 / attributes[rowIndex].getMiles().doubleValue());
+                }
+        }
+        return null;
+    }
+
+    public String getColumnName(int column) {
+        switch(column) {
+            case 0:
+                return "divOrg1Id";
+            case 1:
+                return "divOrg1Name";
+            case 2:
+                return "divOrg2Id";
+            case 3:
+                return "divOrg2Name";
+            case 4:
+                return "divOrg3Id";
+            case 5:
+                return "divOrg3Name";
+            case 6:
+                return "vehicle_count";
+            case 7:
+                return "miles";
+            case 8:
+                return "accident_count";
+            case 9:
+                return "apmm";
+            case 10:
+                return "vehicle_percent";
+            case 11:
+                return "incident_count";
+            case 12:
+                return "ipmm";
+            case 13:
+                return "color";
+            case 14:
+                return "divOrg4Id";
+            case 15:
+                return "divOrg4Name";
+            case 16:
+                return "injuries";
+            case 17:
+                return "injuries_count";
+            case 18:
+                return "nearmiss_count";
+            case 19:
+                return "kms";
+            case 20:
+                return "apmk";
+        }
+        return null;
+    }
+    
+    public CategoryDataset getChartDataset(int chart) {
+        Hashtable data = null;
+        if(chart1 == null) {
+            loadReports();
+        }
+        switch(chart) {
+            case 1:
+                data = chart1;
+                break;
+            case 2:
+                data = chart2;
+                break;
+            case 3:
+                data = chart3;
+                break;
+            case 4:
+                data = chart4;
+                break;
+        }
+
+        final DefaultCategoryDataset result = new DefaultCategoryDataset();
+        Enumeration enumeration = data.elements();
+        while(enumeration.hasMoreElements()) {
+            Object[] dataArray = (Object[])enumeration.nextElement();
+            if(((Integer)dataArray[2]).intValue() == 0) {
+                result.setValue(0,"APMM", (String)dataArray[0]);
+            }else {
+                result.setValue(((Integer)dataArray[1]).intValue() * 1000000 / ((Integer)dataArray[2]).intValue(),(String)dataArray[0], "");
+            }
+        }
+        return result;
+    }
+    
+    private void loadReports() {
+        chart1 = new Hashtable();
+        chart2 = new Hashtable();
+        chart3 = new Hashtable();
+        chart4 = new Hashtable();
+        for(int rowIndex = 0; rowIndex < attributes.length; rowIndex++) {
+            Integer id1 = attributes[rowIndex].getDivOrg1Id();
+            if(id1 != null) {
+                if(chart1.containsKey(id1)) {
+                    Object[] data = (Object[])chart1.get(id1);
+                    int accidents = ((Integer)data[1]).intValue() + attributes[rowIndex].getAccidents().intValue();
+                    int miles = ((Integer)data[2]).intValue() + attributes[rowIndex].getMiles().intValue();
+                    data[1] = new Integer(accidents);
+                    data[2] = new Integer(miles);
+                }else {
+                    Object[] data = {attributes[rowIndex].getDivOrg1Name(),attributes[rowIndex].getAccidents(),attributes[rowIndex].getMiles()};
+                    chart1.put(id1,data);
+                }
+            }
+            
+            Integer id2 = attributes[rowIndex].getDivOrg2Id();
+            if(id2 != null) {
+                if(chart2.containsKey(id2)) {
+                    Object[] data = (Object[])chart2.get(id2);
+                    int accidents = ((Integer)data[1]).intValue() + attributes[rowIndex].getAccidents().intValue();
+                    int miles = ((Integer)data[2]).intValue() + attributes[rowIndex].getMiles().intValue();
+                    data[1] = new Integer(accidents);
+                    data[2] = new Integer(miles);
+                }else {
+                    Object[] data = {attributes[rowIndex].getDivOrg2Name(),attributes[rowIndex].getAccidents(),attributes[rowIndex].getMiles()};
+                    chart2.put(id2,data);
+                }
+            }
+            
+            Integer id3 = attributes[rowIndex].getDivOrg3Id();
+            if(id3 != null) {
+                if(chart3.containsKey(id1)) {
+                    Object[] data = (Object[])chart3.get(id3);
+                    int accidents = ((Integer)data[1]).intValue() + attributes[rowIndex].getAccidents().intValue();
+                    int miles = ((Integer)data[2]).intValue() + attributes[rowIndex].getMiles().intValue();
+                    data[1] = new Integer(accidents);
+                    data[2] = new Integer(miles);
+                }else {
+                    Object[] data = {attributes[rowIndex].getDivOrg3Name(),attributes[rowIndex].getAccidents(),attributes[rowIndex].getMiles()};
+                    chart3.put(id3,data);
+                }
+            }
+            
+            Integer id4 = attributes[rowIndex].getDivOrg4Id();
+            if(id4 != null) {
+                if(chart4.containsKey(id4)) {
+                    Object[] data = (Object[])chart4.get(id4);
+                    int accidents = ((Integer)data[1]).intValue() + attributes[rowIndex].getAccidents().intValue();
+                    int miles = ((Integer)data[2]).intValue() + attributes[rowIndex].getMiles().intValue();
+                    data[1] = new Integer(accidents);
+                    data[2] = new Integer(miles);
+                }else {
+                    Object[] data = {attributes[rowIndex].getDivOrg4Name(),attributes[rowIndex].getAccidents(),attributes[rowIndex].getMiles()};
+                    chart4.put(id4,data);
+                }
+            }
+        }
+    }
+
+}

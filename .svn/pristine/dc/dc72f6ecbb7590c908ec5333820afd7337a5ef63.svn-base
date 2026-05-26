@@ -1,0 +1,2677 @@
+<%@page language="java" 
+	errorPage="../exception.jsp"
+	import="business.*"
+	import="business.datatype.*"
+	import="java.util.*"
+	import="presentation.translator.web.util.*"
+	import="presentation.translator.web.event.*"
+	import="communication.administration.user.*"
+	import="communication.driver.tables.*"
+	import="communication.language.*"
+	import="communication.datatype.*"
+	import="communication.event.tables.*"
+	import="communication.datatype.tables.*"
+	import="communication.driver.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.security.*"
+	import="communication.util.*"
+	import="business.vehicle.VehicleReportFacade"
+	import="presentation.translator.web.util.*"
+	import="communication.administration.corporation.tables.*"
+ 	import="communication.activity.tables.CEPAActivityScheduleRegistryData"
+	import="communication.activity.tables.CEPAActivityConstants"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+
+
+<html:html>
+<!-- EventView.jsp -->
+<%!
+	RequestDispatcher dispatcher; SystemAccess sys;	
+	UserSessionData userSessionData; 
+	Text messages; Integer driverId; String driverName; String driverLastName;
+%>
+<%
+
+	try{
+		
+	
+	EventForm form;
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	if(sys == null){
+		response.sendRedirect("/exception.jsp");
+	}
+	userSessionData = sys.getUserSessionData();
+	int corporationId = userSessionData.getFilter().getCorporationId().intValue();
+	String check = null;
+	if(userSessionData.isDriver()) {
+	    check = Util.checkPermission(sys,SecurityConstants.DRIVER_EVENT_EDIT);
+	}else {
+	    check = Util.checkPermission(sys,SecurityConstants.EDIT_EVENT);
+	}
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		Integer eventId = null;
+		if(Util.empty(request.getParameter("eventId"))) {
+			eventId = (Integer)session.getAttribute("eventId");
+		}else {
+			eventId = new Integer(request.getParameter("eventId"));
+		}
+		session.setAttribute("url","event/EventView.jsp?eventId="+eventId.toString());
+		EventDataType eventDataType = sys.getEventReportFacade().findEventByPrimaryKey(eventId,userSessionData);
+		 
+		if(eventDataType != null) {
+			
+			 
+			form = new EventForm(eventDataType,userSessionData);
+			session.setAttribute("EventForm",form);
+		    DriverData driver = null;
+		    driverId = new Integer(form.getDriverid());
+			if(userSessionData.isDriver()) {
+			    driver = userSessionData.getDriverData();
+			}else {
+			    driver = sys.getDriverReportFacade().findDriverByPrimaryKey(driverId,userSessionData);
+			}
+		
+			dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+			dispatcher.include(request,response);
+			
+			messages=sys.getText();
+			session.setAttribute("target","EventSelectDriverList");
+			VehicleData vehicle = null;
+
+			if(session.getAttribute("Breadcrumb") != null) {
+			    Hashtable parameters = new Hashtable();
+			    parameters.put("id",eventDataType.getId());
+			    parameters.put("name",driver.getLastName()+" "+Util.formatDate(eventDataType.getDate()));
+			    ((Breadcrumb)session.getAttribute("Breadcrumb")).addItem(Breadcrumb.EVENT_EDIT,parameters);
+			}
+%>
+
+<script type="text/javascript" src="./menu/js/html2canvas.min.js"></script>
+
+
+<script language="JavaScript" type="text/javascript">
+	function CanvasToBase64Image(canvas)
+	{
+		var ctx = canvas.getContext("2d");
+		var dataURL = canvas.toDataURL("image/png");
+		var r = dataURL;//.replace(/^data:image\/(png|jpg);base64,/, "");
+		return r;
+	}
+	
+	$(document).ready(
+		function(){
+			$("#linkpdfscreen").click(function(event ) {
+				    event.preventDefault();
+				    var sel=$("table#bevent");
+				  var count = sel.length;
+				  for(i=0; i<count;i++){
+	  			  		html2canvas(sel[i], {
+			            onrendered: function(canvas) {
+			                //document.body.appendChild(canvas);
+			                 fd = new FormData();
+							 xhr = new XMLHttpRequest();
+							 fd.append('contents', CanvasToBase64Image(canvas));
+							 fd.append('id', 0);
+							 xhr.open('POST', 'Copy.do',false);
+							 xhr.send(fd);
+
+							 document.location.href="ImageToPDF.do";	
+				        }
+			        });
+				  }
+				  
+				 	
+			  			  
+				 		
+			});
+		}
+	);
+
+	function confirmDelete(form,msg){
+		if(confirm(msg)){
+			form.submit();
+		}
+	}
+</script>
+	<LINK REL="StyleSheet" HREF="../util/css/estilo.css" TYPE="text/css">
+	<head/>
+	<body>
+	
+	<form action='layout.jsp?refer=/event/EventCreate.jsp?type=edit&eventId=<%=String.valueOf(eventId)%>' name='edit' method="post">
+	</form>
+	<form action='layout.jsp?refer=/event/EventCreate2.jsp?type=edit&eventId=<%=String.valueOf(eventId)%>' name='edit2' method="post">
+	</form>	
+	<form action='layout.jsp?refer=/event/EventCreate3.jsp?type=edit&eventId=<%=String.valueOf(eventId)%>' name='edit3' method="post">
+	</form>	
+	<form action='layout.jsp?refer=/event/NewEventCreate.jsp?type=edit&eventId=<%=String.valueOf(eventId)%>' name='editnew' method="post">
+	</form>	
+	<form action='layout.jsp?refer=/event/NewEventCreateSyn.jsp?type=edit&eventId=<%=String.valueOf(eventId)%>' name='editnewsyn' method="post">
+	</form>	
+		
+	<form action='layout.jsp?refer=/event/EventCreate.jsp?type=supervise&eventId=<%=String.valueOf(eventId)%>' name='supervise' method="post">
+	</form>	
+	<form action='layout.jsp?refer=/event/EventCreate2.jsp?type=supervise&eventId=<%=String.valueOf(eventId)%>' name='supervise2' method="post">
+	</form>
+	<form action='layout.jsp?refer=/event/EventCreate3.jsp?type=supervise&eventId=<%=String.valueOf(eventId)%>' name='supervise3' method="post">
+	</form>
+	<form action='layout.jsp?refer=/event/NewEventCreate.jsp?type=supervise&eventId=<%=String.valueOf(eventId)%>' name='supervisenew' method="post">
+	</form>
+	<form action='layout.jsp?refer=/event/NewEventCreateSyn.jsp?type=supervise&eventId=<%=String.valueOf(eventId)%>' name='supervisenewsyn' method="post">
+	</form>
+
+	<form action='layout.jsp?refer=/event/EventList.jsp' name='back' method="post">
+	</form>	
+
+	<form action='layout.jsp?refer=/event/SendRecomendation.jsp?eventId=<%=String.valueOf(eventId)%>' name='recomendation' method="post">
+	</form>	
+
+<%		if(sys.isCorporation(CorporationData.BAYER_MX)) {
+%>
+	<form action='layout.jsp?refer=/event/files.jsp?event=<%=String.valueOf(eventId)%>' name='files' method="post">
+	</form>	
+<%		}
+%>
+	<html:form action="/Eventdelete" >
+		<html:hidden property="event" value='<%=String.valueOf(eventId)%>'/>
+	</html:form>
+	
+	
+			<table width="760" border="0" align="center" cellpadding="0" cellspacing="0" id="bevent">
+  				<tr  class="guide1">
+  					<jsp:include  page='<%="../component/titlecomponent.jsp?colspan=5&title="+messages.getText("generic.data.event")%>' />
+			  	</tr>
+  				<tr>
+					<jsp:include  page='<%="../component/spaceline.jsp?colspan=3" %>' />
+			  	</tr>
+			  	<tr>			  		
+			  		<jsp:include page='<%="EventViewOptions.jsp?eventId=" + eventId %>' />
+			  	</tr>
+			  	<tr>
+					<jsp:include  page='<%="../component/spaceline.jsp?colspan=3" %>'/>
+			  	</tr>
+				<tr>
+					<td width="45%" valign="top">
+                    	<table width="100%">
+                    		<tr>
+                    		
+                    			<!--  Dirver Data -->
+                     			<td>
+									<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.driverdata")%>' />
+		        					<table width='100%' border="0" cellpadding="0" cellspacing="0">
+		            					<tr class="linetwo">
+	              							<td align="left" valign="middle"><strong><%=messages.getText("generic.event.driver.name")%></strong></td>
+	    									<td align="right" valign="middle" >			
+                       							<span class="linetwo"><%=driver.getFirstName()+" "+driver.getLastName()%></span>
+                       						</td>
+										</tr>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+		            					<tr class="linetwo">
+	              							<td align="left" valign="middle"><strong><%=messages.getText("generic.event.driver.birthdate")%></strong></td>
+	                            			<td align="right" valign="middle" >
+                       							<%=Util.formatDate(driver.getBirthDate())%><%=" ( "+messages.getText("generic.messages.dateformat")+" )"%>
+                       						</td>
+	                         			</tr>	                         		
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+		            					<tr class="linetwo">
+	              							<td align="left" valign="middle"><strong><%=messages.getText("generic.event.driver.startdate")%></strong></td>
+	                            			<td align="right" valign="middle" >
+                       							<%=Util.formatDate(driver.getInclusionDate())%><%=" ( "+messages.getText("generic.messages.dateformat")+" )"%>
+							    			</td>
+	                         			</tr>
+<%		if(sys.getCorporationId() != CorporationData.CIMSA) {
+%>		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+		            					<tr class="linetwo">
+	              							<td align="left" valign="middle"><strong><%=messages.getText("generic.event.driver.licensecategory")%></strong></td>
+	                            			<td align="right" valign="middle">
+                       							<%=(driver.getLicenseCategory() == null) ? "---" : driver.getLicenseCategory()%>
+							    			</td>
+	                         			</tr>
+<%		}
+%>		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+		            					<tr class="linetwo">
+	              							<td align="left" valign="middle"><strong><%=messages.getText("generic.event.driver.licenseexpiry")%></strong></td>
+	                            			<td align="right" valign="middle" >
+                       							<%=Util.formatDate(driver.getLicenseExpiry())%><%=" ( "+messages.getText("generic.messages.dateformat")+" )"%>
+							    			</td>
+	                         			</tr>
+<%		if(sys.getCorporationId() == CorporationData.CIMSA) {
+%>		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+		            					<tr class="linetwo">
+											<th align="left"> <%=messages.getText("generic.driver.driverdata.contact")%></th>
+											<td align="right">
+												<div align="right"><%=(driver.getContract() == null) ? "" : messages.getText(driver.getContract().getResourceBundleId())%></div>
+											</td>
+	                         			</tr>
+	                         			<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+	      								<tr class="linetwo">
+	        								<th align="left" > <%=messages.getText("generic.driver.driverdata.points")%></th>
+	        								<td align="right">
+	        									<%=(driver.getPoints() == null) ? "--" : String.valueOf(driver.getPoints().intValue() - sys.getEventReportFacade().getEventsPoints(driver.getId(),sys.getUserSessionData()).intValue())%>
+	        								</td>
+	      								</tr>
+<%		}
+%>	                     			</table>
+									<jsp:include  page="../component/utilityboxbottom.jsp" />
+								</td>
+							</tr>
+				  			<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+				  			</tr>
+							<tr>
+								<td valign="top">
+									<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.divgeo")%>' />
+<%				if(eventDataType.getCountry() != null) {
+	    			GeoItemData geoItem1 = (GeoItemData)eventDataType.getCountry().getItemIterator().next();
+%>
+							<table width="100%" height="100%" cellpadding="0" cellspacing="0">
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(eventDataType.getCountry().getResourceKey())%> </th>
+									<td align="right">
+										<%=(geoItem1.getSubItems() != null) ? geoItem1.getName() : messages.getText(geoItem1.getName()) %>
+									</td>
+								</tr>
+<%			    	if(geoItem1.getSubItems() != null) {
+				    	GeoItemData geoItem2 = (GeoItemData)geoItem1.getSubItems().getItemIterator().next();
+%>									
+								<tr  class="space"><td align="right">&nbsp;</td><td align="right">&nbsp;</td></tr>
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(geoItem1.getSubItems().getResourceKey())%> </th>
+									<td align="right">
+										<%=(geoItem2.getSubItems() != null) ? geoItem2.getName() : messages.getText(geoItem2.getName()) %>
+									</td>
+								</tr>
+						
+<%
+				    	if(geoItem2.getSubItems() != null) {
+					    	GeoItemData geoItem3 = (GeoItemData)geoItem2.getSubItems().getItemIterator().next();
+%>								<tr  class="space"><td align="right">&nbsp;</td><td align="right">&nbsp;</td></tr>
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(geoItem2.getSubItems().getResourceKey())%> </th>
+									<td align="right">
+										<%=messages.getText(geoItem3.getName())%>
+									</td>
+								</tr>
+<%						}
+					}
+				}
+%>								<tr  class="space"><td align="right">&nbsp;</td><td align="right">&nbsp;</td></tr>
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText("web.event.state")%> </th>
+									<td align="right">
+										<%=(Util.empty(eventDataType.getState())) ? "" : eventDataType.getState()%>
+									</td>
+								</tr>
+								<tr  class="space"><td align="right">&nbsp;</td><td align="right">&nbsp;</td></tr>
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText("web.event.city")%> </th>
+									<td align="right">
+										<%=(Util.empty(eventDataType.getCity())) ? "" : eventDataType.getCity()%>
+									</td>
+								</tr>
+							</table>	
+			   				<jsp:include page="../component/utilityboxbottom.jsp"/>	
+			   			</td>
+		   			</tr>
+		   			<tr>
+		   				<td height="5"><img src="x" width="1" height="1"></td>
+		   			</tr>
+			   	</table>
+			</td>
+			<td width="5%" >&nbsp;</td>
+			<td width="50%" valign="top">
+				<table width="100%" height="100%" cellpadding="0" cellspacing="0">
+<%			
+				Iterator it = eventDataType.getDivOrgsIterator();
+				while(it.hasNext()) {		
+					DivOrgData divOrgData = (DivOrgData)it.next();
+					if(divOrgData.getDivOrgLevels() != null) {
+						ItemData item1 = (ItemData)divOrgData.getDivOrgLevels().getItemIterator().next();
+%>					<tr>
+						<td valign="top" width="50%">	
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText(divOrgData.getName())%>' />
+							<table width="100%" cellpadding="0" cellspacing="0">
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(divOrgData.getDivOrgLevels().getName())%> </th>
+									<td align="right"><%=item1.getName()%></td>
+								</tr>
+<%	    		
+			    		if(item1.getSubItems() != null) {
+							ItemData item2 = (ItemData)item1.getSubItems().getItemIterator().next();
+%>								<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(item1.getSubItems().getName())%> </th>
+									<td align="right"><%=item2.getName()%></td>
+								</tr>
+<%				    
+				    		if(item2.getSubItems() != null) {
+								ItemData item3 = (ItemData)item2.getSubItems().getItemIterator().next();
+%>								<tr  class="space"><td align="right">&nbsp;</td><td align="right">&nbsp;</td></tr>
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(item2.getSubItems().getName())%> </th>
+									<td align="right"><%=item3.getName()%></td>
+								</tr>
+<%							}
+						}
+%>
+							</table>
+   							<jsp:include page="../component/utilityboxbottom.jsp"/>	
+	   					</td>
+	   				</tr>
+	   				<tr><td height="5"><img src="x" width="1" height="1"></td></tr>
+	   	<%					}
+				}
+%>
+
+
+<%				
+				if(sys.getCorporationId() == CorporationData.CIMSA) { 
+
+							// Muestro Numero de Folio y Numero de SAP
+%>
+                    		<tr  class="linetwo">
+        						<td align="left" colspan="3">
+    								<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="default">
+    								  	<tr class="guide1">
+											<td width="19" height="30" ><img src="/datacenter/util/imgs/left.jpg" width="19" height="30"></td>
+   		  		  							<td height="30" class="guide1"><div align="left">&nbsp;</div></td>
+											<td width="19" height="30" ><img src="/datacenter/util/imgs/right.jpg" width="19" height="30"></td>
+  										</tr>  					
+  										<tr>
+    										<td class="leftLine">&nbsp;</td>
+				       						<td height="10" colspan="1"><img src="x" width="1" height="1"></td>
+    										<td class="rightLine">&nbsp;</td>
+  										</tr>  					  					
+	 									<tr>
+    										<td class="leftLine">&nbsp;</td>
+    										<td>
+												<table width="100%" cellpadding="0" cellspacing="0">
+													<tr class="linetwo">
+			    										<th align="left"><%=messages.getText("generic.events.folioNumber")%></th>
+														<td align="right">
+															<%=(eventDataType.getFolioNumber() != null) ? eventDataType.getFolioNumber():0%>
+														</td>
+													</tr>
+													<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+													<tr class="linetwo">
+			    										<th align="left"><%=messages.getText("generic.events.sapNumber")%></th>
+														<td align="right">
+															<%=(eventDataType.getSapNumber() != null)?eventDataType.getSapNumber():0%>
+														</td>
+													</tr>
+												</table>
+											</td>
+											<td class="rightLine">&nbsp;</td>
+										</tr>
+					  					<tr>
+					            	      	<td height="11" valign="top"><img src="/datacenter/util/imgs/left_base.gif" width="19" height="11"></td>
+					  					  	<td class="centerBase"></td>
+					  				  		<td valign="top"><img src="/datacenter/util/imgs/right_base.gif" width="19" height="11"></td>
+									 	</tr> 
+									</table>
+								</td>
+							</tr>
+<% 		} %>
+
+
+
+				</table>	
+			</td>
+		</tr>
+<%		if(sys.getCorporationId() == CorporationData.CIMSA) {
+%>			<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+				<tr>
+					<td width="100%" colspan="5">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.activityhistory")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+				                <td width='20%' class="guide2" align="center"><%=messages.getText("generic.event.eventdata.date")%></td>
+				                <td width='30%'	class="guide2" align="center"><%=messages.getText("generic.event.eventdata.type")%></td>
+								<td width='50%'	class="guide2" align="center"><%=messages.getText("driver.history.result")%></td>
+							</tr>
+<%			Collection total = sys.getActivityReportFacade().findActivityByDriver(driverId,sys.getUserSessionData(),true);			
+			Collections.sort((List)total);		
+			if(total.size() == 0){
+%>							<tr>
+								<td colspan="3">
+									<span class="linetwo"><%=messages.getText("generic.event.noactivityhistory")%></span>
+								</td>								
+							</tr>
+<%			}else {    					
+				Iterator itTotal = total.iterator();
+    			boolean lineone = false;
+    			while(itTotal.hasNext()) {
+    				Object next =itTotal.next();
+    				CEPAActivityScheduleRegistryData  activity = (CEPAActivityScheduleRegistryData)next;
+%>							<tr  class='<%=(lineone) ? "lineone" : "linetwo"%>'>
+						       	<td width='12%' align="center">
+<% 					if(activity.getActivity().getIsOld() && 
+						!activity.getActivity().getType().getResourceBundleId().equals("datatype.scheduledactivitytype.commentarydriveother")){
+%>       							<a href='ActivityReportOld.do?idDriver=<%=String.valueOf(driverId)%>&output=HTML&idActivity=<%=activity.getActivity().getActivityId()%>' >
+										<%=Util.formatDate(activity.getActivity().getDate())%>
+									</a> 
+<%					}else if (!activity.getActivity().getIsOld() &&
+							(activity.getActivity().getType().getResourceBundleId().equals("datatype.scheduledactivitytype.commentarydriveother") ||
+							!activity.getActivity().getDefinition().isHaveIndividualReport())){
+							String href1 = "layout.jsp?refer=/activity/schedule/AddCEPAActivityScheduleRegistry.jsp?idDriver="+String.valueOf(driverId)+"&idActivity="+activity.getActivity().getActivityId()+"&enabled=false&page=/driver/DriverView.jsp";
+%>									<a href='<%=href1 %>' >
+										<%=Util.formatDate(activity.getActivity().getDate())%>
+									</a>
+<%    				}else if(activity.getActivity().getType().getResourceBundleId().equals(CEPAActivityConstants.COMMENTARYDRIVEARGENTINA)) {
+							String href2 = "layout.jsp?refer=/activity/schedule/CommentaryDriveArgentinaView.jsp?idDriver="+String.valueOf(driverId)+"&idActivity="+activity.getActivity().getActivityId()+"&enabled=false";
+%>									<a href='<%=href2 %>' >
+	 									<%=Util.formatDate(activity.getActivity().getDate())%>
+									</a> 
+<%    				}else{ 
+%>									<a href='ActivityReportNew.do?idDriver=<%=String.valueOf(driverId)%>&output=HTML&idActivity=<%=activity.getActivity().getActivityId()%>' >
+										 <%=Util.formatDate(activity.getActivity().getDate())%>
+									</a> 
+<%					} 
+%>								</td>
+<%					if (!activity.getActivity().getType().getResourceBundleId().equals("datatype.scheduledactivitytype.commentarydrive")){		
+%>								<td width='18%' align="center"><%=messages.getText("web.activity.view")%> </td>
+          						<td width='25%' align="center">
+              						 <%=messages.getText(activity.getActivity().getType().getResourceBundleId())%> 
+					           	</td>
+					            <td width='40%' align="left">
+					            	<%=messages.getText(activity.getNote())%>
+					            </td>		            
+<% 					}else{ 
+%>								<td width='18%' align="center"><%=messages.getText("driver.history.commentarydrive")%> </td>
+        						<td width='25%' align="center">
+              						<%=messages.getText(activity.getConductionType())%> 
+					            </td>
+					            <td width='40%' align="left">
+					            	<%=messages.getText("generic.messages.notapply")%>
+					          	</td>
+<%					}
+					lineone = !lineone;
+%>							</tr>
+<%    			}
+			}
+%>
+    					</table>
+						<jsp:include page="../component/utilityboxbottom.jsp"/>	
+					</td>
+				</tr>			
+<%		}
+%>  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+				<tr>
+					<td colspan="3" width="600">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.vehicledata")%>' />
+<%					if(Util.empty(form.getVehicleId())) { 
+%>						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+								<td width="49%" class="linetwo">
+									<table width="100%">
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.plate")%></th>
+				         					<td align="right" class="linetwo"><%=eventDataType.getPlate()%></td>
+			         					</tr>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.vehicle.vehicledata.trade")%></th>
+				         					<td align="right" class="linetwo"><%=(eventDataType.getTrade().equals("generic.messages.nodata")) ? messages.getText(eventDataType.getTrade()) : eventDataType.getTrade()%></td>
+										</tr>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.event.vehicle.companycar")%></th>
+				         					<td align="right" class="linetwo"><%=(eventDataType.getCompanyCar()) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no")%></td>
+										</tr>
+<%				if(sys.isCorporation(CorporationData.MONSANTO)) {
+%>										<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.vehicle.vehicledata.active")%></th>
+											<td align="right"><%=eventDataType.getEconomicNumber()%></td>
+			         					</tr>
+<%				}
+%>										
+									</table>
+								</td>
+								<td width="2%"></td>
+								<td width="49%" valign="top">
+									<table width="100%">
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.model")%></th>
+				         					<td align="right" class="linetwo"><%=eventDataType.getModel()%></td>
+										</tr>
+		      							<tr  class="space">
+		        							<th align="right" class="linetwo">&nbsp;</th>
+		        							<td align="right" class="linetwo">&nbsp;</td>
+		      							</tr>
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.vehicle.vehicledata.year")%></th>
+				         					<td align="right" class="linetwo"><%=(eventDataType.getYear().equals("generic.messages.nodata")) ? messages.getText(eventDataType.getYear()) : eventDataType.getYear()%></td>
+										</tr>				  
+<%				if(!sys.isCorporation(new int[]{CorporationData.CIMSA,CorporationData.PEPSICO, CorporationData.SYNGENTA_BR})) {
+%>		      							<tr  class="space">
+		        							<th align="right">&nbsp;</th>
+		        							<td align="right">&nbsp;</td>
+		      							</tr>
+										<tr>
+							   				<th class="linetwo" align="left"><%=messages.getText("event.data.vehiclecost")%></th>
+				         					<td align="right" class="linetwo"><%=(eventDataType.getCarCost() == null) ? "---" : String.valueOf(eventDataType.getCarCost())%></td>
+										</tr>
+<%				}
+				if (sys.getCorporationId() == CorporationData.PEPSICO) { %>
+										<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo"> 
+										   			<%=messages.getText("generic.event.eventdata.economicnumber")%>
+										   	</th>
+				         					<td align="right" class="linetwo">
+				         							<%=(eventDataType.getEconomicNumber() != null && 
+				         									eventDataType.getEconomicNumber().trim() != "") ? 
+				         											eventDataType.getEconomicNumber(): "---" %>
+				         					</td>
+			         					</tr>
+<% 				} 
+%>									</table>
+								</td>
+							</tr>
+ <%    			if(sys.getCorporationId() == CorporationData.TRANSPORTES_AMERICAN) {
+	 
+		                VehicleReportFacade vehicleFacade = sys.getVehicleReportFacade();		
+		                
+		                if (vehicle != null){
+     						Collection trailers = vehicleFacade.getVehicleTrailers(vehicle.getId(),userSessionData);
+     						if(trailers != null) {
+	      						it = trailers.iterator();
+      							while(it.hasNext())  {
+	       							TrailerMainData trailer = (TrailerMainData)it.next(); 
+%>       				<tr>
+        						<td colspan="3">
+        							<%
+        								String page11 = "../component/utilitybox2top.jsp?title="+messages.getText("generic.messages.trailer");
+        							%>
+         							<jsp:include  page='<%=page11 %>' />          
+         							<table width="100%">
+          								<tr>
+           									<td>
+            									<table width="100%">
+             										<tr>
+                       									<th align="left" class="linetwo"> 
+                        									<%=messages.getText("generic.vehicle.vehicledata.registrationNumber")%>
+                       									</th>
+              											<td align="right" class="linetwo"><%=trailer.getPlate()%></td>
+             										</tr>
+            									</table>
+           									</td>
+           									<td>&nbsp;</td>
+           									<td>
+            									<table>
+             										<tr>
+                       									<th align="left" class="linetwo"> 
+                        									<%=messages.getText("generic.vehicle.vehicledata.trade")%>
+                       									</th>
+              											<td align="right" class="linetwo"><%=messages.getText(trailer.getTrade().getResourceBundleId())%></td>
+             										</tr>
+            									</table>
+           									</td>
+          								</tr>
+         							</table>
+         							<jsp:include  page="../component/utilitybox2bottom.jsp" />          
+        						</td>
+       						</tr>  
+<%      						}
+     						}
+		                } // fin if vehicle != null
+   					 }  
+%>      				</table>    
+<%			}else {
+    					vehicle = sys.getVehicleReportFacade().findVehicleById(new Integer(form.getVehicleId()),userSessionData);
+%>					<table>
+							<tr>
+								<td width="49%" class="linetwo">
+									<table width="100%">
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.plate")+":"%> </th>
+				         					<td align="right" class="linetwo"><%=(vehicle != null) ? vehicle.getMatricula() : "----"%></td>
+			         					</tr>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.vehicle.vehicledata.trade")+":"%> </th>
+				         					<td align="right" class="linetwo"><%=(vehicle != null) ? messages.getText(vehicle.getTrade().getResourceBundleId()) : "----"%></td>
+										</tr>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.event.vehicle.companycar")%></th>
+				         					<td align="right" class="linetwo"><%=(eventDataType.getCompanyCar()) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no")%></td>
+										</tr>
+<%				if(sys.isCorporation(CorporationData.MONSANTO)) {
+%>										<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.vehicle.vehicledata.active")%></th>
+				         					<td align="right" class="linetwo"><%=(vehicle != null && vehicle.getOptionalInfo()!=null ) ? vehicle.getOptionalInfo().getPrefix() : "----"%></td>
+			         					</tr>
+<%				}
+%>										
+									</table>
+								</td>
+								<td width="2%"></td>
+								<td width="49%">
+									<table width="100%">
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.model")+":"%> </th>
+				         					<td align="right" class="linetwo"><%=(vehicle != null) ? vehicle.getModel() : "----"%></td>
+										</tr>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo"> <%=messages.getText("generic.vehicle.vehicledata.year")+":"%> </th>
+				         					<td align="right" class="linetwo"><%=(vehicle != null) ? vehicle.getModel() : "----"%></td>
+										</tr>				  
+		      							<tr  class="space">
+		        							<th align="right">&nbsp;</th>
+		        							<td align="right">&nbsp;</td>
+		      							</tr>
+										<tr>
+							   				<th class="linetwo" align="left"><%=messages.getText("event.data.vehiclecost")%></th>
+				         					<td align="right" class="linetwo"><%=(vehicle == null || vehicle.getCost() == null) ? "---" : String.valueOf(vehicle.getCost())%></td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+						</table>    
+<%					}
+%>						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+	  			<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+	  			</tr>
+	  			<tr>
+					<td colspan="4">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.eventdata")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+						  <tr>
+							 <td width="49%" class="linetwo" colspan="2">
+						  		<table width="100%">
+									<tr>
+	       								<th align="left" class="linetwo" width="22%"> <%=messages.getText("generic.event.eventdata.date")+":"%> </th>
+	         							<td align="right" class="linetwo" width="25%"><%=Util.formatDate(eventDataType.getDate())%></td>
+			          					<td align="right" class="linetwo" width="3%"></td>
+			          				</tr>
+		      						<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+									<tr>
+			        					<th align="left" class="linetwo" width="22%"> <%=messages.getText("generic.event.eventdata.hour")+":"%> </th>
+	         							<td align="right" class="linetwo" width="25%"><%=(eventDataType.getHour() == null) ? messages.getText("generic.messages.nodata") : Util.formatHour(eventDataType.getHour())%></td>
+			        					<td align="right" class="linetwo" width="3%"></td>
+			          				</tr>
+			          				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+			          				<tr>
+			        					<th align="left" class="linetwo" width="22%"> <%=messages.getText("generic.event.eventdata.working")+":"%> </th>
+	         							<td align="right" class="linetwo" width="25%"><%=messages.getText(eventDataType.getWorking())%></td>
+			          					<td align="right" class="linetwo" width="3%"></td>
+			          				</tr>
+<% 			if (sys.getCorporationId() == CorporationData.FORESTALORIENTAL){ %>
+			          				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+			          				<tr>
+			        					<th align="left" class="linetwo" width="22%"> <%=messages.getText("generic.event.eventdata.workinghours")+":"%> </th>
+	         							<td align="right" class="linetwo" width="25%"><%=((eventDataType.getWorkingHours()!= null)?eventDataType.getWorkingHours().toString(): messages.getText("generic.messages.nodata"))%></td>
+			          					<td align="right" class="linetwo" width="3%"></td>
+			          				</tr>
+<% 			} 
+		  	if (sys.getCorporationId() == CorporationData.ALLERGAN){ %>
+			          				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+			          				<tr>
+			        					<th align="left" class="linetwo" width="22%"> <%=messages.getText("generic.event.eventdata.lote")+":"%> </th>
+	         							<td align="right" class="linetwo" width="25%">
+<% 				if (eventDataType.getLote() != null){
+					Calendar c = Calendar.getInstance();
+					c.setTime(eventDataType.getLote()); 
+%>				        					<%= String.valueOf(c.get(Calendar.MONTH)+1) + "/" + String.valueOf(c.get(Calendar.YEAR))%>
+<%				}else{ 
+%>		        							----
+<%		    	} 
+%>										</td>
+			          					<td align="right" class="linetwo" width="3%"></td>
+			          				</tr>
+<% 			} 
+			if(sys.isCorporation(new int[]{CorporationData.CIMSA,CorporationData.TRANSPORTES_AMERICAN,CorporationData.SYNGENTA_BR})) {
+%>			          				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+			          				<tr>
+			        					<th align="left" class="linetwo" width="22%"> <%=messages.getText("generic.event.eventdata.charged")+":"%></th>
+			        					<td align="right" class="linetwo" width="25%">
+	         								<%=Util.empty(eventDataType.getCharged()) ? "" : messages.getText(eventDataType.getCharged())%>
+			          					</td>
+			          					<td align="right" class="linetwo" width="3%"></td>
+			          				</tr>
+<% 			} 
+			if (corporationId == CorporationData.CIMSA){ 
+%>									<tr  class="space"><td colspan="3" width="100%" >&nbsp;</td></tr>
+									<tr  class="space">
+		        						<th align="left" class="linetwo" width="22%"> <%=messages.getText("generic.event.eventdata.whodrives")%></th>
+		        						<td align="right" class="linetwo" width="25%">
+	         								<%=Util.empty(eventDataType.getWhoDrives()) ? "" : messages.getText(eventDataType.getWhoDrives())%>
+		          						</td>
+		        	  					<td align="right" class="linetwo" width="3%"></td>
+									</tr>
+<% 			} 
+%>				       	   		</table>
+			          	   	</td>
+			          	   	<td width="2%"></td>
+			          	   	<td width="49%" class="linetwo" colspan="2">
+			          	   		<table width="100%"> 
+			          	   	  		<tr>
+										<th class="linetwo" width="22%" align="left"><%=(corporationId==CorporationData.BAYER?messages.getText("datatype.byer.path"):messages.getText("datatype.consequence.damage"))+":"%></th>
+										<td align="right" class="linetwo" width="25%">
+										<% if( corporationId== CorporationData.BAYER) {%>
+											<%=(eventDataType.getSapNumber()!=null && eventDataType.getSapNumber()==2) ? messages.getText("datatype.bayer.workhome") : (eventDataType.getSapNumber()!=null && eventDataType.getSapNumber()==1)? messages.getText("datatype.bayer.homework"):messages.getText("generic.messages.nodata")%>
+										<%}else{%>
+											<%=(!eventDataType.isDamage()) ? messages.getText("generic.messages.no") : messages.getText("generic.messages.yes")%>
+										<%}%>
+										</td>
+    								</tr>	      				
+		      						<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+		      						
+<%		if (sys.isCorporation(CorporationData.MONTES_DE_PLATA)) { 
+%>
+		      						<tr>
+										<th class="linetwo" width="22%" align="left"><%=messages.getText("datatype.event.environmentdamage")%>:</th>
+										<td align="right" class="linetwo" width="25%">
+											<%=(!eventDataType.isDoubleCabin()) ? messages.getText("generic.messages.no") : messages.getText("generic.messages.yes")%>
+										</td>
+    								</tr>	      				
+		      						<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+		      						
+<% 		} 
+		if (corporationId == CorporationData.CIMSA) { 
+%>
+		      						<tr>
+										<th class="linetwo" width="22%" align="left"><%=messages.getText("generic.event.finedata.points")%>:</th>
+										<td align="right" class="linetwo" width="25%"><%=eventDataType.getPoints()%></td>
+    								</tr>	      				
+		      						<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+		      						
+<% 		} 
+%>		      						
+		      						
+									<tr>
+			        					<th align="left" class="linetwo" width="22%"> <%=messages.getText("generic.event.eventdata.zone")%></th>
+	         							<td align="right" class="linetwo" width="25%"><%=messages.getText(eventDataType.getZone().getResourceBundleId())%></td>
+			          				</tr>
+			          				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+			          				<tr>
+										<th align="left" class="linetwo" width="22%"> <%=messages.getText("generic.event.eventdata.policereport")%></th>
+	         							<td align="right" class="linetwo" width="25%"><%=messages.getText(eventDataType.getPoliceReport())%></td>
+			          				</tr>
+<%			if (corporationId == CorporationData.CIMSA) {
+%>			          				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+			          				<tr>
+			        					<th align="left" class="linetwo" width="22%"> <%=messages.getText("generic.eventdata.stoppedvehicle")%></th>
+	         							<td align="right" class="linetwo" width="25%"><%=(Util.empty(eventDataType.getStoppedVehicle())) ? "" : messages.getText(eventDataType.getStoppedVehicle())%></td>
+			          				</tr>
+<% 			} 
+%>			          	   		</table>
+							</td>
+						 </tr>	
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+	  			</tr>
+				<tr>
+					<td width="600" valign="top" colspan="4">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.consequences")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr class="texts" >
+								<td colspan="1" align="left" width="25%"></td>
+<%			String[] columns = (sys.isCorporation(CorporationData.SYNGENTA_BR)) ? new String[]{"generic.event.companycar","generic.event.thirdcar","generic.event.involved.pedestrian"} : new String[]{"generic.event.eventdata.driver","event.eventdata.functionaries.state","event.eventdata.otherparty.state"};
+			for(int i = 0; i < 3; i++) {
+%>								<td colspan="1" align="left" width="25%"><%=messages.getText(columns[i])%></td>
+<%			}
+%>							</tr>
+							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr class="texts">
+    							<td colspan="1" align="left"><%=messages.getText("datatype.consequence.safe")+":"%></td>
+    							<td align="left" colspan="1" class="linetwo"><%=(eventDataType.getDriverstate()!=null&&!eventDataType.getDriverstate().equals("datatype.driverstate.safe")) ? messages.getText("generic.messages.no") : messages.getText("generic.messages.yes")%></td>
+    							<td class="linetwo" align="left" colspan="1"><%=String.valueOf(eventDataType.getSafefunccount()) %></td>
+								<td class="linetwo" colspan="1" align="left"><%=String.valueOf(eventDataType.getSafeothercount()) %></td>
+    						</tr>
+    						
+    						<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr class="texts" >
+    							<td colspan="1" align="left"><%=messages.getText("datatype.consequence.injured")+":"%></td>
+    							<td align="left" colspan="1" class="linetwo"><%=(eventDataType.getDriverstate()!=null&&eventDataType.getDriverstate().equals("datatype.driverstate.injured")) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no")%></td>
+    							<td class="linetwo" align="left" colspan="1"><%=String.valueOf(eventDataType.getInjuredfunccount()) %></td>
+								<td class="linetwo" colspan="1" align="left"><%=String.valueOf(eventDataType.getInjuredothercount()) %></td>
+    						</tr>
+							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr class="texts" >
+    							<td colspan="1" align="left"><%=messages.getText("datatype.consequence.fatalities")+":"%></td>
+    							<td align="left" colspan="1" class="linetwo"><%=(eventDataType.getDriverstate()!=null&&eventDataType.getDriverstate().equals("datatype.driverstate.dead")) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no")%></td>
+    							<td class="linetwo" align="left" colspan="1"><%=String.valueOf(eventDataType.getFatalitiesfunccount()) %></td>
+								<td class="linetwo" colspan="1" align="left"><%=String.valueOf(eventDataType.getFatalitiesothercount()) %></td>
+    						</tr>
+		      				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr class="texts">
+							   	<th align="left" class="linetwo" colspan="1"> <%=messages.getText("event.eventdata.lostdays")+":"%> </th>
+							   	<td align="left" colspan="1" class="linetwo">	
+									<%=(eventDataType.getDayslost() == null) ? "0" : String.valueOf(eventDataType.getDayslost())%>
+					  			</td>
+							   	<td align="left" colspan="1" class="linetwo">
+				      				<%=(eventDataType.getOtherpartydayslost() == null) ? "0": String.valueOf(eventDataType.getOtherpartydayslost())%>
+					  			</td>
+							</tr>
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+				<tr>
+					<td width="600" colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.eventdata.story")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+								<td width="85%" align="justify" colspan="3" class="linetwo">
+										<%=eventDataType.getStory()%>
+								</td>
+							</tr>
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+	  			<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+	  			</tr>
+<%
+		String type = "";
+		String clasification = "";
+		if(sys.isCorporation(new int[]{CorporationData.MONSANTO,CorporationData.WEYERHAEUSER})) {
+			if(eventDataType.getAccident() != null) {
+				type = messages.getText("generic.event.accident");
+				clasification = messages.getText(eventDataType.getAccident().getResourceBundleId());
+			}else if(eventDataType.getIncident() != null) {
+				type = messages.getText("generic.event.incident");
+				clasification = messages.getText(eventDataType.getIncident().getResourceBundleId());
+			}else if(eventDataType.getNearmiss() != null) {
+				type = messages.getText("generic.event.nearmiss");
+				clasification = messages.getText(eventDataType.getNearmiss().getResourceBundleId());
+			}
+		}else {
+			type = (eventDataType.getAccident() != null ) ? messages.getText("generic.event.accident") :(eventDataType.getIncident()!=null)? messages.getText("generic.event.incident"):messages.getText("generic.event.nearmiss");
+			clasification = (eventDataType.getAccident() != null) ? messages.getText(eventDataType.getAccident().getResourceBundleId()) :(eventDataType.getIncident() != null) ? messages.getText(eventDataType.getIncident().getResourceBundleId()):messages.getText(eventDataType.getNearmiss().getResourceBundleId());	
+			if(corporationId == CorporationData.DPA) {
+				if(eventDataType.getCollision().getResourceBundleId().equals("datatype.collisionclasification.incident")) {
+					type = messages.getText("generic.event.incident");
+				}else {
+					type = messages.getText("generic.event.accident");
+				}
+			}
+		}
+		Calendar cal=Calendar.getInstance();
+		cal.setTime(eventDataType.getDate());
+		int year= cal.get(Calendar.DATE);
+%>
+				<tr>
+					<td valign="top" colspan="3" width="600">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.eventdata.clasification")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+			        			<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.type")%></th>
+	         					<td align="right" class="linetwo"><%=type%></td>
+							</tr>
+							<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+				  			</tr>
+							<tr>
+			        			<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.clasification")%></th>
+	         					<td align="right" class="linetwo">
+	         						<% if(year<2016 && sys.isCorporation(CorporationData.MONSANTO)) {%>
+	         						<%=clasification%>
+	         						<% }else{%>
+	         						
+		         						<% if(eventDataType.getClasification1()!=null){%>
+		         							<%=messages.getText(eventDataType.getClasification1().getResourceBundleId())+"<br>"%>
+		         						<%}%>
+		         						<% if(eventDataType.getClasification2()!=null && !sys.isCorporation(CorporationData.SYNGENTA_BR)){%>
+		         							<%=messages.getText(eventDataType.getClasification2().getResourceBundleId())+"<br>"%>
+		         						<%}%>
+		         						<% if(eventDataType.getClasification3()!=null){%>
+		         							<%=messages.getText(eventDataType.getClasification3().getResourceBundleId())+"<br>"%>
+		         						<%}%>
+		         						<%=clasification%>
+		         						<% if(eventDataType.getClasificationText()!=null){%>
+		         							<%="<br>"+eventDataType.getClasificationText()%>
+		         						<%}%>
+	         						<% }%>
+	         					</td>
+							</tr>
+<%			boolean showCollision = true;	
+			switch(corporationId) {
+			    case CorporationData.MSD:
+			        showCollision = Util.before(eventDataType.getDate(),1,2008);
+			        break;
+			    case CorporationData.ABBOTT:
+			        showCollision = Util.before(eventDataType.getDate(),12,2007);
+			        break;
+			}
+			if(showCollision){
+%>							<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+				  			</tr>
+							<tr>
+			        			<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.colisionclasification")%></th>
+<%				if(sys.isCorporation(new int[]{CorporationData.MONSANTO,CorporationData.DPA,CorporationData.WEYERHAEUSER})) {
+%>			        			<td align="right" class="linetwo"><%=messages.getText(eventDataType.getCollision().getResourceBundleId())%></td>
+<%				}else {
+%>	         					<td align="right" class="linetwo"><%=(eventDataType.getAccident() != null) ? messages.getText(eventDataType.getCollision().getResourceBundleId()):messages.getText("generic.messages.notapply")%></td>
+<%				}
+%>							</tr>
+<%			}
+			if(sys.isCorporation(CorporationData.DOW)) {
+%>         					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr  class="linetwo">
+								<th align="left"> <%=messages.getText("generic.event.eventdata.type")%></th>
+								<td align="right" class="linetwo">
+	         						<%=(eventDataType.getExtraCost1() == null) ? "" : String.valueOf(eventDataType.getExtraCost1())%>
+ 								</td>
+							</tr>
+		      				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr  class="linetwo">
+								<th align="left"> <%=messages.getText("generic.event.eventdata.gravity")%></th>
+								<td align="right" class="linetwo">
+	         						<%=(eventDataType.getExtraCost2() == null) ? "" : String.valueOf(eventDataType.getExtraCost2())%>
+ 								</td>
+							</tr>
+		      				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr  class="linetwo">
+								<th align="left"> <%=messages.getText("generic.event.eventdata.quarter")%></th>
+								<td align="right" class="linetwo">
+	         						<%=(eventDataType.getExtraCost3() == null) ? "" : String.valueOf(eventDataType.getExtraCost3())%>
+ 								</td>
+							</tr>
+<% 			}
+%>						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+<%			if(eventDataType.getStatus().intValue() == EventDataType.SUPERVISED && corporationId == CorporationData.JJ) {
+%>				<tr>
+					<td valign="top" colspan="3" width="600">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.supervition")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+								<th align="left" class="linetwo"> 
+									<%=messages.getText("generic.event.supervise.evitability")%>
+							   	</th>
+		         				<td align="right" class="linetwo">
+									<%=(Util.empty(eventDataType.getEvitability())) ? messages.getText("generic.messages.nodata") :messages.getText(eventDataType.getEvitability())%>
+					         	</td>
+					       	</tr>
+		      				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+				         	<tr>
+								<th class="linetwo" align="left">
+									<%=(eventDataType.getNonrecordable()) ? messages.getText("generic.event.nonrecordable")+": "+messages.getText("generic.messages.yes") : messages.getText("generic.event.nonrecordable")+": "+messages.getText("generic.messages.no")%>
+								</th>
+							</tr>
+		      				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr>
+							   	<td align="left">
+									<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.event.finedata.observations")%>' />
+									<table>
+										<tr>
+											<td class="lineone" align="left">
+												<%=(eventDataType.getSuperivisionObservations() == null) ? messages.getText("generic.event.noobservations") : eventDataType.getSuperivisionObservations()%>
+											</td>
+										</tr>
+									</table>
+									<jsp:include  page="../component/utilitybox2bottom.jsp" />
+								</td>
+							</tr>
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+						
+<%					}
+			if(sys.isCorporation(CorporationData.SYNGENTA_BR)) {
+				String severitySyn = "---";
+				if(eventDataType.getExtraCost1() != null) {
+					severitySyn = (eventDataType.getExtraCost1().intValue() == 1) ? messages.getText("datatype.syngentaseverity.high") : messages.getText("datatype.syngentaseverity.low");
+				}
+				String evitabilitySyn = "---";
+				if(eventDataType.getExtraCost2() != null) {
+					evitabilitySyn = (eventDataType.getExtraCost2().intValue() == 1) ? messages.getText("event.syngentaclasification.evitable") : messages.getText("event.syngentaclasification.unevitable");
+				}
+				String responsabilitySyn = "---";
+				if(eventDataType.getExtraCost3() != null) {
+					responsabilitySyn = (eventDataType.getExtraCost3().intValue() == 1) ? messages.getText("generic.messages.reportable") : messages.getText("generic.messages.unreportable");
+				}
+%>         		<tr>
+           			<td colspan="3" width="600">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.syngentaclasification")%>' />
+						<table width="100%">
+							<tr  class="linetwo">
+								<th align="left" width="25%"> <%=messages.getText("event.syngentaclasification.severity")%></th>
+								<td align="right" width="24%">
+ 									<%=severitySyn%>
+								</td>
+								<td align="right" width="2%">
+								<th align="left" width="25%"> <%=messages.getText("event.syngentaclasification.severityjustification")%></th>
+								<td align="right" width="24%">
+ 									<%=eventDataType.getAlcoholBreath()%>
+								</td>
+							</tr>
+							<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr  class="linetwo">
+								<th align="left" width="25%"> <%=messages.getText("event.syngentaclasification.evitability")%></th>
+								<td align="right" width="24%">
+ 									<%=evitabilitySyn%>
+								</td>
+								<td align="right" width="2%">
+								<th align="left" width="25%"> <%=messages.getText("event.syngentaclasification.evitabilityjustification")%></th>
+								<td align="right" width="24%">
+ 									<%=eventDataType.getStoppedVehicle()%>
+								</td>
+							</tr>
+							<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr  class="linetwo">
+								<th align="left" width="25%"> <%=messages.getText("event.syngentaclasification.responsability")%></th>
+								<td align="right" width="24%">
+ 									<%=responsabilitySyn%>
+								</td>
+							</tr>
+							<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+<%		}
+%>          	<tr>
+           			<td colspan="3" width="600">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.companycar")%>' />
+						<table width="100%">
+							<tr  class="linetwo">
+								<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.handle")%></th>
+	         					<td align="right" class="linetwo"><%=messages.getText(eventDataType.getHandle().getResourceBundleId())%></td>
+								<td width="16"></td>
+								<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.hitrun")%></th>
+	         					<td align="right" class="linetwo"><%=(Util.empty(eventDataType.getHitrun())) ? messages.getText("generic.messages.nodata") : messages.getText(eventDataType.getHitrun())%></td>
+							</tr>
+							<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr  class="linetwo" class="linetwo">
+								<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.principalfactor")%></th>
+	         					<td align="left" class="linetwo" colspan="2"><%=messages.getText(eventDataType.getPrincipalFactor().getResourceBundleId())%></td>
+							</tr>
+							<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr  class="lineone">
+								<td colspan="5" width="100%">
+									<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.event.eventdata.factors")%>' />
+									<table width="100%" border="0" cellpadding="0" cellspacing="0">
+<%							if(eventDataType.isFactoralcohol()) { %>
+										<tr>
+		    				    			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.drugs")%></th>
+			    						</tr>
+<%							}
+							if(eventDataType.isFactorchangelane()) { %>
+							<tr>
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.changelane")%></th>
+    						</tr>
+<%							}
+							if(eventDataType.isFactordistraction()) { %>
+							<tr>
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.distraction")%></th>
+    						</tr>
+<%							}
+							if(eventDataType.isFactorhighspeed()) { %>
+							<tr>
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.speed")%></th>
+    						</tr>
+<%							}
+							if(eventDataType.isFactorlight()) { %>
+							<tr>
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.lights")%></th>
+    						</tr>
+<%							}
+							if(eventDataType.isFactorother()) { %>
+							<tr>
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.others")%></th>
+    						</tr>
+<%							}
+							if(eventDataType.isFactorovertaking()) { %>
+							<tr>
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.overtaking")%></th>
+    						</tr>
+<%							}
+							if(eventDataType.isFactorsigns()) { %>
+							<tr>
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.ignoresigns")%></th>
+    						</tr>
+<%							}
+							if(eventDataType.isFactorsleep()) { %>
+							<tr>
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.sleep")%></th>
+    						</tr>
+<%							}
+							if(eventDataType.isFactorstop()) { %>
+							
+							<tr>
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.stop")%></th>
+			        		</tr>
+			        		<%	} 
+							if(eventDataType.isFactorMecanicFail()) { %>
+							<tr >
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accident.factors.mecanicfail")%></th>
+							</tr>
+<%							}
+							if(eventDataType.isFactortooclose()) { %>
+							<tr>
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.tooclose")%></th>
+    						</tr>
+<%							}
+							if(eventDataType.isFactorturn()) { %>
+							<tr >
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.turn")%></th>
+							</tr>
+<%							} 
+							if(eventDataType.isFactorConcience()) { %>
+							<tr >
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.conscience")%></th>
+							</tr>
+<%							} 
+							if(eventDataType.isFactorOtherParking()) { %>
+							<tr >
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accident.factors.other.parking.baking")%></th>
+							</tr>
+<%							} 
+							if(eventDataType.isFactorOtherCrossing()) { %>
+							<tr >
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accident.factors.other.crossing")%></th>
+							</tr>
+<%							} 
+							if(eventDataType.isFactorOtherStanding()) { %>
+							<tr >
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accident.factors.other.parking.standing")%></th>
+							</tr>
+<%							} 
+							if(eventDataType.isFactorMecanicFail()) { %>
+							<tr >
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accident.factors.mecanicfail")%></th>
+							</tr>
+<%							} %>
+									</table>
+									<jsp:include  page='<%="../component/utilitybox2bottom.jsp?" %>'/>
+								</td>
+							</tr>	
+<% 				if (!sys.isBrasilCorporation()){  
+%>							<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr  class="linetwo">
+								<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.collisionangle")%></th>
+	         					<td align="right" class="linetwo" colspan="2"><%=(eventDataType.getCollisionAngle() == null) ? messages.getText("generic.messages.nodata") :messages.getText(eventDataType.getCollisionAngle())%></td>
+							</tr>
+<% 				}  
+%>							<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr>
+							   	<td width="49%" colspan="2">                                        
+									<table width="100%">
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo" ><%=messages.getText("generic.event.eventdata.selfbelt")%></th>
+				         					<td align="right" class="linetwo">
+													<%=(Util.empty(eventDataType.getSelfbelt())) ? messages.getText("generic.messages.nodata") : messages.getText(eventDataType.getSelfbelt())%>
+              								</td>
+			         					</tr>
+<%			if(sys.isCorporation(CorporationData.CIMSA)) { 		
+%>										<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo"> 
+										   		<%=messages.getText("generic.event.eventdata.alcohollevel")%>
+										   	</th>
+				         					<td align="right" class="linetwo">
+													<%=eventDataType.getAlcohol()%>
+							         		</td>
+										</tr>
+<%			}
+			if(sys.isCorporation(CorporationData.CIMSA)) { 		
+%>		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo"> 
+										   		<%=messages.getText("generic.event.eventdata.alcoholbreath")%>
+										   	</th>
+				         					<td align="right" class="linetwo">
+												<%=messages.getText(eventDataType.getAlcoholBreath())%>
+							         		</td>
+										</tr>
+<%			} 		
+ 			if (sys.isCorporation(CorporationData.SYNGENTA_BR)){  
+%>										<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+										   	<th align="left" class="linetwo" ><%=messages.getText("generic.event.eventdata.othervehicles")%></th>
+				         					<td align="right" class="linetwo">
+													<%=(Util.empty(eventDataType.getOthervehicles())) ? messages.getText("generic.messages.nodata") : messages.getText(eventDataType.getOthervehicles())%>
+              								</td>
+										</tr>
+<%			}
+%>		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+											<th align="left" class="linetwo"> 
+												<%=messages.getText("generic.event.eventdata.cellular")%>
+										   	</th>
+				         					<td align="right" class="linetwo">
+													<%=(Util.empty(eventDataType.getCellular())) ? messages.getText("generic.messages.nodata") :messages.getText(eventDataType.getCellular())%>
+							         		</td>
+							         	</tr>
+							         	<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+									
+							         	<% if (sys.getCorporationId() == CorporationData.PEPSICO){ %>
+							         	<!-- Distractores -->
+							         	<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+											<th align="left" class="linetwo"  valign="top"> 
+												<%=messages.getText("generic.event.eventdata.distractors")%>
+										   	</th>
+				         					<td align="right" class="linetwo">
+				         						<table width="100%">
+<%										String checks = eventDataType.getDistractor();
+											if (!Util.empty(checks)){
+												for(int j = 1; j <= 6; j++) {
+													if(checks.charAt(j-1) == '1') {
+%>												<tr>
+														<td class="linetwo"><%=messages.getText("driver.distractors.option"+j) %></td>		
+													</tr>
+	<%											}
+												}
+											}
+%>											</table>
+				         					</td>
+							         	</tr>
+							         	<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+									 	<%} %>
+							         	
+									</table>
+								</td>
+							   	<td width="2%">&nbsp;</td>
+								<td width="49%" colspan="2">
+									<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.event.eventdata.speed")%>' />
+										<table width="100%" border="0" cellpadding="0" cellspacing="0">
+											<tr>
+											   	<th align="left" class="lineone"> 
+											   		<%=messages.getText("generic.event.eventdata.maxspeed")%>
+					         					</th>
+					         					<td align="right" class="lineone">
+													<%=(eventDataType.getMaxSpeed() == null) ? messages.getText("generic.messages.nodata") : String.valueOf(eventDataType.getMaxSpeed())%>
+				         						</td>
+											</tr>
+											<tr  class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+											<tr>
+											   	<th align="left" class="lineone"> 
+											   		<%=messages.getText("generic.event.eventdata.collisionspeed")%>
+					         					</th>
+					         					<td align="right" class="lineone">
+													<%=(eventDataType.getCollisionSpeed() == null) ? messages.getText("generic.messages.nodata") : String.valueOf(eventDataType.getCollisionSpeed())%>
+				         						</td>
+											</tr>
+											<tr  class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+											<tr>
+											   	<th align="left" class="lineone"> 
+											   		<%=messages.getText("generic.event.eventdata.vehiclespeed")%>
+					         					</th>
+					         					<td align="right" class="lineone">
+													<%=(eventDataType.getVehicleSpeed() == null) ? messages.getText("generic.messages.nodata") : String.valueOf(eventDataType.getVehicleSpeed())%>
+				         						</td>
+											</tr>
+<%					if(!sys.isCorporation(CorporationData.SYNGENTA_BR)) {
+%>
+											<tr  class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+											<tr>
+											   	<th align="left" class="lineone"> 
+											   		<%=messages.getText("generic.event.eventdata.reportedspeed")%>
+					         					</th>
+					         					<td align="right" class="lineone">
+													<%=(eventDataType.getReportedSpeed() == null) ? messages.getText("generic.messages.nodata") : String.valueOf(eventDataType.getReportedSpeed())%>
+				         						</td>
+				         					</tr>
+<%						if(sys.getCorporationId() == CorporationData.CIMSA) { %>
+											<tr  class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+											<tr> 									   
+												<th align="left" class="lineone"> 											
+										   			<%=messages.getText("generic.event.eventdata.alcoholbreath")%>
+										   		</th>
+				         						<td class="lineone">
+													<%=messages.getText(eventDataType.getAlcoholBreath())%>
+							         			</td>
+											</tr>
+<%						} 
+%>											<tr  class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+											<tr>
+											   	<th align="left" class="lineone"> 
+											   		<%=messages.getText("generic.event.eventdata.speedunit")%>
+											   	</th>
+					         					<td align="right" class="lineone">
+<%						if(!Util.empty(eventDataType.getSpeedUnit())) {	
+							if(eventDataType.getSpeedUnit().equals("1")) {
+%>  												<%=messages.getText("driver.speedunits.metres")%>
+<% 							}else if(eventDataType.getSpeedUnit().equals("2")) {	
+%>					         					<%=messages.getText("driver.speedunits.milles")%>
+<%							}else {
+%>												<%=messages.getText("generic.messages.nodata")%>
+<%							}
+						}else {
+%>											<%=messages.getText("generic.messages.nodata")%>
+<%						}	
+%>
+				         						</td>
+				         					</tr>
+<%					}
+%>										</table>
+									<jsp:include  page="../component/utilitybox2bottom.jsp" />
+								</td>
+							</tr>
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+			    <tr>
+                	<td width="600" valign="top" colspan="3">
+									<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.othervehicles")%>' />
+		        					<table width='100%' border="0" cellpadding="0" cellspacing="0">
+		            					<tr class="linetwo">
+	              							<td align="left" valign="middle"><strong><%=messages.getText("generic.event.vehicle.count")%></strong></td>
+				         					<td align="left">
+													<%=String.valueOf(eventDataType.getVehiclesInvolved().size())%>
+											</td>
+										</tr>
+		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+<%									for(int i = 1; i <= eventDataType.getVehiclesInvolved().size(); i++) {
+    									VehicleInvolvedDataType vehicles = eventDataType.getVehicle(i);
+%>										
+										<tr>
+											<td colspan="2">
+												<table width="100%">
+													<tr>
+														<td width="100%">
+															<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.event.vehicle")+" "+i%>' />
+															<table width="100%" border="0" cellpadding="0" cellspacing="0">
+																<tr  class="lineone">
+			      													<th align="left"> <%=messages.getText("generic.event.eventdata.vehicletype")%></th>
+			      													<td align="right" colspan="2">
+																		<%=messages.getText(vehicles.getTypeVehicle().getResourceBundleId())%>
+				  													</td>
+																</tr>
+			      												<tr class="lineone"><th align="right">&nbsp;</th><td align="right" colspan="2">&nbsp;</td></tr>
+																<tr  class="lineone">
+			      													<th align="left"> <%=messages.getText("generic.event.eventdata.previous")%></th>
+			      													<td align="right" colspan="2">
+																		<%=messages.getText(vehicles.getBehaviourVehicle().getResourceBundleId())%>
+				  													</td>
+																</tr>
+																<tr class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+																<tr  class="lineone">
+																	<th align="left"> <%=messages.getText("generic.event.eventdata.principalfactor")%></th>
+																	<td align="right">
+																		<%=messages.getText(vehicles.getPrincipalFactor().getResourceBundleId())%>
+																	</td>
+																</tr>
+			      												<tr class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+																<tr  class="lineone">
+																	<td colspan="3">
+																		<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.event.eventdata.factors")%>' />
+																		<table width="100%" border="0" cellpadding="0" cellspacing="0">
+<%							if(vehicles.isFactoralcohol()) { %>
+											<tr class="texts" >
+			    				    			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.drugs")%></th>
+				    						</tr>
+<%							}
+							if(vehicles.isFactorchangelane()) { %>
+							<tr class="texts" >
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.changelane")%></th>
+    						</tr>
+<%							}
+							if(vehicles.isFactordistract()) { %>
+							<tr class="texts" >
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.distraction")%></th>
+    						</tr>
+<%							}
+							if(vehicles.isFactorhighspeed()) { %>
+							<tr class="texts" >
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.speed")%></th>
+    						</tr>
+<%							}
+							if(vehicles.isFactorlight()) { %>
+							<tr class="texts" >
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.lights")%></th>
+    						</tr>
+<%							}
+							if(vehicles.isFactorother()) { %>
+							<tr class="texts" >
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.others")%></th>
+    						</tr>
+<%							}
+							if(vehicles.isFactorovertaking()) { %>
+							<tr class="texts" >
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.overtaking")%></th>
+    						</tr>
+<%							}
+							if(vehicles.isFactorsigns()) { %>
+							<tr class="texts" >
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.ignoresigns")%></th>
+    						</tr>
+<%							}
+							if(vehicles.isFactorsleep()) { %>
+							<tr class="texts" >
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.sleep")%></th>
+    						</tr>
+<%							}
+							if(vehicles.isFactorstop()) { %>
+							<tr class="texts" >
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.stop")%></th>
+    						</tr>
+<%							}
+							if(vehicles.isFactortooclose()) { %>
+							<tr class="texts" >
+			        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.tooclose")%></th>
+    						</tr>
+<%							}
+							if(vehicles.isFactorturn()) { %>
+										<tr class="texts" >
+						        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.turn")%></th>
+    									</tr>
+<%							} 
+							if(vehicles.isFactorConcience()) { %>
+										<tr class="texts" >
+						        			<th align="left" class="lineone"> <%=messages.getText("datatype.accidentfactors.conscience")%></th>
+    									</tr>
+<%							}
+							if(vehicles.isFactorOtherParking()) { %>
+										<tr >
+						        			<th align="left" class="lineone"> <%=messages.getText("datatype.accident.factors.other.parking.baking")%></th>
+										</tr>
+<%							} 
+							if(vehicles.isFactorOtherCrossing()) { %>
+										<tr >
+						        			<th align="left" class="lineone"> <%=messages.getText("datatype.accident.factors.other.crossing")%></th>
+										</tr>
+<%							} 
+							if(vehicles.isFactorOtherStanding()) { %>
+										<tr >
+						        			<th align="left" class="lineone"> <%=messages.getText("datatype.accident.factors.other.parking.standing")%></th>
+										</tr>
+<%							} %>
+																		</table>
+																		<jsp:include  page='<%="../component/utilitybox2bottom.jsp?" %>'/>
+																	</td>
+																</tr>
+			      												<tr class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+																<tr  class="lineone">
+			      													<th align="left"> <%=messages.getText("generic.event.eventdata.hitrun")%></th>
+			      													<td align="right">
+																		<%=messages.getText(vehicles.getHitrun())%>
+	  																</td>
+																</tr>																						      												
+			      												<tr class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+																<tr  class="lineone">
+			      													<th align="left"> <%=messages.getText("driver.othervehicle.contact")%></th>
+			      													<td align="right">
+																		<%=messages.getText(vehicles.getContact())%>
+	  																</td>
+																</tr>
+															</table>
+															<jsp:include  page='<%="../component/utilitybox2bottom.jsp" %>'/>
+														</td>
+													</tr>
+									  				<tr>
+														<jsp:include  page="../component/spaceline.jsp" />
+												  	</tr>
+												</table>	
+											</td>
+										</tr>
+<%									}
+%>
+	                     			</table>
+									<jsp:include  page="../component/utilityboxbottom.jsp" />
+				   </td>
+				</tr>	
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+				<tr>
+					<td colspan="3" width="600">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.environment")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+								<td width="49%" valign="top">
+							  		<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.event.eventdata.way")%>' />
+									<table width="100%" border="0" cellpadding="0" cellspacing="0">
+										<tr>
+			        						<th align="left" class="lineone"> <%=messages.getText("generic.event.eventdata.way")%></th>
+		    	    						<td align="right" class="lineone">
+												<%=messages.getText(eventDataType.getWay().getResourceBundleId())%>
+		          							</td>
+		          						</tr>
+	      								<tr  class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td>
+	      								</tr>
+										<tr>
+		        							<th align="left" class="lineone"> <%=messages.getText("generic.event.eventdata.circulationdirection")%></th>
+	    	    							<td align="right" class="lineone">
+												<%=messages.getText(eventDataType.getDirection().getResourceBundleId())%>
+			          						</td>
+				          				</tr>
+			      						
+			      						<% if (sys.getCorporationId() == CorporationData.PEPSICO){
+			      							// Control de trafico multiple select para PEPSICO
+			      						%>
+			      							<tr  class="lineone">
+			      								<th align="right">&nbsp;</th><td align="right">&nbsp;</td>
+				      						</tr>
+											<tr>
+				    	    					<th align="left" class="lineone" valign="top"> <%=messages.getText("generic.event.eventdata.trafficcontrol")%></th>
+		    		    						<td align="right" class="lineone">
+		    		    						<table width="100%">
+<%										String checks2 = eventDataType.getControlMultiple();
+											if (!Util.empty(checks2)){
+												for(int j = 1; j <= 7; j++) {
+													if(checks2.charAt(j-1) == '1') {
+%>												<tr>
+														<td class="lineone"><%=messages.getText("driver.controlmultiple.option"+j) %></td>		
+													</tr>
+	<%											}
+												}
+											}
+%>											</table>	
+				          						</td>
+				          					</tr>
+			      						<% }else{ %>
+			      						<tr  class="lineone">
+			      							<th align="right">&nbsp;</th><td align="right">&nbsp;</td>
+			      						</tr>
+										<tr>
+			    	    					<th align="left" class="lineone"> <%=messages.getText("generic.event.eventdata.trafficcontrol")%></th>
+	    		    						<td align="right" class="lineone">
+												<%=messages.getText(eventDataType.getControl().getResourceBundleId())%>
+			          						</td>
+			          					</tr>
+			          					<%} %>
+									</table>
+									<jsp:include  page="../component/utilitybox2bottom.jsp" />
+									<br>
+									<table width='100%'border="0" cellpadding="0" cellspacing="0">
+										<tr>
+						        			<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.climate")%></th>
+							        		<td align="right" class="linetwo">
+												<%=messages.getText(eventDataType.getClimate().getResourceBundleId())%>
+							          		</td>
+										</tr>
+									</table>
+							  	</td>
+								<td width="2%">&nbsp;</td>
+								<td width="49%" valign="top">
+									<table width="100%" border="0" cellpadding="0" cellspacing="0">
+										<tr  class="lineone">
+											<td colspan="5" width="100%">
+												<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.event.eventdata.pavement")%>' />
+												<table width="100%" border="0" cellpadding="0" cellspacing="0">
+													<tr>
+						        						<th align="left" class="lineone"> <%=messages.getText("generic.event.eventdata.pavement.state")%></th>
+						        						<td align="right" class="lineone">
+															<%=messages.getText(eventDataType.getPavement().getResourceBundleId())%>
+						          						</td>
+						          					</tr>
+					      							<tr  class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td>
+													<tr>
+						        						<th align="left" class="lineone"> <%=messages.getText("generic.event.eventdata.conditionrout")%></th>
+						        						<td align="right" class="lineone">
+															<%=messages.getText(eventDataType.getCondition().getResourceBundleId())%>
+						          						</td>
+						          					</tr>
+												</table>
+												<jsp:include  page="../component/utilitybox2bottom.jsp" />
+											</td>
+										</tr>
+						  				<tr>
+											<jsp:include  page="../component/spaceline.jsp" />
+									  	</tr>
+										<tr>
+											<td colspan="3">
+												<table width="100%" border="0" cellpadding="0" cellspacing="0">
+													<tr>
+						        						<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.lighting")%></th>
+						        						<td align="right" class="linetwo">
+															<%=messages.getText(eventDataType.getLighting().getResourceBundleId())%>
+						          						</td>
+						          					</tr>
+											  </table>
+											</td>
+			          					</tr>
+									</table>
+								</td>								
+							</tr>
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+			  	<tr>
+					<td width="600" valign="top" colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.otherpedestrian")%>' />
+       						<table width='100%' border="0" cellpadding="0" cellspacing="0">
+	            				<tr class="linetwo">
+              						<td align="left" valign="middle"><strong><%=messages.getText("generic.event.pedestrian.count")%></strong></td>
+		         					<td align="left">
+										<%=String.valueOf(eventDataType.getPedestrianCount())%>
+									</td>
+								</tr>
+	      						<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+<%								for(int i = 1; i < 4; i++) {
+%>								<tr>
+									<td colspan="2">
+										<div id='<%="pedestrian"+String.valueOf(i)%>' 
+											style='<%= (i <= Integer.parseInt(form.getPedestriancount())) ? "display:block" : "display:none" %>' >													
+											<table width="100%">
+												<tr>
+													<td width="100%">
+														<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.event.pedestrian")+" "+i%>' />
+														<table width="100%" border="0" cellpadding="0" cellspacing="0">
+															<tr  class="linetwo">
+		      													<th align="left" class="lineone"> <%=messages.getText("generic.event.eventdata.pedestrianaction")%></th>
+		    													<td align="right" class="lineone">
+																	<%=messages.getText(eventDataType.getPedestrian(1,i))%>
+			  													</td>
+			  												</tr>
+															<tr  class="linetwo">
+		      													<th align="left" class="lineone"> <%=messages.getText("generic.event.pedestrian.comment")%></th>
+		      													<td align="right" class="lineone">
+																	<%=eventDataType.getPedestrian(2,i)%>
+			  													</td>
+															</tr>
+														</table>
+														<jsp:include  page="../component/utilitybox2bottom.jsp" />
+													</td>
+												</tr>
+								  				<tr>
+													<jsp:include  page="../component/spaceline.jsp" />
+											  	</tr>
+											</table>	
+										</div>
+									</td>
+								</tr>
+<%								}		
+%>							</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+			  	<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+			  	<tr>
+					<td width="600" valign="top" colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.damageschema")%>' />
+						<table width="100%" border="0" cellpadding="0" cellspacing="0">
+							<tr >
+								<td colspan="2" align="center" >
+									<form name="vehicle" >
+										<table width="100%" cellpadding="0" cellspacing="0">
+											<tr>
+												<td width="100%" valign="top" >
+												<% // Si es forestal y tiene un vehiculo asigando
+												// al evento que sea camion, cambio el dibujo:
+												if (( userSessionData.isForest() &&
+													vehicle != null && (
+													vehicle.getType().getResourceBundleId().equals("datatype.vehicletype.truck")
+													|| vehicle.getType().getResourceBundleId().equals("datatype.vehicletype.tractortrailer")
+													|| vehicle.getType().getResourceBundleId().equals("datatype.vehicletype.trator")
+													|| vehicle.getType().getResourceBundleId().equals("datatype.vehicletype.pickup")
+													|| ( vehicle.getType().getResourceBundleId().equals("datatype.vehicletype.minivan") &&
+															sys.getCorporationId() == CorporationData.CIMSA	)
+													)) 
+													||
+													// Si es Forestal y creo un nuevo vehiculo asumo que es camion:
+													( userSessionData.isForest() && 	(vehicle == null || vehicle.getType() == null ) )
+													||
+													// 	Si es CIMSA  y creo un nuevo vehiculo asumo que es camion (Ajuste: 17/08/2011)
+													(sys.getCorporationId() == CorporationData.CIMSA)
+													|| 
+													// Si es PEPSICO  asumo que es camion (Ajuste: 17/08/2011)
+													// Pepsico es camion solo (sin zorra)
+													(sys.getCorporationId() == CorporationData.PEPSICO)
+												){
+													
+														// Veo si tengo que mostrar un camion con zorra o solo el camion:
+														
+														String doubleCabinImage = ""; // camion con zorra
+														String onlyTruckImage = ""; 
+														String color = ""; // color del vehiculo
+														if( (sys.getCorporationId() == CorporationData.CIMSA 
+															&& eventDataType != null && eventDataType.isDoubleCabin()) ||
+															// si es Forestal diferente de CIMSA es camion con zorra:
+															(sys.getUserSessionData().isForest() &&  
+															sys.getCorporationId() != CorporationData.CIMSA) ||
+															// Si es diferente de CIMSA o PEPSICO, es camion con zorra:
+															(sys.getCorporationId() != CorporationData.CIMSA &&
+																	sys.getCorporationId() != CorporationData.PEPSICO)
+																	
+														){
+															// Dibujo camion con zorra:
+															doubleCabinImage = " style='display:block'  "; // camion con zorra
+															onlyTruckImage = " style='display:none' ";
+														}else{
+															// Dibujo camion solo:
+															doubleCabinImage = " style='display:none' ";
+															onlyTruckImage = " style='display:block' "; // camion solo
+														}	
+													
+												
+%>
+								<!-- Solo camion sin zorra:  -->
+								<div id="onlyTruckImage"  <%=onlyTruckImage%> >
+												<script type="text/javascript" language="javascript">
+													if (navigator.appVersion.indexOf("MSIE")!= -1){
+													// Internet Explorer
+													document.write(
+															'<table width="340px" border="0" cellpadding="0" cellspacing="0" background="/datacenter/util/imgs/camion_sin_zorra.jpg">' +
+															'<tr>'+
+																'<td id="1" align="left" valign="middle" height="20" width="100%">' +
+																	'<input type="checkbox" name="damage1" <%=(eventDataType.isDamage(1)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ' +
+																	'<input type="checkbox" name="damage2" <%=(eventDataType.isDamage(2)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage3" <%=(eventDataType.isDamage(3)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp; ' +
+																	'<input type="checkbox" name="damage4" <%=(eventDataType.isDamage(4)) ? "checked" : "" %>  disabled="true" /> ' +
+																	'&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage5" <%=(eventDataType.isDamage(5)) ? "checked" : "" %>  disabled="true" />'+
+																	'&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage6" <%=(eventDataType.isDamage(6)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage7" <%=(eventDataType.isDamage(7)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage8" <%=(eventDataType.isDamage(8)) ? "checked" : "" %>  disabled="true" />' +
+																'</td>' +
+															'</tr>' +
+															'<tr height="36">' +													
+																'<td id="1" align="left" valign="middle" height="32">' +
+																	'<input type="checkbox" name="damage17" <%=(eventDataType.isDamage(17)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+
+																	'<input type="checkbox" name="damage18" <%=(eventDataType.isDamage(18)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;'+
+																	'<input type="checkbox" name="damage19" <%=(eventDataType.isDamage(19)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage20" <%=(eventDataType.isDamage(20)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;' +
+																	'<input type="checkbox" name="damage21" <%=(eventDataType.isDamage(21)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+
+ 																	'<input type="checkbox" name="damage22" <%=(eventDataType.isDamage(22)) ? "checked" : "" %>  disabled="true" />' +
+ 																	'&nbsp;' +
+ 																	'<input type="checkbox" name="damage23" <%=(eventDataType.isDamage(23)) ? "checked" : "" %>  disabled="true" />' +
+ 																'</td>' +
+															'</tr>' +
+															'<tr>'+
+																'<td id="1" align="left" valign="middle" height="20" width="100%">' +
+																	'<input type="checkbox" name="damage27" <%=(eventDataType.isDamage(27)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ' +
+																	'<input type="checkbox" name="damage28" <%=(eventDataType.isDamage(28)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage29" <%=(eventDataType.isDamage(29)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp; ' +
+																	'<input type="checkbox" name="damage30" <%=(eventDataType.isDamage(30)) ? "checked" : "" %>  disabled="true" /> ' +
+																	'&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage31" <%=(eventDataType.isDamage(31)) ? "checked" : "" %>  disabled="true" />'+
+																	'&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage32" <%=(eventDataType.isDamage(32)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage33" <%=(eventDataType.isDamage(33)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage34" <%=(eventDataType.isDamage(34)) ? "checked" : "" %>  disabled="true" />' +
+																'</td>' +
+															'</tr>' +
+															
+														'</table>');
+												}else{
+													// Not IE
+													document.write (
+														'<table width="340px" border="0" cellpadding="0" cellspacing="0" background="/datacenter/util/imgs/camion_sin_zorra.jpg">' +
+															'<tr>'+
+																'<td id="1" align="left" valign="middle" height="20" width="100%">' +
+																	'<input type="checkbox" name="damage1" <%=(eventDataType.isDamage(1)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ' +
+																	'<input type="checkbox" name="damage2" <%=(eventDataType.isDamage(2)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage3" <%=(eventDataType.isDamage(3)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp; ' +
+																	'<input type="checkbox" name="damage4" <%=(eventDataType.isDamage(4)) ? "checked" : "" %>  disabled="true" /> ' +
+																	'&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage5" <%=(eventDataType.isDamage(5)) ? "checked" : "" %>  disabled="true" />'+
+																	'&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage6" <%=(eventDataType.isDamage(6)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage7" <%=(eventDataType.isDamage(7)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage8" <%=(eventDataType.isDamage(8)) ? "checked" : "" %>  disabled="true" />' +
+																'</td>' +
+															'</tr>' +
+															'<tr height="36">' +													
+																'<td id="1" align="left" valign="middle" height="32">' +
+																	'<input type="checkbox" name="damage17" <%=(eventDataType.isDamage(17)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+
+																	'<input type="checkbox" name="damage18" <%=(eventDataType.isDamage(18)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;'+
+																	'<input type="checkbox" name="damage19" <%=(eventDataType.isDamage(19)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage20" <%=(eventDataType.isDamage(20)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;' +
+																	'<input type="checkbox" name="damage21" <%=(eventDataType.isDamage(21)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+
+ 																	'<input type="checkbox" name="damage22" <%=(eventDataType.isDamage(22)) ? "checked" : "" %>  disabled="true" />' +
+ 																	'&nbsp;' +
+ 																	'<input type="checkbox" name="damage23" <%=(eventDataType.isDamage(23)) ? "checked" : "" %>  disabled="true" />' +
+ 																'</td>' +
+															'</tr>' +
+															'<tr>'+
+																'<td id="1" align="left" valign="middle" height="20" width="100%">' +
+																	'<input type="checkbox" name="damage27" <%=(eventDataType.isDamage(27)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ' +
+																	'<input type="checkbox" name="damage28" <%=(eventDataType.isDamage(28)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage29" <%=(eventDataType.isDamage(29)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp; ' +
+																	'<input type="checkbox" name="damage30" <%=(eventDataType.isDamage(30)) ? "checked" : "" %>  disabled="true" /> ' +
+																	'&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage31" <%=(eventDataType.isDamage(31)) ? "checked" : "" %>  disabled="true" />'+
+																	'&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage32" <%=(eventDataType.isDamage(32)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage33" <%=(eventDataType.isDamage(33)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage34" <%=(eventDataType.isDamage(34)) ? "checked" : "" %>  disabled="true" />' +
+																'</td>' +
+															'</tr>' +															
+														'</table>');
+													}		
+									</script>														
+									</div><!--  onlyTruckImage -->
+									
+									<!--  Camion con zorra  -->
+									<div id="doubleCabinImage"  <%=doubleCabinImage %> >
+												<script type="text/javascript" language="javascript">
+													if (navigator.appVersion.indexOf("MSIE")!= -1){
+													// Internet Explorer
+													document.write(
+														'<table width="570px" border="0" cellpadding="0" cellspacing="0" background="/datacenter/util/imgs/camion_con_zorra.jpg">' +
+															'<tr>'+
+																'<td id="1" align="left" valign="middle" height="20" width="100%">' +
+																	'<input type="checkbox" name="damage1" <%=(eventDataType.isDamage(1)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ' +
+																	'<input type="checkbox" name="damage2" <%=(eventDataType.isDamage(2)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage3" <%=(eventDataType.isDamage(3)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp; ' +
+																	'<input type="checkbox" name="damage4" <%=(eventDataType.isDamage(4)) ? "checked" : "" %>  disabled="true" /> ' +
+																	'&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage5" <%=(eventDataType.isDamage(5)) ? "checked" : "" %>  disabled="true" />'+
+																	'&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage6" <%=(eventDataType.isDamage(6)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage7" <%=(eventDataType.isDamage(7)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage8" <%=(eventDataType.isDamage(8)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;' +
+																	'<input type="checkbox" name="damage9" <%=(eventDataType.isDamage(9)) ? "checked" : "" %>  disabled="true" />&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage10" <%=(eventDataType.isDamage(10)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage11" <%=(eventDataType.isDamage(11)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage12" <%=(eventDataType.isDamage(12)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage13" <%=(eventDataType.isDamage(13)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage14" <%=(eventDataType.isDamage(14)) ? "checked" : "" %>  disabled="true" />&nbsp;&nbsp;'+
+																	'<input type="checkbox" name="damage15" <%=(eventDataType.isDamage(15)) ? "checked" : "" %>  disabled="true" />&nbsp;' +
+																	'<input type="checkbox" name="damage16" <%=(eventDataType.isDamage(16)) ? "checked" : "" %>  disabled="true" />' +
+																'</td>' +
+															'</tr>' +
+															'<tr height="36">' +													
+																'<td id="1" align="left" valign="middle" height="32">' +
+																	'<input type="checkbox" name="damage17" <%=(eventDataType.isDamage(17)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+
+																	'<input type="checkbox" name="damage18" <%=(eventDataType.isDamage(18)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;'+
+																	'<input type="checkbox" name="damage19" <%=(eventDataType.isDamage(19)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage20" <%=(eventDataType.isDamage(20)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;' +
+																	'<input type="checkbox" name="damage21" <%=(eventDataType.isDamage(21)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+
+ 																	'<input type="checkbox" name="damage22" <%=(eventDataType.isDamage(22)) ? "checked" : "" %>  disabled="true" />' +
+ 																	'&nbsp;' +
+ 																	'<input type="checkbox" name="damage23" <%=(eventDataType.isDamage(23)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;' +
+ 																	'<input type="checkbox" name="damage24" <%=(eventDataType.isDamage(24)) ? "checked" : "" %>  disabled="true" />'+
+		 															'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+ 																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+ 																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+ 																	'&nbsp;&nbsp;&nbsp;&nbsp;' +
+													  				'<input type="checkbox" name="damage25" <%=(eventDataType.isDamage(25)) ? "checked" : "" %>  disabled="true" />'+
+ 																	'<input type="checkbox" name="damage26" <%=(eventDataType.isDamage(26)) ? "checked" : "" %>  disabled="true" />' +
+ 																'</td>' +
+															'</tr>' +
+															'<tr>'+
+																'<td id="1" align="left" valign="middle" height="20" width="100%">' +
+																	'<input type="checkbox" name="damage27" <%=(eventDataType.isDamage(27)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ' +
+																	'<input type="checkbox" name="damage28" <%=(eventDataType.isDamage(28)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage29" <%=(eventDataType.isDamage(29)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp; ' +
+																	'<input type="checkbox" name="damage30" <%=(eventDataType.isDamage(30)) ? "checked" : "" %>  disabled="true" /> ' +
+																	'&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage31" <%=(eventDataType.isDamage(31)) ? "checked" : "" %>  disabled="true" />'+
+																	'&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage32" <%=(eventDataType.isDamage(32)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage33" <%=(eventDataType.isDamage(33)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage34" <%=(eventDataType.isDamage(34)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;' +
+																	'<input type="checkbox" name="damage35" <%=(eventDataType.isDamage(35)) ? "checked" : "" %>  disabled="true" />&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage36" <%=(eventDataType.isDamage(36)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage37" <%=(eventDataType.isDamage(37)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage38" <%=(eventDataType.isDamage(38)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage39" <%=(eventDataType.isDamage(39)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage40" <%=(eventDataType.isDamage(40)) ? "checked" : "" %>  disabled="true" />&nbsp;&nbsp;'+
+																	'<input type="checkbox" name="damage41" <%=(eventDataType.isDamage(41)) ? "checked" : "" %>  disabled="true" />&nbsp;' +
+																	'<input type="checkbox" name="damage42" <%=(eventDataType.isDamage(42)) ? "checked" : "" %>  disabled="true" />' +
+																'</td>' +
+															'</tr>' +
+															
+														'</table>');
+												}else{
+													// Not IE
+													document.write (
+														'<table width="570" border="0" cellpadding="0" cellspacing="0" background="/datacenter/util/imgs/camion_con_zorra.jpg">' +
+															'<tr>'+
+																'<td id="1" align="left" valign="middle" height="20" width="100%">' +
+																	'<input type="checkbox" name="damage1" <%=(eventDataType.isDamage(1)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ' +
+																	'<input type="checkbox" name="damage2" <%=(eventDataType.isDamage(2)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage3" <%=(eventDataType.isDamage(3)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp; ' +
+																	'<input type="checkbox" name="damage4" <%=(eventDataType.isDamage(4)) ? "checked" : "" %>  disabled="true" /> ' +
+																	'&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage5" <%=(eventDataType.isDamage(5)) ? "checked" : "" %>  disabled="true" />'+
+																	'&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage6" <%=(eventDataType.isDamage(6)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage7" <%=(eventDataType.isDamage(7)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage8" <%=(eventDataType.isDamage(8)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage9" <%=(eventDataType.isDamage(9)) ? "checked" : "" %>  disabled="true" />&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage10" <%=(eventDataType.isDamage(10)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage11" <%=(eventDataType.isDamage(11)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage12" <%=(eventDataType.isDamage(12)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage13" <%=(eventDataType.isDamage(13)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage14" <%=(eventDataType.isDamage(14)) ? "checked" : "" %>  disabled="true" />&nbsp;&nbsp;'+
+																	'<input type="checkbox" name="damage15" <%=(eventDataType.isDamage(15)) ? "checked" : "" %>  disabled="true" />&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage16" <%=(eventDataType.isDamage(16)) ? "checked" : "" %>  disabled="true" />' +
+																'</td>' +
+															'</tr>' +
+															'<tr height="36">' +													
+																'<td id="1" align="left" valign="middle" height="32">' +
+																	'<input type="checkbox" name="damage17" <%=(eventDataType.isDamage(17)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+
+																	'<input type="checkbox" name="damage18" <%=(eventDataType.isDamage(18)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;'+
+																	'<input type="checkbox" name="damage19" <%=(eventDataType.isDamage(19)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage20" <%=(eventDataType.isDamage(20)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;' +
+																	'<input type="checkbox" name="damage21" <%=(eventDataType.isDamage(21)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;'+
+ 																	'<input type="checkbox" name="damage22" <%=(eventDataType.isDamage(22)) ? "checked" : "" %>  disabled="true" />' +
+ 																	'&nbsp;' +
+ 																	'<input type="checkbox" name="damage23" <%=(eventDataType.isDamage(23)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;' +
+ 																	'<input type="checkbox" name="damage24" <%=(eventDataType.isDamage(24)) ? "checked" : "" %>  disabled="true" />'+
+		 															'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+ 																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+ 																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+ 																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+													  				'<input type="checkbox" name="damage25" <%=(eventDataType.isDamage(25)) ? "checked" : "" %>  disabled="true" />'+
+ 																	'<input type="checkbox" name="damage26" <%=(eventDataType.isDamage(26)) ? "checked" : "" %>  disabled="true" />' +
+ 																'</td>' +
+															'</tr>' +
+															'<tr>'+
+																'<td id="1" align="left" valign="middle" height="20" width="100%">' +
+																	'<input type="checkbox" name="damage27" <%=(eventDataType.isDamage(27)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ' +
+																	'<input type="checkbox" name="damage28" <%=(eventDataType.isDamage(28)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage29" <%=(eventDataType.isDamage(29)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp; ' +
+																	'<input type="checkbox" name="damage30" <%=(eventDataType.isDamage(30)) ? "checked" : "" %>  disabled="true" /> ' +
+																	'&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage31" <%=(eventDataType.isDamage(31)) ? "checked" : "" %>  disabled="true" />'+
+																	'&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage32" <%=(eventDataType.isDamage(32)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage33" <%=(eventDataType.isDamage(33)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage34" <%=(eventDataType.isDamage(34)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage35" <%=(eventDataType.isDamage(35)) ? "checked" : "" %>  disabled="true" />&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage36" <%=(eventDataType.isDamage(36)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage37" <%=(eventDataType.isDamage(37)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage38" <%=(eventDataType.isDamage(38)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage39" <%=(eventDataType.isDamage(39)) ? "checked" : "" %>  disabled="true" />' +
+																	'&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage40" <%=(eventDataType.isDamage(40)) ? "checked" : "" %>  disabled="true" />&nbsp;&nbsp;'+
+																	'<input type="checkbox" name="damage41" <%=(eventDataType.isDamage(41)) ? "checked" : "" %>  disabled="true" />&nbsp;&nbsp;&nbsp;' +
+																	'<input type="checkbox" name="damage42" <%=(eventDataType.isDamage(42)) ? "checked" : "" %>  disabled="true" />' +
+																'</td>' +
+															'</tr>' +															
+														'</table>');
+														}	
+												
+												</script>	
+											</div>
+											</td>
+										</tr>
+									</table>
+									</form>
+								</td>
+							</tr>
+							<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+						  	</tr>
+<%			if(sys.getCorporationId() == CorporationData.CIMSA) {	
+	%>
+							<tr>	
+								<td>&nbsp;</td>
+								<td rowspan="8">
+									<jsp:include  page="../component/utilitybox2top.jsp" />
+									<table width="100%" cellpadding="0" cellspacing="0">
+										<tr>
+											<th class="lineone" align="left"><%=messages.getText("event.extracost.cost1")%></th>
+											<td class="lineone" align="right">
+				         						<%=(eventDataType.getExtraCost1() == null) ? "" : String.valueOf(eventDataType.getExtraCost1())%>
+											</td>
+										</tr>
+										<tr>
+											<th class="lineone" align="left"><%=messages.getText("event.extracost.cost2")%></th>
+											<td class="lineone" align="right">
+				         						<%=(eventDataType.getExtraCost2() == null) ? "" : String.valueOf(eventDataType.getExtraCost2())%>
+											</td>
+										</tr>
+										<tr>
+											<th class="lineone" align="left"><%=messages.getText("event.extracost.cost3")%></th>
+											<td class="lineone" align="right">
+				         						<%=(eventDataType.getExtraCost3() == null) ? "" : String.valueOf(eventDataType.getExtraCost3())%>
+											</td>
+										</tr>
+										<tr>
+											<th class="lineone" align="left"><%=messages.getText("event.extracost.cost4")%></th>
+											<td class="lineone" align="right">
+				         						<%=(eventDataType.getExtraCost4() == null) ? "" : String.valueOf(eventDataType.getExtraCost4())%>
+											</td>
+										</tr>
+										<tr>
+											<th class="lineone" align="left"><%=messages.getText("event.extracost.cost5")%></th>
+											<td class="lineone" align="right">
+				         						<%=(eventDataType.getExtraCost5() == null) ? "" : String.valueOf(eventDataType.getExtraCost5())%>
+											</td>
+										</tr>
+										<tr>
+											<th class="lineone" align="left"><%=messages.getText("event.extracost.cost6")%></th>
+											<td class="lineone" align="right">
+				         						<%=(eventDataType.getExtraCost6() == null) ? "" : String.valueOf(eventDataType.getExtraCost6())%>
+											</td>
+										</tr>
+										<tr>
+											<th class="lineone" align="left"><%=messages.getText("event.extracost.cost7")%></th>
+											<td class="lineone" align="right">
+				         						<%=(eventDataType.getExtraCost7() == null) ? "" : String.valueOf(eventDataType.getExtraCost7())%>
+											</td>
+										</tr>
+										<tr>
+											<th class="lineone" align="left"><%=messages.getText("event.extracost.cost8")%></th>
+											<td class="lineone" align="right">
+				         						<%=(eventDataType.getExtraCost8() == null) ? "" : String.valueOf(eventDataType.getExtraCost8())%>
+											</td>
+										</tr>
+									</table>	
+									<jsp:include  page="../component/utilitybox2bottom.jsp" />
+								</td>
+							</tr>
+<%			}	
+%>							
+
+<%
+		if(sys.getCorporationId() == CorporationData.CIMSA) {
+%>
+									<tr>
+										<td class="linetwo"  align="left" valign="top">   
+									   		<span>
+									   			<%=messages.getText("generic.event.cimsa.doublecabin")%>:
+									   		</span>
+						      				<span>
+								      			<input type="checkbox" name="doubleCabin" 
+								      						<%=(eventDataType.isDoubleCabin()) ? "checked" : "" %>  
+								      						disabled="disabled" />
+								      		</span>
+						  				</td>
+			  						</tr>
+<%	
+		}
+%>
+
+
+							<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+						  	</tr>
+							<tr>							   	
+					  			<td class="linetwo" colspan="1" align="left" valign="top">
+									<span><%=(eventDataType.getCost() == null) ? messages.getText("generic.event.finedata.cost")+": "+messages.getText("generic.messages.nodata") : messages.getText("generic.event.finedata.cost")+": "+String.valueOf(eventDataType.getCost())%></span>
+								</td>					  			
+							</tr>
+<%					if (sys.getCorporationId() == CorporationData.CIMSA || 
+						sys.getCorporationId() == CorporationData.TRANSPORTES_AMERICAN) {
+%>							
+							<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+						  	</tr>
+							<tr>
+			        			<td align="left" class="linetwo">			        			 
+			        			 <span><%=messages.getText("generic.event.finedata.realcost")%>:</span>
+			        			 <span><input type="checkbox" name="realCost" <%=(eventDataType.isRealCost()) ? "checked" : "" %>  disabled="disabled" /></span>
+			        			</td>
+			        		</tr>
+							<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+						  	</tr>
+							<tr>
+			        			<td align="left" class="linetwo"> 
+			        				<%=messages.getText("generic.event.eventdata.damagecharged")+":"%>
+	         						<%=Util.empty(eventDataType.getDamageCharge()) ? "" : messages.getText(eventDataType.getDamageCharge())%>
+			          			</td>
+			          		</tr>
+			          		
+<% 					} 
+				}else{ 
+%>
+							<!-- Dibujo del auto -->
+							<div id="carImage" >
+													<table width="300px" border="0" cellpadding="0" cellspacing="0" background="/datacenter/util/imgs/carro.jpg">
+												
+														<tr>
+															<td align="right" valign="middle" height="40" width="10">
+																<input type="checkbox" name="damage1" <%=(eventDataType.isDamage1()) ? "checked" : "" %>  disabled="disabled" />
+															</td>
+															<td align="left" valign="middle" height="40" width="280" style="padding-left: 30px;">
+																<input type="checkbox" name="damage_15" <%=(eventDataType.isDamage15()) ? "checked" : "" %> disabled="disabled"/>
+																&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+																<input type="checkbox" name="damage2" <%=(eventDataType.isDamage2()) ? "checked" : "" %> disabled="disabled"/>
+																&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+																<input type="checkbox" name="damage_11" <%=(eventDataType.isDamage11()) ? "checked" : "" %> disabled="disabled"/>
+																&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+																<input type="checkbox" name="damage_13" <%=(eventDataType.isDamage13()) ? "checked" : "" %> disabled="disabled"/>
+															</td>
+															<td align="left" valign="middle" height="40" width="10">
+																<input type="checkbox" name="damage3" <%=(eventDataType.isDamage3()) ? "checked" : "" %> disabled="disabled"/>
+															</td>
+														</tr>
+														<tr>
+															<td align="right" valign="middle" height="48" width="10">
+																<input type="checkbox" name="damage4" <%=(eventDataType.isDamage4()) ? "checked" : "" %> disabled="disabled"/>
+															</td>
+															<td align="center" valign="middle" height="48" width="280">
+																<input type="checkbox" name="damage5" <%=(eventDataType.isDamage5()) ? "checked" : "" %> disabled="disabled"/>
+																&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+																<input type="checkbox" name="damage10" <%=(eventDataType.isDamage10()) ? "checked" : "" %> disabled="disabled"/>
+																&nbsp;&nbsp;&nbsp;&nbsp;
+															</td>
+															<td align="left" valign="middle" height="48" width="10">
+																<input type="checkbox" name="damage6" <%=(eventDataType.isDamage6()) ? "checked" : "" %> disabled="disabled"/>
+															</td>
+														</tr>
+														<tr>
+															<td align="right" valign="bottom" height="33" width="10">
+																<input type="checkbox" name="damage7" <%=(eventDataType.isDamage7()) ? "checked" : "" %> disabled="disabled"/>
+															</td>
+															<td align="left" valign="bottom" height="40" width="280" style="padding-left: 30px;">
+																<input type="checkbox" name="damage_16" <%=(eventDataType.isDamage16()) ? "checked" : "" %> disabled="disabled"/>
+																&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+																<input type="checkbox" name="damage8" <%=(eventDataType.isDamage8()) ? "checked" : "" %> disabled="disabled"/>
+																&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;
+																<input type="checkbox" name="damage_11" <%=(eventDataType.isDamage12()) ? "checked" : "" %> disabled="disabled"/>
+																&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; 
+																<input type="checkbox" name="damage_14" <%=(eventDataType.isDamage14()) ? "checked" : "" %> disabled="disabled"/>
+																
+															</td>
+															<td align="left" valign="bottom" height="33" width="10">
+																<input type="checkbox" name="damage9" <%=(eventDataType.isDamage9()) ? "checked" : "" %> disabled="disabled"/>
+															</td>
+														</tr>
+													</table>
+													</div>
+													
+												</td>
+											</tr>
+										</table>
+										
+									</form>
+								</td>
+								<td class="linetwo" colspan="1" align="left" valign="middle">
+									<table>
+							   			<tr class="linetwo">
+							   				<td align="left">
+												<%=(eventDataType.getCost() == null) ? 
+														messages.getText("generic.event.finedata.cost")+": "+messages.getText("generic.messages.nodata") : 
+														messages.getText("generic.event.finedata.cost")+": "+String.valueOf(eventDataType.getCost())%>
+											</td>
+										</tr>
+<%				if(sys.isCorporation(CorporationData.MONSANTO)) {
+%>										<tr>
+											<td class="linetwo"  align="left" valign="top">   
+								      			<input type="checkbox" name="doubleCabin" <%=(eventDataType.isDoubleCabin()) ? "checked" : "" %> disabled="disabled" />TFLEET
+							  				</td>
+				  						</tr>
+<%				}
+%>
+										
+									</table>
+								</td>
+					 		</tr>
+<%					 		} %>
+					 	</table>	
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td> 
+				</tr>
+<%				if (sys.getCorporationId() == CorporationData.CIMSA) {
+%>  			
+				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+				<tr>
+					<td width="600" colspan="3">
+						<%
+							String page12 = "../component/utilityboxtop.jsp?title="+messages.getText("generic.eventdata.juntasiniestros");
+						%>
+						<jsp:include  page='<%=page12%>' />
+						<table>
+							<tr>
+								<th align="left" class="linetwo" width="22%"><%=messages.getText("generic.eventdata.ensurancedate")%></th>
+	        					<td align="left" class="linetwo" width="25%">
+									<%=(eventDataType.getEnsuranceDate() == null) ? "" : Util.formatDate(eventDataType.getEnsuranceDate())%>
+          						</td>
+				   			</tr>
+							<tr>
+								<th align="left" class="linetwo"><%=messages.getText("event.extracost.companyamount")%></th>
+				   				<td class="linetwo" align="left" >
+									<%=(eventDataType.getCompanyAmount() == null) ? " " : String.valueOf(eventDataType.getCompanyAmount())%>
+								</td>
+							</tr>
+							<tr>
+								<th align="left" class="linetwo"><%=messages.getText("event.extracost.driveramount")%></th>
+				   				<td class="linetwo" align="left">
+									<%=(eventDataType.getDriverAmount() == null) ? " " : String.valueOf(eventDataType.getDriverAmount())%>
+								</td>
+							</tr>
+							<tr>
+								<th align="left" class="linetwo"><%=messages.getText("event.extracost.thirdamount")%></th>
+				   				<td class="linetwo">
+									<span align="left"><%=(eventDataType.getThirdAmount() == null) ? " " : String.valueOf(eventDataType.getThirdAmount())%></span>
+								</td>
+							</tr>
+					 	</table>	
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+<%				}
+%>  			<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+<%		if(sys.isCorporation(CorporationData.BAYER_MX)) {
+			Collection<Object[]> files = sys.getEventReportFacade().getFiles(eventId, userSessionData);
+%>	      		<tr>
+           			<td colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("event.file.list")%>' />
+						<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="default" >
+<%			if(files == null || files.size() == 0) {
+%>							<tr class='linetwo'>
+								<th align="left"><%=messages.getText("event.file.nofiles")%></th>
+							</tr>			
+<%			}else {
+				Iterator<Object[]> fileIt = files.iterator();
+				boolean lineone = true;
+				while(fileIt.hasNext()) {
+					Object[] fileData = (Object[]) fileIt.next();
+%>							<tr class='<%=(lineone) ? "lineone" : "linetwo"%>' height="30">
+								<td width="100%" align="left">
+									<a href='<%=SecurityConstants.DATACENTER5_LINK_DIRECTORY+"event_"+fileData[0].toString()+".pdf"%>' target="_blank">
+										<%=fileData[1]%>
+									</a>
+								</td>
+							</tr>
+<%					lineone = !lineone;
+				}
+			}
+%>						
+				      	</table>              
+						<jsp:include  page='../component/utilityboxbottom.jsp' />
+					</td>
+				</tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+<%			}
+			if(sys.isCorporation(new int[]{CorporationData.FORESTALORIENTAL,CorporationData.CIMSA,CorporationData.MONTES_DE_PLATA,CorporationData.WEYERHAEUSER,CorporationData.SYNGENTA})) {    	
+%>				<tr>
+					<td width="600" colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.eventdata.severityindex")%>' />
+						<table>
+				   			<tr class="linetwo">
+				   				<th align="left">
+<%				String severity = "event.severityindex.";
+				if(sys.isCorporation(new int[]{CorporationData.FORESTALORIENTAL,CorporationData.CIMSA,CorporationData.MONTES_DE_PLATA,CorporationData.WEYERHAEUSER,CorporationData.SYNGENTA})) {
+				    severity += (eventDataType.getSeverity() == null) ? "0" : String.valueOf(eventDataType.getSeverity());
+				}else {
+				    severity += String.valueOf(eventDataType.getSeverityIndex());
+				}
+%>				   					<%=messages.getText(severity)%>
+				   				</th>
+				   			</tr>
+				   		</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+<%			} // fosa o cimsa
+			if(corporationId == CorporationData.MONSANTO) {    	
+%>				<tr>
+					<td width="600" colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.finedata.observations")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+								<td width="85%" align="justify" colspan="3" class="linetwo">
+									<%=(eventDataType.getSuperivisionObservations() == null) ? messages.getText("generic.event.noobservations") : eventDataType.getSuperivisionObservations()%>
+								</td>
+							</tr>
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+<%			} // if(corporationId == CorporationData.MONSANTO)
+	
+			if(eventDataType.getStatus().intValue() == EventDataType.SUPERVISED) {
+%>				<tr>
+					<td width="600" colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("event.messages.cepaclasification")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+<%				if(userSessionData.isBrasilCorporation() || sys.isCorporation(new int[]{CorporationData.JJ,CorporationData.MONTES_DE_PLATA})) {//Nuevo Control	
+					type = "";
+					clasification = "";
+					if(sys.isCorporation(new int[]{CorporationData.WEYERHAEUSER})) {
+						if(eventDataType.getSupervisedAccident() != null) {
+							type = messages.getText("generic.event.accident");
+							clasification = messages.getText(eventDataType.getSupervisedAccident().getResourceBundleId());
+						}else if(eventDataType.getSupervisedIncident() != null) {
+							type = messages.getText("generic.event.incident");
+							clasification = messages.getText(eventDataType.getSupervisedIncident().getResourceBundleId());
+						}
+					}else {
+						type = (eventDataType.getSupervisedAccident() != null) ? messages.getText("generic.event.accident") : messages.getText("generic.event.incident");
+						if(eventDataType.getSupervisedAccident() != null || eventDataType.getSupervisedIncident() != null)
+							clasification = (eventDataType.getSupervisedAccident() != null) ? messages.getText(eventDataType.getSupervisedAccident().getResourceBundleId()) : messages.getText(eventDataType.getSupervisedIncident().getResourceBundleId());	
+					}
+%>
+							<tr>
+			        			<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.type")%></th>
+	         					<td align="right" class="linetwo"><%=type%></td>
+							</tr>
+							<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+				  			</tr>
+							<tr>
+			        			<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.clasification")%></th>
+	         					<td align="right" class="linetwo">
+
+         						
+         							<% 
+         								boolean cepaclasif=false;
+         								if(eventDataType.getClasificationCEPA1()!=null){
+         									cepaclasif=true;	
+         							%>
+	         							<%=messages.getText(eventDataType.getClasificationCEPA1().getResourceBundleId())+"<br>"%>
+	         						<%}%>
+	         						<% if(eventDataType.getClasificationCEPA2()!=null ){
+	         							cepaclasif=true;
+	         						%>
+	         							<%=messages.getText(eventDataType.getClasificationCEPA2().getResourceBundleId())+"<br>"%>
+	         						<%}%>
+	         						<% if(eventDataType.getClasificationCEPA3()!=null){
+	         							cepaclasif=true;
+	         						%>
+	         							<%=messages.getText(eventDataType.getClasificationCEPA3().getResourceBundleId())+"<br>"%>
+	         						<%}%>
+	         						<% if(eventDataType.getClasificationCEPA4()!=null){
+	         							cepaclasif=true;
+	         						%>
+	         							<%=messages.getText(eventDataType.getClasificationCEPA4().getResourceBundleId())+"<br>"%>
+	         						<%}%>
+	         						
+	         						<% if(eventDataType.getClasificationCEPAText()!=null){
+	         							cepaclasif=true;
+	         						%>
+	         							<%="<br>"+eventDataType.getClasificationCEPAText()%>
+	         						<%}%>
+	         						<% if(!cepaclasif){%>
+	         						<%=clasification%>
+	         						<%}%>
+	         					
+	         					
+	         					</td>
+							</tr>
+							<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+				  			</tr>
+							<tr>
+			        			<th align="left" class="linetwo"> <%=messages.getText("generic.event.eventdata.colisionclasification")%></th>
+								<td align="right" class="linetwo"><%=(eventDataType.getSupervisedCollision() == null) ? "---" : messages.getText(eventDataType.getSupervisedCollision().getResourceBundleId())%></td>
+							</tr>
+<%				}	
+%>
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+<%				if(userSessionData.isCepaUser() && !sys.isCorporation(CorporationData.JJ)) {
+%>				<tr>
+					<td width="600" colspan="3">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.event.supervition")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+								<th align="left" class="linetwo"> 
+									<%=messages.getText("generic.event.supervise.evitability")%>
+							   	</th>
+		         				<td class="linetwo">
+									<%=(Util.empty(eventDataType.getEvitability())) ? messages.getText("generic.messages.nodata") :messages.getText(eventDataType.getEvitability())%>
+					         	</td>
+					       	</tr>
+		      				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+				         	<tr>
+								<th class="linetwo" align="left">
+									<%=(eventDataType.getNonrecordable()) ? messages.getText("generic.event.nonrecordable")+": "+messages.getText("generic.messages.yes") : messages.getText("generic.event.nonrecordable")+": "+messages.getText("generic.messages.no")%>
+								</th>
+							</tr>
+<%					if(!sys.isCorporation(CorporationData.MONSANTO)) {
+%>		      				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+							<tr>
+							   	<td align="left">
+									<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.event.finedata.observations")%>' />
+									<table>
+										<tr>
+											<td class="lineone" align="left">
+												<%=(eventDataType.getSuperivisionObservations() == null) ? messages.getText("generic.event.noobservations") : eventDataType.getSuperivisionObservations()%>
+											</td>
+										</tr>
+									</table>
+									<jsp:include  page="../component/utilitybox2bottom.jsp" />
+								</td>
+							</tr>
+<%					}
+%>
+
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+<%				}
+			}
+			Collection observations = sys.getEventReportFacade().getObservations(eventId, userSessionData);
+%>				<tr>
+					<td valign="top" colspan="3" width="600">
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.observations")%>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+								<td width='24%' class="guide2" align="center">
+									<%=messages.getText("generic.driver.observation.date")%>
+								</td>
+								<td width='24%' class="guide2" align="center">
+									<%=messages.getText("generic.driver.observation.action")%>
+								</td>
+								<td width='24%'	class="guide2" align="center">
+									<%=messages.getText("generic.driver.observation.user")%>
+   									</td>
+			    				<td width='24%'	class="guide2" align="center">
+			    					<%=messages.getText("generic.driver.observation.comment")%>
+			    				</td>
+							</tr>
+<% 			if  (observations.size() == 0){
+%>							<tr>
+								<td colspan="3">
+									<span class="linetwo"><%=messages.getText("generic.event.noobservations")%></span>
+								</td>								
+							</tr>
+<%			}
+			if(observations.size() > 0) {
+				Iterator itObservations = observations.iterator();
+	    		boolean lineone = false;
+		    	while(itObservations.hasNext()) {
+    			    ObservationData observation = (ObservationData)itObservations.next();
+%>							<tr align=center align="right" class='<%=(lineone) ? "lineone" : "linetwo"%>'>
+	          					<td width='24%' align="right">
+	              					<%=Util.formatDate(observation.getDate())%>
+              					</td>
+<%					switch(observation.getAction().intValue()) {
+						case LogActions.CREATE:
+%>						     	<td width='24%' align="right"><%=messages.getText("generic.log.create")%> </td>
+<%							break;
+						case LogActions.UPDATE:
+%>						        <td width='24%' align="right"><%=messages.getText("generic.log.update")%> </td>
+<%							break;
+						case LogActions.DELETE:
+%>						        <td width='24%' align="right"><%=messages.getText("generic.log.delete")%> </td>
+<%							break;
+					}
+%>						        <td width='24%' align="right"><%=observation.getUser()%> </td>						                
+						        <td width='24%' align="right"><%=(observation.getComment()==null)?"----":observation.getComment()%> </td>						                
+							</tr>
+<%    				lineone = !lineone;
+				}
+			}
+%>						</table>
+						<jsp:include page="../component/utilityboxbottom.jsp"/>	
+					</td>
+			   	</tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+<%			if(!Util.empty(eventDataType.getRecomendation())) { %>
+				<tr>
+					<td width="600" colspan="3">
+						<%
+							String pageA1 = "../component/utilityboxtop.jsp?title=" + messages.getText("generic.event.recomendation");
+						%>
+						<jsp:include  page='<%=pageA1 %>' />
+						<table width="100%" cellpadding="0" cellspacing="0">
+							<tr>
+								<td width="85%" align="justify" colspan="3" class="simpleblue">
+									<%=Util.formatHTML(eventDataType.getRecomendation())%>
+								</td>
+							</tr>
+						</table>
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+				</tr>
+	  			<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+	  			</tr>
+<%			}
+%>	  			
+				<tr>			  		
+			  		<jsp:include page='EventViewOptions.jsp?eventId=<%=eventId%>' />
+			  	</tr>
+			  	<tr>
+					<jsp:include  page='<%="../component/spaceline.jsp?colspan=3" %>'/>
+			  	</tr>
+			</table>
+		</body>
+<%		}else {
+%>			<jsp:include  page='<%="/util/allowedData.jsp?message=event.error.access.event" %>'/>
+<%		}
+	}
+	
+	}catch(Exception e){
+		e.printStackTrace();
+	}
+%>		
+</html:html>

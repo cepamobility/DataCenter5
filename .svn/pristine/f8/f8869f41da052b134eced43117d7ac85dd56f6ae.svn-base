@@ -1,0 +1,27 @@
+package business.ws.external.mdp;
+
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+
+
+import business.ws.external.mdp.org.tempuri.WSCEPASGFLocator;
+import business.ws.external.mdp.org.tempuri.WSCEPASGFSoap;
+
+
+public class MDPService {
+
+	public static String URL_WS_DRIVERS="http://200.40.224.51/ws_transp/WSCEPASGF.asmx?wsdl";
+	
+	public static synchronized String getCI(String plate, Calendar date)throws Exception{
+		WSCEPASGFLocator loc=new WSCEPASGFLocator();
+		loc.setWSCEPASGFSoapEndpointAddress(URL_WS_DRIVERS);
+		WSCEPASGFSoap api=loc.getWSCEPASGFSoap();
+		
+		business.ws.external.mdp.org.tempuri.TcCondutorLogado driver= api.conductor_logeado(plate, date);
+		if(driver.getCi()==null){
+			SimpleDateFormat format=new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+			System.out.println("[MDPService] No se encontro CI para placa "+plate+" fecha "+format.format(date.getTime()));
+		}
+		return driver.getCi();
+	}
+}

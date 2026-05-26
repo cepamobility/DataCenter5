@@ -1,0 +1,216 @@
+<%@page import="communication.util.tables.AppFileData"%>
+<%@page language="java"
+	errorPage="../exception.jsp"
+	import="business.*"
+	import="java.io.*"
+	import="java.text.*"
+	import="java.util.*"
+	import="business.administration.user.*"
+	import="business.datatype.*"
+	import="communication.language.*"
+	import="communication.vehicle.tables.*"
+	import="communication.datatype.tables.*"
+	import="communication.datatype.*"
+	import="communication.corporation.tables.*"
+	import="communication.geografic.tables.*"
+	import="communication.administration.user.tables.*"
+	import="communication.administration.user.tables.geographicdivisions.*"
+	import="communication.security.*"
+	import="communication.util.*"
+	import="presentation.translator.web.util.*"
+	import="presentation.translator.web.vehicle.*"
+	import="presentation.translator.web.activity.schedule.*"	
+	import="java.util.*"
+ 	import="communication.administration.user.*" 
+ 	import="communication.administration.corporation.tables.*"	
+	import="communication.util.Filter"
+	import="communication.security.*"
+ 			
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html" 
+%>
+<%	
+	SystemAccess sys = (SystemAccess)session.getAttribute("SystemAccess");
+	Text messages = sys.getText(); 
+	UserSessionData userSessionData;
+	
+	
+	
+	// Fin manejo de mensajes
+ 	
+	//	Me fijo si tiene permisos para agregar reportes o cepa tips
+	String addReportPermission = Util.checkPermission(sys,SecurityConstants.ADD_REPORT);
+	if (addReportPermission == null) {
+		
+		sys = (SystemAccess)session.getAttribute("SystemAccess");
+		userSessionData = sys.getUserSessionData();
+		Collection<AppFileData> files = sys.getCorporationReportFacade().getAppFiles(userSessionData);
+%>
+
+
+<html:html>
+	<head>
+		<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	</head>
+	<script type="text/javascript">
+	function confirmDelete() {
+		var form = document.forms['DeleteAppFileForm'];
+		var elements=form.elements;
+		var list="";
+		
+		for(i=0; i<elements.length; i++){
+			var element=elements[i];
+			if(element.type.toLowerCase()=="checkbox"){
+				if(element.checked){
+					if(list==""){
+						list=element.value;
+					}
+					else{
+						list=element.value+"<"+list;
+					}	
+				}	
+			} 
+		
+		}
+		if(confirm('<%=messages.getText("driver.deletetelematic.confirm")%>')) {
+			form.list.value=list;
+			form.submit();
+		}
+	}
+	</script>
+	<body>
+		<html:form action="/DeleteAppFile" method="post">	
+			<html:hidden property="list" />
+			<table width="850"  border="0" cellspacing="0" cellpadding="0" align="center"> 
+				<tr class="guide1">
+					<jsp:include  page='<%="../component/titlecomponent.jsp?colspan=5&title="+messages.getText("generic.messages.appfiles")%>' />
+				</tr>
+		   		<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+		  		</tr>
+				<tr>
+					<td width="50%" valign="top" colspan="5">
+						<jsp:include  page='../component/utilitybox4top.jsp' />
+						<table width="100%"  border="0" cellspacing="0" cellpadding="0" align="center"> 
+						    <tr height="25">
+						     	<td width='50%' class="texts">
+			        				<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+			        				<a href="layout.jsp?refer=/appcepafiles/file.jsp">
+			            				<%=messages.getText("generic.appfiles.new")%> 
+			            			</a>
+			            		</td> 
+						     	<td width='50%' class="texts">
+			        				<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+			        				<a href="layout.jsp?refer=/appcepafiles/update.jsp">
+			            				<%=messages.getText("generic.appfiles.updatedatabase")%> 
+			            			</a>
+			            		</td> 
+			            	</tr>
+			            </table>
+						<jsp:include  page='../component/utilitybox4bottom.jsp' />
+					</td>
+				</tr>
+		   		<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+		  		</tr>
+<%		Iterator<AppFileData> it = files.iterator();
+		String line = "linetwo";
+		String last = "";
+		boolean first = true;
+		while(it.hasNext()) {
+			AppFileData file = it.next();
+
+			String url = (sys.isCorporation(CorporationData.JJ)) ? SecurityConstants.APPJJ_URL : SecurityConstants.APPCEPA_URL;
+			if((sys.isCorporation(CorporationData.JJ))) {
+				url += "files/" + file.getCategoryName().toLowerCase()+"/"+file.getDocumentname();
+			}else {
+				url += "files/"+ file.getLng().replaceAll("module.data.name.", "").toUpperCase() +"/" + file.getCategoryName().toLowerCase()+"/"+file.getDocumentname();
+			}
+			String id = String.valueOf(file.getId());
+			if(!file.getCategoryName().toLowerCase().equals(last)) {
+				last = file.getCategoryName().toLowerCase();
+				if(first) {
+					first = false;
+				} else {
+%>			    
+						</table>
+						<jsp:include  page='../component/utilityboxbottom.jsp' />
+					</td>
+				</tr>
+				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+		  		</tr>
+<%				}
+%>				
+		    	<tr>
+		      		<td>
+		      			<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.messages.appfiles")+" ("+file.getCategoryName()+")"%>' />
+						<table width="100%"  border="0" cellspacing="0" cellpadding="0" align="center"> 
+						    <tr height="25">
+						     	<td width='3%' class="guide2">
+						     	</td>
+						     	<td width='35%' class="guide2" align="center">
+						     		<%=messages.getText("generic.messages.name")%>
+						     	</td>
+						     	<td width='12%' class="guide2" align="center"><%=messages.getText("generic.messages.type")%></td>
+						     	<td width='50%' class="guide2" align="center">URL</td>
+						     	<td width='15%' class="guide2" align="center"><%=messages.getText("generic.messages.language")%></td>
+						    </tr>
+<%			}
+%>
+						    <tr class='<%=line%>' height="25">
+						     	<td align="center">
+						     		<input type="checkbox" name="<%=String.valueOf(file.getId())%>" value="<%=String.valueOf(file.getId())%>"/>
+						     	</td>
+						     	<td align="left">
+						     		<a href='<%="layout.jsp?refer=/appcepafiles/file.jsp?id="+file.getId()%>'>
+							     		<%=file.getOrder()+" - "+file.getTitle()%>
+							     	</a>
+								</td>
+						     	<td align="center"><%=file.getDoctypeName()%></td>
+						     	<td align="left">
+						     		<a href='<%=url%>'>
+							     		<%=url%>
+							     	</a>
+						     	</td>
+						     	<td align="center">
+						     			<%=messages.getText(file.getLng())%>
+							    </td>
+						     	
+						    </tr>
+							<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+					  		</tr>
+<%			line = (line.equals("linetwo")) ? "lineone" : "linetwo";
+		}
+ %>
+						</table>
+						<jsp:include  page='../component/utilityboxbottom.jsp' />
+					</td>
+				</tr>
+				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+		  		</tr>
+   				<tr>
+      				<td class="linetwo" align="right" colspan="8">
+		      			<jsp:include  page='../component/utilitybox4top.jsp' />
+						<table width="100%"  border="0" cellspacing="0" cellpadding="0" align="center"> 
+						    <tr height="25">
+						     	<td width='100%' align="right">
+	     							<input type="button" value='<%=messages.getText("generic.messages.delete")%>' onclick="confirmDelete();" class="input" />
+						     	</td>
+						    </tr>
+						</table>
+		      			<jsp:include  page='../component/utilitybox4bottom.jsp' />
+          			</td>
+  				</tr>
+			</table>
+		</html:form>
+	</body>
+</html:html>
+
+<%
+  	}
+ %>

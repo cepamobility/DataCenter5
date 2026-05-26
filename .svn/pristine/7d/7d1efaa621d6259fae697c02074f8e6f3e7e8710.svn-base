@@ -1,0 +1,736 @@
+package presentation.report.activity;
+
+import java.awt.Color;
+import java.awt.geom.Rectangle2D;
+import java.util.Iterator;
+import javax.swing.table.TableModel;
+import org.apache.struts.action.ActionForm;
+import org.jfree.report.ElementAlignment;
+import org.jfree.report.Group;
+import org.jfree.report.GroupFooter;
+import org.jfree.report.GroupHeader;
+import org.jfree.report.GroupList;
+import org.jfree.report.ItemBand;
+import org.jfree.report.ReportFooter;
+import org.jfree.report.ReportHeader;
+import org.jfree.report.elementfactory.LabelElementFactory;
+import org.jfree.report.elementfactory.StaticShapeElementFactory;
+import org.jfree.report.elementfactory.TextFieldElementFactory;
+
+import presentation.report.ReportFactory;
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+
+import communication.activity.tables.CEPAActivityConstants;
+import communication.activity.tables.CEPAActivityData;
+import communication.activity.tables.CEPAActivityScheduleData;
+import communication.activity.tables.CEPAActivityScheduleRegistryData;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.CountryData;
+import communication.administration.corporation.tables.DivOrgData;
+import communication.administration.corporation.tables.GeoItemData;
+import communication.administration.corporation.tables.ItemData;
+import communication.driver.tables.DriverData;
+import communication.language.Text;
+
+public class ActivityReportFactory extends ReportFactory {
+
+    protected Text messages;
+    
+    protected DriverData driver;
+    protected String reportType;
+    protected CEPAActivityData activity;
+    protected CEPAActivityScheduleData scheduleActivity;
+    protected CEPAActivityScheduleRegistryData registry;   
+    private SystemAccess sys;
+    private String activityDefinition;
+            
+    public ActivityReportFactory(CEPAActivityScheduleRegistryData registry,
+    		CEPAActivityData activity,DriverData driver,String name, 
+    		TableModel model, ActionForm form, SystemAccess sys,
+    		Text messages, String reportType) {
+        // super(name, model,form);        
+    	super(name,model,form,sys);
+        this.messages = messages;   
+        this.driver = driver;
+        this.activity = activity;
+        this.activityDefinition = activity.getDefinition().getResourceKeyName();
+        this.scheduleActivity = null;
+        this.registry = registry;        
+        this.reportType = reportType;
+        this.sys = sys;
+        count = 1;             
+    }
+    
+    /**
+     * 
+     * @param registry
+     * @param scheduleActivity
+     * @param driver
+     * @param name
+     * @param model
+     * @param form
+     * @param sys
+     * @param messages
+     * @param reportType
+     */
+    public ActivityReportFactory(CEPAActivityScheduleRegistryData registry,
+    		CEPAActivityScheduleData scheduleActivity,DriverData driver,String name, 
+    		TableModel model, ActionForm form, SystemAccess sys, Text messages, String reportType) {
+        //super(name, model,form);
+    	super(name,model,form,sys);
+        this.messages = messages;
+        this.driver = driver;
+        this.activity = scheduleActivity;
+        this.activityDefinition = activity.getDefinition().getResourceKeyName();
+        this.scheduleActivity = scheduleActivity;        
+        this.registry = registry; 
+        this.reportType = reportType;
+        this.sys = sys;
+        count = 1;             
+    }
+    
+//  it is declared but it is not used 
+    protected int getReportWidth() {
+    	return 0;
+    }
+    
+    protected GroupList createGroups() {
+        GroupList grouplist = super.createGroups();
+        Group group = new Group();        	
+        group.setName("points");
+        
+        /* Agregado para Monitores1 */
+        if (!this.activity.getDefinition().getCheckList().getId().equals(new Integer(0))){
+        /* Fin agregado para Monitores 1 */
+                	
+            group.addField("point");
+            group.addField("pointComment");
+
+        /* Agregado para Monitores1 */
+        }
+        /* Fin agregado para Monitores 1 */
+        
+        GroupHeader header = new GroupHeader();
+        header.setName("pointHeader");
+        
+        /* Agregado para Monitores1 */
+        if (!this.activity.getDefinition().getCheckList().getId().equals(new Integer(0))){
+        /* Fin agregado para Monitores 1 */
+        	
+        	header.addElement(TextFieldElementFactory.createStringElement("point",        		
+        		new Rectangle2D.Float(20, 10, 200, 10),DarkBlue,
+                ElementAlignment.LEFT,ElementAlignment.BOTTOM,
+                STYLE_SIMPLE_BOLD_FONT,"","point"));        
+        	
+        /* Agregado para Monitores1 */
+        }
+        /* Fin agregado para Monitores 1 */
+        group.setHeader(header);
+
+        GroupFooter footer = new GroupFooter();
+        footer.setName("pointFooter");
+        
+        
+        // Si es Commentary Drive, muestro comentarios por puntos.
+        if (activityDefinition.equals(CEPAActivityConstants.COMMENTARYDRIVE) || 
+        	(activityDefinition.equals(CEPAActivityConstants.COMMENTARYDRIVEOTHER) && this.activity.getIsOld())) {
+        	footer.addElement(TextFieldElementFactory.createStringElement("pointComment",new Rectangle2D.Float(50, 0, 400, 10), Color.BLACK, 
+        		ElementAlignment.LEFT,ElementAlignment.BOTTOM,STYLE_SIMPLE_BOLD_FONT,"","pointComment"));  
+        }
+        
+        group.setFooter(footer);
+        
+        grouplist.add(group);
+        return grouplist;
+    }
+    
+    protected ItemBand createItemBand() {
+        ItemBand items = super.createItemBand();      
+
+        /* Agregado para Monitores1 */
+        if (!this.activity.getDefinition().getCheckList().getId().equals(new Integer(0))){
+        //  Si la actividad tiene Checklist 0 (Dummy), no tiene asociado puntos ni items.
+        /* Fin agregado para Monitores 1 */
+        	
+        	items.addElement(TextFieldElementFactory.createStringElement("item", new Rectangle2D.Float(30, 0, 490, 20), Color.BLACK, ElementAlignment.LEFT,
+        		ElementAlignment.MIDDLE,STYLE_SIMPLE_FONT,"","item"));
+        	
+       	/* Agregado para Monitores1 */
+        }       
+        /* Fin agregado para Monitores 1 */
+       	return items;
+    }
+    
+   
+    /*
+     * Add a Title in the Header.
+     */
+    private int addHeaderTitle(ReportHeader reportHeader, int x, int y)
+    {        
+        /*reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement(
+        		null, Color.LIGHT_GRAY, null,
+                new Rectangle2D.Float(x+70, y, 300, 15), false, true)); */        
+
+        reportHeader.addElement(LabelElementFactory.createLabelElement(null,
+        		new Rectangle2D.Float(x+100, y, 300, 15),
+        		Color.BLACK,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_TITLE,
+        		messages.getText("query.activity.generalreport.reporttitle"))); 
+        reportHeader.addElement(LabelElementFactory.createLabelElement(null,
+        		new Rectangle2D.Float(x+100, y+17, 300, 15),
+        		Color.BLACK,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_TITLE,
+        		messages.getText("query.activity.generalreport.reportsubtitle")));
+        
+        y += 42;
+        return y;
+    }
+    
+    /*
+     * Add an Activity Data section in the Header.
+     */
+    private int addActivityData(ReportHeader reportHeader, int x, int y)
+    {
+    	int altura = 15; // altura de los textos
+  
+    	// Dibujo el fondo: Tipo de Actividad, Fecha, Pais, Instructor, Ciudad
+      	int anchoTipoDeActividad = 250;
+    	int anchoFecha = 135;
+    	int espacio = 7;
+    	int interlineado = 5;
+    	int anchoPais = 132;
+    	int anchoInstructor = 388;
+    	
+    	int xFondo = x;
+    	int yFondo = y;
+
+    	// Veo si pongo instructor o lo demas de CD.
+        if (activityDefinition.equals(CEPAActivityConstants.COMMENTARYDRIVE) ||
+        		(activityDefinition.equals(CEPAActivityConstants.COMMENTARYDRIVEOTHER) && activity.getIsOld())) {
+            
+        	reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement(null,DarkBlue, null,
+                    new Rectangle2D.Float(xFondo, yFondo, anchoTipoDeActividad, altura), false, true));
+        	xFondo = xFondo + anchoTipoDeActividad + espacio/2;
+        	reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement(null,DarkBlue, null,
+                    new Rectangle2D.Float(xFondo, yFondo, anchoFecha, altura), false, true));
+        	xFondo = xFondo + anchoFecha + espacio/2 ;
+        	reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement(null,DarkBlue, null,
+                    new Rectangle2D.Float(xFondo, yFondo, anchoPais, altura *2 + interlineado), false, true));
+        	
+        	xFondo = x;
+        	yFondo = yFondo + altura + interlineado;    	
+        	reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement(null,DarkBlue, null,
+                    new Rectangle2D.Float(xFondo, yFondo, anchoInstructor, altura), false, true));
+        	
+        	// Dibujo los textos: 
+            // Type:
+        	int x2 = x;
+        	String title = messages.getText(activity.getType().getResourceBundleId()); 
+            reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(x2, y,200, altura), Color.WHITE,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_BOLD_FONT," "+messages.getText("generic.activity.activitydata.activitytype")+": "+title));
+            x2 += anchoTipoDeActividad + espacio;
+            // Date:
+            reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(x2, y, 85, altura),
+                    Color.WHITE,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_BOLD_FONT,
+                    " "+messages.getText("generic.activity.activitydata.date")+": "+
+                    Util.formatDate(activity.getDate())));
+            x2 += anchoFecha + espacio/2;
+            // Country
+        	reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(x2, y, 100, altura),
+                    Color.WHITE,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_BOLD_FONT,
+                    " "+messages.getText("generic.activity.activitydata.country")+": "+
+                    messages.getText(activity.getCountryName())));
+            y += 20;        
+
+            // Si es Commentary Drive, no tiene instructor, tiene partner, tipo y plate (matricula)
+        	// Tipo
+        	x2 = x;
+        	reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(x2, y, 380, altura),
+	                Color.WHITE,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_BOLD_FONT, " "+messages.getText("generic.activity.form.commentarydrive.commentarydrivetype")+": "+ messages.getText(registry.getConductionType())));
+	        // Fin Tipo
+
+	        // City
+	        x2 = 405;
+	        String city = " "+messages.getText("generic.activity.activitydata.city")+": "+activity.getCity();
+	        if(city.length() > 20) {
+	        	city = " "+activity.getCity();
+	        }
+	        reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(x2, y, 110, altura),
+	                Color.WHITE,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_BOLD_FONT,
+	                city));
+	        y += 20;
+	        
+	        // Dibujo Fondo
+	    	xFondo = x;
+	    	yFondo = yFondo + altura + interlineado;    	
+	    	reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement(null,DarkBlue, null,
+	                new Rectangle2D.Float(xFondo, yFondo, 250, altura), false, true));
+	    	reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement(null,DarkBlue, null,
+	                new Rectangle2D.Float(xFondo+250+3, yFondo, 270, altura), false, true));
+	    	// fin dibujo fondo
+	        
+	        // Partner:
+	    	x2 = x;
+	        reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(x2, y, 140, altura),
+	                Color.WHITE,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_BOLD_FONT,
+	                " "+messages.getText("generic.activity.form.commentarydrive.peer")+": "+
+	                registry.getPartner()));
+	        // Fin Partner
+	        x2 = 267;
+	        // Plate (matricula):
+	        reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(x2 ,y, 260, altura),
+	                Color.WHITE,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_BOLD_FONT,
+	                " "+messages.getText("generic.activity.form.commentarydrive.vehicleplate")+": " +
+	                registry.getPlate()));
+	        // Fin Plate
+	        y += 20;
+    	} else {
+        	
+    		reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement(null,DarkBlue, null,
+                    new Rectangle2D.Float(xFondo, yFondo, anchoInstructor, altura), false, true));
+        	xFondo = xFondo + anchoFecha + anchoTipoDeActividad + espacio;
+        	reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement(null,DarkBlue, null,
+                    new Rectangle2D.Float(xFondo, yFondo, anchoPais, altura *2 + interlineado), false, true));
+        	
+        	xFondo = x;
+        	yFondo = yFondo + altura + interlineado;    	
+        	reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement(null,DarkBlue, null,
+                    new Rectangle2D.Float(xFondo, yFondo, anchoTipoDeActividad , altura), false, true));
+        	xFondo = xFondo + anchoTipoDeActividad + espacio/2;
+        	
+        	reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement(null,DarkBlue, null,
+                    new Rectangle2D.Float(xFondo, yFondo, anchoFecha , altura), false, true));
+        	// Dibujo los textos: 
+            // Type:
+        	int x2 = x;
+            reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(x2, y,380, altura),
+                    Color.WHITE,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_BOLD_FONT,
+                    " "+messages.getText("generic.activity.activitydata.activitytype")+": "+
+                    messages.getText(activity.getType().getResourceBundleId())));
+            // Date:
+            x2 += anchoTipoDeActividad + anchoFecha + espacio  + espacio/2;
+            // Country
+        	reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(x2, y, 100, altura),
+                    Color.WHITE,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_BOLD_FONT,
+                    " "+messages.getText("generic.activity.activitydata.country")+": "+
+                    messages.getText(activity.getCountryName())));
+            y += 20;        
+           
+	    	// Instructor
+        	x2 = x;
+        	
+        	if (registry.getInstructor() == null){
+        		reportHeader.addElement(LabelElementFactory.createLabelElement(
+    	        		null,new Rectangle2D.Float(x2, y, 200, altura),
+    	                Color.WHITE,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_BOLD_FONT,
+    	                " "+messages.getText("generic.activity.instructor")+": N/A "));
+        	}else{
+        		reportHeader.addElement(LabelElementFactory.createLabelElement(
+	        		null,new Rectangle2D.Float(x2, y, 200, altura),
+	                Color.WHITE,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_BOLD_FONT,
+	                " "+messages.getText("generic.activity.instructor")+": " + 
+	                registry.getInstructor()));
+        	}
+        	
+            x2 += anchoTipoDeActividad + espacio;
+            reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(x2, y, 85, altura),
+                    Color.WHITE,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_BOLD_FONT,
+                    " "+messages.getText("generic.activity.activitydata.date")+": "+
+                    Util.formatDate(activity.getDate())));
+
+            // Fin Intructor
+	        // City
+	        x2 = 405;
+	        String city = " "+messages.getText("generic.activity.activitydata.city")+": "+activity.getCity();
+	        if(city.length() > 20) {
+	        	city = " "+activity.getCity();
+	        }
+	        reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(x2, y, 110, altura),
+	                Color.WHITE,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_BOLD_FONT,
+	                city));
+	        y += 20;
+        }
+        return y;
+    }
+      
+   
+    /*
+     * Add Driver Data information in the Header
+     */
+    private int addDriverData(ReportHeader reportHeader, int x, int y)
+    {
+    	int x2 = x; 
+    	reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement
+				(null, Color.LIGHT_GRAY, null,new Rectangle2D.Float(x, y, 545, 15), false, true)); 
+	    reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(x2, y, 500, 15),
+                Color.BLACK,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_TOTAL_FONT,
+                " "+messages.getText("generic.activity.nameandlastnameofparticipant")+": " +
+                driver.getFirstName() + " " + driver.getLastName()));       
+        y += 20;
+        
+        if(sys.isCorporation(new int[]{CorporationData.JJ}) || Integer.parseInt(activity.getCountryId()) == CountryData.URUGUAY_ID.intValue()) {
+        	String msg = (driver.getCorporationId() == null || driver.getCorporationId().length() == 0) ? "---" : driver.getCorporationId(); 
+        	String wwid = (Integer.parseInt(activity.getCountryId()) == CountryData.URUGUAY_ID.intValue()) ? "C.I" : messages.getText("generic.driver.driverdata.wwid").toUpperCase();  
+        	reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement
+    				(null, Color.LIGHT_GRAY, null,new Rectangle2D.Float(x, y, 545, 15), false, true)); 
+    	    reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(x2, y, 500, 15),
+                    Color.BLACK,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_TOTAL_FONT,
+                    " "+wwid+": " +
+                    msg));       
+            y += 20;
+        }
+        if(sys.isCorporation(CorporationData.DOW)) {
+        	String vehicle = (activity.getTheme() == null) ? "---" : messages.getText(activity.getTheme());
+        	reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement
+    				(null, Color.LIGHT_GRAY, null,new Rectangle2D.Float(x, y, 545, 15), false, true)); 
+    	    reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(x2, y, 500, 15),
+                    Color.BLACK,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_TOTAL_FONT,
+                    " "+messages.getText("user.data.vehicle")+": " + vehicle));       
+            y += 20;
+        }
+    	return y;	
+    }
+    
+    /*
+     * Add Assigned Vehicle Information
+     */
+    private int addAssignedVehicle(ReportHeader reportHeader, int x, int y)
+    {   	
+    	
+    	ItemData item1, item2, item3;
+    	Iterator it;    	
+    	
+    	it = scheduleActivity.getDivOrgsIterator();		
+		while (it.hasNext()) {
+			DivOrgData divOrgData = (DivOrgData) it.next();
+			if(divOrgData.getDivOrgLevels() != null) {
+				item1 = (ItemData)divOrgData.getDivOrgLevels().getItemIterator().next();				
+				int cantSub =  divOrgData.getLabels().length; // cantidad de subdivisiones
+				// la subdivision Pais no la muestro
+				if (messages.getText(divOrgData.getDivOrgLevels().getName()).trim().equals(messages.getText("monsanto.divisions.country").trim()) ||
+					messages.getText(divOrgData.getDivOrgLevels().getName()).trim().equals(messages.getText("monsanto.units.country").trim())) {
+					cantSub --;
+				}
+				if (cantSub > 0) {					
+					// Dibujo Fondo segun cantidad de subdivisiones organizacionales que
+					// tiene cada division organizacional
+					int y2 = y;
+					x = 10;
+					switch (cantSub) {
+						case 1:
+							if(sys.isCorporation(new int[]{CorporationData.FORESTALES,CorporationData.FORESTALORIENTAL,CorporationData.MONTES_DE_PLATA})) {
+								reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement(null,DarkBlue, null,new Rectangle2D.Float(x, y2, 388, 15), false, true));
+								reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement(null,DarkBlue, null,new Rectangle2D.Float(402, y2, 132, 15), false, true));
+							}else {
+								reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement(null,DarkBlue, null,new Rectangle2D.Float(x, y2, 538, 15), false, true));
+							}
+							y2 += 20;
+							break;						
+						case 2:
+							reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement(null,DarkBlue, null, new Rectangle2D.Float(x, y2, 260, 15), false, true));
+							reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement(null,DarkBlue, null, new Rectangle2D.Float(x+265, y2, 260, 15), false, true));
+							y2 += 20;
+							break;
+						case 3:
+							reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement(null,DarkBlue, null, new Rectangle2D.Float(x, y2, 260, 15), false, true));
+							reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement(null,DarkBlue, null, new Rectangle2D.Float(x+265, y2, 260, 15), false, true));
+							reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement(null,DarkBlue, null, new Rectangle2D.Float(x, y2+20, 525, 15), false, true));
+							y2 += 40;
+							break;
+						default:					
+					} 
+					
+					x = 10;
+					// Si es Pais no lo muestro.
+					if (!messages.getText(divOrgData.getDivOrgLevels().getName()).trim().equals(messages.getText("monsanto.divisions.country").trim()) &&
+							!messages.getText(divOrgData.getDivOrgLevels().getName()).trim().equals(messages.getText("monsanto.units.country").trim())) {						
+						//  Muestro vehiculo asignado(primera vuelta)  
+						reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(x, y, 260, 15), Color.WHITE,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_BOLD_FONT," "+messages.getText(divOrgData.getDivOrgLevels().getName())+": "+ item1.getName()));
+						if(sys.isCorporation(new int[]{CorporationData.FORESTALES,CorporationData.FORESTALORIENTAL,CorporationData.MONTES_DE_PLATA})) {
+							reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(402, y, 120, 15),
+								Color.WHITE,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_BOLD_FONT, " "+messages.getText("generic.activity.expiry")+": "+ Util.formatDate(registry.getActivity().getDateExpiry())));
+							
+						}
+					} 
+					
+			    	if(item1.getSubItems() != null)  {
+						item2 = (ItemData)item1.getSubItems().getItemIterator().next();
+			    		// Si tiene subitems, dibujo la division:
+						reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(x+265, y, 260, 15), Color.WHITE,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_BOLD_FONT, " "+messages.getText(item1.getSubItems().getName())+": " + item2.getName()));
+				    	if(item2.getSubItems() != null) {
+							item3 = (ItemData)item2.getSubItems().getItemIterator().next();
+							// Si tiene subitesms, dibujo la SubDivision:
+							reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(x, y + 20, 260, 15), Color.WHITE,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_BOLD_FONT, " "+messages.getText(item2.getSubItems().getName())+": " + item3.getName()));
+							y += 20;
+						} // end if(item2.getSubItems() != null)
+					} // end if(item1.getSubItems() != null) 
+
+				}
+			}
+			y += 20;
+		}
+	    for(int i = 0; i < 3; i++) {
+	        for(int j = 0; j < 3; j++) {
+	            if(!Util.empty(divOrgLabels[i][j])) {
+	                reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(x, y, 100, 18),
+	                        Color.decode("#D0D0D0"),ElementAlignment.CENTER,ElementAlignment.MIDDLE,fontDefinitionBold,messages.getText(divOrgLabels[i][j])));	               
+	            }
+	        }
+	    }    
+	    return y;
+    }
+    
+    /*
+     * Add a Note about the course.
+     */
+    private int addResult(ReportHeader reportHeader, int x, int y)
+    {
+    	// El commentary drive no tiene notas.
+        if (this.activity.getDefinition().isHaveNote())
+        {
+        	reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement
+    				(null, DarkBlue , null,new Rectangle2D.Float(x, y, 545, 15), false, true));
+        	
+	        reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(x, y, 60, 15),
+	                Color.white,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_BOLD_FONT,
+	                " "+messages.getText("generic.activity.form.btw1liviano.result")+": "));
+	        Color colorNote = Color.white;
+	        /*
+	        if (registry.getNote().equals("generic.activity.note.notapruved"))
+	        	 colorNote= Color.RED.darker();
+	        else 
+	        	if (registry.getNote().equals("generic.activity.note.apruvedwithobservations"))
+	        		colorNote = Color.YELLOW.darker();
+	        	else 
+	        		colorNote = Color.GREEN.darker();
+	        */
+	        if(registry.getClasification() != null && registry.getClasification().intValue() > 0) {
+	        	reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(x+65, y, 450, 15),
+		                colorNote,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_BOLD_FONT,messages.getText("activity.clasification.text"+registry.getClasification()).toUpperCase()));
+	        }else if(Util.isNumber(registry.getNote())){
+	        	reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(x+65, y, 450, 15),
+		                colorNote,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_BOLD_FONT,messages.getText("activity.clasification.text"+registry.getNote()).toUpperCase()));
+	        }else {
+	        	reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(x+65, y, 150, 15),
+	                colorNote,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_BOLD_FONT,messages.getText(registry.getNote()).toUpperCase()));
+	        }
+	        y += 20;
+        }
+    	return y;    	
+    }
+   
+    /**
+     * Add a Technical Aspect Section: 
+     */ 
+    private int addTechnicalAspects(ReportHeader reportHeader, int x, int y)
+    {
+    	String activityType = registry.getActivity().getType().getResourceBundleId(); 
+    	
+    	if (!activityType.equals(CEPAActivityConstants.POST_ACCIDENT_TALK) &&
+    		!activityType.equals(CEPAActivityConstants.SECURITY_TALK) &&
+    		!activityType.equals(CEPAActivityConstants.GENERAL_SAFETY_SPEECH) &&
+    		!activityType.equals(CEPAActivityConstants.TEORICO_8_HORAS_LIVIANOS) &&
+    		!activityType.equals(CEPAActivityConstants.TEORICO_8_HORAS_PESADOS)    	
+    	){
+    		
+    		/*
+    		 *  Si el curso NO es Ninguna de las actividades mencionadas
+    		 *  Muestro texto inicial de Technical Aspect Section
+    		 */  
+    	
+	    	String text;
+	    	int altoText;
+	    	
+	    	if (registry.getActivity().getType().getResourceBundleId().
+	    			equals(CEPAActivityConstants.MONITORS) ||
+	    			registry.getActivity().getType().getResourceBundleId().
+	    			equals(CEPAActivityConstants.MONITORS2)	
+	    		) {
+	
+	    		if (sys.getUserSessionData().getFilter().getCorporationId().equals(new Integer(4))){
+	    			// Si es J&J el texto debe decir Multiplicadores
+	    			text = "query.activity.generalreport.multiplicators.technicalaspecttext";
+	    		}else
+	    		{
+	    			// Pra las otras empresas el texto debe decir Monitores
+	    			text = "query.activity.generalreport.monitors.technicalaspecttext";
+	    		}
+	    		altoText = 30;
+	    	} else if (registry.getActivity().getType().getResourceBundleId().equals(CEPAActivityConstants.EBTW_PISTA_MX)) {
+	    			text = "activity.ebtwpista.reporttext";
+		    	altoText = 300;
+	    	}else {
+	    		text = "query.activity.generalreport.technicalaspecttext";
+	    		altoText = 60;
+	    	}
+	
+	    	reportHeader.addElement(StaticShapeElementFactory.createRectangleShapeElement
+					(null, Color.LIGHT_GRAY, null,new Rectangle2D.Float(x, y, 545, 15), false, true));
+	    	
+	    	
+	        reportHeader.addElement(LabelElementFactory.createLabelElement(
+	        			null,new Rectangle2D.Float(75, y, 350, 15),
+	                Color.BLACK,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_TITLE,
+	                messages.getText("generic.activity.form.btw1liviano.technicalaspectscoached").toUpperCase()+": "));
+	        y += 15;
+	        
+	        if (!activity.getDefinition().getResourceKeyName().equals(CEPAActivityConstants.GENERAL_SAFETY_SPEECH)) {
+	            reportHeader.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(20, y, 500, altoText),
+	      			Color.BLACK,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_FONT,messages.getText(text)));
+	        }
+	      	      
+	
+	    	y += 10 + altoText;
+	    	boolean jj = false;
+	      	if (this.activity.getDefinition().getResourceKeyName().
+	      			equals(CEPAActivityConstants.MONITORS)){
+	      		
+	      		// Muestro texto para Monitores / Multiplicadores:      		
+	      		if (this.sys.getUserSessionData().getFilter().getCorporationId().equals(new Integer(4))){
+	      			jj = true;
+	      		}else{
+	      			jj = false;
+	      		}      		
+	      		reportHeader.addElement(LabelElementFactory.createLabelElement(
+	          			null,new Rectangle2D.Float(20, y, 500, 13),
+	          			Color.BLACK,ElementAlignment.LEFT,ElementAlignment.TOP,STYLE_SIMPLE_BOLD_FONT,
+	          			(jj)?messages.getText("generic.activity.monitores1.title1J&J"):
+	       				messages.getText("generic.activity.monitores1.title1") ));
+	      		y += 15;
+	      		reportHeader.addElement(LabelElementFactory.createLabelElement(
+	          			null,new Rectangle2D.Float(20, y, 500, 50),
+	          			Color.BLACK,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_FONT,
+	          			(jj)?messages.getText("generic.activity.monitores1.text1J&J"):
+	           				messages.getText("generic.activity.monitores1.text1") ));
+	      		y += 60;
+	      		reportHeader.addElement(LabelElementFactory.createLabelElement(
+	          			null,new Rectangle2D.Float(20, y, 500, 10),
+	          			Color.BLACK,ElementAlignment.LEFT,ElementAlignment.TOP,STYLE_SIMPLE_BOLD_FONT,
+	          			(jj)?messages.getText("generic.activity.monitores1.objectiv1J&J"):
+	       				messages.getText("generic.activity.monitores1.objectiv1")	));
+	      		y += 12;
+	      		reportHeader.addElement(LabelElementFactory.createLabelElement(
+	          			null,new Rectangle2D.Float(25, y, 500, 160),
+	          			Color.BLACK,ElementAlignment.LEFT,ElementAlignment.TOP,STYLE_SIMPLE_FONT,
+	          			" \n     - " + ((jj)?messages.getText("generic.activity.monitores1.point1J&J") +
+	   					" \n\n     - " +messages.getText("generic.activity.monitores1.point2J&J") +
+	   					" \n\n     - " +messages.getText("generic.activity.monitores1.point3J&J") +
+	   					" \n\n     - " +messages.getText("generic.activity.monitores1.point4J&J") +
+	   					" \n\n     - " +messages.getText("generic.activity.monitores1.point5J&J") +
+	   					" \n\n     - " +messages.getText("generic.activity.monitores1.point6J&J") 					
+	          			:
+	       				messages.getText("generic.activity.monitores1.point1") + 
+	       				" \n\n     - " +messages.getText("generic.activity.monitores1.point2")+
+	       				" \n\n     - " +messages.getText("generic.activity.monitores1.point3") +
+	       				" \n\n     - " +messages.getText("generic.activity.monitores1.point4") +
+	       				" \n\n     - " +messages.getText("generic.activity.monitores1.point5") +
+	       				" \n\n     - " +messages.getText("generic.activity.monitores1.point6") +
+	       				" \n\n     - " +messages.getText("generic.activity.monitores1.point7") 
+	       				)));
+	      		y += 162;     		
+	      	}    	     
+    	}
+        
+        return y;
+    }
+    
+    
+    protected ReportHeader createReportHeader() {        
+        
+    	ReportHeader reportHeader = new ReportHeader();        
+    	int y1 = 20; //(Coordenadas para la primer columna)
+        int x1 = 10;       
+        
+        if(!Util.empty(reportType) && !reportType.equals("HTML")) {
+        	if(sys.isCorporation(CorporationData.JJ)) {
+                reportHeader.addElement(LabelElementFactory.createLabelElement(null,
+                		new Rectangle2D.Float(20, 30, 290, 15),
+                		Color.BLACK,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_TITLE,
+                		messages.getText("query.activity.generalreport.reporttitle"))); 
+                reportHeader.addElement(LabelElementFactory.createLabelElement(null,
+                		new Rectangle2D.Float(20, 47, 290, 15),
+                		Color.BLACK,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_TITLE,
+                		messages.getText("query.activity.generalreport.reportsubtitle")));
+                
+                y1 = 82;
+    			reportHeader.addElement(org.jfree.report.elementfactory.ImageFieldElementFactory.
+             			createImageDataRowElement("logoSafeFleetLA", new Rectangle2D.Float(310, 20, 208, 40), "logoSafeFleetLA"));
+        	}else {
+	        	// Si el reporte NO es HTML pongo titulo
+	        	// LOGO CEPA:
+	        	reportHeader.addElement(org.jfree.report.elementfactory.ImageFieldElementFactory.
+	         			createImageDataRowElement("logoCepa", new Rectangle2D.Float(x1, y1, 60, 45), "logoCepa"));
+	        	if (sys.isCorporation(CorporationData.MONSANTO)){
+	        		// LOGO MONSANTO:
+	        		reportHeader.addElement(org.jfree.report.elementfactory.ImageFieldElementFactory.
+	         			createImageDataRowElement("logoMonsanto", new Rectangle2D.Float(420, y1, 100, 45), "logoMonsanto"));
+	          	} else if (sys.isCorporation(CorporationData.FORESTALORIENTAL)){
+	          		// LOGO FOSA
+	          		reportHeader.addElement(org.jfree.report.elementfactory.ImageFieldElementFactory.
+	             			createImageDataRowElement("logoMonsanto", new Rectangle2D.Float(420, y1, 100, 45), "logoFosa"));
+	          	}
+	          	
+	            y1 += 10;
+	            // Title:
+	            y1 = addHeaderTitle(reportHeader, x1, y1);
+        	}
+        }
+     	  
+        y1 = addActivityData(reportHeader,x1,y1);
+        y1 = addAssignedVehicle(reportHeader, x1,y1);
+        // Driver Data:
+        y1 = addDriverData(reportHeader,x1,y1);
+        // Result Section:
+        y1 = addResult(reportHeader, x1,y1);  
+   
+
+        x1 = 10; 
+        y1 += 15;
+        
+		// Technical Aspects: (Sección Aspectos técnicos valorados y entrenados)
+        // Las Charlas de Seguridad no muestran esta seccion.
+        if (!activity.getType().getResourceBundleId().equalsIgnoreCase(CEPAActivityConstants.SECURITY_TALK) &&
+        	!activity.getType().getResourceBundleId().equalsIgnoreCase(CEPAActivityConstants.GENERAL_SAFETY_SPEECH) &&
+        	!activity.getType().getResourceBundleId().equalsIgnoreCase(CEPAActivityConstants.PREVENTIVO_LIVIANOS_4)){
+        	
+        	y1 = addTechnicalAspects(reportHeader, x1, y1);
+        	
+        }
+        
+        return reportHeader;
+    }
+   
+    
+    protected ReportFooter createReportFooter() {
+       ReportFooter reportFooter = new ReportFooter();
+       int y = 50;
+       
+       // Observaciones para Mercancias Peligrosas.
+       if (registry.getActivity().getType().getResourceBundleId().equals(CEPAActivityConstants.DANGEROUS_MATERIALS) ||
+			   registry.getActivity().getType().getResourceBundleId().equals(CEPAActivityConstants.DANGEROUS_MATERIALS_RENEWAL) ){
+    	   
+	   		String obs = (Util.empty(reportType) || !reportType.equals("HTML")) ? Util.cleanString(registry.getObs()) : registry.getObs();
+		   registry.setObs(messages.getText("generic.activity.result")+": "+registry.getClassNumber()+"% \n"+
+				   messages.getText("generic.activity.expiry")+": "+ Util.formatDate(registry.getActivity().getDateExpiry())+ " \n"+
+				   obs); 
+	   }
+       
+       
+       if ((registry.getObs() != null) && (!registry.getObs().equals("")))
+       { 
+    	   reportFooter.addElement(StaticShapeElementFactory.createRectangleShapeElement
+				(null, Color.LIGHT_GRAY, null,new Rectangle2D.Float(10, 30, 545, 15), false, true));
+    	   reportFooter.addElement(LabelElementFactory.createLabelElement(null,new Rectangle2D.Float(10, 30,-100, 15),
+                Color.BLACK,ElementAlignment.LEFT,ElementAlignment.MIDDLE,STYLE_SIMPLE_BOLD_FONT,
+                " "+messages.getText("generic.activity.observations")+": "));
+    	  
+    	    
+    	   		String obs = (Util.empty(reportType) || !reportType.equals("HTML")) ? Util.cleanString(registry.getObs()) : registry.getObs();
+    		   reportFooter.addElement(LabelElementFactory.createLabelElement(
+   	      			null,new Rectangle2D.Float(20, y, 500, 500),
+   	      			Color.BLACK,ElementAlignment.LEFT,ElementAlignment.TOP,STYLE_SIMPLE_FONT,
+   	      		obs));      
+       }   	
+        
+       return reportFooter;
+    }
+ 
+}

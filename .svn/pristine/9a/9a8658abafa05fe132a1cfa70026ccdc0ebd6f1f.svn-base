@@ -1,0 +1,21 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.report.tables">
+    <class name="JJSnapshot" table="jjsnapshots">
+
+        <id	column="id"	name="id"	type="java.lang.Integer">
+            <generator class="sequence">
+            	<param name="sequence">JJReports_Sequence</param>
+            </generator>
+        </id>
+        
+        <property	name="month"	type="java.lang.Integer"		column="month"		not-null="true" />
+        
+        <property	name="year"		type="java.lang.Integer"		column="year"		not-null="true" />
+        
+        <property	name="date"	type="java.util.Date"		column="date"		not-null="true" />
+    </class>
+</hibernate-mapping>

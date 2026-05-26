@@ -1,0 +1,2608 @@
+
+/*
+ * Created on 22-sep-2005
+ *
+ * TODO To change the template for this generated file go to
+ * Window - Preferences - Java - Code Style - Code Templates
+ */
+package business.administration.corporation;
+
+import java.rmi.RemoteException;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.StringTokenizer;
+
+import javax.ejb.SessionBean;
+
+import persistence.activity.ActivityReport;
+import persistence.activity.ActivityReportUtil;
+import persistence.administration.corporation.CorporationABM;
+import persistence.administration.corporation.CorporationABMHome;
+import persistence.administration.corporation.CorporationABMUtil;
+import persistence.administration.corporation.CorporationReport;
+import persistence.administration.corporation.CorporationReportHome;
+import persistence.administration.corporation.CorporationReportUtil;
+import persistence.administration.corporation.tables.Corporation;
+import persistence.administration.corporation.tables.DivOrg;
+import persistence.administration.corporation.tables.DivOrgItemLevel1;
+import persistence.administration.corporation.tables.DivOrgItemLevel2;
+import persistence.administration.corporation.tables.DivOrgItemLevel3;
+import persistence.administration.user.UserABM;
+import persistence.administration.user.UserABMUtil;
+import persistence.datatype.DataTypeABM;
+import persistence.datatype.DataTypeABMUtil;
+import persistence.datatype.DataTypeReport;
+import persistence.datatype.DataTypeReportBean;
+import persistence.datatype.DataTypeReportUtil;
+import persistence.driver.DriverABMUtil;
+import persistence.driver.DriverReport;
+import persistence.driver.DriverReportUtil;
+import persistence.language.LanguageABM;
+import persistence.language.LanguageABMHome;
+import persistence.language.LanguageABMUtil;
+import persistence.language.tables.GeneralMessage;
+import persistence.util.Util;
+import persistence.vehicle.VehicleReport;
+import persistence.vehicle.VehicleReportUtil;
+import business.util.ExceptionHandler;
+import communication.activity.tables.CEPAActivityConstants;
+import communication.activity.tables.CEPAActivityScheduleData;
+import communication.activity.tables.CheckListData;
+import communication.activity.tables.PointData;
+import communication.administration.corporation.WSResultData;
+import communication.administration.corporation.tables.ContractorPlateFOSAData;
+import communication.administration.corporation.tables.CorporationConfigData;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.DivOrgData;
+import communication.administration.corporation.tables.EasyTrackEventData;
+import communication.administration.corporation.tables.GeoItemData;
+import communication.administration.corporation.tables.GeoLabelData;
+import communication.administration.corporation.tables.InstructorRegistryData;
+import communication.administration.corporation.tables.ItemData;
+import communication.administration.corporation.tables.MobilTrackEventData;
+import communication.administration.corporation.tables.PointAccountData;
+import communication.administration.corporation.tables.PointMoveData;
+import communication.administration.corporation.tables.PointsDefinitionData;
+import communication.administration.corporation.util.FringeData;
+import communication.administration.dpa.CorrectiveActionDPAData;
+import communication.administration.dpa.LevelOfServiceDriverDPAData;
+import communication.administration.dpa.LevelOfServiceVehicleDPAData;
+import communication.administration.dpa.UnconformityDPAData;
+import communication.administration.dpa.UnconformityItemDPAData;
+import communication.administration.user.UserSessionData;
+import communication.alert.AlertConstants;
+import communication.datatype.DataTypeConstants;
+import communication.datatype.tables.AccidentClasificationDataType;
+import communication.datatype.tables.FineQualifyDataType;
+import communication.datatype.tables.GeneralDTData;
+import communication.datatype.tables.IncidentClasificationDataType;
+import communication.driver.tables.DriverData;
+import communication.driver.tables.DriverStateHistoryData;
+import communication.event.tables.EventDataType;
+import communication.event.tables.FineDataType;
+import communication.exception.AlreadyExistsException;
+import communication.exception.CommunicationProblemException;
+import communication.exception.DeslogedException;
+import communication.exception.InvalidDataException;
+import communication.language.Text;
+import communication.security.SecurityConstants;
+import communication.util.LogActions;
+import communication.util.MailSender;
+import communication.util.tables.AppFileData;
+import communication.vehicle.tables.VehicleCheckData;
+import communication.vehicle.tables.VehicleData;
+import communication.vehicle.tables.VehicleStateData;
+
+/**
+ * @ejb.bean name="CorporationABMFacade"
+ *           display-name="Name for Corporation"
+ *           description="Description for Corporation"
+ *           jndi-name="ejb/CorporationABMFacade"
+ *           type="Stateless"
+ *           view-type="remote"
+ * 
+ * @ejb.ejb-ref 
+ * 			ejb-name ="CorporationABM"
+ * 			ref-name = "ejb/CorporationABM"
+ * 			view-type ="remote"
+ * 
+ * @jboss.ejb-ref-jndi
+ * 			jndi-name = "ejb/CorporationABM" 
+ * 			ref-name = "CorporationABM"
+ * 
+ * @ejb.ejb-ref ejb-name = "UserABM" ref-name = "ejb/UserABM" view-type =
+ *              "remote"
+ * 
+ * @ejb.ejb-ref ejb-name = "UserReport" ref-name = "ejb/UserReport" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/UserABM" ref-name = "UserABM"
+ *  
+ * @ejb.ejb-ref ejb-name = "LanguageABM" ref-name = "ejb/LanguageABM" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/LanguageABM" ref-name = "LanguageABM"
+ *  
+ * @ejb.ejb-ref 
+ *          ejb-name ="CorporationReport"
+ *          ref-name = "ejb/CorporationReport"
+ *          view-type ="remote"
+ * 
+ * @jboss.ejb-ref-jndi
+ *          jndi-name = "ejb/CorporationReport" 
+ *          ref-name = "CorporationReport"
+ * 
+ * @ejb.ejb-ref 
+ *          ejb-name ="DataTypeReport"
+ *          ref-name = "ejb/DataTypeReport"
+ *          view-type ="remote"
+ * 
+ * @jboss.ejb-ref-jndi
+ *          jndi-name = "ejb/DataTypeReport" 
+ *          ref-name = "DataTypeReport"
+ * 
+ * @ejb.ejb-ref 
+ *          ejb-name ="DataTypeABM"
+ *          ref-name = "ejb/DataTypeABM"
+ *          view-type ="remote"
+ * 
+ * @jboss.ejb-ref-jndi
+ *          jndi-name = "ejb/DataTypeABM" 
+ *          ref-name = "DataTypeABM"
+ *          
+ * @ejb.ejb-ref 
+ *          ejb-name ="DriverABM"
+ *          ref-name = "ejb/DriverABM"
+ *          view-type ="remote"
+ * 
+ * @jboss.ejb-ref-jndi
+ *          jndi-name = "ejb/DriverABM" 
+ *          ref-name = "DriverABM"
+ *          
+ * @jboss.ejb-ref-jndi
+ *          jndi-name = "ejb/VehicleReport" 
+ *          ref-name = "VehicleReport"
+ *          
+ * @ejb.ejb-ref ejb-name = "DriverReport" 
+ *          ref-name = "ejb/DriverReport" 
+ *          view-type = "remote" 
+ * 
+ * @ejb.ejb-ref ejb-name = "ActivityReport" ref-name = "ejb/ActivityReport" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/ActivityReport" ref-name = "ActivityReport"
+ * 
+ * @ejb.util generate="physical"
+*/
+public abstract class CorporationABMFacadeBean implements SessionBean {
+	
+    ExceptionHandler handler = new ExceptionHandler(CorporationABMFacadeBean.class);
+    
+	/**
+	 * @ejb.create-method
+     * @ejb.permission role-name = "administrator,corporationmodify,corporationcreate,corporationdelete,addreport,,vehicleview,driverview, drivercreate,finecreate,drivercreatefine,dpachecklist,cepascheduleactivitycreate,cepascheduleactivityupdate,cepascheduleactivitysupervise, jjreporter"
+     * Create method
+	 */
+	public void ejbCreate()	throws javax.ejb.CreateException { }
+
+	/**
+	 * @ejb.interface-method 
+	 * 		view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,corporationcreate"
+	 * Create a corporation
+	 * @param data - Data of the corporation
+	 * @throws Exception
+	 */
+	public void corporationCreate(CorporationData data,Collection texts,UserSessionData userSessionData) throws Exception{
+
+		if (userSessionData == null) {
+			throw new DeslogedException("corporationCreate","userSessionData = null");
+		}
+		if (data == null) {
+			throw new InvalidDataException("corporationCreate","data = null");
+		}
+		if (!validate(data)) {
+			throw new InvalidDataException("corporationCreate","generic.error.emptydata");
+		}
+		CorporationABM crpABM=null;
+		try {
+            LanguageABMHome languageHome = LanguageABMUtil.getHome();
+            LanguageABM languageABM = languageHome.create();
+            Iterator it = texts.iterator();
+            while(it.hasNext()) {
+                String[] s = (String[])it.next();
+                languageABM.saveText(s[0],GeneralMessage.SPANISH,s[1], userSessionData);
+                languageABM.saveText(s[0],GeneralMessage.ENGLISH,s[2], userSessionData);
+                languageABM.saveText(s[0],GeneralMessage.PORTUGUESE,s[3], userSessionData);
+            }
+
+			CorporationABMHome home = CorporationABMUtil.getHome();
+			crpABM = home.create();
+			Integer corporationId = crpABM.corporationCreate(data, userSessionData);
+            
+			UserABM userABM = UserABMUtil.getHome().create();
+            userABM.associateUserToCorporation(corporationId,userSessionData.getFilter().getLoginName(),userSessionData.getRole().getName(),userSessionData);
+            
+		} catch (Exception e) {
+			Object[] parameters = new Object[2];
+			parameters[0] = data;
+			parameters[1] = texts;
+            handler.handleException("corporationCreate",e, userSessionData, parameters);
+		}
+	}
+
+	/**
+	 * @ejb.interface-method 
+	 * 		view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,corporationmodify"
+	 * Modifies a corporation
+	 * @param data Data of the corporation modified
+	 * @throws InvalidDataException
+	 * @throws CommunicationProblemException
+	 * @throws DeslogedException
+	 */
+	public CorporationData corporationUpdate(CorporationData data,UserSessionData userSessionData) throws Exception{
+
+		if (userSessionData == null) {
+			throw new DeslogedException("corporationUpdate","generic.error.notuserlogged");
+		}
+		if (data == null) {
+			throw new InvalidDataException("corporationUpdate","generic.error.emptydata");
+		}
+		if (!validate(data)) {
+			throw new InvalidDataException("corporationUpdate","generic.error.invaliddata");
+		}
+		CorporationABM crpABM=null;
+		try {
+
+			CorporationABMHome home = CorporationABMUtil.getHome();
+			crpABM = home.create();
+			return crpABM.corporationUpdate(data, userSessionData);
+        } catch (Exception e) {
+        	Object[] parameters = new Object[1];
+        	parameters[0] = data;
+            handler.handleException("corporationUpdate",e,userSessionData,parameters);
+        }
+        return null;
+	}
+	
+	/**
+	 * @ejb.interface-method 
+	 * 		view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,corporationmodify"
+	 * Modifies a corporation
+	 * @param data Data of the corporationMenu modified
+	 * @throws InvalidDataException
+	 * @throws CommunicationProblemException
+	 * @throws DeslogedException
+	 */
+	public void corporationMenuCreate(Integer itemId,UserSessionData userSessionData) throws Exception{
+
+		if (userSessionData == null) {
+			throw new DeslogedException("corporationUpdate","generic.error.notuserlogged");
+		}
+		if (itemId == null) {
+			throw new InvalidDataException("corporationUpdate","generic.error.emptydata");
+		}
+		CorporationABM crpABM=null;
+		try {
+
+			CorporationABMHome home = CorporationABMUtil.getHome();
+			crpABM = home.create();
+			crpABM.corporationMenuCreate(itemId, userSessionData);
+        } catch (Exception e) {
+        	Object[] parameters = new Object[1];
+        	parameters[0] = itemId;
+            handler.handleException("corporationMenuCreate",e,userSessionData,parameters);
+        }
+	}
+
+	/**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,corporationmodify"
+     * Deletes organizational division items 
+     * @param currentUser - Data of the logged user
+     * @param data - Data of the corporation
+     * @param divOrgId - Id of the orgnanizational division that contains the item
+     * @param deletedItems - List of items to delete
+     * @param level - Level of the items
+     * @throws InvalidDataException
+     * @throws CommunicationProblemException
+     * @throws DeslogedException
+     * @throws RemoteException
+	 */
+	public void corporationDeleteItem(CorporationData data,Integer divOrgId, Hashtable deletedItems, 
+			int level,UserSessionData userSessionData)	throws Exception {
+		if (userSessionData == null) {
+			throw new DeslogedException("corporationDeleteItem","userSessionData = null");
+		}
+		if (data == null) {
+			throw new InvalidDataException("corporationDeleteItem","data = null");
+		}
+		CorporationABM corporationABM=null;
+		try {
+
+		    CorporationABMHome home = CorporationABMUtil.getHome();
+	        corporationABM = home.create();
+
+		    Corporation corporation = corporationABM.loadCorporation(data.getId(),userSessionData);
+            Iterator it = corporation.getDivOrgSet().iterator();
+            while(it.hasNext()) {
+                DivOrg divOrg = (DivOrg)it.next();
+                if(divOrg.getId().equals(divOrgId)) {
+                    Iterator it2 = divOrg.getItemLevel1Set().iterator();
+                    while(it2.hasNext()) {
+                        DivOrgItemLevel1  itemLevel1 = (DivOrgItemLevel1)it2.next();
+                        switch(level) {
+                            case 1:
+                                if(deletedItems.containsKey(itemLevel1.getId())) {
+                                    String message = corporationABM.validateDeleteItem(itemLevel1.getId(),1);
+                                    if(message == null) {
+                                        it2.remove();
+                                        itemLevel1.setDivOrg(null);
+                                        if(itemLevel1.getDivOrgItemLevel2() != null) {
+                                            DivOrgItemLevel2 itemLevel2 = itemLevel1.getDivOrgItemLevel2();
+                                            itemLevel1.setDivOrgItemLevel2(null);
+                                            deleteGarbage(divOrg,itemLevel2.getId(),2,corporationABM,userSessionData);
+                                            if(itemLevel2.getDivOrgItemLevel3() != null) {
+                                                DivOrgItemLevel3 itemLevel3 = itemLevel2.getDivOrgItemLevel3();
+                                                deleteGarbage(divOrg,itemLevel3.getId(),3,corporationABM,userSessionData);
+                                            }
+                                        }
+                                    }else {
+                                        throw new InvalidDataException("corporationDeleteItem",message);
+                                    }
+                                }
+                                break;
+                            case 2:    	
+                                if(itemLevel1.getDivOrgItemLevel2() != null) {
+                                    DivOrgItemLevel2  itemLevel2 = itemLevel1.getDivOrgItemLevel2();
+                                    if(deletedItems.containsKey(itemLevel2.getId())) {
+                                        String message = corporationABM.validateDeleteItem(itemLevel1.getId(),1);
+                                        if(message == null) {
+	                                        it2.remove();
+	                                        itemLevel1.setDivOrg(null);
+	                                        itemLevel1.setDivOrgItemLevel2(null);
+	                                        deleteGarbage(divOrg,itemLevel2.getId(),2,corporationABM,userSessionData);
+                                        }else {
+                                            throw new InvalidDataException("corporationDeleteItem",message);
+                                        }
+                                    }
+                                    if(itemLevel2.getDivOrgItemLevel3() != null) {
+                                        DivOrgItemLevel3  itemLevel3 = itemLevel2.getDivOrgItemLevel3();
+                                        deleteGarbage(divOrg,itemLevel3.getId(),3,corporationABM,userSessionData);
+                                    }
+                                }
+                                break;
+                            case 3:    	
+                                if(itemLevel1.getDivOrgItemLevel2() != null) {
+                                    DivOrgItemLevel2  itemLevel2 = itemLevel1.getDivOrgItemLevel2();
+                                    if(itemLevel2.getDivOrgItemLevel3() != null) {
+                                        DivOrgItemLevel3  itemLevel3 = itemLevel2.getDivOrgItemLevel3();
+	                                    if(deletedItems.containsKey(itemLevel3.getId())) {
+                                            String message = corporationABM.validateDeleteItem(itemLevel1.getId(),1);
+                                            if(message == null) {
+		                                        it2.remove();
+		                                        itemLevel1.setDivOrg(null);
+		                                        itemLevel1.setDivOrgItemLevel2(null);
+		                                        deleteGarbage(divOrg,itemLevel2.getId(),2,corporationABM,userSessionData);
+		                                        deleteGarbage(divOrg,itemLevel3.getId(),3,corporationABM,userSessionData);
+	                                        }else {
+                                                throw new InvalidDataException("corporationDeleteItem",message);
+	                                        }
+	                                    }
+                                    }
+                                }
+                                break;
+                        }
+                    }
+                }
+            }
+	        
+            corporationABM.logChanges(userSessionData,LogActions.UPDATE);
+            
+        } catch (Exception e) {
+        	Object[] parameters = new Object[4];
+        	parameters[0] = data;
+        	parameters[1] = divOrgId;
+        	parameters[2] = deletedItems;
+        	parameters[3] = level;        	
+            handler.handleException("corporationDeleteItem",e,userSessionData,parameters);
+        }
+	}
+
+    /**
+     * Deletes the organizational divisions items that has not any children
+     * @param divOrg organizational divisions
+     * @param itemId item to delete if hasn't children
+     * @param level level of the item
+     * @param corporationABM Bean of persistence
+     * @throws InvalidDataException
+     * @throws DeslogedException
+     * @throws CommunicationProblemException
+     * @throws RemoteException
+     */
+	private void deleteGarbage(DivOrg divOrg, Integer itemId, int level,
+			CorporationABM corporationABM,UserSessionData userSessionData) throws Exception {
+		
+		try{
+		    Iterator it = divOrg.getItemLevel1Set().iterator();
+		    boolean found = false;
+		    while(it.hasNext() && !found) {
+		        DivOrgItemLevel1 itemLevel1 = (DivOrgItemLevel1)it.next();
+		        if(level == 2) {
+		            if(itemLevel1.getDivOrgItemLevel2().getId().equals(itemId)) {
+		                found = true;
+		            }
+		        }else {
+		            if(itemLevel1.getDivOrgItemLevel2().getDivOrgItemLevel3().getId().equals(itemId)) {
+		                found = true;
+		            }
+		        }
+		    }
+		    if(!found) {
+		        if(level == 2) {
+		            corporationABM.deleteItemLevel(userSessionData,itemId,2);
+		        }else {
+		            corporationABM.deleteItemLevel(userSessionData,itemId,3);
+		        }
+		    }
+		} catch (Exception e) {
+        	Object[] parameters = new Object[4];
+        	parameters[0] = divOrg;
+        	parameters[1] = itemId;
+        	parameters[2] = level;
+        	parameters[3] = corporationABM;        	
+            handler.handleException("deleteGarbage",e,userSessionData,parameters);
+        }
+	}
+	
+    /**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,corporationmodify"
+     * Modifies the states of items of an organizational division of a corporation 
+     * @param data Data of the corporation
+     * @param divOrgId id of the organizational division
+     * @param deletedItemslist of item to modify
+     * @param level level of the items
+     * @throws InvalidDataException
+     * @throws CommunicationProblemException
+     * @throws DeslogedException
+     */
+	public void corporationUpdateItem(CorporationData data,Integer divOrgId, Hashtable deletedItems, 
+			int level,UserSessionData userSessionData) throws Exception {
+		if (userSessionData == null) {
+			throw new DeslogedException("corporationUpdateItem","userSessionData = null");
+		}
+		if (data == null) {
+			throw new InvalidDataException("corporationUpdateItem","data = null");
+		}
+		CorporationABM corporationABM=null;
+		try {
+
+			CorporationABMHome home = CorporationABMUtil.getHome();
+			corporationABM = home.create();
+			
+			DivOrgData divOrgData = data.getDivOrgData(divOrgId.intValue());
+			if(divOrgData != null) {			    
+			    Iterator it = divOrgData.getDivOrgLevels().getItems().iterator();
+			    while(it.hasNext()) {
+			        ItemData item = (ItemData)it.next();
+			        if(level == 1 || (item.getSubItems() == null)) {
+			            if(deletedItems.containsKey(item.getId())) {
+			                item.modifyActive();
+			            }
+			        }else{
+					    Iterator it2 = item.getSubItems().getItems().iterator();
+					    while(it2.hasNext()) {
+					        ItemData item2 = (ItemData)it2.next();
+					        if(level == 2 || (item2.getSubItems() == null)) {
+					            if(deletedItems.containsKey(item2.getId())) {
+					                item2.modifyActive();
+					            }
+					        }else{
+							    Iterator it3 = item2.getSubItems().getItems().iterator();
+							    while(it3.hasNext()) {
+							        ItemData item3 = (ItemData)it3.next();
+						            if(deletedItems.containsKey(item3.getId())) {
+						                item3.modifyActive();
+							        }
+							    }
+					        }
+					    }
+			        }
+			    }
+			    
+                corporationABM.corporationUpdate(data, userSessionData);
+			}
+
+        } catch (Exception e) {
+        	Object[] parameters = new Object[4];        	
+			parameters[0] = data;
+        	parameters[1] = divOrgId;
+        	parameters[2] = deletedItems;
+        	parameters[3] = level;
+            handler.handleException("corporationUpdateItem",e,userSessionData,parameters);
+		}
+	}
+
+    /**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,corporationmodify"
+     * Deletes a geographic division item of a corportion
+     * @param currentUser - Data of the user logged
+     * @param corporation - Data of the corporation
+     * @param hashItems - List of items to delete
+     * @param level - Level of the items
+     * @param levelContainer - Level of the parent item 
+     * @throws InvalidDataException
+     * @throws DeslogedException
+     * @throws CommunicationProblemException
+     */
+	public void corporationDeleteCountry(CorporationData corporation, Hashtable hashItems, 
+			int level, String levelContainer,UserSessionData userSessionData) throws Exception {
+		if (userSessionData == null) {
+			throw new DeslogedException("corporationDeleteCountry","userSessionData = null");
+		}
+		if (corporation == null) {
+			throw new InvalidDataException("corporationDeleteCountry","corporation = null");
+		}
+		CorporationABM corporationABM=null;
+		try {
+
+		    CorporationABMHome home = CorporationABMUtil.getHome();
+	        corporationABM = home.create();
+	        
+			if(corporation.getDivGeoDataSet() != null) {
+			    Iterator itLevel1 = corporation.getDivGeoDataSet().getItemIterator();
+			    while(itLevel1.hasNext()) {
+			        GeoItemData item1 = (GeoItemData)itLevel1.next();
+			        if(level == 1) {
+			            if(hashItems.containsKey(item1.getId())) {
+			                int levelDelete = 1;
+			                if(item1.getSubItems() != null) {
+			                    Iterator itLevel2 = item1.getSubItems().getItemIterator();
+			                    while(itLevel2.hasNext()) {
+			        		        GeoItemData item2 = (GeoItemData)itLevel2.next();
+			        		        if(item2.getSubItems() != null) {
+					                    Iterator itLevel3 = item2.getSubItems().getItemIterator();
+					                    while(itLevel3.hasNext()) {
+					        		        GeoItemData item3 = (GeoItemData)itLevel3.next();
+					        		        itLevel3.remove();
+					        		        corporationABM.deleteCountry(userSessionData,item3.getId(),item2.getId(),3);
+					                    }
+				        		        itLevel2.remove();
+				        		        corporationABM.deleteCountry(userSessionData,item2.getId(),null,2);
+			        		        }else {
+			        		            levelDelete = 2;
+			        		            itLevel2.remove();
+			        		            corporationABM.deleteCountry(userSessionData,item2.getId(),item1.getId(),3);
+			        		        }
+			                    }
+		        		        corporationABM.deleteCountry(userSessionData,item1.getId(),null,levelDelete);
+			                }else {
+		        		        corporationABM.deleteCountry(userSessionData,item1.getId(),null,3);			                    
+			                }
+			            }
+			        }else if(level == 2) {
+		                if(item1.getSubItems() != null) {
+		                    Iterator itLevel2 = item1.getSubItems().getItemIterator();
+			                int levelDelete = 1;
+		                    while(itLevel2.hasNext()) {
+		        		        GeoItemData item2 = (GeoItemData)itLevel2.next();
+		    		            if(hashItems.containsKey(item2.getId())) {
+			        		        if(item2.getSubItems() != null) {
+					                    Iterator itLevel3 = item2.getSubItems().getItemIterator();
+					                    while(itLevel3.hasNext()) {
+					        		        GeoItemData item3 = (GeoItemData)itLevel3.next();
+					        		        corporationABM.deleteCountry(userSessionData,item3.getId(),item2.getId(),3);
+					        		        itLevel3.remove();
+					                    }
+				        		        itLevel2.remove();
+				        		        corporationABM.deleteCountry(userSessionData,item2.getId(),null,2);
+			        		        }else {
+						                levelDelete = 2;
+			        		            if(String.valueOf(item1.getId()).equals(levelContainer)) {
+			        		                itLevel2.remove();
+			        		                corporationABM.deleteCountry(userSessionData,item2.getId(),item1.getId(),3);
+			        		            }
+			        		        }
+		    		            }
+		                    }
+		                    if(item1.getSubItems().isEmpty()) {
+		        		        corporationABM.deleteCountry(userSessionData,item1.getId(),null,levelDelete);
+		                    }
+		                }
+			        }else if(level == 3) {
+		                if(item1.getSubItems() != null) {
+		                    Iterator itLevel2 = item1.getSubItems().getItemIterator();
+		                    while(itLevel2.hasNext()) {
+		        		        GeoItemData item2 = (GeoItemData)itLevel2.next();
+		        		        if(item2.getSubItems() != null && String.valueOf(item2.getId()).equals(levelContainer)) {
+				                    Iterator itLevel3 = item2.getSubItems().getItemIterator();
+				                    while(itLevel3.hasNext()) {
+				        		        GeoItemData item3 = (GeoItemData)itLevel3.next();
+				    		            if(hashItems.containsKey(item3.getId())) {
+				    		                itLevel3.remove();
+					        		        corporationABM.deleteCountry(userSessionData,item3.getId(),new Integer(levelContainer),3);
+				    		            }
+				                    }
+		        		        }
+		        		        if(item2.getSubItems().isEmpty()) {
+		        		            itLevel2.remove();
+			        		        corporationABM.deleteCountry(userSessionData,item2.getId(),null,2);
+		        		        }
+		                    }
+		                    if(item1.getSubItems().isEmpty()) {
+		        		        corporationABM.deleteCountry(userSessionData,item1.getId(),null,1);
+		                    }
+		                }
+			        }
+			    }
+			}
+
+			corporationABM.logChanges(userSessionData,LogActions.UPDATE);
+            
+		} catch (Exception e) {
+			Object[] parameters = new Object[4];
+			parameters[0] = corporation;
+			parameters[1] = hashItems;
+			parameters[2] = level;
+			parameters[3] = levelContainer;
+			
+            handler.handleException("corporationDeleteCountry",e,userSessionData,parameters);
+		}
+    }
+	
+    /**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,corporationmodify"
+     * Adds items of geographic divisions to the corporation in work
+     * @param data Items
+     * @param corporation Data of the corporation
+     * @param user Data of the user logged
+     * @throws InvalidDataException
+     * @throws DeslogedException
+     * @throws CommunicationProblemException
+     * @throws AlreadyExistsException
+     */
+	public void corporationAddCountry(GeoLabelData data,CorporationData corporation,UserSessionData userSessionData) throws Exception {
+		if (userSessionData == null) {
+			throw new DeslogedException("corporationAddCountry","userSessionData = null");
+		}
+		if (corporation == null) {
+			throw new InvalidDataException("corporationAddCountry","corporation = null");
+		}
+		if (data == null) {
+			throw new InvalidDataException("corporationAddCountry","data = null");
+		}
+		CorporationABM corporationABM=null;
+		CorporationReport corporationReport=null;
+		try {
+
+		    CorporationABMHome home = CorporationABMUtil.getHome();
+	        corporationABM = home.create();
+
+	        corporationABM.corporationAddCountry(userSessionData,data,corporation);
+
+		    CorporationReportHome reportHome = CorporationReportUtil.getHome();
+		    corporationReport = reportHome.create();
+
+		    corporation = corporationReport.findCorporationByPrimaryKey(corporation.getId(),userSessionData);
+
+		} catch (Exception e) {
+			Object[] parameters = new Object[2];			
+			parameters[0] = data;
+			parameters[1] = corporation;
+			handler.handleException("corporationAddCountry",e,userSessionData,parameters);
+		}
+    }
+		
+    /**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,corporationmodify"
+     * @param data
+     * @param countries
+     * @throws InvalidDataException
+     * @throws CommunicationProblemException
+     * @throws DeslogedException
+     */
+	public void corporationUpdateCountry(CorporationData data,Collection countries,UserSessionData userSessionData) throws Exception {
+		if (userSessionData == null) {
+			throw new DeslogedException("corporationUpdateCountry","userSessionData = null");
+		}
+		if (data == null) {
+			throw new InvalidDataException("corporationUpdateCountry","data = null");
+		}
+		CorporationABM corporationABM=null;
+		try {
+
+			CorporationABMHome home = CorporationABMUtil.getHome();
+			corporationABM = home.create();
+			
+			corporationABM.corporationUpdateCountry(userSessionData, data, countries);
+		} catch (Exception e) {
+			Object[] parameters = new Object[2];
+			parameters[0] = data;
+			parameters[1] = countries;
+			                                 
+            handler.handleException("corporationUpdateCountry",e,userSessionData,parameters);
+		}
+    }
+
+    /**
+     * Validate if the name of the corporation data is not empty
+     * @param data - Data of the corporation
+     * @return if is valid or not
+     */
+	private boolean validate(CorporationData data){
+		return !Util.empty(data.getName());
+	}
+
+	/**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,corporationmodify"
+     * Modifies an organizational division 
+     * @param corporation Data of the corporation
+     * @param user Data of the user
+     * @param divOrg Id of the organizational division
+     * @throws InvalidDataException
+     * @throws CommunicationProblemException
+     * @throws DeslogedException
+     * @throws AlreadyExistsException
+	 */
+	public void corporationUpdateDivOrg(CorporationData corporation,int divOrg,UserSessionData userSessionData)	throws Exception{
+
+		if (userSessionData == null) {
+			throw new DeslogedException("corporationUpdateDivOrg","userSessionData = null");
+		}
+		if (corporation == null) {
+			throw new InvalidDataException("corporationUpdateDivOrg","corporation = null");
+		}
+
+		CorporationABM crpABM=null;
+		try {
+
+			CorporationABMHome home = CorporationABMUtil.getHome();
+			crpABM = home.create();
+			corporation = crpABM.corporationUpdate(corporation, userSessionData);
+
+		}catch (Exception e) {
+			Object[] parameters = new Object[2];
+			parameters[0] = corporation;
+			parameters[1] = divOrg;
+            handler.handleException("corporationUpdateDivOrg",e,userSessionData,parameters);
+        }
+	}
+
+	/**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,corporationmodify"
+     * Renames an item of a geographic division
+     * @param level level of the geographic division
+     * @param item item to rename
+     * @throws InvalidDataException
+     * @throws CommunicationProblemException
+     * @throws DeslogedException
+     * @throws AlreadyExistsException
+	 */
+	public void renameDivGeo(int level,GeoItemData item,UserSessionData userSessionData) throws Exception{
+
+		if (userSessionData == null) {
+			throw new DeslogedException("corporationRenameDivGeo","userSessionData = null");
+		}
+        
+		CorporationABM crpABM=null;
+		try {
+
+			CorporationABMHome home = CorporationABMUtil.getHome();
+			crpABM = home.create();
+			crpABM.renameDivGeo(userSessionData,level,item);
+		}catch (Exception e) {
+			Object[] parameters = new Object[2];
+			parameters[0] = level;
+			parameters[1] = item;            
+            handler.handleException("corporationRenameDivGeo",e,userSessionData,parameters);
+		}
+    }
+
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required"
+     * @ejb.permission role-name = "administrator"
+     * @param data
+     * @throws InvalidDataException
+     * @throws DeslogedException
+     */
+    public void deleteCorporation(CorporationData data, UserSessionData userSessionData) throws Exception {
+    	try{   
+    		if (userSessionData == null) {
+    			throw new DeslogedException("Class business.corporation.ActivityABMFacade(deleteCEPAScheduleActivity(CEPAScheduleActivityData)), session data is empty","generic.error.deslogued");
+    		}
+    		if (data == null) {
+    			throw new InvalidDataException("Class business.activity.ActivityABMFacade(deleteCEPAScheduleActivity(CEPAScheduleActivityData)), driver data is empty","generic.activity.activitydata.isempty");
+    		}
+    		
+    		CorporationABM corporationABM=CorporationABMUtil.getHome().create();
+    		corporationABM.deleteCorporation(data,userSessionData);
+    		
+    	}catch (Exception e) {
+    		Object[] parameters = new Object[1];
+    		parameters[0] = data;
+    		handler.handleException("deleteCorporation",e,userSessionData,parameters);
+    	}
+    }
+    
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required"
+     * @ejb.permission role-name = "administrator"
+     */
+    public void configurate(Collection accidentIn, Collection incidentIn, Collection finesIn, UserSessionData userSessionData) throws Exception {
+        try{   
+            if (userSessionData == null) {
+                throw new DeslogedException("configurate","session = null");
+            }
+            
+            DataTypeReport dataType = DataTypeReportUtil.getHome().create();
+            DataTypeABM dataTypeABM = DataTypeABMUtil.getHome().create();
+            
+            Collection corporationAccidents = dataType.findAll(userSessionData,DataTypeConstants.ACCIDENT_CLASIFICATION);
+            Iterator itNew = accidentIn.iterator();
+            while(itNew.hasNext()) {
+                AccidentClasificationDataType accident = (AccidentClasificationDataType)itNew.next();
+                if(corporationAccidents.contains(accident)) {
+                    corporationAccidents.remove(accident);
+                    itNew.remove();
+                }
+            }
+            updateDataTypes(dataTypeABM,accidentIn,corporationAccidents,DataTypeConstants.OLD_ACCIDENT_CLASIFICATION,userSessionData);
+            
+            Collection corporationIncidents = dataType.findAll(userSessionData,DataTypeConstants.INCIDENT_CLASIFICATION);
+            itNew = incidentIn.iterator();
+            while(itNew.hasNext()) {
+                IncidentClasificationDataType incident = (IncidentClasificationDataType)itNew.next();
+                if(corporationIncidents.contains(incident)) {
+                    corporationIncidents.remove(incident);
+                    itNew.remove();
+                }
+            }
+            updateDataTypes(dataTypeABM,incidentIn,corporationIncidents,DataTypeConstants.OLD_INCIDENT_CLASIFICATION,userSessionData);
+
+            Collection corporationFines = dataType.findAll(userSessionData,DataTypeConstants.FINE_QUALIFY);
+            itNew = finesIn.iterator();
+            while(itNew.hasNext()) {
+                FineQualifyDataType fine = (FineQualifyDataType)itNew.next();
+                if(corporationFines.contains(fine)) {
+                    corporationFines.remove(fine);
+                    itNew.remove();
+                }
+            }
+            updateDataTypes(dataTypeABM,finesIn,corporationFines,DataTypeConstants.OLD_FINE_QUALIFY,userSessionData);
+
+        }catch (Exception e) {
+        	
+        	Object[] parameters = new Object[3];
+        	parameters[0] = accidentIn;
+        	parameters[1] = incidentIn;
+        	parameters[2] = finesIn;
+            handler.handleException("configurate",e,userSessionData,parameters);
+        }
+    }
+
+    /**
+     * 
+     * @param datatype
+     * @param add
+     * @param remove
+     * @param type
+     * @param userSessionData
+     * @throws Exception
+     */
+    private void updateDataTypes(DataTypeABM datatype,Collection add,Collection remove,int type,UserSessionData userSessionData) throws Exception {
+    	try{
+	        Iterator itAdd = add.iterator();
+	        while(itAdd.hasNext()) {
+	            datatype.add(((GeneralDTData)itAdd.next()).getResourceBundleId(),type,userSessionData);
+	        }
+	        Iterator itRemove = remove.iterator();
+	        while(itRemove.hasNext()) {
+	            datatype.delete(((GeneralDTData)itRemove.next()).getResourceBundleId(),type,userSessionData);
+	        }
+    	}catch (Exception e){
+    		Object[] parameters = new Object[4];
+        	parameters[0] = datatype;
+        	parameters[1] = add;
+        	parameters[2] = remove;
+        	parameters[3] = type;
+            handler.handleException("configurate",e,userSessionData,parameters);
+    	}
+    }
+    
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required"
+     * @ejb.permission role-name = "administrator,corporationmodify"
+     */
+	public void configurateMenu(Collection items,UserSessionData userSessionData)	throws Exception{
+
+		if (userSessionData == null) {
+			throw new DeslogedException("configurateMenu","userSessionData = null");
+		}
+		if (items == null) {
+			throw new InvalidDataException("configurateMenu","corporation = null");
+		}
+		try {
+		Iterator it = items.iterator();
+		CorporationABMHome home = CorporationABMUtil.getHome();
+		CorporationABM crpABM=null;
+		crpABM = home.create();
+		crpABM.deleteCorporationMenuItems(userSessionData);
+		while(it.hasNext()){
+			Integer item=(Integer)it.next();
+			crpABM.corporationMenuCreate(item,userSessionData);
+		}
+		
+		}catch (Exception e) {
+			Object[] parameters = new Object[1];
+			parameters[0] = items;
+            handler.handleException("configurateMenu",e,userSessionData,parameters);
+        }
+	
+	}
+    
+	   /**
+     * @ejb.permission role-name = "administrator,addreport"
+     * @ejb.interface-method view-type = "both"
+     * @param data
+     * @param userRequest
+     */
+    public void saveAppFile(AppFileData fileData, UserSessionData userSessionData) throws Exception {
+    	try{       
+    		CorporationABMUtil.getHome().create().saveAppFile(fileData,userSessionData);
+    	} catch (Exception e) {
+			Object[] parameters = {fileData};
+    		handler.handleException("saveAppFile",e,userSessionData,parameters);
+    	}
+
+    }
+    
+    /**
+     * @ejb.permission role-name = "administrator,addreport"
+     * @ejb.interface-method view-type = "both"
+     * @param data
+     * @param userRequest
+     */
+    public void deleteAppFile(String[] ids, UserSessionData userSessionData) throws Exception {
+    	try{       
+    		CorporationABM corporationABM = CorporationABMUtil.getHome().create();
+    		for(int i = 0; i < ids.length; i++)
+    			corporationABM.deleteAppFile(new Integer(ids[i]),userSessionData);
+       	} catch (Exception e) {
+			Object[] parameters = {ids};
+    		handler.handleException("deleteAppFile",e,userSessionData,parameters);
+    	}
+
+    }
+    
+    /**
+     * @ejb.permission role-name = "administrator,cepascheduleactivitycreate,cdactivitycreate,vehiclechecklist,dpachecklist"
+     * @ejb.interface-method view-type = "both"
+     * @param data
+     * @param userRequest
+     */
+    public void createOrUpdateDPAUnconformity(UnconformityDPAData data, UserSessionData userSessionData) throws Exception {
+    	try{       
+    		CorporationABM corporationABM = CorporationABMUtil.getHome().create();
+    		corporationABM.createOrUpdateUnconformityDPA(data,userSessionData);
+    		
+       	} catch (Exception e) {
+			Object[] parameters = {data};
+    		handler.handleException("createOrUpdateDPAUnconformity",e,userSessionData,parameters);
+    	}
+
+    }
+    
+    /**
+     * 
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,cepascheduleactivitycreate,cdactivitycreate,vehicleview,driverview,vehiclechecklist,dpachecklist"
+	 * @throws Exception
+	 */
+    public void createOrUpdateCorrectiveActionDPA(CorrectiveActionDPAData data, Text  messages, UserSessionData userSessionData) throws Exception {
+    	try{       
+    		CorporationABM corporationABM = CorporationABMUtil.getHome().create();
+    		corporationABM.createOrUpdateCorrectiveActionDPA(data,userSessionData);
+    		CorporationReport report=CorporationReportUtil.getHome().create();
+    		
+    		if((data.getId()==null || data.getId().equals(0) ) && ( userSessionData.getCorporationId()==CorporationData.FORESTALORIENTAL )){
+    			for(UnconformityItemDPAData item: data.getItems()){
+    				item=report.getUnconformityItemDPA(item.getId(), userSessionData);
+    				
+    				Calendar calNow=Calendar.getInstance();
+    				calNow.set(Calendar.HOUR,0);
+    				calNow.set(Calendar.MINUTE,0);
+    				calNow.set(Calendar.SECOND,0);
+    				calNow.set(Calendar.MILLISECOND,0);
+    				
+    				Calendar calItem=Calendar.getInstance();
+    				calItem.setTime(item.getExpirity());
+    				calNow.set(Calendar.HOUR,0);
+    				calNow.set(Calendar.MINUTE,0);
+    				calNow.set(Calendar.SECOND,0);
+    				calNow.set(Calendar.MILLISECOND,0);
+    				
+    				//Igual o mas viejo que la fecha de hoy
+    				if(calItem.compareTo(calNow)<0){
+            			MailSender sender = new MailSender();
+         				Collection bcc = new LinkedList();
+         				Collection<String> files = new LinkedList();
+         				Collection<String> names = new LinkedList();
+         				     			 
+        				//bcc.add("fcarriquiry@cepasafedrive.com");
+        				Collection addressTo = new LinkedList();
+            			
+        				
+        				if(SecurityConstants.isProductionServer()){
+        					//bcc.add("dbonilla@cepasafedrive.com");
+                					 
+        					if(userSessionData.getCorporationId()==CorporationData.FORESTALORIENTAL){
+        						//bcc.add("planificacion@upm.com");
+        					}else if(userSessionData.getCorporationId()==CorporationData.MONTES_DE_PLATA){
+        						 
+        					}
+        				} 
+        				//vc.vehicle,v.matricula,u.date
+        				Object[] rowUnonf=report.getUnconformityDPAInfo(item.getId(), userSessionData);
+        				
+        				String body="Se levanta la no conformidad \""+messages.getText(item.getType()) +"\" </br>Del veh&iacute;culo "+rowUnonf[1]+".  </br> Perteneciente al transportista "+rowUnonf[3];
+        	
+        				/*boolean sended = false;
+        				int count = 0;
+        				while(!sended && count < 10 ) {
+        					try {
+        				    	String[] mailAddress = sender.getAvailableMailAddress(CorporationData.REPORTER_JJ); 
+        						String mailServer = AlertConstants.MAILSERVER; 
+        						if (mailAddress[0] != null && mailAddress[0].contains("cepainternational.com")){
+        							mailServer = AlertConstants.MAILSERVER2;
+        						}else if (mailAddress[0] != null && mailAddress[0].contains("cepalogistica.com")){
+        							mailServer = AlertConstants.MAILSERVER_INMOTION;
+        						}
+        						sender.sendImage(addressTo,
+        								mailServer,
+        								"CEPA -"+(userSessionData.getCorporationId()==CorporationData.MONTES_DE_PLATA?"MDP":"UPM")+" DataCenter", 
+        								mailAddress[0],
+        								mailAddress[1], 
+        								"CEPA - Check List Acción Correctiva", communication.administration.corporation.util.Util.getCompleteHTMLMail(body,AlertConstants.DIGITAL_SIGNATURE_FOSA,
+        										AlertConstants.EMAIL_MICA), files,
+        								names, 
+        								"", "", bcc,null);
+        						sended = true;
+        					}catch (Exception e) {
+        						e.printStackTrace();
+        					}
+        					count++; 
+        				}*/
+    					
+    				}
+    				
+    			}
+    		}
+    		
+       	} catch (Exception e) {
+			Object[] parameters = {data};
+    		handler.handleException("createOrUpdateCorrectiveActionDPA",e,userSessionData,parameters);
+    	}
+    }
+    
+    /**
+     *  
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,cepascheduleactivitycreate,cdactivitycreate,,vehicleview,driverview,vehiclechecklist,dpachecklist"
+	 * @throws Exception
+	 */
+    public void deleteCorrectiveActionDPA(String ids, UserSessionData userSessionData) throws Exception {
+    	try{
+    		CorporationABM corporationABM = CorporationABMUtil.getHome().create();
+    		corporationABM.deleteCorrectiveActionDPA(ids, userSessionData);
+    		
+     	} catch (Exception e) {
+			Object[] parameters = {ids};
+    		handler.handleException("deleteCorrectiveActionDPA",e,userSessionData,parameters);
+    	}
+    }
+    
+    /**
+     *  
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,cepascheduleactivitycreate,cdactivitycreate,vehiclechecklist,dpachecklist"
+	 * @throws Exception
+	 */
+    public void deleteUnconformityDPA(String ids, UserSessionData userSessionData) throws Exception {
+    	try{
+    		CorporationABM corporationABM = CorporationABMUtil.getHome().create();
+    		corporationABM.deleteUnconformityDPA(ids, userSessionData);
+    		
+     	} catch (Exception e) {
+			Object[] parameters = {ids};
+    		handler.handleException("deleteUnconformityDPA",e,userSessionData,parameters);
+    	}
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,driverdelete,drivercreate"
+	 * @throws Exception
+	 */
+    public void createLevelOfServiceDriverDPA(LevelOfServiceDriverDPAData data, UserSessionData userSessionData) throws Exception {
+    	try{
+    		CorporationABM corporationABM = CorporationABMUtil.getHome().create();
+    		corporationABM.createLevelOfServiceDriverDPA(data, userSessionData);
+    		
+     	} catch (Exception e) {
+			Object[] parameters = {data};
+    		handler.handleException("createLevelOfServiceDriverDPA",e,userSessionData,parameters);
+    	}
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,driverdelete,drivercreate"
+	 * @throws Exception
+	 */
+    public void updateLevelOfServiceDriverDPA(LevelOfServiceDriverDPAData data, UserSessionData userSessionData) throws Exception {
+    	
+    	try{
+    		CorporationABM corporationABM = CorporationABMUtil.getHome().create();
+    		corporationABM.updateLevelOfServiceDriverDPA(data, userSessionData);
+    		
+     	} catch (Exception e) {
+			Object[] parameters = {data};
+    		handler.handleException("updateLevelOfServiceDriverDPA",e,userSessionData,parameters);
+    	}	
+    }
+   
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate,vehicledelete,vehiclecreate"
+	 * @throws Exception
+	 */
+    public void createLevelOfServiceVehicleDPA(LevelOfServiceVehicleDPAData data, UserSessionData userSessionData) throws Exception {
+    	try{
+    		CorporationABM corporationABM = CorporationABMUtil.getHome().create();
+    		corporationABM.createLevelOfServiceVehicleDPA(data, userSessionData);
+    		
+     	} catch (Exception e) {
+			Object[] parameters = {data};
+    		handler.handleException("createLevelOfServiceVehicleDPA",e,userSessionData,parameters);
+    	}
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate,vehicledelete,vehiclecreate"
+	 * @throws Exception
+	 */
+    public void updateLevelOfServiceVehicleDPA(LevelOfServiceVehicleDPAData data, UserSessionData userSessionData) throws Exception {
+    	
+    	try{
+    		CorporationABM corporationABM = CorporationABMUtil.getHome().create();
+    		corporationABM.updateLevelOfServiceVehicleDPA(data, userSessionData);
+    		
+     	} catch (Exception e) {
+			Object[] parameters = {data};
+    		handler.handleException("updateLevelOfServiceVehicleDPA",e,userSessionData,parameters);
+    	}	
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleview"
+	 * @throws Exception
+	 */
+    public void createInstructorRegistry(InstructorRegistryData data, UserSessionData userSessionData) throws Exception {
+    	
+    	try{
+    		CorporationABM corporationABM = CorporationABMUtil.getHome().create();
+    		corporationABM.createInstructorRegistry(data, userSessionData);
+    		
+     	} catch (Exception e) {
+			Object[] parameters = {data};
+    		handler.handleException("createInstructorRegistry",e,userSessionData,parameters);
+    	}	
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleview"
+	 * @throws Exception
+	 */
+    public void deleteInstructorRegistry(InstructorRegistryData data, UserSessionData userSessionData) throws Exception {
+    	
+    	try{
+    		CorporationABM corporationABM = CorporationABMUtil.getHome().create();
+    		corporationABM.deleteInstructorRegistry(data, userSessionData);
+    		
+     	} catch (Exception e) {
+			Object[] parameters = {data};
+    		handler.handleException("deleteInstructorRegistry",e,userSessionData,parameters);
+    	}	
+    }
+    
+    /**
+   	 * @ejb.interface-method
+   	 * @ejb.permission role-name = "administrator,corporationmodify,pointconfupdate"
+   	 * Modify a corporation
+   	 * @param data - Data with the change of the corporationmenuItems
+   	 * @param userRequest - Logged user
+        * @throws Exception
+   	 */
+   	public void saveCorporationConfig(Integer corporationId,ArrayList<CorporationConfigData> values,UserSessionData userSession) throws Exception {
+   		try{
+    		CorporationABM corporationABM = CorporationABMUtil.getHome().create();
+    		corporationABM.saveCorporationConfig(corporationId, values, userSession);
+    		
+     	} catch (Exception e) {
+			Object[] parameters = {corporationId,values};
+    		handler.handleException("saveCorporationConfig",e,userSession,parameters);
+    	}	
+    }
+      
+   	/**
+   	 * @ejb.interface-method
+        * @ejb.permission role-name = "administrator,corporationmodify,pointconfupdate"
+   	 * Modify a corporation
+     * @throws Exception
+     * 
+   	 */
+   	public void savePointsDefinitions(ArrayList<PointsDefinitionData> values, UserSessionData userSession) throws Exception {
+   		try{
+    		CorporationABM corporationABM = CorporationABMUtil.getHome().create();
+    		corporationABM.savePointsDefinitions(values,userSession);
+    		
+     	} catch (Exception e) {
+			Object[] parameters = {values};
+    		handler.handleException("savePointsDefinitions",e,userSession,parameters);
+    	}	
+   	}
+  
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,drivercreate,cepascheduleactivitysupervise"
+   	 * Create driver account
+     * @throws Exception
+     * 
+   	 */
+   	public PointAccountData saveDriverAccount(Integer driver, Integer corporation, UserSessionData userSession) throws Exception {
+   		try{
+    		return CorporationReportUtil.getHome().create().getPointAccount(1,driver,corporation,userSession);
+     	} catch (Exception e) {
+			Object[] parameters = {driver};
+    		handler.handleException("saveDriverAccount",e,userSession,parameters);
+    	}	
+   		return null;
+   	}
+   	
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,dpachecklist"
+   	 * Create driver account
+     * @throws Exception
+   	 */
+   	public  void newSeguimientoRuta(VehicleData vehicle,CheckListData checklistData,VehicleCheckData vehicleCheckData,UserSessionData userSession) throws Exception{
+   		try{
+    		
+   			if(userSession.isCorporation(CorporationData.FORESTALORIENTAL) && PointAccountData.UPM_POINTS){
+   				
+   				CorporationReport corpoReport=CorporationReportUtil.getHome().create();
+   				CorporationABM corpABM =CorporationABMUtil.getHome().create();
+   				VehicleStateData state= corpABM.getOrCreateVehicleStateData(vehicle);
+   				if(state.getState().equals(VehicleStateData.ACTIVE)){
+   	   				PointAccountData account= CorporationReportUtil.getHome().create().getPointAccount(2, vehicle.getId(), userSession);
+   	   				
+   	   				Double accountPoints=account.getTotal();
+   	   				Double totalLessPoints=0d;
+   	   				ArrayList<String> failure=new ArrayList<String>();
+   	   				
+   	   				Iterator<PointData> points = checklistData.getSortPoints();
+   	   				while(points.hasNext()) {
+   	   					PointData point = (PointData)points.next();
+   	   					Iterator items = point.getSortItems();
+   	   					if(items.hasNext()) {
+   	   						communication.activity.tables.ItemData item = (communication.activity.tables.ItemData)items.next();
+   	   						int value = -1;
+   	   						if(vehicleCheckData != null) {
+   	   							String checkValue = vehicleCheckData.getValueFromItem(item.getId()).trim();
+   	   							value = (checkValue == null || !checkValue.equals("2")) ? -1 : 2;
+   	   						}
+   	   						if(value==2){
+   	   							PointsDefinitionData definition= corpoReport.getPointsDefinitions(PointsDefinitionData.SEG_ROUTE, item.getId().toString(), userSession);
+   	   							if(definition!=null && definition.getAmount()>0){
+   	   								
+   	   								PointMoveData moveData=new PointMoveData();
+   	   								moveData.setAmount(-definition.getAmount());
+   	   								Calendar cal=Calendar.getInstance();
+   	   								cal.add(Calendar.HOUR,6);//Para que tenga la hora de Uruguay
+   	   								moveData.setDate(cal);
+   	   								moveData.setDefinition(definition.getId());
+   	   								moveData.setAccount(account.getId());
+   	   								moveData.setActualTotal(account.getTotal());
+   	   								moveData.setAmount(-definition.getAmount());
+   	   								moveData.setReference(item.getId().toString());
+   	   								moveData.setDescription(definition.getDescription());
+   	   								corpABM.savePointMove(moveData, userSession); 
+   	   								
+   	   								account.setTotal(account.getTotal()-definition.getAmount());
+   	   								failure.add(definition.getDescription());
+   	   								
+   	   								totalLessPoints+=definition.getAmount();
+   	   							}
+   	   						}
+   	   					}
+   	   				}
+   	   				
+   	   				corpABM.savePointAccount(account, userSession);
+   	   				//Si tuvo puntos negativos se notifica nuevo estado contable
+   	   				if(failure.size()>0){
+   	   					pointNotify(VehicleStateData.REASON_CODE_POINTS, "las fallas detectadas en Seguimientos en Ruta realizados por CEPA International",  account, vehicle, totalLessPoints, userSession);
+   	   				}
+
+   				}//SINO SE IGNORA EL SEGUIMIENTO
+   			}
+   			
+     	} catch (Exception e) {
+			Object[] parameters = {vehicle,checklistData};
+    		handler.handleException("newSeguimientoRuta",e,userSession,parameters);
+    	}	
+   	}
+   	
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,pointconfupdate"
+   	 *  
+     * @throws Exception
+     * 
+   	 */
+   	public void savePointMove(PointMoveData moveData, UserSessionData userSession) throws Exception{
+   		try{
+   			if(userSession.isCorporation(CorporationData.FORESTALORIENTAL)){
+   				CorporationReport corporationReport = CorporationReportUtil.getHome().create();
+   				CorporationABM corpABM=CorporationABMUtil.getHome().create();
+   				PointAccountData account=corporationReport.getPointAccount(moveData.getAccount(), userSession);
+   				VehicleData vehicleData=VehicleReportUtil.getHome().create().findVehicleByPrimaryKey(Integer.valueOf(account.getReference()), userSession);
+   				moveData.setActualTotal(account.getTotal());
+   				account.setTotal(moveData.getAmount()+account.getTotal());
+   				
+   				CorporationABMUtil.getHome().create().savePointMove(moveData, userSession);
+   				CorporationABMUtil.getHome().create().savePointAccount(account, userSession);
+   				
+   				//pointNotify(VehicleStateData.REASON_CODE_POINTS, " un ajuste manual ", account, vehicleData, -moveData.getAmount(), userSession);
+   				
+   				if(moveData.getAmount()<0){
+   	   				ArrayList<FringeData> fringers=corporationReport.getFringes(userSession);
+   	   				FringeData fringer=null;
+   	   				for(FringeData fringerAux:fringers){
+   	   					if(account.getTotal()<fringerAux.getAmount() && (account.getTotal()+(-moveData.getAmount()))>=fringerAux.getAmount() ){
+   	   						fringer=fringerAux;
+   	   						break;
+   	   					}
+   	   				}
+   	   				if(fringer!=null){
+   	   					SimpleDateFormat format=new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+   	   					corpABM.suspendedPlate(vehicleData.getMatricula(), Integer.valueOf(fringer.getTime()), "Sistema de puntos", VehicleStateData.REASON_CODE_POINTS, format.format(new Date()), VehicleStateData.TYPEOFPENALTY_CODE_TIME, userSession);
+   	   				}
+   				}
+   			}
+   			 
+   		} catch (Exception e) {
+   			Object[] parameters = {};
+    		handler.handleException("activePlate",e,userSession,parameters);
+    		 
+    	}	
+   	}
+   	
+   	private void pointNotify(int reasonCode, String principalCause,PointAccountData account,VehicleData vehicle,Double totalLessPoints,UserSessionData userSession) throws Exception {
+		 //IF por corporacion y segun sea el caso se notifica de una forma o otra 
+		if(userSession.isCorporation(CorporationData.FORESTALORIENTAL)){
+			pointNotifyFOSA(reasonCode, principalCause, account, vehicle, totalLessPoints, userSession);	 
+		}
+		
+	}
+   	
+   	private void pointNotifyFOSA(int reasonCode, String principalCause,PointAccountData account,VehicleData vehicle,Double totalLessPoints,UserSessionData userSession) throws Exception {
+   		CorporationReport corpReport=CorporationReportUtil.getHome().create();
+   		
+        DataTypeReport dataType = DataTypeReportUtil.getHome().create();
+		HashMap<String,CorporationConfigData> configs= corpReport.getCorporationConfig(CorporationData.FORESTALORIENTAL, userSession);
+	 	
+		ArrayList<FringeData> fringers=corpReport.getFringes(userSession);
+		FringeData fringer=null;
+		for(FringeData fringerAux:fringers){
+			if(account.getTotal()<fringerAux.getAmount() && (account.getTotal()+totalLessPoints)>=fringerAux.getAmount() ){
+				fringer=fringerAux;
+				break;
+			}
+		}
+		
+		//Se notifica siempre al contratista.
+		VehicleReport vehicleReport=VehicleReportUtil.getHome().create();
+		
+		String contractorMail=vehicleReport.getContractorDataMail(vehicle.getDivOrgIds()[0], userSession);
+		
+		Collection addressTo = new LinkedList();
+		Collection bcc = new LinkedList();
+   	
+		//Esto se usa para debug del sistema, si se inserta la propiedad se recibe un mail con cada movimiento }
+		//para poder hacer debug y ver como va respondiendo
+		if(SecurityConstants.isProductionServer() && configs.containsKey("points_vehicle_mdp")){
+			//addressTo.add("fcarriquiry@cepasafedrive.com");
+		}
+		 
+		String body="";
+		body= "Estimado Contratista, le informamos que se descontaron "+totalLessPoints+" puntos al veh&iacute;culo matr&iacute;cula "+vehicle.getMatricula()+"<br/>"+
+			  " Dicho descuento fue realizado por "+principalCause+" el d&iacute;a de hoy.<br/>"+
+			  " El veh&iacute;culo queda con "+account.getTotal()+" puntos.<br/>";
+		
+		String sms= "Se descontaron "+totalLessPoints+" puntos a matricula "+vehicle.getMatricula()+" "+", el vehiculo queda con "+account.getTotal()+" puntos. Atentamente CEPA-FO";
+				
+		
+		if(configs.containsKey("points_alert_sms") && configs.get("points_alert_sms").getValue().equalsIgnoreCase("si") ){
+			//SMSSender.send("FOSAPoints", account.getId().toString(), "099395558", sms);
+		}
+		
+		String subject="CEPA - FOSA - Notificación Puntos";
+		MailSender sender = new MailSender();
+		boolean sended = false;
+		int count = 0;
+		while(!sended && count < 10 && (addressTo.size()+bcc.size())>0 ) {
+			try {
+		    	String[] mailAddress = dataType.getAvailableAddress(CorporationData.REPORTER_JJ, userSession); 
+				String mailServer = AlertConstants.MAILSERVER; 
+				if (mailAddress[0] != null && mailAddress[0].contains("cepainternational.com")){
+					mailServer = AlertConstants.MAILSERVER2;
+				}else if (mailAddress[0] != null && mailAddress[0].contains("cepalogistica.com")){
+					mailServer = AlertConstants.MAILSERVER_INMOTION;
+				}
+				
+				sended =sender.sendImage(addressTo,
+						mailServer,
+						"CEPA DataCenter", 
+						mailAddress[0],
+						mailAddress[1], 
+						subject, business.alert.handler.Util.getCompleteHTMLMail(body,AlertConstants.DIGITAL_SIGNATURE_FOSA,
+								AlertConstants.EMAIL_MICA),  new LinkedList(),
+								 new LinkedList(), 
+						"", "", bcc,null);
+				
+			}catch (Exception e) {
+				e.printStackTrace();
+			}
+			count++; 
+		}
+		
+		if(fringer!=null){
+			//Paso una franja tiene que detenerse, se avisa a fosa
+			
+			    CorporationABM corpABM =CorporationABMUtil.getHome().create();
+			
+			    SimpleDateFormat format=new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+			     
+			    corpABM.suspendedPlateFOSAAsync(vehicle.getId(),totalLessPoints, account.getTotal(), vehicle.getMatricula(), Integer.valueOf(fringer.getTime()), reasonCode==VehicleStateData.REASON_CODE_POINTS?"Sistema de puntos":"No conformidades", reasonCode, format.format(new Date()), reasonCode==VehicleStateData.REASON_CODE_POINTS?VehicleStateData.TYPEOFPENALTY_CODE_TIME:VehicleStateData.TYPEOFPENALTY_CODE_INDETERMINATE, userSession);
+			    
+				body= "El veh&iacute;culo matr&iacute;cula "+vehicle.getMatricula()+" de el contratista "+((DivOrgData)vehicle.getDivOrgs().iterator().next()).getLabel()+" <br/>"+
+					  " se debe detener por "+fringer.getTime()+"hs por estar por debajo de "+fringer.getAmount()+" puntos. <br/>";
+				
+				subject="CEPA - FOSA - Notificación Detención por puntos";
+				sender = new MailSender();
+				sended = false;
+				count = 0;
+				addressTo = new LinkedList();
+				
+				String notificationMails=configs.get("points_vehicle_fosa_notification_mails").getValue();
+				if(SecurityConstants.isProductionServer()){
+					if(notificationMails!=null && notificationMails.trim().length()>0){
+						String[] aux=notificationMails.split(",");
+						for(int i =0; i<aux.length;i++){
+							addressTo.add(aux[i]);
+						}
+					}
+				}
+				while(!sended && count < 10 && (addressTo.size()+bcc.size())>0 ) {
+					try {
+				    	String[] mailAddress = dataType.getAvailableAddress(CorporationData.REPORTER_JJ, userSession); 
+						String mailServer = AlertConstants.MAILSERVER; 
+						if (mailAddress[0] != null && mailAddress[0].contains("cepainternational.com")){
+							mailServer = AlertConstants.MAILSERVER2;
+						}else if (mailAddress[0] != null && mailAddress[0].contains("cepalogistica.com")){
+							mailServer = AlertConstants.MAILSERVER_INMOTION;
+						}
+						
+						sended =sender.sendImage(addressTo,
+								mailServer,
+								"CEPA DataCenter", 
+								mailAddress[0],
+								mailAddress[1], 
+								subject, business.alert.handler.Util.getCompleteHTMLMail(body,AlertConstants.DIGITAL_SIGNATURE_FOSA,
+										AlertConstants.EMAIL_MICA),  new LinkedList(),
+										 new LinkedList(), 
+								"", "", bcc,null);
+						
+					}catch (Exception e) {
+						e.printStackTrace();
+					}
+					count++; 
+				}
+				
+				//Aca llamamos al ws de ellos, en principio al nuestro mismo.
+		}
+   	}
+   	
+   	
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess"
+   	 *  
+     * @throws Exception
+     * 
+   	 */
+   	public void saveMobilTrackEvent(MobilTrackEventData data, UserSessionData userSession)throws Exception{
+   		try{
+   			if(data.getVelGps()>120){
+   				return;
+   			}
+   			CorporationABM corpABM =CorporationABMUtil.getHome().create();
+   			VehicleReport vehicleReport =VehicleReportUtil.getHome().create();
+   			VehicleData vehicle=vehicleReport.findVehicleByPlateInCorporation(data.getMatricula().toUpperCase().trim().replaceAll(" ", ""), userSession);
+   			if(vehicle!=null){
+   				data.setVehicle(vehicle.getId());
+   			}else{
+   				System.out.println("CorporationABMFacade.saveMobilTrackEvent: No existe vehiculo matricula "+data.getMatricula());
+   			}
+   			Long idEvent=corpABM.saveMobilTrackEvent(data, userSession);
+   			//Verificar si existe el vehiculo y cargarlo.
+   			if(vehicle!=null && PointAccountData.UPM_POINTS){
+   				//Buscar la cuenta del vehiculo.
+   	   			//Actualizar los puntos.
+   	   			//Ver si pasa franjas.
+   	   			//Notificar.
+   				VehicleStateData state= corpABM.getOrCreateVehicleStateData(vehicle);
+   				if(state.getState().equals(VehicleStateData.ACTIVE)){
+   					CorporationReport corpoReport=CorporationReportUtil.getHome().create();
+   	   				PointAccountData account= CorporationReportUtil.getHome().create().getPointAccount(2, vehicle.getId(), userSession);
+   	   				
+   	   				Double accountPoints=account.getTotal();
+   	   				Double totalLessPoints=0d;
+   	   				ArrayList<String> failure=new ArrayList<String>();
+   	   				
+   	   				PointsDefinitionData definition= corpoReport.getPointsDefinitions(data.getdEvento().contains("2")?PointsDefinitionData.FOSA_SPEED_2:PointsDefinitionData.FOSA_SPEED, "0", userSession);
+   					if(definition!=null && definition.getAmount()>0){
+   						
+   						PointMoveData moveData=new PointMoveData();
+   						moveData.setAmount(-definition.getAmount());
+   						moveData.setDate(data.getFechaHora());
+   						moveData.setDefinition(definition.getId());
+   						moveData.setAccount(account.getId());
+   						moveData.setAmount(-definition.getAmount());
+   						moveData.setActualTotal(account.getTotal());
+   						moveData.setReference(idEvent.toString());
+   						moveData.setDescription(definition.getDescription());
+   						
+   						corpABM.savePointMove(moveData, userSession); 
+   						
+   						account.setTotal(account.getTotal()-definition.getAmount());
+   						failure.add(definition.getDescription());
+   						
+   						totalLessPoints+=definition.getAmount();
+   					}
+   	   				
+   	   				corpABM.savePointAccount(account, userSession);
+   	   				//Si tuvo puntos negativos se notifica nuevo estado contable
+   	   				if(failure.size()>0){
+   	   					pointNotify(VehicleStateData.REASON_CODE_POINTS, " un exceso de velocidad detectado por MobilTrack ",  account, vehicle, totalLessPoints, userSession);
+   	   				}
+   				}//SINO SE IGNORA EL EVENTO
+   			}
+   			
+   		}catch (Exception e) {
+			Object[] parameters = {data};
+    		handler.handleException("saveMobilTrackEvent",e,userSession,parameters);
+    	}	
+   	}
+   	
+	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess"
+   	 *  
+     * @throws Exception
+     * 
+   	 */
+   	public void saveEasyTrackEvent(EasyTrackEventData data, UserSessionData userSession)throws Exception{
+   		try{
+   			if(data.getVelGps()<=90){
+   				return;
+   			}
+   			
+   			CorporationABM corpABM =CorporationABMUtil.getHome().create();
+   			VehicleReport vehicleReport =VehicleReportUtil.getHome().create();
+   			VehicleData vehicle=vehicleReport.findVehicleByPlateInCorporation(data.getMatricula().toUpperCase().trim().replaceAll(" ", ""), userSession);
+   			if(vehicle!=null){
+   				data.setVehicle(vehicle.getId());
+   			}else{
+   				System.out.println("CorporationABMFacade.saveEasyTrackEvent: No existe vehiculo matricula "+data.getMatricula());
+   			}
+   			DriverReport driverReport=DriverReportUtil.getHome().create();
+   			Collection drivers=driverReport.findDriverByCorporationId(data.getCi(), userSession);
+   			DriverData driverData=null;
+   			if(drivers.size()==1){
+   				driverData=(DriverData)drivers.iterator().next();
+   				data.setDriver(driverData.getId());
+   			}else{
+   				System.out.println("CorporationABMFacade.saveEasyTrackEvent: No se determina conductor, CI "+data.getCi());
+   			}
+   			Long idEvent=corpABM.saveEasyTrackEvent(data, userSession);
+   			
+   			if(data.getDriver()!=null && data.getDriver()>0){
+   				CorporationReport corpoReport=CorporationReportUtil.getHome().create();
+   				PointAccountData account= CorporationReportUtil.getHome().create().getPointAccount(1, data.getDriver(), userSession);
+   				Double actualTotal=account.getTotal();
+   				Double accountPoints=account.getTotal();
+   				Double totalLessPoints=0d;
+   				ArrayList<String> failure=new ArrayList<String>();
+   				
+   				PointsDefinitionData definition= corpoReport.getPointsDefinitions(data.getVelGps()>100?PointsDefinitionData.MDP_SPEED_2:PointsDefinitionData.MDP_SPEED, "0", userSession);
+   				if(definition!=null && definition.getAmount()>0){
+   					
+   					PointMoveData moveData=new PointMoveData();
+   					moveData.setAmount(-definition.getAmount());
+   					moveData.setDate(data.getFechaHora());
+   					moveData.setDefinition(definition.getId());
+   					moveData.setAccount(account.getId());
+   					moveData.setAmount(-definition.getAmount());
+   					moveData.setActualTotal(account.getTotal());
+   					moveData.setReference(idEvent.toString());
+   					moveData.setDescription(definition.getDescription());
+   					
+   					corpABM.savePointMove(moveData, userSession); 
+   					
+   					account.setTotal(account.getTotal()-definition.getAmount());
+   					failure.add(definition.getDescription());
+   					
+   					totalLessPoints+=definition.getAmount();
+   				}
+   				
+   				corpABM.savePointAccount(account, userSession);
+				pointNotifyMDP(actualTotal, account.getTotal(),driverData, userSession);
+   				
+   			}
+   			
+   		}catch (Exception e) {
+   			e.printStackTrace();
+			Object[] parameters = {data};
+    		handler.handleException("saveEasyTrackEvent",e,userSession,parameters);
+    	}	
+   	}
+   	
+   	
+	
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess"
+   	 *  
+     * @throws Exception
+     * 
+   	 */
+   	public void pointNotifyMDP(Double totalAnt, Double actualTotal,DriverData driver, UserSessionData userSession) {
+		// TODO Auto-generated method stub
+   		String franja="";
+   		if(totalAnt>80 && actualTotal<80 && actualTotal> 60){
+   			//Puntaje amarillo entre 80 y 60 puntos  - Envía email al Monitor de la empresa contratista
+   			franja="Amarilla";
+   		}else if(totalAnt>60 && actualTotal<60 && actualTotal> 40){
+   			//Puntaje naranja entre 60 y 40 puntos – Envía email al monitor de la empresa contratista + mail responsable de la empresa + responsable de MDP
+   			franja="Naranja";
+   		}else if( totalAnt>40 && actualTotal<40){
+   			//Puntaje rojo menor a 40 puntos – Envía email al monitor de la empresa contratista + mail responsable de la empresa + responsable de MDP / además solicitará una “acción correctiva” que deberá ser definido por contratista asignado.
+   			franja="Roja"; 
+   		}
+   		if(franja.length()>0){
+   			String body="";
+   		   	body= "El conductor "+driver.getFirstName()+" "+driver.getLastName()+" "+driver.getCorporationId()+" se encuentra en la franja "+franja+", sus puntos son "+actualTotal;
+   			
+   			Collection addressTo=new ArrayList<String>();
+   			addressTo.add("fcarriquiry@cepasafedrive.com");
+   	   	
+   			String subject="CEPA - MDP - Notificación Puntos";
+   			 
+   			boolean sended = false;
+   			int count = 0;
+   			while(!sended && count < 10 && addressTo.size()>0 ) {
+   				try {
+   					sended =MailSender.sendMailMandrill( business.alert.handler.Util.getCompleteHTMLMail(body,AlertConstants.DIGITAL_SIGNATURE_FOSA,
+   									AlertConstants.EMAIL_MICA), subject, AlertConstants.EMAIL_MICA, addressTo, new ArrayList<String>(),  new ArrayList<String>());
+   				}catch (Exception e) {
+   					e.printStackTrace();
+   				}
+   				count++; 
+   			}
+   		}
+	}
+
+	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,drivercreate,finecreate,drivercreatefine,cepascheduleactivityupdate"
+   	 * Create driver account
+     * @throws Exception
+   	 */
+	public void addMoves(PointAccountData driverAccount, Collection<PointMoveData> moves, UserSessionData userSessionData) throws Exception {
+		CorporationABM corpABM = CorporationABMUtil.getHome().create();
+		CorporationReport corpReport = CorporationReportUtil.getHome().create();
+		Collections.sort((List)moves);
+		Iterator<PointMoveData> itMoves = moves.iterator();
+		double sum = 0;
+		while(itMoves.hasNext()) {
+			PointMoveData move = itMoves.next();
+			move.setAccount(driverAccount.getId());
+			if(!corpReport.existPointMove(move,userSessionData)) {
+				sum += move.getAmount().doubleValue();
+				move.setAccount(driverAccount.getId());
+				corpABM.savePointMove(move,userSessionData);
+			}
+		}
+		if(userSessionData.isCorporation(new int[]{CorporationData.BAYER_MX,CorporationData.MONTES_DE_PLATA})) {
+			Collection<PointMoveData> baseMoves = corpReport.getPointMoves(driverAccount.getId(), userSessionData);
+			baseMoves.addAll(moves);
+			Collections.sort((List)baseMoves);
+			sum = (userSessionData.isCorporation(CorporationData.MONTES_DE_PLATA)) ? 100.0 : 0.0;
+			Iterator<PointMoveData> it = baseMoves.iterator();
+			while(it.hasNext()) {
+				sum += it.next().getAmount();
+				if(sum < 0)
+					sum = 0.0;
+				if(userSessionData.isCorporation(CorporationData.MONTES_DE_PLATA) && sum > 100)
+					sum = 100.0;
+			}
+			driverAccount.setTotal(sum);
+			corpABM.savePointAccount(driverAccount, userSessionData);
+		} else {
+			if(sum != 0) {
+				driverAccount.sum(sum, userSessionData.getCorporationId());
+				corpABM.savePointAccount(driverAccount, userSessionData);
+			}
+		}
+	}
+ 
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,drivercreate,finecreate,drivercreatefine"
+   	 * Create driver account
+     * @throws Exception
+   	 */
+	public void removeMove(PointAccountData driverAccount, PointMoveData move, UserSessionData userSessionData) throws Exception {
+   		try{
+			CorporationABM corpABM = CorporationABMUtil.getHome().create();
+			corpABM.removeMove(move,userSessionData);
+			if(userSessionData.isCorporation(new int[] {CorporationData.BAYER_MX, CorporationData.MONTES_DE_PLATA})) {
+				Collection<PointMoveData> baseMoves = CorporationReportUtil.getHome().create().getPointMoves(driverAccount.getId(), userSessionData);
+				Collections.sort((List)baseMoves);
+				double sum = (userSessionData.isCorporation(CorporationData.MONTES_DE_PLATA)) ? 100.0 : 0.0;
+				Iterator<PointMoveData> it = baseMoves.iterator();
+				while(it.hasNext()) {
+					PointMoveData moveData = it.next();
+					if(moveData.getId().intValue() != move.getId().intValue()) {
+						sum += moveData.getAmount();
+						if(sum < 0)
+							sum = 0.0;
+						if(userSessionData.isCorporation(CorporationData.MONTES_DE_PLATA) && sum > 100)
+							sum = 100.0;
+					}
+				}
+				driverAccount.setTotal(sum);
+				corpABM.savePointAccount(driverAccount, userSessionData);
+			} else {
+				driverAccount.sum(move.getAmount()*-1, userSessionData.getCorporationId());
+				corpABM.savePointAccount(driverAccount, userSessionData);
+			}
+     	} catch (Exception e) {
+			Object[] parameters = {driverAccount,move};
+    		handler.handleException("removeMove",e,userSessionData,parameters);
+    	}	
+	}
+ 
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,drivercreate,finecreate,drivercreatefine"
+   	 * Create driver account
+     * @throws Exception
+   	 */
+	public void updatePointAccount(Integer accountId, UserSessionData userSessionData) throws Exception {
+   		try{
+			CorporationABMUtil.getHome().create().updatePointAccount(accountId, userSessionData);
+     	} catch (Exception e) {
+			Object[] parameters = {accountId};
+    		handler.handleException("updatePointAccount",e,userSessionData,parameters);
+    	}	
+	}
+	
+  	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,drivercreate"
+   	 * Create driver account
+     * @throws Exception
+   	 */
+	public void addDriver(DriverData driver, UserSessionData userSessionData) throws Exception {
+		Collection<PointMoveData> moves = new LinkedList<PointMoveData>(); 
+		PointAccountData driverAccount = saveDriverAccount(driver.getId(), driver.getCorporation().getId(), userSessionData);
+
+		CorporationReportFacade corporationReport = CorporationReportFacadeUtil.getHome().create();
+		String[] keys = {PointsDefinitionData.AGE,PointsDefinitionData.LICENSE_AGE_LESS,PointsDefinitionData.LICENSE_AGE_BETWEEN,PointsDefinitionData.COMPANY_AGE_LESS};
+		HashMap<String,PointsDefinitionData> definitions = corporationReport.getPointsDefinition(keys,driver.getCorporation().getId(),userSessionData);
+		if(definitions != null && definitions.size() > 0) {
+			if(definitions.containsKey(PointsDefinitionData.AGE) && driver.getBirthDate() != null) {
+				PointsDefinitionData definitionData = definitions.get(PointsDefinitionData.AGE);
+				if(Integer.parseInt(definitionData.getReference()) > driver.getAge()) {
+					moves.add(new PointMoveData(definitionData,Calendar.getInstance(),Util.formatDate(driver.getBirthDate())));
+				}
+			}
+			if(definitions.containsKey(PointsDefinitionData.COMPANY_AGE_LESS) && driver.getInclusionDate() != null) {
+				PointsDefinitionData definitionData = definitions.get(PointsDefinitionData.COMPANY_AGE_LESS);
+				if(Integer.parseInt(definitionData.getReference()) > driver.getComapanyAge()) {
+					moves.add(new PointMoveData(definitionData,Calendar.getInstance(),Util.formatDate(driver.getInclusionDate())));
+				}
+			}
+			if(driver.getLicenseGet() != null) {
+				int licenseAge = driver.getLicenseAge();
+				boolean added = false;
+				if(definitions.containsKey(PointsDefinitionData.LICENSE_AGE_LESS)) {
+					PointsDefinitionData definitionData = definitions.get(PointsDefinitionData.LICENSE_AGE_LESS);
+					if(Integer.parseInt(definitionData.getReference()) > licenseAge) {
+						moves.add(new PointMoveData(definitionData,Calendar.getInstance(),Util.formatDate(driver.getLicenseGet())));
+						added = true;
+					}
+				}
+				if(!added && definitions.containsKey(PointsDefinitionData.LICENSE_AGE_BETWEEN)) {
+					PointsDefinitionData definitionData = definitions.get(PointsDefinitionData.LICENSE_AGE_BETWEEN);
+					StringTokenizer tokenizer = new StringTokenizer(definitionData.getReference(),",");
+					int min = Integer.parseInt(tokenizer.nextToken());
+					int max = Integer.parseInt(tokenizer.nextToken());
+					if(min <= licenseAge && licenseAge <= max) {
+						moves.add(new PointMoveData(definitionData,Calendar.getInstance(),Util.formatDate(driver.getLicenseGet())));
+					}
+				}
+			}
+		}			
+		if(moves.size() > 0) {
+			addMoves(driverAccount, moves, userSessionData);
+		}
+	}
+	
+  	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,finecreate,drivercreatefine"
+   	 * Create driver account
+     * @throws Exception
+   	 */
+	public void addFine(FineDataType fine, UserSessionData userSessionData) throws Exception {
+		Collection<PointMoveData> moves = new LinkedList<PointMoveData>(); 
+
+		CorporationReport corporationReport = CorporationReportUtil.getHome().create();
+		PointAccountData driverAccount = corporationReport.getPointAccount(PointAccountData.DRIVER, fine.getDriver().getId(), userSessionData);
+		PointsDefinitionData definition = corporationReport.getPointsDefinitions(PointsDefinitionData.FINE, fine.getQualify().getResourceBundleId(), userSessionData);
+		if(definition != null) {
+			definition.pound(fine.getAge(),userSessionData.getCorporationId());
+			Calendar c = Calendar.getInstance();
+			c.setTime(fine.getDate());
+			moves.add(new PointMoveData(definition,c,String.valueOf(fine.getId())));
+		}
+		if(moves.size() > 0) {
+			addMoves(driverAccount, moves, userSessionData);
+		}
+	}
+
+  	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,finecreate,drivercreatefine"
+   	 * Create driver account
+     * @throws Exception
+   	 */
+	public void updateFine(FineDataType fine, UserSessionData userSessionData) throws Exception {
+		CorporationReport corporationReport = CorporationReportUtil.getHome().create();
+		PointAccountData driverAccount = corporationReport.getPointAccount(PointAccountData.DRIVER, fine.getDriver().getId(), userSessionData);
+		PointsDefinitionData definition = corporationReport.getPointsDefinitions(PointsDefinitionData.FINE, fine.getQualify().getResourceBundleId(), userSessionData);
+		PointMoveData move = corporationReport.getPointMove(driverAccount.getId(),String.valueOf(fine.getId()),null,userSessionData);
+		Calendar c = Calendar.getInstance();
+		c.setTime(fine.getDate());
+		if(move == null) {
+			if(definition != null) {
+				Collection<PointMoveData> moves = new LinkedList<PointMoveData>();
+				definition.pound(fine.getAge(),userSessionData.getCorporationId());
+				moves.add(new PointMoveData(definition,c,String.valueOf(fine.getId())));
+				addMoves(driverAccount, moves, userSessionData);
+			}
+		}else {
+			if(definition == null) {
+				removeMove(driverAccount,move,userSessionData);
+			}else if (definition.getId().intValue() != move.getDefinition().intValue()){
+				removeMove(driverAccount,move,userSessionData);
+				Collection<PointMoveData> moves = new LinkedList<PointMoveData>();
+				definition.pound(fine.getAge(),userSessionData.getCorporationId());
+				moves.add(new PointMoveData(definition,c,String.valueOf(fine.getId())));
+				addMoves(driverAccount, moves, userSessionData);
+			}
+		}
+	}
+
+  	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,finecreate,drivercreatefine,eventdelete"
+   	 * Create driver account
+     * @throws Exception
+   	 */
+	public void removeEvent(Integer event, UserSessionData userSessionData) throws Exception {
+		try {
+			CorporationABMUtil.getHome().create().removeEventMove(event,userSessionData);
+		} catch (Exception e) {
+			Object[] parameters = {event};
+    		handler.handleException("removeEvent",e,userSessionData,parameters);
+		}	
+	}
+
+	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventcreate"
+   	 * Create driver account
+     * @throws Exception
+   	 */
+	public void addEvent(EventDataType event, UserSessionData userSessionData) throws Exception {
+		Collection<PointMoveData> moves = new LinkedList<PointMoveData>(); 
+		Calendar c = Calendar.getInstance();
+		c.setTime(event.getDate());
+
+		boolean added = false;
+		CorporationReport corporationReport = CorporationReportUtil.getHome().create();
+		PointAccountData driverAccount = corporationReport.getPointAccount(PointAccountData.DRIVER, event.getDriver().getId(), userSessionData);
+		boolean isEvitable = event.getEvitability().equals("generic.messages.yes");
+		switch(userSessionData.getCorporationId()) {
+			case CorporationData.BAYER_MX:
+				if(isEvitable) {
+					String[] keys = {PointsDefinitionData.EVENTO_EVITABLE_FATAL,PointsDefinitionData.EVENTO_EVITABLE_FATAL_COSTO,PointsDefinitionData.EVENTO_EVITABLE_LESION,PointsDefinitionData.EVENTO_EVITABLE_LESION_COSTO,PointsDefinitionData.EVENTO_EVITABLE,PointsDefinitionData.EVENTO_EVITABLE_COSTO,PointsDefinitionData.TWO_ACCIDENT_YEAR,PointsDefinitionData.THREE_ACCIDENT_YEAR};
+					HashMap<String,PointsDefinitionData> definitions = corporationReport.getPointsDefinition(keys,userSessionData);
+					PointsDefinitionData definition = null;
+					if(event.hasDeceased()) {
+						if(event.getCost() != null && event.getCost() >= 50000) {
+							definition = definitions.get(PointsDefinitionData.EVENTO_EVITABLE_FATAL_COSTO);
+						}else { 
+							definition = definitions.get(PointsDefinitionData.EVENTO_EVITABLE_FATAL);
+						}
+					} else if(event.hasInjured()) {
+						if(event.getCost() != null && event.getCost() >= 50000) {
+							definition = definitions.get(PointsDefinitionData.EVENTO_EVITABLE_LESION_COSTO);
+						}else {
+							definition = definitions.get(PointsDefinitionData.EVENTO_EVITABLE_LESION);
+						}
+					} else {
+						if(event.getCost() != null && event.getCost() >= 50000) {
+							definition = definitions.get(PointsDefinitionData.EVENTO_EVITABLE_COSTO);
+						}else {
+							definition = definitions.get(PointsDefinitionData.EVENTO_EVITABLE);
+						}
+					}
+					definition.pound(event.getAge(),userSessionData.getCorporationId());
+					moves.add(new PointMoveData(definition,c,String.valueOf(event.getId())));
+					added = true;
+	
+					Calendar cal = Calendar.getInstance();
+					cal.add(Calendar.YEAR, -1);
+					Integer count = corporationReport.getMoveCount(event.getDriver().getId(), c, PointsDefinitionData.CATEGORY_ACCIDENT, userSessionData);
+					double total = driverAccount.getTotal() + definition.getAmount();
+					if(count >= 2 && total < 50) {
+						definition = definitions.get(PointsDefinitionData.THREE_ACCIDENT_YEAR);
+						PointMoveData move = new PointMoveData(definition,Calendar.getInstance(),Util.formatDate(Calendar.getInstance().getTime()));
+						move.setAmount(50.0-total);
+						moves.add(move);
+					} else if(count == 1 && driverAccount.getTotal() < 30) {
+						definition = definitions.get(PointsDefinitionData.TWO_ACCIDENT_YEAR);
+						PointMoveData move = new PointMoveData(definition,Calendar.getInstance(),Util.formatDate(Calendar.getInstance().getTime()));
+						move.setAmount(30.0-total);
+						moves.add(move);
+					}
+				}
+				break;
+			case CorporationData.MONTES_DE_PLATA:
+				if(isEvitable) {
+					String[] keys1 = {PointsDefinitionData.ATROPELLAMIENTO, PointsDefinitionData.VUELCO, PointsDefinitionData.COLISION_FRONTAL, PointsDefinitionData.COLISION_LATERAL, PointsDefinitionData.COLISION_TRASERA, PointsDefinitionData.COLISION_TRANSVERSAL, PointsDefinitionData.OBJETO_FIJO, PointsDefinitionData.COLISION_ANIMAL};
+					HashMap<String,PointsDefinitionData> definitions1 = corporationReport.getPointsDefinition(keys1,userSessionData);
+					PointsDefinitionData clasification = null;
+					Iterator<PointsDefinitionData> it = definitions1.values().iterator();
+					if(event.getClasification3() != null) {
+						String eventClasification = event.getClasification3().getResourceBundleId();
+						while(it.hasNext()) {
+							PointsDefinitionData definition = it.next();
+							if(definition.getReference().equals(eventClasification) || definition.getDescription().equals(eventClasification)) {
+								if(clasification == null || clasification.getAmount() < definition.getAmount()) {
+									clasification = definition;
+								}
+							}
+						}
+					}
+					if(clasification != null) {
+						moves.add(new PointMoveData(clasification,c,String.valueOf(event.getId())));
+					}
+					
+					String[] keys2 = {PointsDefinitionData.FATAL_ACCIDENT, PointsDefinitionData.INJURED_ACCIDENT, PointsDefinitionData.ACCIDENT_WITH_DAMAGE, PointsDefinitionData.ACCIDENT_WITH_ENVIRONMENT_DAMAGE};
+					HashMap<String,PointsDefinitionData> definitions2 = corporationReport.getPointsDefinition(keys2,userSessionData);
+					if(definitions2.containsKey(PointsDefinitionData.FATAL_ACCIDENT) && event.hasDeceased()) {
+						PointsDefinitionData definition = definitions2.get(PointsDefinitionData.FATAL_ACCIDENT);
+						moves.add(new PointMoveData(definition,c,String.valueOf(event.getId())));
+						added = true;
+					} 
+					if(!added && event.hasInjured() && definitions2.containsKey(PointsDefinitionData.INJURED_ACCIDENT)) {
+						PointsDefinitionData definition = definitions2.get(PointsDefinitionData.INJURED_ACCIDENT);
+						moves.add(new PointMoveData(definition,c,String.valueOf(event.getId())));
+						added = true;
+					}
+					if(!added && event.isDamage() && definitions2.containsKey(PointsDefinitionData.ACCIDENT_WITH_DAMAGE)) {
+						PointsDefinitionData definition = definitions2.get(PointsDefinitionData.ACCIDENT_WITH_DAMAGE);
+						moves.add(new PointMoveData(definition,c,String.valueOf(event.getId())));
+						added = true;
+					}	
+					if(!added && event.isDoubleCabin() && definitions2.containsKey(PointsDefinitionData.ACCIDENT_WITH_ENVIRONMENT_DAMAGE)) {
+						PointsDefinitionData definition = definitions2.get(PointsDefinitionData.ACCIDENT_WITH_ENVIRONMENT_DAMAGE);
+						moves.add(new PointMoveData(definition,c,String.valueOf(event.getId())));
+					}	
+				}
+				break;
+			default:
+				if(event.getEvitability().equals("generic.messages.yes")) {
+					String[] keys = {PointsDefinitionData.FATAL_ACCIDENT,PointsDefinitionData.INJURED_ACCIDENT_WLOSTDAY,PointsDefinitionData.ACCIDENT_WITH_DAMAGE,PointsDefinitionData.ACCIDENT};
+					HashMap<String,PointsDefinitionData> definitions = corporationReport.getPointsDefinition(keys,userSessionData);
+		
+					if(definitions.containsKey(PointsDefinitionData.FATAL_ACCIDENT) && event.hasDeceased()) {
+						PointsDefinitionData definition = definitions.get(PointsDefinitionData.FATAL_ACCIDENT);
+						definition.pound(event.getAge(),userSessionData.getCorporationId());
+						moves.add(new PointMoveData(definition,c,String.valueOf(event.getId())));
+						added = true;
+					} 
+					if(!added && event.hasDaysLost()) {
+						if(definitions.containsKey(PointsDefinitionData.INJURED_ACCIDENT_WLOSTDAY)) {
+							PointsDefinitionData definition = definitions.get(PointsDefinitionData.INJURED_ACCIDENT_WLOSTDAY);
+							definition.pound(event.getAge(),userSessionData.getCorporationId());
+							moves.add(new PointMoveData(definition,c,String.valueOf(event.getId())));
+							added = true;
+						}
+					}
+					if(!added) {
+						Calendar eventDate = Calendar.getInstance();
+						eventDate.setTime(event.getDate());
+						if(eventDate.get(Calendar.YEAR) <= 2015) {
+							if(!added && event.getAccident().getResourceBundleId().equals("datatype.accidentclasification.tumble") || event.getAccident().getResourceBundleId().equals("datatype.accidentclasification.rollover")){
+								if(definitions.containsKey(PointsDefinitionData.ACCIDENT_WITH_DAMAGE)) {
+									PointsDefinitionData definition = definitions.get(PointsDefinitionData.ACCIDENT_WITH_DAMAGE);
+									definition.pound(event.getAge(),userSessionData.getCorporationId());
+									moves.add(new PointMoveData(definition,c,String.valueOf(event.getId())));
+									added = true;
+								}
+							} 
+							if(!added && definitions.containsKey(PointsDefinitionData.ACCIDENT)) {
+								PointsDefinitionData definition = definitions.get(PointsDefinitionData.ACCIDENT);
+								definition.pound(event.getAge(),userSessionData.getCorporationId());
+								moves.add(new PointMoveData(definition,c,String.valueOf(event.getId())));
+							}
+						}else {
+							if(event.getClasification4() != null && event.isDamage()) {
+								PointsDefinitionData definition = corporationReport.getPointsDefinitions(PointsDefinitionData.NEW_ACCIDENT_WITH_DAMAGE, event.getClasification4().getResourceBundleId(), userSessionData);
+								if(definition != null) {
+									definition.pound(event.getAge(),userSessionData.getCorporationId());
+									moves.add(new PointMoveData(definition,c,String.valueOf(event.getId())));
+								}
+							}
+						}
+					}	
+				}
+				break;
+		}
+		if(moves.size() > 0) {
+			addMoves(driverAccount, moves, userSessionData);
+		}
+	}
+	
+	
+	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventcreate"
+   	 * Create driver account
+     * @throws Exception
+   	 */
+	public void updateEvent(EventDataType event, UserSessionData userSessionData) throws Exception {
+		CorporationReport corporationReport = CorporationReportUtil.getHome().create();
+		PointsDefinitionData definition = null;
+		boolean isEvitable = event.getEvitability().equals("generic.messages.yes");
+		if(userSessionData.isCorporation(CorporationData.MONTES_DE_PLATA)) {
+			PointsDefinitionData clasification = null;
+			PointsDefinitionData consequence = null;
+			if(isEvitable) {
+				String[] keys1 = {PointsDefinitionData.ATROPELLAMIENTO, PointsDefinitionData.VUELCO, PointsDefinitionData.COLISION_FRONTAL, PointsDefinitionData.COLISION_LATERAL, PointsDefinitionData.COLISION_TRASERA, PointsDefinitionData.COLISION_TRANSVERSAL, PointsDefinitionData.OBJETO_FIJO, PointsDefinitionData.COLISION_ANIMAL};
+				HashMap<String,PointsDefinitionData> definitions1 = corporationReport.getPointsDefinition(keys1,userSessionData);
+				Iterator<PointsDefinitionData> it = definitions1.values().iterator();
+				if(event.getClasification3() != null) {
+					String eventClasification = event.getClasification3().getResourceBundleId();
+					while(it.hasNext()) {
+						definition = it.next();
+						if(definition.getReference().equals(eventClasification) || definition.getDescription().equals(eventClasification)) {
+							if(clasification == null || clasification.getAmount() < definition.getAmount()) {
+								clasification = definition;
+							}
+						}
+					}
+				}
+				
+				String[] keys2 = {PointsDefinitionData.FATAL_ACCIDENT, PointsDefinitionData.INJURED_ACCIDENT, PointsDefinitionData.ACCIDENT_WITH_DAMAGE, PointsDefinitionData.ACCIDENT_WITH_ENVIRONMENT_DAMAGE};
+				HashMap<String,PointsDefinitionData> definitions2 = corporationReport.getPointsDefinition(keys2,userSessionData);
+				if(definitions2.containsKey(PointsDefinitionData.FATAL_ACCIDENT) && event.hasDeceased()) {
+					consequence = definitions2.get(PointsDefinitionData.FATAL_ACCIDENT);
+				} 
+				if(consequence == null && event.hasInjured() && definitions2.containsKey(PointsDefinitionData.INJURED_ACCIDENT)) {
+					consequence = definitions2.get(PointsDefinitionData.INJURED_ACCIDENT_WLOSTDAY);
+				}
+				if(consequence == null &&  event.isDamage() && definitions2.containsKey(PointsDefinitionData.ACCIDENT_WITH_DAMAGE)) {
+					consequence = definitions2.get(PointsDefinitionData.ACCIDENT_WITH_DAMAGE);
+				}	
+			}
+			/*PointAccountData driverAccount = corporationReport.getPointAccount(PointAccountData.DRIVER, event.getDriver().getId(), userSessionData);
+			Collection moves = corporationReport.getPointMoves(driverAccount.getId(),userSessionData);
+			Iterator it = moves.iterator();
+			
+			while(it.hasNext()) {
+				PointMoveData move = (PointMoveData) it.next();
+				if(Integer.parseInt(move.getReference()) == event.getId().intValue()) {
+					if(move.getDefitionName())
+				}
+			}*/
+
+		}else {
+			if(userSessionData.isCorporation(CorporationData.BAYER_MX)) {
+				String[] keys = {PointsDefinitionData.EVENTO_NOEVITABLE,PointsDefinitionData.EVENTO_EVITABLE_FATAL,PointsDefinitionData.EVENTO_EVITABLE_FATAL_COSTO,PointsDefinitionData.EVENTO_EVITABLE_LESION,PointsDefinitionData.EVENTO_EVITABLE_LESION_COSTO,PointsDefinitionData.EVENTO_EVITABLE,PointsDefinitionData.EVENTO_EVITABLE_COSTO};
+				HashMap<String,PointsDefinitionData> definitions = corporationReport.getPointsDefinition(keys,userSessionData);
+				if(event.getEvitability().equals("generic.messages.yes")) {
+					if(event.hasDeceased()) {
+						if(event.getCost() >= 50000) {
+							definition = definitions.get(PointsDefinitionData.EVENTO_EVITABLE_FATAL_COSTO);
+						}else { 
+							definition = definitions.get(PointsDefinitionData.EVENTO_EVITABLE_FATAL);
+						}
+					} else if(event.hasInjured()) {
+						if(event.getCost() >= 50000) {
+							definition = definitions.get(PointsDefinitionData.EVENTO_EVITABLE_LESION_COSTO);
+						}else {
+							definition = definitions.get(PointsDefinitionData.EVENTO_EVITABLE_LESION);
+						}
+					} else {
+						if(event.getCost() >= 50000) {
+							definition = definitions.get(PointsDefinitionData.EVENTO_EVITABLE_COSTO);
+						}else {
+							definition = definitions.get(PointsDefinitionData.EVENTO_EVITABLE);
+						}
+					}
+				}
+			}else {
+				if(event.getEvitability().equals("generic.messages.yes")) {
+					String[] keys = {PointsDefinitionData.FATAL_ACCIDENT,PointsDefinitionData.INJURED_ACCIDENT_WLOSTDAY,PointsDefinitionData.ACCIDENT_WITH_DAMAGE,PointsDefinitionData.ACCIDENT};
+					HashMap<String,PointsDefinitionData> definitions = corporationReport.getPointsDefinition(keys,userSessionData);
+					if(definitions.containsKey(PointsDefinitionData.FATAL_ACCIDENT) && event.hasDeceased()) {
+						definition = definitions.get(PointsDefinitionData.FATAL_ACCIDENT);
+					} 
+					if(definition == null && event.hasDaysLost()) {
+						if(definitions.containsKey(PointsDefinitionData.INJURED_ACCIDENT_WLOSTDAY)) {
+							definition = definitions.get(PointsDefinitionData.INJURED_ACCIDENT_WLOSTDAY);
+						}
+					}
+					if(definition == null) {
+						Calendar eventDate = Calendar.getInstance();
+						eventDate.setTime(event.getDate());
+						if(eventDate.get(Calendar.YEAR) <= 2015) {
+							if(definition == null && definitions.containsKey(PointsDefinitionData.ACCIDENT_WITH_DAMAGE)) {
+								definition = definitions.get(PointsDefinitionData.ACCIDENT_WITH_DAMAGE);
+							} 
+							if(definition == null && definitions.containsKey(PointsDefinitionData.ACCIDENT)) {
+								definition = definitions.get(PointsDefinitionData.ACCIDENT);
+							}
+						}else {
+							if(event.getClasification4() != null && event.isDamage()) {
+								definition = corporationReport.getPointsDefinitions(PointsDefinitionData.NEW_ACCIDENT_WITH_DAMAGE, event.getClasification4().getResourceBundleId(), userSessionData);
+							}
+						}
+					}
+				}
+			}
+			PointAccountData driverAccount = corporationReport.getPointAccount(PointAccountData.DRIVER, event.getDriver().getId(), userSessionData);
+			PointMoveData move = corporationReport.getPointMove(driverAccount.getId(),String.valueOf(event.getId()),null,userSessionData);
+			Calendar c = Calendar.getInstance();
+			c.setTime(event.getDate());
+			if(move == null) {
+				if(definition != null) {
+					Collection<PointMoveData> moves = new LinkedList<PointMoveData>();
+					definition.pound(event.getAge(),userSessionData.getCorporationId());
+					moves.add(new PointMoveData(definition,c,String.valueOf(event.getId())));
+					addMoves(driverAccount, moves, userSessionData);
+				}
+			}else {
+				if(definition == null) {
+					removeMove(driverAccount,move,userSessionData);
+				}else if (definition.getId().intValue() != move.getDefinition().intValue()){
+					removeMove(driverAccount,move,userSessionData);
+					Collection<PointMoveData> moves = new LinkedList<PointMoveData>();
+					definition.pound(event.getAge(),userSessionData.getCorporationId());
+					moves.add(new PointMoveData(definition,c,String.valueOf(event.getId())));
+					addMoves(driverAccount, moves, userSessionData);
+				}
+			}
+		}
+	}
+
+	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventcreate,cepascheduleactivitycreate,cepascheduleactivityupdate,jjreporter"
+   	 * Create driver account
+     * @throws Exception
+   	 */
+	public void addActivity(CEPAActivityScheduleData activity, UserSessionData userSessionData) throws Exception {
+		CorporationReport corporationReport = CorporationReportUtil.getHome().create();
+		PointsDefinitionData definition = corporationReport.getPointsDefinitions(PointsDefinitionData.ACTIVITY, activity.getType().getResourceBundleId(), userSessionData);
+
+		if(definition != null || userSessionData.isCorporation(CorporationData.BAYER_MX)) {
+			ActivityReport activityReport = ActivityReportUtil.getHome().create();
+			Object[][] registries = activityReport.getParticipantsRegistry(activity.getActivityId(), userSessionData);
+			for(int i = 0; i < registries.length; i++) {
+				Integer driver = (Integer) registries[i][4];
+				String note = (String) registries[i][3];
+				if(definition != null) {
+					Collection<PointMoveData> moves = new LinkedList<PointMoveData>(); 
+
+					PointAccountData driverAccount = corporationReport.getPointAccount(PointAccountData.DRIVER, driver, userSessionData);
+					PointMoveData move = corporationReport.getPointMove(driverAccount.getId(),String.valueOf(activity.getActivityId()),definition.getId(),userSessionData);
+					if(move != null) {	
+						if(definition.getCondition() != null && !note.equals("generic.activity.note.approved") && !note.equals("generic.activity.note.approvedwithobservations")) {
+							removeMove(driverAccount,move,userSessionData);
+							driverAccount.sum(move.getAmount()*-1, userSessionData.getCorporationId());
+						}
+					} else {
+						if(definition.getCondition() == null || note.equals("generic.activity.note.apruved") || note.equals("generic.activity.note.apruvedwithobservations")) {
+							definition.pound(activity.getAge(),userSessionData.getCorporationId());
+							Calendar c = Calendar.getInstance();
+							c.setTime(activity.getDate());
+							moves.add(new PointMoveData(definition,c,String.valueOf(activity.getActivityId())));
+						}
+						if(moves.size() > 0) {
+							addMoves(driverAccount, moves, userSessionData);
+						}
+					}
+				}
+				if(userSessionData.isCorporation(CorporationData.BAYER_MX)) {
+					String activityDefinition = activity.getDefinition().getResourceKeyName();
+					if((activityDefinition.equals(CEPAActivityConstants.BTW1) || activityDefinition.equals(CEPAActivityConstants.BTW2)
+							 || activityDefinition.equals(CEPAActivityConstants.BTWONBOARD) || activityDefinition.equals(CEPAActivityConstants.BTW1_NEW_FORM_TABLET)
+							 || activityDefinition.equals(CEPAActivityConstants.BTW1ONBOARD_TABLET) || activityDefinition.equals(CEPAActivityConstants.BTW1_NEW_FORM_TABLET)
+							 || activityDefinition.equals(CEPAActivityConstants.HRD) || activityDefinition.equals(CEPAActivityConstants.MONITORS)
+							 || activityDefinition.equals(CEPAActivityConstants.FEEDBACK_LINE_MANAGER)) && !note.equals("generic.activity.note.practicepending")){
+						DriverABMUtil.getHome().create().completeMitigationPlanActiviy(driver,activityDefinition,userSessionData);
+					}
+				}
+			}
+		}
+		if( userSessionData.isCorporation(CorporationData.BAYER_MX)){
+			ActivityReport activityReport = ActivityReportUtil.getHome().create();
+			Object[][] registries = activityReport.getParticipantsRegistry(activity.getActivityId(), userSessionData);
+			for(int i = 0; i < registries.length; i++) {
+				Integer driver = (Integer) registries[i][4];
+				boolean result=((String)registries[i][3]).equals(CEPAActivityConstants.APRUVED) || ((String)registries[i][3]).equals(CEPAActivityConstants.WITHOUTNOTE);
+				//Plan Anual
+				String activityDefinition = activity.getDefinition().getResourceKeyName();
+				DriverABMUtil.getHome().create().completeAnualPlanActivity(driver, activityDefinition, result, userSessionData);
+			}
+		}
+	}
+
+	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventcreate,cepascheduleactivitycreate,cepascheduleactivityupdate,jjreporter"
+   	 * Create driver account
+     * @throws Exception
+   	 */
+	public void addActivity(CEPAActivityScheduleData activity, Integer activityId, Integer driver, String note, Integer corporation, UserSessionData userSessionData) throws Exception {
+		CorporationReport corporationReport = CorporationReportUtil.getHome().create();
+		PointsDefinitionData definition = corporationReport.getPointsDefinitions(PointsDefinitionData.ACTIVITY, activity.getType().getResourceBundleId(), activity.getCorpooration().getId() , note, userSessionData);
+
+		if(definition != null) {
+			Collection<PointMoveData> moves = new LinkedList<PointMoveData>(); 
+
+			PointAccountData driverAccount = corporationReport.getPointAccount(PointAccountData.DRIVER, driver, corporation, userSessionData);
+			PointMoveData move = corporationReport.getPointMove(driverAccount.getId(),String.valueOf(activity.getActivityId()),definition.getId(),userSessionData);
+			if(move != null) {	
+				if(definition.getCondition() != null && !note.equals("generic.activity.note.approved") && !note.equals("generic.activity.note.approvedwithobservations")) {
+					removeMove(driverAccount,move,userSessionData);
+					driverAccount.sum(move.getAmount()*-1, userSessionData.getCorporationId());
+				}
+			} else {
+				if(definition.getCondition() == null || note.equals(definition.getCondition())) {
+					Calendar c = Calendar.getInstance();
+					c.setTime(activity.getDate());
+					moves.add(new PointMoveData(definition,c,String.valueOf(activityId)));
+				}
+				if(moves.size() > 0) {
+					addMoves(driverAccount, moves, userSessionData);
+				}
+			}
+		}
+
+	}
+
+  	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventcreate,cepascheduleactivitycreate,cepascheduleactivityupdate"
+   	 * Create driver account
+     * @throws Exception
+   	 */
+	public void removeActivity(CEPAActivityScheduleData activity, UserSessionData userSessionData) throws Exception {
+		try {
+			CorporationReport corporationReport = CorporationReportUtil.getHome().create();
+			PointsDefinitionData definition = corporationReport.getPointsDefinitions(PointsDefinitionData.ACTIVITY, activity.getType().getResourceBundleId(), userSessionData);
+
+			if(definition != null) {
+				ActivityReport activityReport = ActivityReportUtil.getHome().create();
+				Object[][] registries = activityReport.getParticipantsRegistry(activity.getActivityId(), userSessionData);
+				for(int i = 0; i < registries.length; i++) {
+					Integer driver = (Integer) registries[i][4];
+					PointAccountData driverAccount = corporationReport.getPointAccount(PointAccountData.DRIVER, driver, userSessionData);
+					PointMoveData move = corporationReport.getPointMove(driverAccount.getId(),String.valueOf(activity.getActivityId()),definition.getId(),userSessionData);
+					if(move != null) {	
+						removeMove(driverAccount,move,userSessionData);
+						driverAccount.sum(move.getAmount()*-1, userSessionData.getCorporationId());
+					}
+				}
+			}
+
+		} catch (Exception e) {
+			Object[] parameters = {activity};
+    		handler.handleException("removeActivity",e,userSessionData,parameters);
+		}	
+	}
+
+
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,drivercreate,finecreate,drivercreatefine"
+   	 * Create driver account
+     * @throws Exception
+   	 */
+	public void addMove(Integer account, int points, String defintionType, String comment, UserSessionData userSessionData) throws Exception {
+		addMove(Calendar.getInstance(),account,points,defintionType,comment,userSessionData);
+	}
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,drivercreate,finecreate,drivercreatefine"
+   	 * Create driver account
+     * @throws Exception
+   	 */
+	public void addMove(Calendar assignedDate,Integer account, int points, String defintionType, String comment, UserSessionData userSessionData) throws Exception {
+		CorporationReport corporationReport = CorporationReportUtil.getHome().create();
+		ArrayList<PointsDefinitionData> definitions = corporationReport.getPointsDefinitions(defintionType,userSessionData);
+		if(definitions != null && definitions.size() > 0) {
+			PointsDefinitionData definition = definitions.iterator().next();
+			PointMoveData move = new PointMoveData(definition, assignedDate, comment);
+			move.setAccount(account);
+			move.setAmount(new Integer(points).doubleValue());
+			CorporationABM corpABM = CorporationABMUtil.getHome().create();
+			corpABM.savePointMove(move, userSessionData);
+
+			PointAccountData driverAccount = corporationReport.getPointAccount(account, userSessionData);
+			if(userSessionData.isCorporation(new int[] {CorporationData.BAYER_MX, CorporationData.MONTES_DE_PLATA})) {
+				Collection<PointMoveData> moves = corporationReport.getPointMoves(account, userSessionData);
+				moves.add(move);
+				Collections.sort((List)moves);
+				double sum = (userSessionData.isCorporation(CorporationData.MONTES_DE_PLATA)) ? 100.0 : 0.0;
+				Iterator<PointMoveData> it = moves.iterator();
+				while(it.hasNext()) {
+					sum += it.next().getAmount();
+					if(sum < 0)
+						sum = 0.0;
+					if(userSessionData.isCorporation(CorporationData.MONTES_DE_PLATA) && sum > 100)
+						sum = 100.0;
+				}
+				driverAccount.setTotal(sum);
+				corpABM.savePointAccount(driverAccount, userSessionData);
+			} else {
+				driverAccount.sum(new Integer(points).doubleValue(), userSessionData.getCorporationId());
+				corpABM.savePointAccount(driverAccount, userSessionData);
+			}
+		}
+	}
+
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,drivercreate,finecreate,drivercreatefine"
+   	 * Create driver account
+     * @throws Exception
+   	 */
+	public void updateMove(Integer account, int difference, PointMoveData move, UserSessionData userSessionData) throws Exception {
+		CorporationABM corpABM = CorporationABMUtil.getHome().create();
+		corpABM.updatePointMove(move, userSessionData);
+		PointAccountData driverAccount = CorporationReportUtil.getHome().create().getPointAccount(account, userSessionData);
+		if(userSessionData.isCorporation(new int[] {CorporationData.BAYER_MX, CorporationData.MONTES_DE_PLATA})) {
+			Collection<PointMoveData> baseMoves = CorporationReportUtil.getHome().create().getPointMoves(driverAccount.getId(), userSessionData);
+			Collections.sort((List)baseMoves);
+			double sum = (userSessionData.isCorporation(CorporationData.MONTES_DE_PLATA)) ? 100.0 : 0.0;
+			Iterator<PointMoveData> it = baseMoves.iterator();
+			while(it.hasNext()) {
+				PointMoveData moveData = it.next();
+				if(moveData.getId().intValue() == move.getId().intValue()) {
+					sum += move.getAmount();
+				}else {
+					sum += moveData.getAmount();
+				}
+				if(sum < 0)
+					sum = 0.0;
+				if(userSessionData.isCorporation(CorporationData.MONTES_DE_PLATA) && sum > 100)
+					sum = 100.0;
+			}
+			driverAccount.setTotal(sum);
+			corpABM.savePointAccount(driverAccount, userSessionData);
+		} else {
+			if(difference != 0) {
+				driverAccount.sum(new Integer(difference).doubleValue(), userSessionData.getCorporationId());
+				corpABM.savePointAccount(driverAccount, userSessionData);
+			}
+		}
+	}
+	
+	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,dpachecklist, drivercreate,cepascheduleactivitycreate,cepascheduleactivityupdate"
+   	 *  
+     * @throws Exception
+     * 
+   	 */
+   	public WSResultData newFOSAPlate(ContractorPlateFOSAData plateFOSA, UserSessionData userSession) throws Exception{
+   		WSResultData result=new WSResultData(0,"OK");
+   		try{
+   		 
+   			return CorporationABMUtil.getHome().create().newFOSAPlate(plateFOSA, userSession);
+   			
+   		} catch (Exception e) {
+			Object[] parameters = {plateFOSA};
+    		handler.handleException("newFOSAPlate",e,userSession,parameters);
+    		result.setCode(1);
+    		result.setDescription(e.getMessage());
+		}	
+   		
+   		return result;
+   	}
+   	
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,dpachecklist, drivercreate,cepascheduleactivitycreate,cepascheduleactivityupdate"
+   	 *  
+     * @throws Exception
+     * 
+   	 */
+   	public WSResultData removeFOSAPlate(String plateIn, UserSessionData userSession)  throws Exception{
+   		WSResultData result=new WSResultData(0,"OK");
+   		try{
+   		 
+   			return CorporationABMUtil.getHome().create().removeFOSAPlate(plateIn, userSession);
+   		} catch (Exception e) {
+			Object[] parameters = {plateIn};
+    		handler.handleException("removeFOSAPlate",e,userSession,parameters);
+    		result.setCode(1);
+    		result.setDescription(e.getMessage());
+		}	
+   		
+   		return result;
+   	}
+   	
+   	
+   	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,dpachecklist,systemaccess"
+   	 *  
+   	 *  reasonCode:
+   	 *  -1:Para estado ACTIVO sin penalizacion
+   	 *     0: OTROS FO (Ej: documentación)
+     *     1: CEPA-Puntos
+     *     2: CEPA-No Conformidad
+     *
+     *  typeOfPenalty:    
+     *  -1:Para estado ACTIVO sin penalizacion
+   	 *     0: Indeterminada
+     *     1: Por tiempo
+     *
+     * @throws Exception
+     * 
+   	 */
+   	public WSResultData suspendedPlate(String plateIn,Integer hours,String reasonDescription,Integer reasonCode,String dateHourStartPenalty,Integer typeOfPenalty, UserSessionData userSession)  throws Exception{
+   		WSResultData result=new WSResultData(0,"OK");
+   		try{
+   			return CorporationABMUtil.getHome().create().suspendedPlate(plateIn, hours, reasonDescription, reasonCode, dateHourStartPenalty, typeOfPenalty, userSession);
+   		} catch (Exception e) {
+			Object[] parameters = {plateIn,hours,reasonDescription,reasonCode,dateHourStartPenalty,typeOfPenalty};
+    		handler.handleException("suspendedPlate",e,userSession,parameters);
+    		result.setCode(1);
+    		result.setDescription(e.getMessage());
+		}	
+   		
+   		return result;
+   	}
+   	
+	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,dpachecklist,systemaccess"
+   	 *  
+   	 *  reasonCode:
+   	 *  -1:Para estado ACTIVO sin penalizacion
+   	 *     0: OTROS FO (Ej: documentación)
+     *     1: CEPA-Puntos
+     *     2: CEPA-No Conformidad
+     *
+     *  typeOfPenalty:    
+     *    -1:Para estado ACTIVO sin penalizacion
+   	 *     0: Indeterminada
+     *     1: Por tiempo
+     *
+     * @throws Exception
+     * 
+   	 */
+   	public WSResultData activePlate(String plateIn,UserSessionData userSession)  throws Exception{
+   		WSResultData result=new WSResultData(0,"OK");
+   		try{
+   			return CorporationABMUtil.getHome().create().activePlate(plateIn, userSession);
+   		} catch (Exception e) {
+			Object[] parameters = {plateIn};
+    		handler.handleException("activePlate",e,userSession,parameters);
+    		result.setCode(1);
+    		result.setDescription(e.getMessage());
+		}	
+   		
+   		return result;
+   	}
+   	
+
+	/**
+   	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,dpachecklist,systemaccess"
+     * 
+   	 */
+   	public WSResultData newDriverState(String ci,DriverStateHistoryData stateObj,UserSessionData userSession)  throws Exception{
+   		WSResultData result=new WSResultData(0,"OK");
+   		try{
+   			return CorporationABMUtil.getHome().create().newDriverState(ci, stateObj, userSession);
+   		} catch (Exception e) {
+			Object[] parameters = {stateObj};
+    		handler.handleException("newDriverState",e,userSession,parameters);
+    		result.setCode(1);
+    		result.setDescription(e.getMessage());
+		}	
+   		
+   		return result;
+   	}
+   	
+   	
+   	
+   	
+}

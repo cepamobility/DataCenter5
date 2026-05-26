@@ -1,0 +1,758 @@
+package presentation.translator.web.driver;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.LinkedList;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.upload.FormFile;
+
+import presentation.translator.web.util.AbstractAction;
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+import business.driver.DriverABMFacade;
+import business.driver.DriverReportFacade;
+
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.DivOrgData;
+import communication.administration.corporation.tables.GeoLabelData;
+import communication.administration.corporation.tables.LabelItemData;
+import communication.administration.user.UserSessionData;
+import communication.datatype.tables.ContractDataType;
+import communication.datatype.tables.SexDataType;
+import communication.driver.tables.DriverData;
+import communication.language.Text;
+import communication.security.SecurityConstants;
+import communication.util.ListResult;
+import communication.vehicle.tables.VehicleData;
+import communication.vehicle.tables.VehicleMaintenanceData;
+
+public class MaintenanceUploadAction extends AbstractAction {
+
+	static final int EOF = 65535;
+	
+	/**
+	 * 
+	 */	
+	public ActionForward action(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response) throws Exception {
+		HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        UserSessionData userSessionData = sys.getUserSessionData();
+        Text messages = sys.getText();
+        // String directory = "/tmp/datacenter/images";
+        String directory = SecurityConstants.IMAGES_WAR_DIRECTORY;
+        String fileName = "mantenimiento_"+Calendar.getInstance().getTimeInMillis()+".csv";
+    
+		try {
+			DriverUploadForm uploadForm = (DriverUploadForm) form;
+			FormFile file = (FormFile)uploadForm.getFile();		
+					
+			// Valido archivo de vacio o nulo
+			if (file == null || file.getFileName() == null || file.getFileName().equals("")){
+				session.setAttribute("Msg", messages.getText("generic.supportmaterial.cepatips.nofile"));
+		  	    return mapping.findForward("error");	
+			}
+			
+			// Valido Nombre de Archivo
+			if (!validarString(file.getFileName())){
+				session.setAttribute("Msg", messages.getText("generic.supportmaterial.cepatips.badfile"));
+		  	    return mapping.findForward("error");	
+			}
+			// Fin Valido Nombre de Archivo
+									
+			InputStream reportStream = file.getInputStream();		
+			FileOutputStream fout;
+					
+			fout = new FileOutputStream(directory + fileName);
+			
+			int c = 0;
+			while ( (c=reportStream.read()) != -1){
+				fout.write(c);
+			}			
+			fout.flush();
+			fout.close();				
+			
+            FileInputStream input = new FileInputStream(new File(directory + fileName));
+            char car = 0;
+            
+            // Asumo que en el archivo hay 2 lineas explicativas de los diferentes
+            // campos a ingresar.
+            int lineasExplicativas = 0;
+            int lineNumber = 1;
+            while (car != EOF && lineasExplicativas < 1){
+          		while(car != '\n' && car != EOF) {
+          			car = (char)input.read();                   
+          		}
+          		car = 0;
+          		lineasExplicativas ++;
+          		lineNumber ++;
+            }
+
+            Collection<VehicleMaintenanceData> mantenimientos = new LinkedList<VehicleMaintenanceData>();
+            int index = 0;
+            StringBuffer word = new StringBuffer();
+            VehicleData vehicleData = null;
+            Calendar date = null;
+            DriverData driver = null;
+            while(car != '\n' && car != EOF) {
+                while(car != '\n' && car != EOF) {
+                    car = (char)input.read();
+                    if(car == '\t' || car == '\n') {
+                        switch(index) {
+                            case 0:
+                            	String corporationId = word.toString().trim();
+                            	Collection drivers = sys.getDriverReportFacade().findDriverByCorporationId(corporationId, userSessionData);
+                            	if(drivers == null && drivers.size() != 1) {
+                                	session.setAttribute("Msg", "Conductor incorrecto. \\n" + messages.getText("driver.messages.upload.linenumber")+" "+lineNumber);
+                          	  	  	return mapping.findForward("error");    
+                            	}
+                            	driver = (DriverData) drivers.iterator().next();
+                            	break;
+                            case 1:
+                            	String vehiclePlate = word.toString().trim();
+                            	vehicleData = sys.getVehicleReportFacade().findVehicleByPlate(vehiclePlate, userSessionData);
+                            	if(vehicleData == null) {
+                                	session.setAttribute("Msg", "Veh�culo incorrecto. \\n" + messages.getText("driver.messages.upload.linenumber")+" "+lineNumber);
+                          	  	  	return mapping.findForward("error");    
+                            	}
+                                break;
+                            case 2:
+                          	  	try{
+                          		  	date = Util.getDate(word.toString().trim());
+                                } catch (Exception e) {
+                                	session.setAttribute("Msg", "Fecha del mantenimiento incorrecta. \\n" + messages.getText("driver.messages.upload.linenumber")+" "+lineNumber);
+                          	  	  	return mapping.findForward("error");    
+                                }
+                          	  	VehicleMaintenanceData maintenanceData = new VehicleMaintenanceData();
+                          	  	maintenanceData.setVehicle(vehicleData);
+                          	  	maintenanceData.setDate(date.getTime());
+                          	  	maintenanceData.setDriver(driver);
+                          	  	maintenanceData.setDescription(driver.getFirstName()+" "+driver.getLastName());
+                          	  	mantenimientos.add(maintenanceData);
+                                break;
+                        }
+                        word = new StringBuffer();
+                        index++;
+                    }else {
+                        word.append(car);
+                    }
+                }
+            }      
+            if(mantenimientos.size() > 0) {
+            	sys.getVehicleABMFacade().createVehicleMaintenances(mantenimientos, userSessionData);
+            }
+		}catch(Exception e) {
+	    	session.setAttribute("Msg", messages.getText("generic.dirverupload.divorgerrors"));
+	    	e.printStackTrace();
+	  	    return mapping.findForward("error");	
+	    }	   
+  	    return mapping.findForward("success");		   
+	}
+	
+    /**
+     * 
+     * @param mapping
+     * @param form
+     * @param request
+     * @param response
+     * @return
+     * @throws Throwable
+     */
+    public static ActionForward insertDrivers(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response) throws Exception {
+    	  HttpSession session = request.getSession();
+          SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+          UserSessionData userSessionData = sys.getUserSessionData();
+          
+          Text messages = sys.getText();
+          // String directory = "/tmp/datacenter/images";
+          String directory = SecurityConstants.IMAGES_WAR_DIRECTORY;
+          String fileName = "drivers"+sys.getUserSessionData().getFilter().getCorporationId()+".csv";
+          int lineNumber = 1;
+          int total = 0;
+          LinkedList notInsertedDrivers = new LinkedList();
+          ListResult result;
+          
+          DriverUploadForm uploadForm = (DriverUploadForm) form;
+		  String notes = (String)uploadForm.getNotes();
+		  LabelItemData divOrg1 = null, divOrg2 = null,divOrg3 = null;
+		  
+          StringBuffer word = new StringBuffer();
+          try {
+        	  
+        	  DriverReportFacade driverReport = null;
+              driverReport = sys.getDriverReportFacade();
+        	  
+              FileInputStream input = new FileInputStream(new File(directory + fileName));
+              Collection drivers = new LinkedList();
+              char car;
+              car = 0;
+              Collection groupLines = sys.getUserSessionData().getFilter().getCorporationGroupLines();
+              System.out.println("Inserto conductores:");    
+              
+              // Asumo que en el archivo hay 2 lineas explicativas de los diferentes
+              // campos a ingresar.
+              int lineasExplicativas = 0;
+              while (car != EOF && lineasExplicativas < 2){
+            	  while(car != '\n' && car != EOF) {
+                      car = (char)input.read();                   
+            	  }
+            	  car = 0;
+                  lineasExplicativas ++;
+                  lineNumber ++;
+              }
+              
+              
+              // Ingreso los diferentes drivers
+              while(car != EOF) {
+                  DriverData driver = new DriverData(null);
+                  int index = 0;
+                  car = 0;                  
+                  // String firstName = "";
+                  // String lastName = "";
+                  String region = "";
+                  String divOrgName11 = null, divOrgName12 = null, divOrgName13 = null;
+                  String divOrgName21 = null, divOrgName22 = null, divOrgName23 = null;
+                  String divOrgName31 = null, divOrgName32 = null, divOrgName33 = null;
+                  
+                  Collection divOrgs = new LinkedList();
+                  while(car != '\n' && car != EOF) {
+                      car = (char)input.read();
+                      if(car == '\t' || car == '\n') {
+                          switch(index) {
+                              case 0:
+                            	  // Nombre: CAMPO OBLIGATORIO
+                            	  if (!Util.empty(word.toString().trim())){
+                            		  driver.setFirstName(word.toString().trim().toUpperCase());
+                            	  }else{
+                            		  session.setAttribute("Msg", 
+                            				  messages.getText("driver.messages.upload.wrongname")
+                            				  +". "+messages.getText("driver.messages.upload.linenumber")+" "+lineNumber);
+                            	  	  return mapping.findForward("error");
+                            	  }
+                                  break;
+                                  
+                              case 1:
+                            	  // Apellido: CAMPO OBLIGATORIO
+                            	  if (!Util.empty(word.toString().trim())){
+                            		  driver.setLastName(word.toString().toUpperCase());
+                            	  }else{
+                            		  session.setAttribute("Msg", 
+                            				  messages.getText("driver.messages.upload.wronglastname")
+                            				  +". "+messages.getText("driver.messages.upload.linenumber")+" "+lineNumber);
+                            	  	  return mapping.findForward("error");
+                            	  }
+                                  break;
+                                  
+                              case 2:
+                            	  // Fecha de Nacimiento: dd/mm/yyyy CAMPO OBLIGATORIO
+                            	  try{
+                            		  if (!Util.empty(word.toString().trim())){                            			  
+                            			  driver.setBirthDate(Util.getDate(word.toString().trim()).getTime());
+                            		  }else{
+                                		  session.setAttribute("Msg", 
+                                				  messages.getText("driver.messages.upload.wrongbirthday")
+                                				  +". \\n"+messages.getText("driver.messages.upload.linenumber")+" "+lineNumber);                                  	  	
+                                	  	  return mapping.findForward("error");                            			  
+                            		  }
+                                  } catch (Exception e) {
+                                      System.out.println("Sin Fecha de Nacimiento: "+driver.getFirstName()+" "+driver.getLastName());
+                                      session.setAttribute("Msg", 
+                            				  messages.getText("driver.messages.upload.wrongbirthday")
+                            				  +". \\n"+messages.getText("driver.messages.upload.linenumber")+" "+lineNumber);
+                            	  	  return mapping.findForward("error");    
+                                  }
+                                  break;
+                                  
+                              case 3:
+                            	  // Sexo o Genero: CAMPO OBLIGATORIO
+                            	 
+                            		  if(word.toString().trim().equalsIgnoreCase("masculino") ||
+                            				  word.toString().trim().equalsIgnoreCase("male")
+                            		  ){
+                            			  driver.setSex(new SexDataType("datatype.sex.male"));
+                            		  }else if (word.toString().trim().equalsIgnoreCase("femenino") ||
+                            				  word.toString().trim().equalsIgnoreCase("feminino") ||
+                            				  word.toString().trim().equalsIgnoreCase("female")
+                            		  ){
+                            			  driver.setSex(new SexDataType("datatype.sex.female"));
+                            		  }else{
+                            			  
+                            			  session.setAttribute("Msg", 
+                            					  messages.getText("driver.messages.upload.wrongsex")
+                            					  +". \\n"+messages.getText("driver.messages.upload.linenumber")+": "+lineNumber);
+                            			  return mapping.findForward("error");
+                            		  }
+                            	
+                                  break;
+                                  
+                              case 4:
+                            	  // Nacionalidad
+                                  if(word.toString().trim().length() > 0) {
+                                      driver.setNationality(word.toString().trim());
+                                  }
+                                  break;
+                                  
+                              case 5:
+                            	  // Ciudad
+                                  if(word.toString().trim().length() > 0) {
+                                      driver.setCity(word.toString().trim());
+                                  }
+                                  break;
+                                  
+                              case 6:
+                            	  // Direccion Personal
+                                  if(word.toString().trim().length() > 0) {
+                                      driver.setPersonalAddress(word.toString().trim());
+                                  }
+                                  break;
+                                  
+                              case 7:
+                            	  // Region: CAMPO OBLIGATORIO
+                            	  
+                            		  if (word.toString().trim().length() > 0){
+                            			  region = word.toString().trim();
+                            		  }else{
+                            			  session.setAttribute("Msg", 
+                            					  messages.getText("driver.messages.upload.wrongregion")
+                            					  +". \\n"+messages.getText("driver.messages.upload.linenumber")+": "+lineNumber);
+                            			  return mapping.findForward("error");    
+                            		  }
+                            	  
+                                  break;
+                                  
+                              case 8:
+                            	  // Pais: CAMPO OBLIGATORIO
+                            	  
+                            		  if (word.length()>0){
+                            			  String countryName = word.toString().trim();
+                            			  System.out.println("Country: "+countryName);
+                            			  GeoLabelData country = Util.getCountry(
+                            					  groupLines,region,countryName,sys.getText());
+                            			  if(country != null) {
+                            				  driver.setCountry(country);
+                            			  }else {
+                            				  session.setAttribute("Msg", 
+                            						  messages.getText("driver.messages.upload.wrongcountry")
+                            						  +". "+messages.getText("driver.messages.upload.linenumber")+": "+lineNumber);
+                            				  return mapping.findForward("error");   
+                            				  // throw new Exception("RegiÃ³n/PaÃ­s no encontrado: "+region+"/"+word.toString());
+                            			  }
+                            		  }else{
+                            			  session.setAttribute("Msg", 
+                            					  messages.getText("driver.messages.upload.wrongcountry")
+                            					  +": \\n"+messages.getText("driver.messages.upload.linenumber")+": "+lineNumber);
+                            			  return mapping.findForward("error");    
+                            		  }
+                            	  
+                                  break;
+                                  
+                              // DivOrg 1:
+                              case 9:
+                            	  if (word.toString().trim().length() > 0){
+                            		  divOrgName11 = word.toString().trim();
+                            	  }
+                                  break;
+                              case 10:
+                            	  if (word.toString().trim().length()>0){
+                            		  divOrgName12 = word.toString().trim();
+                            	  }
+                                  break;
+                              case 11:
+                            	 try{
+                            		  if (word.toString().trim().length()>0){
+                            			  divOrgName13 = word.toString().trim();
+                            		  }
+                            		  
+                            		  // Divisiones Organizacionales:
+                            		  // DiOrg 1
+                            		  divOrg1 = Util.getDivOrg(groupLines,0,
+                            				  divOrgName11,divOrgName12, divOrgName13);
+                            		  if(divOrg1 != null) {
+                            			  divOrgs.add(new DivOrgData(sys.getUserSessionData().getFilter().getDivOrgsAttrs()[0].getId(),null,divOrg1));
+                            		  }else {
+                            			  session.setAttribute("Msg", 
+                            					  messages.getText("driver.messages.upload.wrongdivorg")+": "+
+                            					  ((divOrgName11 != null)?divOrgName11+"/":"")+
+                            					  ((divOrgName12 != null)?divOrgName12+"/":"")+
+                            					  ((divOrgName13 != null)?divOrgName13:"")+ 
+                            					  ". \\n"+
+                            					  messages.getText("driver.messages.upload.linenumber")+": "+lineNumber);
+                            			  System.out.println("DivOrg1 No encontrada");
+                            			  return mapping.findForward("error");       
+                            			  // throw new Exception("DivisiÃ³n organizacional no encontrada: "+word.toString());
+                            		  }
+                            	 }catch(Exception e){
+	                       			  session.setAttribute("Msg", 
+	                    					  messages.getText("driver.messages.upload.wrongdivorg")+": "+
+	                    					  ((divOrgName11 != null)?divOrgName11+"/":"")+
+	                    					  ((divOrgName12 != null)?divOrgName12+"/":"")+
+	                    					  ((divOrgName13 != null)?divOrgName13:"")+ 
+	                    					  ". \\n"+
+	                    					  messages.getText("driver.messages.upload.linenumber")+": "+lineNumber);
+	                    			  System.out.println("DivOrg1 No encontrada");
+	                    			  e.printStackTrace();
+	                    			  return mapping.findForward("error");                                   		 
+                            	 }
+                                  
+                            	  break;
+                            	  
+                              // DivOrg2:
+                              case 12:
+                            	  if (word.toString().trim().length() > 0){
+                            		  divOrgName21 = word.toString().trim();
+                            	  }
+                                  break;
+                              case 13:
+                            	  if (word.toString().trim().length() > 0){
+                            		  divOrgName22 = word.toString().trim();
+                            	  }
+                                  break;
+                              case 14:                            	  
+                            	  try{
+                            		  if (word.toString().trim().length() > 0){
+                            			  divOrgName23 = word.toString().trim();
+                            		  }
+                            		  divOrg2 = Util.getDivOrg(groupLines,1,divOrgName21,divOrgName22,divOrgName23);
+                            		  if(divOrg2 != null) {
+                            			  divOrgs.add(new DivOrgData(sys.getUserSessionData().getFilter().getDivOrgsAttrs()[1].getId(),null,divOrg2));
+                            		  }else {
+                            			  if (divOrgName21 != null || divOrgName22 != null || divOrgName23 != null){
+	                                  			
+	                            			  System.out.println("DivOrg2 No encontrada");
+	                            			  session.setAttribute("Msg", 
+	                                				  messages.getText("driver.messages.upload.wrongdivorg")+": "+
+	                                				  ((divOrgName21 != null)?divOrgName21+"/":"")+
+	                                				  ((divOrgName22 != null)?divOrgName22+"/":"")+
+	                                				  ((divOrgName23 != null)?divOrgName23:"")+ 
+	                                				  ". \\n"+
+	                                				  messages.getText("driver.messages.upload.linenumber")+": "+lineNumber);
+	                                	  	  return mapping.findForward("error");      
+                            			 
+                            			  }        			  
+                            		  }
+                            	  }catch(Exception e){
+                            		  System.out.println("DivOrg2 No encontrada");
+                        			  session.setAttribute("Msg", 
+                            				  messages.getText("driver.messages.upload.wrongdivorg")+": "+
+                            				  ((divOrgName21 != null)?divOrgName21+"/":"")+
+                            				  ((divOrgName22 != null)?divOrgName22+"/":"")+
+                            				  ((divOrgName23 != null)?divOrgName23:"")+ 
+                            				  ". \\n"+
+                            				  messages.getText("driver.messages.upload.linenumber")+": "+lineNumber);
+                            	  	  return mapping.findForward("error");     
+                            	  }
+                            	  
+                                  break;
+                                  
+                              case 15:
+                            	  if (word.toString().trim().length() > 0){
+                            		  divOrgName31 = word.toString().trim();
+                            	  }
+                                  break;
+                              case 16:
+                            	  if (word.toString().trim().length() > 0){
+                            		  divOrgName32 = word.toString().trim();
+                            	  }
+                            	  break;
+                              case 17:
+                            	  // Divorg3
+                            	 
+                            	if (word.toString().trim().length() > 0){
+                            	  divOrgName33 = word.toString().trim();
+                            	}                            	  
+                            	try{
+                            		  divOrg3 = Util.getDivOrg(groupLines,2,divOrgName31,
+                            				  divOrgName32, divOrgName33);
+                            		  if(divOrg3 != null) {
+                            			  divOrgs.add(new DivOrgData(sys.getUserSessionData().getFilter().getDivOrgsAttrs()[2].getId(),null,divOrg3));
+                            		  }else {
+                            			  if (divOrgName31 != null || divOrgName32 != null || divOrgName33 != null){
+                                  			
+	                            			  session.setAttribute("Msg", 
+	                            					  messages.getText("driver.messages.upload.wrongdivorg")+": "+
+	                            					  ((divOrgName31 != null)?divOrgName31+"/":"")+
+	                            					  ((divOrgName32 != null)?divOrgName32+"/":"")+
+	                            					  ((divOrgName33 != null)?divOrgName33:"")+
+	                            					  ". \\n"+messages.getText("driver.messages.upload.linenumber")+": "+lineNumber);
+	                            			  System.out.println("DivOrg3 No encontrada");
+	                            			  return mapping.findForward("error");                                 			  
+                            			  }
+                            		  }
+                            		
+                            		  // Divorg3
+                            		  System.out.println("DivOrg3 : "+
+                        					  ((divOrgName31 != null)?divOrgName31+"/":"")+
+                        					  ((divOrgName32 != null)?divOrgName32+"/":"")+
+                        					  ((divOrgName33 != null)?divOrgName33:"")+
+                        					  ". \\n"+messages.getText("driver.messages.upload.linenumber")+": "+lineNumber);
+                        			
+                            		  
+                            	  }catch (Exception e){
+                        			  session.setAttribute("Msg", 
+                        					  messages.getText("driver.messages.upload.wrongdivorg")+": "+
+                        					  ((divOrgName31 != null)?divOrgName31+"/":"")+
+                        					  ((divOrgName32 != null)?divOrgName32+"/":"")+
+                        					  ((divOrgName33 != null)?divOrgName33:"")+
+                        					  ". \\n"+messages.getText("driver.messages.upload.linenumber")+": "+lineNumber);
+                        			  System.out.println("DivOrg3 No encontrada");
+                        			  return mapping.findForward("error");                                 			                              		  
+                            	  }
+                                  break;
+                                  
+                              case 18:
+                            	  // Identificador del Driver dentro de la Corporacion
+                                  driver.setDivOrgs(divOrgs);
+                                  if(word.length() > 0) {
+                                      driver.setCorporationId(word.toString().trim());
+                                  }
+                                  break;
+                                  
+                              case 19:
+                            	  // Fecha de inclusion:
+                            	  try{
+                            		  if(word.toString().trim().length() > 0) {
+                            			  driver.setInclusionDate(Util.getDate(word.toString().trim()).getTime());
+                            		  }
+                            		  
+                            	  }catch (Exception e){
+                            		  System.out.println("Fecha de Inclusion: "
+                                    		  +driver.getFirstName()+" "+driver.getLastName()+": "+word.toString().trim());
+                                      session.setAttribute("Msg", 
+                            				  messages.getText("driver.messages.upload.wrongdate")
+                            				  +". \\n"+messages.getText("driver.messages.upload.linenumber")+" "+lineNumber);
+                            	  	  return mapping.findForward("error");  
+                            	  }
+                            	  break;
+                                  
+                              case 20:
+                            	  // Email
+                                  if(word.toString().trim().length() > 0) {
+                                      driver.setEmail(word.toString().trim());
+                                  }
+                                  break;
+                                  
+                              case 21:
+                            	  // Telefono
+                                  if(word.toString().trim().length() > 0) {
+                                      driver.setPhoneNumber(word.toString().trim());
+                                  }
+                                  break;
+                                  
+                              case 22:
+                            	  // Direccion de la Oficina
+                                  if(word.toString().trim().length() > 0) {
+                                      driver.setOfficeAddress(word.toString().trim());
+                                  }
+                                  break;
+                                  
+                              case 23:
+                            	  // SIM?
+                                  if(word.toString().trim().length() > 0) {
+                                      driver.setDrives(word.toString().trim().equalsIgnoreCase("SIM") || 
+                                    		  word.toString().trim().equalsIgnoreCase("SI") ||
+                                    		  word.toString().trim().equalsIgnoreCase("YES"));
+                                  }
+                                  break;
+                              case 24:
+                                  if(word.toString().trim().length() > 0) {
+                                      driver.setEmployee(word.toString().trim().equalsIgnoreCase("SIM") ||
+                                    		  word.toString().trim().equalsIgnoreCase("SI") ||
+                                    		  word.toString().trim().equalsIgnoreCase("YES") );
+                                  }
+                                  break;
+                              case 25:
+                            	  // Tipo de Contrato
+                            	  try{
+                            		  if(word.toString().trim().length() > 0) {
+                            			  String contract = word.toString().trim();
+                            			  if(contract.equalsIgnoreCase("Permanente") ||
+                            					  contract.equalsIgnoreCase("Permanent")) {
+                            				  driver.setContract(new ContractDataType("datatype.contract.permanent"));
+                            			  }else if (contract.equalsIgnoreCase("Eventual")){
+                            				  driver.setContract(new ContractDataType("datatype.contract.eventual"));
+                            			  }else if (contract.equalsIgnoreCase("Family Member") ||
+                            					  contract.equalsIgnoreCase("Familiar")){
+                            				  driver.setContract(new ContractDataType("datatype.contract.relative"));
+                            			  }else if (contract.equalsIgnoreCase("Third party authorized to drive") ||
+                            					  contract.equalsIgnoreCase("Tercero Habilitado a Conducir") ||
+                            					  contract.equalsIgnoreCase("Terceiro autorizado a conduzir")) {
+                            				  driver.setContract(new ContractDataType("datatype.contract.third.drives"));
+                            			  }else if (contract.equalsIgnoreCase("Third party unauthorized to drive") ||
+                            					  contract.equalsIgnoreCase("Tercero no Habilitado a Conducir") ||
+                            					  contract.equalsIgnoreCase("Terceiro nÃ£o autorizado a conduzir")){
+                            				  driver.setContract(new ContractDataType("datatype.contract.third.nodrives"));
+                            			  }else if (contract.equalsIgnoreCase("Temporary worker") ||
+                            					  contract.equalsIgnoreCase("Zafral") ||
+                            					  contract.equalsIgnoreCase("Trabalhador Temporario") ||
+                            					  contract.equalsIgnoreCase("Trabalhador TemporÃ¡rio")){
+                            				  driver.setContract(new ContractDataType("datatype.contract.zafral"));
+                            			  }else {
+                            				  session.setAttribute("Msg", 
+                            						  messages.getText("driver.messages.upload.wrongcontract")+word.toString()
+                            						  +". \\n"+messages.getText("driver.messages.upload.linenumber")+": "+lineNumber);
+                            				  return mapping.findForward("error");    
+                            			  }
+                            		  }
+                            	  }catch(Exception e){
+                            		  session.setAttribute("Msg", 
+                    						  messages.getText("driver.messages.upload.wrongcontract")+word.toString()
+                    						  +". \\n"+messages.getText("driver.messages.upload.linenumber")+": "+lineNumber);
+                    				  return mapping.findForward("error");                       			
+                            	  }
+                                  break;
+                              case 26:
+                            	  // Numero de Licencia
+                                  if(word.toString().trim().length() > 0) {
+                                      driver.setLicenseNumber(word.toString().trim());
+                                  }
+                                  break;
+                              case 27:
+                            	  // Fecha de Obtencion de la licencia
+                            	  try{
+                            		  if(word.toString().trim().length() > 0) {
+                            			  driver.setLicenseGet(Util.getDate(word.toString().trim()).getTime());
+                            		  }
+                            	  } catch (Exception e) {
+                                      System.out.println("Fecha de Obtencion de la licencia: "
+                                    		  +driver.getFirstName()+" "+driver.getLastName()+": "+word.toString().trim());
+                                      session.setAttribute("Msg", 
+                            				  messages.getText("driver.messages.upload.wrongdate")
+                            				  +". \\n"+messages.getText("driver.messages.upload.linenumber")+" "+lineNumber);
+                            	  	  return mapping.findForward("error");    
+                                  }
+                                  break;
+                              case 28:
+                            	  try{
+                            		  if(word.toString().trim().length() > 0) {
+                            			  driver.setLicenseExpiry(Util.getDate(word.toString().trim()).getTime());
+                            		  }
+                            	  } catch (Exception e) {
+                                      System.out.println("Fecha de Vencimiento de la licencia: "
+                                    		  +driver.getFirstName()+" "+driver.getLastName()+": "+word.toString().trim());
+                                      session.setAttribute("Msg", 
+                            				  messages.getText("driver.messages.upload.wrongdate")
+                            				  +". \\n"+messages.getText("driver.messages.upload.linenumber")+" "+lineNumber);
+                            	  	  return mapping.findForward("error");    
+                                  }
+                                  break;
+                              case 29:
+                            	  if (sys.getCorporationId() != CorporationData.CIMSA){
+                            		  if(word.toString().trim().length() > 0) {
+                            			  driver.setLicenseCategory(word.toString().trim());
+                            		  }
+                            	  }else{
+                            		  // si es cimsa no cargo la categoria de licencia porque
+                            		  // maneja otras opciones que no se tienen en cuenta aca.
+                            		  driver.setOfficeAddress("licensetype.driver");
+                            		  driver.setLicenseCategory("00000000");                            		  
+                            	  }
+                                  break;
+                          }
+                          word = new StringBuffer();
+                          index++;
+                      }else {
+                          word.append(car);
+                      }
+                  }
+                  
+                  // Coloco el driver en la coleccion de drivers para insertar en la base de datos
+                  if(!Util.empty(driver.getFirstName()) && !Util.empty(driver.getLastName() )){
+                	  
+                	  // Antes de insertarlo valido que no exista ese driver 
+                	  // en la base de datos
+                	  
+                	  if (driverReport.existDriver(sys.getUserSessionData(),
+                			driver.getFirstName(),driver.getLastName(),driver.getBirthDate())){
+                		
+                		  // Si existe el driver le indico al usuario que no se va a insertar
+                		  // de nuevo.
+                		
+                		  String msg = driver.getFirstName()+ 
+                		  	" "+driver.getLastName()+". ("+
+                		  	messages.getText("driver.messages.upload.linenumber")+": "+lineNumber+")";
+                		  notInsertedDrivers.add(msg);
+                	  }else{
+                		  // Si los drivers no existen los agrego:  
+                		  CorporationData corp = new CorporationData(userSessionData.getFilter().getCorporationId(),null,null,null,null,null);
+                		  driver.setCorporation(corp);
+                		  
+                          String valid = driver.validate(userSessionData);
+                		  
+                		  if (valid != null){
+                			  System.out.println("Error: "
+                            		  +driver.getFirstName()+" "+driver.getLastName()+": "+messages.getText(valid)
+                            		  +" "+messages.getText("driver.messages.upload.linenumber")+" "+lineNumber);
+                              session.setAttribute("Msg", "Error: "+messages.getText(valid)
+                    				  +". \\n"+messages.getText("driver.messages.upload.linenumber")+" "+lineNumber);
+                    	  	  return mapping.findForward("error");    
+                		  }
+                	      drivers.add(driver);
+                	  }
+                  }                  
+                  lineNumber++; // incremento numero de linea del archivo 
+              }            
+              
+             
+              // Inserto los drivers:              
+              DriverABMFacade driverABM = null;
+              driverABM = sys.getDriverABMFacade();              
+              driverABM.createDrivers(drivers,sys.getUserSessionData(),notes);
+              
+              // Total Drivers insertados:
+              total = drivers.size();              
+              // Drivers no insertados:
+              result = new ListResult(notInsertedDrivers,notInsertedDrivers.size());
+              
+              // System.out.println("Inserte "+total+"Conductores.....");
+              
+          } catch (Exception e) {
+              e.printStackTrace();
+        	  System.out.println("Excepcion....."+e.getMessage());
+        	  throw e;
+          }
+          
+          session.setAttribute("notupload",result);
+          session.setAttribute("total", (new Integer(total)).toString());        		  
+          session.setAttribute("entity","driver.messages.upload");
+          return mapping.findForward("success");	
+    }
+    
+    
+
+
+	public ActionForward cancel(HttpSession session, ActionMapping mapping, ActionForm form) {		
+		return null;
+	}
+	
+	
+	/**
+	 * Devuelve false si tiene caracteres que no son digito, letra,
+	 * espacio en blanco o punto o subrayado o guion.
+	 * @param s : String a validar
+	 * @return boolean
+	 */
+	public boolean validarString(String s){
+		int count = 0;
+		char c [] = s.toCharArray();
+		while (count < s.length()){
+			if (!Character.isLetterOrDigit(c[count]) && 
+				c[count] != ' ' && c[count] != '.' 
+				&& c[count] != '_' && c[count] != '-' ){			
+				return false;
+			}
+			count ++;
+		}
+		return true;
+	}
+	}
+

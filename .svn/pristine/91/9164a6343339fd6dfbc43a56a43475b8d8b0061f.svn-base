@@ -1,0 +1,11 @@
+<!-- Message Driven Beans -->
+<message-driven>
+	<ejb-name>AlertsMDB</ejb-name>
+	<ejb-class>business.alert.mdb.AlertsMDB</ejb-class>		 
+    <transaction-type>Container</transaction-type>
+    <message-driven-destination>
+    	<!-- <destination-type>org.jboss.jms.server.destination.JBossTopic</destination-type> -->
+    	<destination-type>javax.jms.Topic</destination-type>
+        <subscription-durability>NonDurable</subscription-durability>
+    </message-driven-destination>
+</message-driven>

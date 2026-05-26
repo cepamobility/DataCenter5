@@ -1,0 +1,198 @@
+/**
+ * CEPA
+ * DataCenter 5
+ */
+package communication.driver.tables;
+
+import java.io.Serializable;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+
+import communication.language.Text;
+
+import persistence.driver.tables.Driver;
+
+public class AnualPlanData implements Serializable{
+
+	public static final Integer PENDING = 0;
+	public static final Integer SCHEDULE = 1;
+	public static final Integer COMPLETE = 2;
+	
+	public static final Integer APROBADO = 1;
+	public static final Integer NO_APROBADO = 2;
+	public static final Integer NO_NOTE = 0;
+
+	public static final Integer TYPE_ACTIVITY_COMMENTED = 1;
+	public static final Integer TYPE_ACTIVITY_ELEARNING_1 = 2;
+	public static final Integer TYPE_ACTIVITY_ELEARNING_2 = 3;
+	public static final Integer TYPE_ACTIVITY_BBS_BASICS = 4;
+	public static final Integer TYPE_ACTIVITY_ELEARNING_FEEDBACK = 5;
+	public static final Integer TYPE_ACTIVITY_INDUCTION = 6;
+	public static final Integer TYPE_ACTIVITY_BTW = 7;
+	public static final Integer TYPE_ACTIVITY_EASSESMENT = 8;
+	public static final Integer TYPE_ACTIVITY_ELEARNING_MONITORS = 9;
+	public static final Integer TYPE_ACTIVITY_BBS_LEADERSHIP = 10;
+	public static final Integer TYPE_ACTIVITY_MONITORS = 11;
+	
+	
+	private Integer id;
+	
+    private DriverData driver;
+
+    private Integer year;
+    private Date date;
+    private Date dateStart;
+    private Date dateSchedule;
+    private Date expiry;
+    private Integer type;
+    private Integer status;
+    private Integer resullt;
+
+    public AnualPlanData() {
+    }
+
+    
+    public String getName(Text messages){
+    	switch (type) {
+		case 1:
+			return "BTW";
+		case 2:
+			return "eLearning 1";
+		case 3:
+			return "eLearning 2";
+		case 4:
+			return "Conducción Comentada";
+		case 5:
+			return "BBS";
+		case 6:
+			return "Inducción";
+		case 7:
+			return "BTW teórico Practico";
+		case 8:
+			return "Curso de Monitor Teórico Practico";
+		case 9:
+			return "eAssessment";
+
+		default:
+			return "NO DEFINIEDA";
+		}
+    	
+    }
+    
+    public boolean isDone(){
+    	return status.equals(COMPLETE);
+    }
+    
+	public DriverData getDriver() {
+		return driver;
+	}
+
+
+
+	public void setDriver(DriverData driver) {
+		this.driver = driver;
+	}
+
+
+
+	public Integer getYear() {
+		return year;
+	}
+
+
+
+	public void setYear(Integer year) {
+		this.year = year;
+	}
+
+
+
+	public Date getDateStart() {
+		return dateStart;
+	}
+
+
+
+	public void setDateStart(Date dateStart) {
+		this.dateStart = dateStart;
+	}
+
+
+
+	public Date getDateSchedule() {
+		return dateSchedule;
+	}
+
+
+
+	public void setDateSchedule(Date dateSchedule) {
+		this.dateSchedule = dateSchedule;
+	}
+
+
+
+	public Integer getResullt() {
+		return resullt;
+	}
+
+
+
+	public void setResullt(Integer resullt) {
+		this.resullt = resullt;
+	}
+
+
+
+	public Integer getId() {
+		return id;
+	}
+
+	public void setId(Integer id) {
+		this.id = id;
+	}
+
+	
+	public Date getDate() {
+		return date;
+	}
+
+	public void setDate(Date date) {
+		this.date = date;
+	}
+
+	public Date getExpiry() {
+		return expiry;
+	}
+
+	public void setExpiry(Date expiry) {
+		this.expiry = expiry;
+	}
+
+	public Integer getType() {
+		return type;
+	}
+
+	public void setType(Integer type) {
+		this.type = type;
+	}
+
+	public Integer getStatus() {
+		return status;
+	}
+
+	public void setStatus(Integer status) {
+		this.status = status;
+	}
+	
+	public boolean isExpired() {
+		Calendar c = Calendar.getInstance();
+		c.setTime(expiry);
+		Calendar now = Calendar.getInstance();
+		return c.before(now);
+	}
+
+}

@@ -1,0 +1,514 @@
+package business.event;
+
+
+import java.util.Collection;
+import java.util.Iterator;
+import java.util.LinkedList;
+
+import javax.ejb.SessionBean;
+
+import persistence.datatype.DataTypeReportUtil;
+import persistence.driver.DriverReportUtil;
+import persistence.event.EventABM;
+import persistence.event.EventABMUtil;
+import persistence.util.Util;
+import persistence.vehicle.VehicleReportUtil;
+import business.administration.corporation.CorporationABMFacade;
+import business.administration.corporation.CorporationABMFacadeUtil;
+import business.util.ExceptionHandler;
+
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.user.UserSessionData;
+import communication.alert.AlertConstants;
+import communication.driver.tables.DriverMainAttributes;
+import communication.event.tables.EventDataType;
+import communication.event.tables.FineDataType;
+import communication.exception.CreateBeanException;
+import communication.exception.DeslogedException;
+import communication.exception.InvalidDataException;
+import communication.travel.tables.CheckPointData;
+import communication.travel.tables.TravelDataType;
+import communication.util.MailSender;
+
+/**
+ * @author fcarriquiry
+ * 
+ * @ejb.bean name = "EventABMFacade" jndi-name = "ejb/EventABMFacade" type =
+ *           "Stateless" transaction-type = "Container"  
+ * 
+ * @ejb.ejb-ref
+ * 			 ejb-name = "EventABM"
+ * 			 ref-name = "ejb/EventABM"
+ * 			 view-type ="remote"
+ * 
+ * @jboss.ejb-ref-jndi 
+ * 			jndi-name = "ejb/EventABM" 
+ * 			ref-name = "EventABM"
+ * 
+ * @ejb.ejb-ref ejb-name = "VehicleReport" ref-name = "ejb/VehicleReport" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/VehicleReport" ref-name = "VehicleReport"
+ * 
+ * @ejb.ejb-ref ejb-name = "DriverReport" ref-name = "ejb/DriverReport" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/DriverReport" ref-name = "DriverReport"
+ * @ejb.ejb-ref 
+ *          ejb-name ="DataTypeReport"
+ *          ref-name = "ejb/DataTypeReport"
+ *          view-type ="remote"
+ * 
+ * @jboss.ejb-ref-jndi
+ *          jndi-name = "ejb/DataTypeReport" 
+ *          ref-name = "DataTypeReport"
+ * 
+ * 
+ * @ejb.util generate="physical"
+ */
+public abstract class EventABMFacadeBean implements SessionBean {
+
+    private ExceptionHandler handler = new ExceptionHandler(EventABMFacadeBean.class);
+	
+    /**
+     * Create method
+     * @ejb.permission role-name = "administrator,eventcreate,finecreate,drivercreatefine,drivercreateevent,drivereventupdate"
+     * @ejb.create-method
+     */
+	public void ejbCreate() throws CreateBeanException {
+	}
+	
+	/**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,eventcreate,drivercreateevent"
+	 * @param data
+	 * @throws Exception
+	 * @return Asigred Primary Key
+	 */
+	public Integer eventCreate(EventDataType data,UserSessionData userSessionData,String comment,boolean withDriverData) throws Exception {
+			
+        if(userSessionData.isDriver()) {
+            if(!data.getDriver().getId().equals(userSessionData.getDriverData().getId())) {
+                throw new InvalidDataException("eventCreate","Invalid driver");
+            }
+        }
+        
+		EventABM eventABM = null;
+        Integer key = null;
+		try{
+            data.setStatus(new Integer(EventDataType.PENDING_SUPERVISION));
+			eventABM=EventABMUtil.getHome().create();
+			key = eventABM.createEvent(data,userSessionData,comment,withDriverData);
+	        /*if(userSessionData.getCorporationId() == CorporationData.MONSANTO && data.getCountryId().equals(CountryData.BRASIL_ID) && SecurityConstants.isProductionServer()) {
+	        	sendMonsantoEventEmail(data, userSessionData);
+	        }*/
+         } catch (Exception e) {
+        	 Object[] parameters = new Object[2];
+         	 parameters[0] = data;
+         	 parameters[1] = comment;
+             handler.handleException("eventCreate",e,userSessionData,parameters);
+         }
+         return key;
+	}
+
+
+    private void sendMonsantoEventEmail(EventDataType eventData, UserSessionData userSessionData) {
+    	try {
+	    	DriverMainAttributes driver = DriverReportUtil.getHome().create().findDriverMainData(eventData.getDriver().getId(), userSessionData);
+	    	
+	    	String plate = eventData.getPlate();
+	    	if(eventData.getVehicle() != null) {
+	    		Collection<Integer> vehicles = new LinkedList<Integer>();
+	    		vehicles.add(eventData.getVehicle().getId());
+	    		Collection plates = VehicleReportUtil.getHome().create().getPlates(vehicles,userSessionData);
+	    		if(plates.size() > 0) {
+	    			plate = (String)plates.iterator().next();
+	    		}
+	    	}
+	    	MailSender sender = new MailSender();
+	
+	    	Collection to = new LinkedList();
+			to.add("antonio.ferreira@tfleet.com.br"); 
+			to.add("sinistro@tfleet.com.br"); 
+			//to.add("marcos.k.arruda@monsanto.com"); 
+			to.add("monsanto@tfleet.com.br"); 
+			to.add("marianna.ferraz@tfleet.com.br"); 
+			to.add("monsantobr@cepadc.com");
+			
+			//to.add("jrodriguez@cepadc.com");
+	    	Collection bcc = new LinkedList();
+	    	bcc.add("eventos.monsanto.br@gmail.com");
+
+	    	String subject = "Novo evento ingresado";
+			
+			String body = "<body>"+
+							"<p><span style='font-family:\"Lucida Grande\", \"Lucida Sans Unicode\",Tahoma, sans-serif';font-size:1.75em;color: #666666;'>Prezado (a),</span></p>"+
+							"<p><span style='font-family:\"Lucida Grande\", \"Lucida Sans Unicode\",Tahoma, sans-serif';font-size:1.15em;color: #666666;'>Acaba de ser ingressado um novo evento no CEPA Data Center. Segue informações:</span></p>"+
+							"<p>"+
+							"<span style='font-family:\"Lucida Grande\", \"Lucida Sans Unicode\",Tahoma, sans-serif';font-size:1.15em;color: #666666;'>"+
+							"Data: "+Util.formatDate(eventData.getDate())+"<br>"+
+							"Nome Condutor: "+driver.getFirstName()+" "+driver.getLastName()+"<br>"+
+							"Placa Veículo:"+plate+"<br>"+
+							"Relato:"+eventData.getStory()+
+							"</span>"+
+							"</p>"+
+							"<p>"+
+							"<span style='font-family:\"Lucida Grande\", \"Lucida Sans Unicode\",Tahoma, sans-serif';font-size:1.15em;color: #666666;'>"+
+							"Para mais informações entre em contato através do e-mail: <a href=\"mailto:monsantobr@cepadc.com\">monsantobr@cepadc.com</a>"+
+							"</span>"+
+							"</p>"+
+							"<p>"+
+							"<span style='font-family:\"Lucida Grande\", \"Lucida Sans Unicode\",Tahoma, sans-serif';font-size:1.75em;color: #666666;'>"+
+							"Atenciosamente,"+
+							"</span>"+
+							"</p>"+
+							"<p>"+
+							"<span style='font-family:\"Lucida Grande\", \"Lucida Sans Unicode\",Tahoma, sans-serif';font-size:1.75em;color: #666666;'>"+
+							"Equipe Data Center"+
+							"</span>"+
+							"</p>"+
+							"</body>";
+			
+			boolean sended = false;
+			int count = 0;
+			while(!sended && count < 10) {
+				try {
+			    	String[] mailAddress = DataTypeReportUtil.getHome().create().getAvailableAddress(CorporationData.REPORTER_JJ, userSessionData); 
+					String mailServer = AlertConstants.MAILSERVER; 
+					if (mailAddress[0] != null && mailAddress[0].contains("cepainternational.com")){
+						mailServer = AlertConstants.MAILSERVER2;
+					}else if (mailAddress[0] != null && mailAddress[0].contains("cepalogistica.com")){
+						mailServer = AlertConstants.MAILSERVER_INMOTION;
+					}
+					sended = sender.sendImage(to, 
+							mailServer,
+							"CEPA DataCenter", 
+							mailAddress[0],
+							mailAddress[1], 
+							subject, Util.toHTMLString(body), new LinkedList<String>(),new LinkedList<String>(),"monsantobr@cepadc.com","CEPA DataCenter",bcc,null);
+				}catch (Exception e) {
+					e.printStackTrace();
+				}
+				count++;
+			}
+    	}catch (Exception e) {
+    		e.printStackTrace();
+    	}
+	}
+
+	/**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,eventcreate,drivercreateevent"
+	 * @param data
+	 * @throws Exception
+	 * @return Asigred Primary Key
+	 */
+	public Integer eventCreate(EventDataType data,UserSessionData userSessionData,String comment) throws Exception {
+			
+        if(userSessionData.isDriver()) {
+            if(!data.getDriver().getId().equals(userSessionData.getDriverData().getId())) {
+                throw new InvalidDataException("eventCreate","Invalid driver");
+            }
+        }
+        
+		EventABM eventABM = null;
+        Integer key = null;
+		try{
+            data.setStatus(new Integer(EventDataType.PENDING_SUPERVISION));
+			eventABM=EventABMUtil.getHome().create();
+			key = eventABM.createEvent(data,userSessionData,comment);
+	        /*if(userSessionData.getCorporationId() == CorporationData.MONSANTO && data.getCountryId().equals(CountryData.BRASIL_ID) && SecurityConstants.isProductionServer()) {
+	        	sendMonsantoEventEmail(data, userSessionData);
+	        }*/
+         } catch (Exception e) {
+        	 Object[] parameters = {data,comment};
+             handler.handleException("eventCreate",e,userSessionData,parameters);
+         }
+         return key;
+	}
+
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,finecreate,drivercreatefine"
+     * @param data
+     * @throws Exception
+     */
+    public void fineCreate(FineDataType data,UserSessionData userSessionData) throws Exception {
+    	fineCreate(data,userSessionData,false);
+    }
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,finecreate,drivercreatefine"
+     * @param data
+     * @throws Exception
+     */
+    public void fineCreate(FineDataType data,UserSessionData userSessionData,boolean withDriverData) throws Exception {
+    
+        if(userSessionData.isDriver()) {
+            if(!data.getDriver().getId().equals(userSessionData.getDriverData().getId())) {
+                throw new InvalidDataException("fineCreate","Invalid driver");
+            }
+        }
+        EventABM eventABM=null;
+        try{
+            data.setStatus(new Integer(EventDataType.SUPERVISED));//cambiar el type por supervision
+            eventABM=EventABMUtil.getHome().create();
+            Integer id = eventABM.createFine(data,userSessionData,withDriverData);
+            data.setId(id);
+            if(userSessionData.isPointCorporation())
+            	CorporationABMFacadeUtil.getHome().create().addFine(data, userSessionData);
+        } catch (Exception e) {
+        	Object[] parameters = new Object[1];
+        	parameters[0] = data;
+            handler.handleException("fineCreate",e,userSessionData,parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,eventdelete"
+     */
+    public void deleteEvent(Collection events,UserSessionData userSessionData,String comment) throws Exception {
+              
+        EventABM eventABM=null;
+        try{
+            eventABM=EventABMUtil.getHome().create();
+            Iterator it = events.iterator();
+            while(it.hasNext()) {
+            	Integer eventId = new Integer((String)it.next());
+                eventABM.deleteEvent(eventId,userSessionData,comment);
+                if(userSessionData.isPointCorporation()) {
+                	CorporationABMFacadeUtil.getHome().create().removeEvent(eventId, userSessionData);
+                }
+            }            
+        } catch (Exception e) {
+        	Object[] parameters = new Object[2];
+        	parameters[0]  = events;
+        	parameters[1] = comment;
+            handler.handleException("deleteEvent",e,userSessionData,parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,eventsupervise,eventupdate,drivereventupdate"
+     * @param data
+     * @throws Exception
+     */
+    public void eventUpdate(EventDataType data,int type,UserSessionData userSessionData,String comment) throws Exception {
+    
+        Integer oldStatus = data.getStatus();
+        if(userSessionData.isDriver()) {
+            if(!data.getDriver().getId().equals(userSessionData.getDriverData().getId())) {
+                throw new InvalidDataException("fineCreate","Invalid driver");
+            }
+            if(data.getStatus().intValue() != EventDataType.PENDING_SUPERVISION) {
+                throw new DeslogedException("eventUpdate","Invalid action");
+            }
+        }else {
+            data.setStatus(new Integer(type));
+        }
+        
+        EventABM eventABM=null;
+        try{
+            eventABM=EventABMUtil.getHome().create();
+            eventABM.updateEvent(data,userSessionData,comment);
+            if(userSessionData.isPointCorporation() && oldStatus.equals(EventDataType.PENDING_SUPERVISION) && (type == EventDataType.SUPERVISED || type == EventDataType.PENDING_RECOMENDATION)) {
+            	CorporationABMFacade corporationABM = CorporationABMFacadeUtil.getHome().create();
+            	corporationABM.addEvent(data, userSessionData);
+            } else if(userSessionData.isPointCorporation() && oldStatus.intValue() == type) {
+            	CorporationABMFacadeUtil.getHome().create().updateEvent(data, userSessionData);
+            }
+        } catch (Exception e) {
+        	Object[] parameters = new Object[3];
+        	parameters[0]= data;
+        	parameters[1] = type;
+        	parameters[2] = comment;
+        	                                 
+            handler.handleException("eventUpdate",e,userSessionData,parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,fineupdate,drivereventupdate"
+     * @param data
+     * @throws Exception
+     */
+    public void fineUpdate(FineDataType data,UserSessionData userSessionData) throws Exception {    
+              
+        if(userSessionData.isDriver()) {
+            if(!data.getDriver().getId().equals(userSessionData.getDriverData().getId())) {
+                throw new InvalidDataException("fineCreate","Invalid driver");
+            }
+            if(data.getStatus().intValue() != EventDataType.PENDING_SUPERVISION) {
+                throw new DeslogedException("eventUpdate","Invalid action");
+            }
+        }
+        EventABM eventABM=null;
+        try{
+            eventABM=EventABMUtil.getHome().create();
+            eventABM.updateFine(data,userSessionData);
+            if(userSessionData.isPointCorporation())
+            	CorporationABMFacadeUtil.getHome().create().updateFine(data, userSessionData);
+        } catch(Exception e){
+        	Object[] parameters = new Object[1];
+        	parameters[0]  = data;
+            handler.handleException("fineUpdate",e,userSessionData,parameters);
+        }
+    }
+
+	/**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,eventcreate,drivercreateevent"
+	 * @param data
+	 * @throws Exception
+	 * @return Asigred Primary Key
+	 */
+	public void travelCreate(TravelDataType data,UserSessionData userSessionData) throws Exception {
+	
+		if (userSessionData == null) {
+            throw new DeslogedException("travelCreate","userSessionData = null");
+		}
+		if (data == null) {
+            throw new InvalidDataException("travelCreate","data = null");
+		}
+		EventABM eventABM=null;
+		try{
+            data.setStatus(TravelDataType.PENDING);
+			eventABM=EventABMUtil.getHome().create();
+			eventABM.createTravel(data,userSessionData);
+         } catch (Exception e) {
+        	 Object[] parameters = new Object[1];
+         	 parameters[0] = data;
+             handler.handleException("createTravel",e,userSessionData,parameters);
+         }
+	}
+
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,eventdelete"
+     */
+    public void deleteTravel(Collection travels,UserSessionData userSessionData) throws Exception {
+        if (userSessionData == null) {
+            throw new DeslogedException("deleteEvent","userSessionData = null");
+        }
+        if (travels == null || travels.size() == 0) {
+            throw new InvalidDataException("deletetravels","travels = null");
+        }        
+        EventABM eventABM=null;
+        try{
+            eventABM=EventABMUtil.getHome().create();
+            Iterator it = travels.iterator();
+            while(it.hasNext()) {
+                eventABM.deleteTravel(new Integer((String)it.next()),userSessionData);
+            }            
+        } catch (Exception e) {
+        	Object[] parameters = new Object[1];
+        	parameters[0]  = travels;
+            handler.handleException("deleteTravel",e,userSessionData,parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,eventsupervise,eventupdate,drivereventupdate"
+     * @param data
+     * @throws Exception
+     */
+    public void updateTravel(TravelDataType data,UserSessionData userSessionData) throws Exception {
+    
+        if (userSessionData == null) {
+            throw new DeslogedException("updateTravel","userSessionData = null");
+        }
+        if (data == null) {
+            throw new InvalidDataException("updateTravel","data = null");
+        }        
+
+        try{
+        	EventABM eventABM=EventABMUtil.getHome().create();
+            eventABM.udpateTravel(data,userSessionData);
+        } catch (Exception e) {
+        	Object[] parameters = new Object[1];
+        	parameters[0]= data;
+        	                                 
+            handler.handleException("updateTravel",e,userSessionData,parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,eventsupervise,eventupdate,drivereventupdate"
+     * @param data
+     * @throws Exception
+     */
+    public void updateCheckPoints(TravelDataType data, Collection list, UserSessionData userSessionData) throws Exception {
+    
+        if (userSessionData == null) {
+            throw new DeslogedException("updateCheckPoints","userSessionData = null");
+        }
+        if (data == null) {
+            throw new InvalidDataException("updateCheckPoints","data = null");
+        }        
+
+        try{
+        	EventABM eventABM=EventABMUtil.getHome().create();
+            eventABM.udpateTravelConfirmation(data,userSessionData);
+            
+            Iterator it = list.iterator();
+            while(it.hasNext()) {
+            	CheckPointData checkPoint = (CheckPointData)it.next();
+            	if(checkPoint.getId() == null) {
+            		eventABM.createCheckPoint(checkPoint, data.getId(), userSessionData);
+            	}else {
+            		eventABM.updateCheckPoint(checkPoint, userSessionData);
+            	}
+            }
+        } catch (Exception e) {
+        	Object[] parameters = new Object[1];
+        	parameters[0]= data;
+        	                                 
+            handler.handleException("updateCheckPoints",e,userSessionData,parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,eventsupervise,eventupdate,drivereventupdate"
+     * @param data
+     * @throws Exception
+     */
+    public void closeTravel(TravelDataType data, UserSessionData userSessionData) throws Exception {
+    
+        if (userSessionData == null) {
+            throw new DeslogedException("closeTravel","userSessionData = null");
+        }
+        if (data == null) {
+            throw new InvalidDataException("closeTravel","data = null");
+        }        
+
+        try{
+        	EventABM eventABM=EventABMUtil.getHome().create();
+       		data.setStatus(TravelDataType.FINALIZED);
+            eventABM.closeTravel(data,userSessionData);
+            
+        } catch (Exception e) {
+        	Object[] parameters = new Object[1];
+        	parameters[0]= data;
+        	                                 
+            handler.handleException("closeTravel",e,userSessionData,parameters);
+        }
+    }
+}

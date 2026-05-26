@@ -1,0 +1,98 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.driver.tables">
+    <class name="ClosedDriver" table="closeddrivers">
+
+       <composite-id class="ClosedDriverPK" name="pk" >
+	        <key-property 	name="id"	type="java.lang.Integer"	column="id" />
+	        <key-property 	name="period"	type="java.lang.Integer"	column="period" />
+	       	<key-property 	name="year"		type="java.lang.Integer"	column="year" />
+       </composite-id>
+        
+        <property	name="firstName"	type="java.lang.String"		column="firstName"		not-null="true" />
+        
+        <property	name="lastName"		type="java.lang.String"		column="lastName"		not-null="true" />
+        <property	name="birthDate"	type="java.util.Date"		column="birthDate"		not-null="true" />
+
+        <many-to-one name="sex" class="persistence.datatype.tables.Sex"	column="sex" not-null="true"/>
+        
+        <property name="divOrg11" type="java.lang.String" column="divorg11" />
+        <property name="divOrg12" type="java.lang.String" column="divorg12" />
+        <property name="divOrg13" type="java.lang.String" column="divorg13" />
+        
+        <property name="divOrg21" type="java.lang.String" column="divorg21" />
+        <property name="divOrg22" type="java.lang.String" column="divorg22" />
+        <property name="divOrg23" type="java.lang.String" column="divorg23" />
+        
+        <property name="divOrg31" type="java.lang.String" column="divorg31" />
+        <property name="divOrg32" type="java.lang.String" column="divorg32" />
+        <property name="divOrg33" type="java.lang.String" column="divorg33" />
+				
+        <property	name="country"	type="java.lang.Integer"		column="country"		not-null="true" />
+        <property	name="corporation"	type="java.lang.Integer"		column="corporation"		not-null="true" />
+        
+        <property	name="city"				type="java.lang.String"		column="city"			/>
+        <property	name="licenseExpiry"	type="java.util.Date"		column="licenseExpiry" />
+
+		<property name="licenseNotExpiry" type="boolean">
+        	<column name="licensenotexpiry" default="false" />
+        </property>	
+        <property	name="licenseObs"	type="text"		column="licenseObs" />
+        <many-to-one 	name="vehicleAllowed"	class="persistence.datatype.tables.TypeVehicle"	column="vehicleAllowed" />
+        <property	name="officeAddress"	type="java.lang.String"		column="officeAddress"	/>
+        <property	name="email"			type="java.lang.String"		column="email"			/>
+        <property	name="personalAddress"	type="java.lang.String"		column="personalAddress"/>
+
+        <property	name="corporationId"	type="java.lang.String"	column="corporationId"	/>
+        <property	name="licenseNumber"	type="java.lang.String"	column="licenseNumber"	/>
+        <property	name="phoneNumber"	type="java.lang.String"	column="phoneNumber"	/>
+        <property	name="inclusionDate"	type="java.util.Date"	column="inclusionDate"	/>
+        <property	name="exclusionDate"	type="java.util.Date"	column="exclusionDate"	/>
+
+		<property name="drives" type="boolean">
+        	<column name="drives" default="false" />
+        </property>	
+        
+        <property name="employee" type="boolean">
+        	<column name="employee" default="true" />
+        </property>	
+
+        <many-to-one name="contract" class="persistence.datatype.tables.Contract" column="contract" />
+
+        <property	name="superviser"		type="java.lang.String"		column="superviser"	/>
+        <property	name="manager"			type="java.lang.String"		column="manager"	/>
+
+        <property name="temporal" type="boolean">
+        	<column name="temporal" default="false" />
+        </property>	
+        <property name="createdFromTablet" type="boolean">
+        	<column name="createdfromtablet" default="false" />
+        </property>	
+        <property name="director" type="boolean">
+        	<column name="director" default="false" />
+        </property>	
+
+        <property name="divOrgId11" type="java.lang.Integer" column="divorgId11" />
+        <property name="divOrgActive11" type="java.lang.Boolean" column="divorgActive11" />
+        <property name="divOrgId12" type="java.lang.Integer" column="divorgId12" />
+        <property name="divOrgActive12" type="java.lang.Boolean" column="divorgActive12" />
+        <property name="divOrgId13" type="java.lang.Integer" column="divorgId13" />
+        <property name="divOrgActive13" type="java.lang.Boolean" column="divorgActive13" />
+        <property name="divOrgId21" type="java.lang.Integer" column="divorgId21" />
+        <property name="divOrgActive21" type="java.lang.Boolean" column="divorgActive21" />
+        <property name="divOrgId22" type="java.lang.String" column="divorgId22" />
+        <property name="divOrgActive22" type="java.lang.Boolean" column="divorgActive22" />
+        <property name="divOrgId23" type="java.lang.Integer" column="divorgId23" />
+        <property name="divOrgActive23" type="java.lang.Boolean" column="divorgActive23" />
+        <property name="divOrgId31" type="java.lang.Integer" column="divorgId31" />
+        <property name="divOrgActive31" type="java.lang.Boolean" column="divorgActive31" />
+		<property name="divOrgId32" type="java.lang.String" column="divorgId32" />
+		<property name="divOrgActive32" type="java.lang.Boolean" column="divorgActive32" />
+        <property name="divOrgId33" type="java.lang.Integer" column="divorgId33" />
+		<property name="divOrgActive33" type="java.lang.Boolean" column="divorgActive33" />
+        
+    </class>
+</hibernate-mapping>

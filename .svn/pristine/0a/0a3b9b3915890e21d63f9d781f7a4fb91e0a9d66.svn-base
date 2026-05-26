@@ -1,0 +1,102 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>Documento sem t&iacute;tulo</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+
+<body leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
+<table width="559" border="0" align="center" cellpadding="0" cellspacing="0">
+  <tr> 
+    <td height="75" colspan="4"> 
+      <table width="90%" border="0" align="center" cellpadding="0" cellspacing="0">
+        <tr> 
+          <td><div align="center"><font size="5" face="Arial, Helvetica, sans-serif"><strong></strong></font></div>
+            <div align="center"></div>
+            <table width="91%" height="63" border="0" align="center" cellpadding="0" cellspacing="0" bgcolor="3B6692">
+              <tr> 
+                <td height="63" align="center" valign="middle"> <font color="#FFFFFF" size="5" face="Arial, Helvetica, sans-serif"><strong><em>User 
+                  Manual </em></strong></font><br> <font color="#FFFFFF" size="4" face="Arial, Helvetica, sans-serif"><strong><font size="2">BASIC 
+                  INSTRUCTIONS ON ACCESS AND USE</font></strong></font><font color="#FFFFFF" size="3" face="Arial, Helvetica, sans-serif"><strong></strong></font></td>
+              </tr>
+            </table></td>
+        </tr>
+      </table>
+      <div align="right"> </div></td>
+  </tr>
+  <tr valign="top"> 
+    <td height="21" colspan="5"> <hr color="#3B6692"noshade></td>
+  </tr>
+  <tr> 
+    <td colspan="5"><table width="100%" border="0" cellspacing="0" cellpadding="0">
+        <tr> 
+          <td><font face="Arial, Helvetica, sans-serif"><strong>Events/Queries/By 
+            Period</strong></font></td>
+        </tr>
+        <tr> 
+          <td><font face="Arial, Helvetica, sans-serif">&nbsp;</font> <table width="90%" height="291" border="1" align="center" cellpadding="0" cellspacing="0" bordercolor="#3B6692">
+              <tr> 
+                <td height="289"> 
+                  <div align="justify"></div>
+                  <div align="justify"></div>
+                  <div align="justify"> 
+                    <table width="90%" border="0" align="center" cellpadding="0" cellspacing="0">
+                      <tr> 
+                        <td width="30%" height="246"><img src="/datacenter/util/imgs/mn_menu_7_en.jpg" width="153" height="246"></td>
+                        <td width="3%">&nbsp;</td>
+                        <td width="67%"><div align="justify"> 
+                            <p><font size="2" face="Arial, Helvetica, sans-serif">EAccording 
+                              to the selected criteria, the query will display 
+                              a table including the total number of events (accidents, 
+                              incidents and fines), which occurred during a specific 
+                              period, classified by month and/or quarter, sorted 
+                              by Division, Subdivision, or Unit.</font></p>
+                          </div></td>
+                      </tr>
+                    </table>
+                  </div></td>
+              </tr>
+            </table></td>
+        </tr>
+        <tr> 
+          <td height="19"> <p>&nbsp;</p></td>
+        </tr>
+        <tr> 
+          <td><font face="Arial, Helvetica, sans-serif"><strong>&nbsp;Events/Queries/Number 
+            of Events</strong></font></td>
+        </tr>
+        <tr> 
+          <td><table width="90%" height="298" border="1" align="center" cellpadding="0" cellspacing="0" bordercolor="#3B6692">
+              <tr> 
+                <td height="296"> 
+                  <div align="justify"></div>
+                  <div align="justify"></div>
+                  <div align="justify"> 
+                    <table width="90%" border="0" align="center" cellpadding="0" cellspacing="0">
+                      <tr> 
+                        <td width="30%" height="246"><img src="/datacenter/util/imgs/mn_menu_8_en.jpg" width="153" height="246"></td>
+                        <td width="3%">&nbsp;</td>
+                        <td width="67%"><div align="justify"> 
+                            <p><font size="2" face="Arial, Helvetica, sans-serif">This 
+                              query will display the total number of accidents, 
+                              incidents, fines and company vehicles for a specific 
+                              period, sorted by division, subdivision or unit.</font></p>
+                          </div></td>
+                      </tr>
+                    </table>
+                  </div></td>
+              </tr>
+            </table></td>
+        </tr>
+        <tr> 
+          <td> <div align="justify"><font face="Arial, Helvetica, sans-serif"></font></div></td>
+        </tr>
+      </table></td>
+  </tr>
+  <tr> 
+    <td height="19" colspan="5"><div align="center"><font size="1" face="Arial, Helvetica, sans-serif"><a href="layout.jsp?refer=/manual/english/manual1_en.htm" style="color:black;text-decoration:none">Back 
+        to Contens</a></font></div></td>
+  </tr>
+</table>
+</body>
+</html>

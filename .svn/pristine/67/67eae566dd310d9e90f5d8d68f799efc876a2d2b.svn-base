@@ -1,0 +1,291 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.event.tables" >
+	<class name="EventAbstract" table="genericevents">
+        
+		<id column="id" name="id">
+            <generator class="sequence">
+            	<param name="sequence">Event_Sequence</param>
+            </generator>
+        </id>		 
+		
+	   	<many-to-one class="persistence.driver.tables.Driver" name="driver" not-null="true"/>
+
+	   	<many-to-one class="persistence.administration.corporation.tables.CorporationCountry" name="corpCountry" not-null="true">
+	   		<column name="corporation" not-null="true"/>
+	   		<column name="country" not-null="true"/>
+	   	</many-to-one>
+
+        <many-to-one name="geoLevel1" class="persistence.administration.corporation.tables.GeoLevel1" column="geolevel1" />
+        <property 	name="state"	type="java.lang.String"		column="state"/>
+
+        <many-to-one name="divOrg1" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="divorg1" />
+        <many-to-one name="divOrg2" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="divorg2" />
+        <many-to-one name="divOrg3" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="divorg3" />
+
+       	<property name="city" 		type="java.lang.String"	column="city"/>
+
+	   	<many-to-one class="persistence.vehicle.tables.Vehicle" name="vehicle"/>
+
+        <property 	name="plate"	type="java.lang.String"		column="plate"/>
+        <!-- economicNumber para Pepsico, 29/08/2011 -->
+        <property 	name="economicNumber"	type="java.lang.String"		column="economicnumber" />
+        
+        <property 	name="trade"	type="java.lang.String"		column="trade"/>
+        <property 	name="model"	type="java.lang.String"		column="model"/>
+        <property 	name="year"		type="java.lang.String"		column="year"/>
+        <property 	name="companycar"/>
+
+   		<property 	name="date" 	type="java.sql.Date" column="date"	not-null="true"/>
+   		<property 	name="expiry" 	type="java.sql.Date" column="expiry" />
+   		<property 	name="hour" 	type="java.sql.Time" column="time"	/>
+
+   		<property 	name="working"  type="java.lang.String" column="working" />
+
+    
+   		<property 	name="status" 	type="java.lang.Integer" column="status"	not-null="true"/>
+
+   		<property 	name="evitability" 	type="java.lang.String" column="evitability"	/>
+   		<property 	name="recomendation" type="java.lang.String" column="recomendation" />
+		
+		<property name="nonrecordable" >
+        		<column name="nonrecordable" default="false" />
+       	</property>  
+		
+
+        <property 	name="supervisionObservations"	type="java.lang.String"	length="10000" column="supervisionobservations"/>
+   		<property 	name="lote"	type="java.sql.Date" column="lote" />
+   		
+   		<property 	name="points"  type="java.lang.Integer"	>
+   				<column name="points" 	default="0" />
+   		</property>
+
+		<joined-subclass name="Fine" table="fines">
+			<key column="id"/>
+			<many-to-one class="persistence.datatype.tables.FineType"	name="type"/>
+    	   <!-- <property 	name="points"	type="java.lang.String"	column="points"/> -->
+			<many-to-one class="persistence.datatype.tables.FineQualify"	name="qualify"/>
+	        <property 	name="cost"	type="java.lang.Integer"	column="cost"/>
+    	    <property 	name="article"	type="java.lang.String"	column="article" />
+	        <property 	name="observations"	type="java.lang.String"	length="10000" column="observations"/>
+  	        <property 	name="infringementNotice"	type="java.lang.String" column="infringementnotice"/>
+  	        <property 	name="speed"	type="java.lang.Integer" column="speed"/>
+  	        <property 	name="permittedSpeed"	type="java.lang.Integer" column="permittedspeed"/>
+		</joined-subclass>
+
+		<joined-subclass name="Event" table="events">
+    		
+			<key column="id"/>
+
+   					
+			<many-to-one class="persistence.datatype.tables.Zone"	name="zone"/>
+        	
+        	<property name="policeReport" type="java.lang.String" column="policeReport" />
+        	<property name="damage" />
+       
+	        <property 	name="story"	type="text"	column="story" />
+
+		    <many-to-one class="persistence.datatype.tables.CollisionClasification"	name="collision"/>
+
+		    <many-to-one class="persistence.datatype.tables.AccidentClasification"	name="accident"/>
+		    
+		    <many-to-one class="persistence.datatype.tables.IncidentClasification"	name="incident"/>
+
+		    <many-to-one class="persistence.datatype.tables.AccidentClasification"	name="nearmiss"/>
+
+			<many-to-one class="persistence.datatype.tables.AccidentClasificationLevel1"	name="clasification1" not-null="false"/>
+			<many-to-one class="persistence.datatype.tables.AccidentClasificationLevel2"	name="clasification2" not-null="false"/>
+			<many-to-one class="persistence.datatype.tables.AccidentClasificationLevel3"	name="clasification3" not-null="false"/>
+			<many-to-one class="persistence.datatype.tables.AccidentClasificationLevel4"	name="clasification4" not-null="false"/>
+			<property 	name="clasificationText"	type="java.lang.String"		column="clasificationText" not-null="false"/>
+			
+			<many-to-one class="persistence.datatype.tables.AccidentClasificationLevel1"	name="clasificationCEPA1" not-null="false"/>
+			<many-to-one class="persistence.datatype.tables.AccidentClasificationLevel2"	name="clasificationCEPA2" not-null="false"/>
+			<many-to-one class="persistence.datatype.tables.AccidentClasificationLevel3"	name="clasificationCEPA3" not-null="false"/>
+			<many-to-one class="persistence.datatype.tables.AccidentClasificationLevel4"	name="clasificationCEPA4" not-null="false"/>
+			<property 	name="clasificationCEPAText"	type="java.lang.String"		column="clasificationCEPAText" not-null="false"/>
+			
+  			<many-to-one name="handle" class="persistence.datatype.tables.VehicleBehaviour"	column="handle"/>
+  			<property name="handleText" type="java.lang.String"	column="handleText"/>
+
+        	<property name="hitrun"	type="java.lang.String"	column="hitrun" />
+
+		    <many-to-one class="persistence.datatype.tables.AccidentFactors"	name="principalFactor"/>
+			<property name="principalFactorText" type="java.lang.String"	column="principalFactorText"/>
+
+			<property name="distractor" 	type="java.lang.String"	column="distractor" />
+			
+			<property name="factortooclose" >
+        		<column name="factortooclose" default="false" />
+        	</property>
+        	<property name="factorhighspeed" >
+        		<column name="factorhighspeed" default="false" />
+        	</property>
+        	<property name="factorsigns" >
+        		<column name="factorsigns" default="false" />
+        	</property>
+        	<property name="factorturn" >
+        		<column name="factorturn" default="false" />
+        	</property>        	
+        	<property name="factorlight" >
+        		<column name="factorlight" default="false"/>
+        	</property>
+        	<property name="factorstop" >
+        		<column name="factorstop" default="false"/>
+        	</property>
+        	<property name="factorother" >
+        		<column name="factorother" default="false" />
+        	</property>
+        	<property name="factorchangelane" >
+        		<column name="factorchangelane" default="false" />
+        	</property>
+        	<property name="factoralcohol" >
+        		<column name="factoralcohol" default="false" />
+        	</property>
+        	<property name="factorovertaking" >
+        		<column name="factorovertaking" default="false" />
+        	</property>        	
+        	<property name="factorsleep" >
+        		<column name="factorsleep" default="false" />
+        	</property>
+        	<property name="factordistraction" >
+        		<column name="factordistraction" default="false" />
+        	</property>
+			<property name="factorConcience" >
+				<column name="factorConcience" default="false" />
+			</property>
+			<property name="factorOtherParking" >
+				<column name="factorOtherParking" default="false" />
+			</property>
+			<property name="factorOtherCrossing" >
+				<column name="factorOtherCrossing" default="false" />
+			</property>
+			<property name="factorOtherStanding" >
+				<column name="factorOtherStanding" default="false" />
+			</property>
+			<property name="factorMecanicFail" >
+				<column name="factorMecanicFail" default="false" />
+			</property>
+
+        	<property name="collisionAngle"	type="java.lang.String"	column="collisionangle" />
+
+        	<property name="driverstate"	type="java.lang.String"	column="driverstate" />
+        	<property name="dayslost"	type="java.lang.Integer"	column="dayslost" />
+        	<property name="otherpartydayslost"	type="java.lang.Integer"	column="otherpartydayslost" />
+        	<property name="fatalitiesothercount"	type="java.lang.Integer"	column="fatalitiesothercount" />
+        	<property name="injuredothercount"	type="java.lang.Integer"	column="injuredothercount" />
+        	<property name="fatalitiesfunccount"	type="java.lang.Integer"	column="fatalitiesfunccount" />
+        	<property name="injuredfunccount"	type="java.lang.Integer"	column="injuredfunccount" />
+			<property name="safefunccount"	type="java.lang.Integer"	column="safefunccount" />
+			<property name="safeothercount"	type="java.lang.Integer"	column="safeothercount" />
+			
+        	<property name="damage1" />
+        	<property name="damage2" />
+        	<property name="damage3" />
+        	<property name="damage4" />
+        	<property name="damage5" />
+        	<property name="damage6" />
+        	<property name="damage7" />
+        	<property name="damage8" />
+        	<property name="damage9" />
+        	<property name="damage10" />
+        	<property name="damage11" />
+        	<property name="damage12" />
+        	<property name="damage13" />
+        	<property name="damage14" />
+        	<property name="damage15" />
+        	<property name="damage16" />
+        	
+        	<property name="selfbelt"  	type="java.lang.String"	column="selfbelt" />
+        	<property name="alcohol" 	type="java.lang.String"	column="alcohol" />
+        	<property name="otherVehicles" type="java.lang.String"	column="othervehicles" />
+        	<property name="cellular"	type="java.lang.String"	column="cellular" />
+
+        	<property name="maxSpeed"	type="java.lang.Integer"	column="maxspeed" />
+        	<property name="vehicleSpeed"	type="java.lang.Integer"	column="vehiclespeed" />
+        	<property name="collisionSpeed"	type="java.lang.Integer"	column="collisionspeed" />
+        	<property name="reportedSpeed"	type="java.lang.Integer"	column="reportedspeed" />
+        	<property name="speedUnit"	type="java.lang.String"	column="speedunit" />
+
+	
+		    <many-to-one class="persistence.datatype.tables.Climate"					name="climate"/>
+	    	<many-to-one class="persistence.datatype.tables.Lighting"				name="lighting"/>
+	  		<many-to-one class="persistence.datatype.tables.Way"						name="way"/>
+		    <many-to-one class="persistence.datatype.tables.CirculationDirection"	name="direction"/>
+			<many-to-one class="persistence.datatype.tables.TrafficControl"			name="control"/>
+			
+			<property type="java.lang.String"	name="controlMultiple" column="controlmultiple" />
+			
+			<many-to-one class="persistence.datatype.tables.Pavement"				name="pavement"/>
+	  		<many-to-one class="persistence.datatype.tables.ConditionRout"			name="condition"/>
+
+	        <property 	name="cost"	type="java.lang.Integer"	column="cost"/>
+	        
+	        <property name="realCost" >
+				<column name="realcost" default="false" />
+			</property>
+	        
+	        <property 	name="carcost"	type="java.lang.Integer"	column="carcost"/>
+	        <property 	name="severity"	type="java.lang.Integer"	column="severity"/>
+ 
+ 	        <property name="pedestrianCount"	type="java.lang.Integer"	column="pedestriancount" />
+    	    <property name="pedestrian1"	type="java.lang.String"	column="pedestrian1" />
+    	    <property name="pedestrianComment1"	type="java.lang.String"	column="pedestrianComment1" />
+        	<property name="pedestrian2"	type="java.lang.String"	column="pedestrian2" />
+    	    <property name="pedestrianComment2"	type="java.lang.String"	column="pedestrianComment2" />
+	        <property name="pedestrian3"	type="java.lang.String"	column="pedestrian3" />
+    	    <property name="pedestrianComment3"	type="java.lang.String"	column="pedestrianComment3" />
+	
+			<set name="vehiclesInvolved"  cascade="all-delete-orphan">
+		        <key column="id" not-null="true"/>
+	        	<one-to-many class="VehicleInvolved"/>
+    		</set>	  		
+
+		    <many-to-one class="persistence.datatype.tables.CollisionClasification"	name="superivisedCollision"/>
+
+		    <many-to-one class="persistence.datatype.tables.AccidentClasification"	name="superivisedAccident"/>
+		    
+		    <many-to-one class="persistence.datatype.tables.IncidentClasification"	name="superivisedIncident"/>
+
+    		
+    		<set name="eventDamages"  cascade="all-delete-orphan">
+				<key column="eventid"  not-null="true"/>
+				<one-to-many class="EventDamage" />
+			</set>  
+		
+	   		<property 	name="workingHours" type="java.lang.Integer" column="workinghours" />
+	   		<property name="charged" 	type="java.lang.String" column="charged"/>
+	   		<property name="whoDrives" 	type="java.lang.String" column="whodrives"/>
+	   		<property name="damageCharge"	type="java.lang.String" column="damagecharge" />
+	   		
+	   		<property name="alcoholBreath"	type="java.lang.String" column="alcoholbreath" />
+	   		<property name="stoppedVehicle"	type="java.lang.String" column="stoppedvehicle" />
+	   		
+	   		<property 	name="extraCost1" type="java.lang.Integer" column="extracost1" />
+	   		<property 	name="extraCost2" type="java.lang.Integer" column="extracost2" />
+	   		<property 	name="extraCost3" type="java.lang.Integer" column="extracost3" />
+	   		<property 	name="extraCost4" type="java.lang.Integer" column="extracost4" />
+	   		<property 	name="extraCost5" type="java.lang.Integer" column="extracost5" />
+	   		<property 	name="extraCost6" type="java.lang.Integer" column="extracost6" />
+	   		<property 	name="extraCost7" type="java.lang.Integer" column="extracost7" />
+	   		<property 	name="extraCost8" type="java.lang.Integer" column="extracost8" />
+	   		
+	   		<property 	name="ensuranceDate" 	type="java.sql.Date" column="ensurancedate"	/>
+	   		<property 	name="companyAmount" type="java.lang.Integer" column="companyamount" />
+	   		<property 	name="driverAmount" type="java.lang.Integer" column="driveramount" />
+	   		<property 	name="thirdAmount" type="java.lang.Integer" column="thirdamount" />
+	   		
+			<property	name="folioNumber" type="java.lang.Integer" column="folionumber" />
+			<property	name="sapNumber" type="java.lang.Integer" column="sapnumber" />
+			
+			<property name="doubleCabin" >
+        		<column name="doublecabin" default="false" />
+       		</property>  
+			
+  		</joined-subclass>
+    	
+    </class>
+</hibernate-mapping>

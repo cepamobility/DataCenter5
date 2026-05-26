@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE server PUBLIC 
+	"-//JBoss//DTD MBean Service 5.0//EN" 
+	"http://www.jboss.org/j2ee/dtd/jboss-service_5_0.dtd">
+	
+<server>   
+<mbean code="persistence.administration.jboss.ActiveSessionsListener"
+       name="persistence.administration.jboss:service=ActiveSessionsListener">
+       <!-- 
+        <depends optional-attribute-name="SubscriptionList">
+        	jboss.monitor:name=Heartbeat,type=Timer
+    	</depends>
+       -->
+        
+     <attribute name="SubscriptionList">     
+      <subscription-list>
+        <mbean name="jboss.monitor:name=Heartbeat,type=Timer" code=""/>
+      </subscription-list>
+     </attribute>
+     
+</mbean>
+</server>

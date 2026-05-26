@@ -1,0 +1,97 @@
+<%@page language="java"
+    errorPage="../exception.jsp"
+	import="business.*"
+	import="java.io.*"
+	import="java.text.*"
+	import="java.util.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.util.*"
+ 	import="communication.administration.user.*" 
+	import="communication.util.Filter"
+	import="presentation.translator.web.driver.*"
+ 	import="presentation.translator.web.util.*"
+ 			
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html" 
+%>
+<%
+	// hace el include de la página que despliega el box que indica el resultado de la operación
+	// el texto que se despliega en el box es el guardado en la variable de sesión bajo la key Msg
+	RequestDispatcher dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+	dispatcher.include(request,response);
+	// Fin manejo de mensajes
+ 	
+	SystemAccess sys = (SystemAccess)session.getAttribute("SystemAccess");
+	Text messages = sys.getText();
+	UserSessionData userSessionData = sys.getUserSessionData();
+
+	String check = null;
+	check = Util.checkPermission(sys,SecurityConstants.CREATE_DRIVER);	
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+	
+//		 Link al Archivo con el Template para subir Conductores:
+		
+		String directory = "../datacenter5/mdp/uploads/";
+		String language = "es";
+		// Filtro por idioma
+		if (sys.getUserSessionData().getLenguage().equals("es")){
+	language = "es";
+		}else if(sys.getUserSessionData().getLenguage().equals("en")){
+	language = "en";
+		}else if(sys.getUserSessionData().getLenguage().equals("pt")){
+	language = "pt";
+		}
+		String file = "drivers.txt";
+		String link = directory + language+"/accidentes_laborales.txt";
+%>
+
+<html:html>
+	<head>
+		<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	</head>
+	<body>
+		<html:form action="/InsertWA" method="post" enctype="multipart/form-data" >	
+			<table width="700"  border="0" cellspacing="0" cellpadding="0" align="center"> 
+				<tr class="guide1">
+					<jsp:include  page='<%="../component/titlecomponent.jsp?title=Ingreso de Accidentes Laborales"%>' />
+ 				</tr>
+      			<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+     			</tr>
+				<tr>
+					<td>
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title=Archivo"%>' />
+						<table width="700"  border="0" align="center" cellpadding="0" cellspacing="0">
+      						<tr>
+      							<td align="left" colspan="2">
+      								<html:file property="file" />
+      							</td>			      					      					      		
+      						</tr>
+				  			<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+				  			</tr>
+      						<tr>
+      							<td align="left">
+      								<html:submit value='Subir' styleClass="input"/>
+      							</td>
+      							<td align="right">
+      								<a href='<%=link%>'>Archivo Ejemplo</a>
+      							</td>
+      						</tr>
+						</table>
+						<jsp:include  page='../component/utilityboxbottom.jsp' />
+					</td>
+				</tr>
+			</table>
+		</html:form>
+	</body>
+</html:html>
+<% }
+%>
+

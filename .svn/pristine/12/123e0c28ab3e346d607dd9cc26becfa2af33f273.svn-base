@@ -1,0 +1,260 @@
+<%@page language="java" 
+	errorPage="../exception.jsp"
+	import="java.util.*"
+	import="business.*"
+	import="business.fleet.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.group.tables.*"
+	import="communication.administration.user.tables.*"
+	import="communication.fleet.tables.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="communication.fleet.util.*"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<script language="javascript" src='/datacenter/util/js/Prepared_Parameters.js' type='text/javascript' >
+</script>
+<script>
+	function onSelectFrom(calendar, date) {
+		var date2 = calendar.date;
+		var time = date2.getTime();
+  		var input_month = document.getElementById("monthIdFrom");
+  		var input_year = document.getElementById("yearIdFrom");
+  		var date3 = new Date(time);
+  		input_month.value = parseInt(date3.print("%m"),10);
+  		input_year.value= parseInt(date3.print("%Y"),10);
+	}
+	
+</script>
+<html:html>
+<%!
+	RequestDispatcher dispatcher; String context;
+	Text messages; SystemAccess sys;
+	Integer pageNum; boolean all; int pageSize; 
+	String value;String type;String status;
+	List regions;
+	Set regionsNames;
+	Iterator groupIt;
+	String link;
+	String url;
+	GroupLineData groupLineData;
+	GeoLabelData lid;
+	GeoItemData item;
+	String check;
+%>
+<%
+	sys=(SystemAccess)session.getAttribute("SystemAccess");
+	check = Util.checkPermission(sys,SecurityConstants.FLEET_BLOCK_DATA);
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		
+		url = "fleet/FleetBlock.jsp";		
+		context=request.getContextPath();
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+		messages=sys.getText();
+		link = request.getContextPath()+"/fleet/FleetList.jsp";
+	    session.setAttribute("url",url);
+	    
+	   	/* Get Corporation's Regions: */
+	   	/* We asumm that the corporation has two levels */
+	   	/* and the first one is the region and the second one is the country */
+	   	/* we iterate on the groups to create the corporation's regions collection*/
+	   	regions = new LinkedList();
+	    regionsNames = new HashSet(); // Is used to avoid repeated region names 
+	    groupIt = sys.getUserSessionData().getFilter().getGroupLines().iterator();	    
+	    while (groupIt.hasNext()) 
+	    {
+        	groupLineData = (GroupLineData)groupIt.next();  
+	        lid = groupLineData.getCountry();
+	        item = (GeoItemData)lid.getItemIterator().next();	        
+	        if (!regionsNames.contains(item.getName())){
+		        regionsNames.add(item.getName());
+		        regions.add(new OptionItem( item.getName(), String.valueOf(item.getId())));	        
+	        }
+	    }
+	    /* Free resources */
+	    regionsNames = null;
+	    Collections.sort(regions);
+	    session.setAttribute("regions",regions);
+	    
+	    /* Create a collection for the years and months for */
+	    /* blocking the region in a particular period */
+	    Collection years = new LinkedList();
+		Calendar instance = Calendar.getInstance();
+		for(int i = 1998; i <= instance.get(Calendar.YEAR)+1; i++) {
+			years.add(new OptionItem(String.valueOf(i),String.valueOf(i)));
+		}
+		session.setAttribute("years",years);
+		
+		Collection months = new LinkedList();
+		for(int i = 1; i <= 12; i++) { 
+		    months.add(new OptionItem(messages.getText("generic.month."+String.valueOf(i)),String.valueOf(i)));
+		}
+		session.setAttribute("months",months);
+		
+	
+%>
+
+	<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	<style type="text/css">	</style>
+	<head>
+		<META http-equiv="Cache-Control" content="no-cache">
+		<META http-equiv="Pragma" content="no-cache">
+		<META http-equiv="Expires" content="-1">		
+	</head>
+
+	<body bgcolor="#FFFFFF">
+	<html:form action="/FleetBlock"  >	
+		<table width="600" border="0" align="center" cellpadding="0" cellspacing="0">
+			<tr class="guide1">
+				<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText("generic.fleet.blockdataentry")%>' />
+	  		</tr>
+      		<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+      		</tr>
+	      	<tr>
+    	    	<td width="100%" valign="top">
+					<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.fleet.blockedperiods")%>' />
+					<table width="100%" border="0" cellpadding="0" cellspacing="0">
+						<tr>
+							<td width="100%">
+								<table width="100%" border="0" cellpadding="0" cellspacing="0">
+										<tr>
+											<td width="30%" class="texts" align="left">
+											<%=messages.getText("generic.fleet.fleetsfromregion") %>
+											</td>
+											<td width="10%" class="texts" align="left">
+											<%=messages.getText("generic.fleet.blockmonth")%>
+											</td>
+											<td width="10%" class="texts" align="left">
+											<%=messages.getText("generic.fleet.blockyear")%>
+											</td>										
+										</tr>
+										<tr>
+											<jsp:include  page="../component/spaceline.jsp" />
+								      	</tr>
+										<%
+											LinkedList list = (LinkedList)	sys.getFleetReportFacade().getBlockPeriods(sys.getUserSessionData());
+											Collections.sort(list);
+											Iterator it2 = list.iterator();
+											while (it2.hasNext()){
+												RegionBlockData rbd = (RegionBlockData)it2.next();
+											
+										%>
+										<tr>
+											<td width="30%" class="texts" align="left"><%=rbd.getRegionName()%></td>
+											<td width="10%" class="texts" align="left"><%=messages.getText("generic.month."+String.valueOf(rbd.getBlockMonth()))%></td>
+											<td width="10%" class="texts" align="left"><%=rbd.getBlockYear()%></td>											
+										</tr> 	
+										<%	}								
+											%>
+									</table>										
+							</td>
+						</tr>
+					</table>			
+   					<jsp:include page="../component/utilityboxbottom.jsp"/>	
+				</td>
+			</tr>
+      		<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+	      	</tr>
+	      	<tr>
+    	    	<td width="100%" valign="top">
+					<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.fleet.selectblockperiod")%>' />
+					<table width="100%" border="0" cellpadding="0" cellspacing="0">
+						<tr>
+							<td width="100%">
+								<table width="100%" border="0" cellpadding="0" cellspacing="0">
+										<tr>
+											<td width="30%" class="texts" align="left">
+											<%=messages.getText("generic.fleet.fleetsfromregion") %>
+											</td>
+											<td width="10%" class="texts" align="left">
+											<%=messages.getText("generic.fleet.blockmonth")%>
+											</td>
+											<td width="10%" class="texts" align="left">
+											<%=messages.getText("generic.fleet.blockyear")%>
+											</td>
+										</tr>
+										<tr>
+											<td width="30%" class="texts" align="left">
+												<html:select property="regionId" styleClass="input" style="width:80%"  >
+                  									<html:options collection="regions" property="value" labelProperty="label" styleClass="input"/>
+                								</html:select>
+											</td>
+											<td width="14%" class="texts" align="left">
+												<html:select property="frommonth" styleClass="input"  style="width:80%" styleId="monthIdFrom">
+                  									<html:options collection="months" property="value" labelProperty="label" styleClass="input"/>
+                								</html:select> 
+											</td>
+											<td width="14%" class="texts" align="left" >
+												<html:select property="fromyear" styleClass="input" style="width:80%" styleId="yearIdFrom">
+                  									<html:options collection="years" property="value" labelProperty="label" styleClass="input"/>
+                								</html:select>
+											</td>
+											<td>
+			         							<html:img page="/component/jscalendar-1.0/img.gif" styleId="calendar_button1" style="cursor: pointer; border: 1px solid red;"
+     											 onmouseover="this.style.background='red';" style="width:20;" onmouseout="this.style.background=''"/>
+			         						</td>
+			         						<script type="text/javascript">
+												Calendar.setup({
+        											inputArea     :    "yearIdFrom",
+        											ifFormat       :    "%d/%m/%Y",
+        											showsTime      :    true,
+        											timeFormat     :    "24",
+        											button         :    "calendar_button1",
+        											step           :    1,
+        											onSelect       :    onSelectFrom,
+        											singleClick    :    true
+    											});
+											</script>											
+										</tr> 									
+									</table>										
+							</td>
+						</tr>
+					</table>			
+   					<jsp:include page="../component/utilityboxbottom.jsp"/>	
+				</td>
+			</tr>
+      		<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+	      	</tr>
+	      		<tr>
+				<td width="100%" colspan="3">
+					<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.comment")%>' />
+					<table width="100%" cellpadding="0" cellspacing="0">
+						<tr>
+							<td width="9" background="/datacenter/util/imgs/left_gray.gif">&nbsp;</td>
+      						<td>
+      							<html:textarea property="comment" style="width:100%" rows="4" value="" />
+      						</td>
+	   						<td width="9" background="/datacenter/util/imgs/right_gray.gif">&nbsp;</td>    
+						</tr>						
+					</table>
+					<jsp:include  page="../component/utilityboxbottom.jsp" />
+				</td>
+			</tr>
+			<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+ 			</tr>
+ 			<tr>
+ 				<td width="40%" align="right" class="texts" valign="top">
+					<html:submit styleClass="input"><%=messages.getText("generic.fleet.block")%></html:submit>
+				</td>
+			</tr>		
+	    </table>
+	    </html:form>	
+	</body>
+<%
+	}	
+%>	
+</html:html>

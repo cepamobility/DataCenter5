@@ -1,0 +1,11 @@
+<ion-view view-title="Driver">
+      <ion-content class="padding">
+	    <div class="list card">
+	      <div class="item item-divider">{{driver.firstName}} {{driver.lastName}}</div>
+			<p>{{driver.corporationId}}</p>
+			<p>{{driver.id}}</p>
+			<p>Result:"sdsdfs"</p>
+		  </div>
+	    </div>
+	  </ion-content>
+</ion-view>

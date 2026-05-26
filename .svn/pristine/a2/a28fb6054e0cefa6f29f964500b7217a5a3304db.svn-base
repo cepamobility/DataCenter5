@@ -1,0 +1,80 @@
+package presentation.translator.web.util;
+
+import java.util.Collection;
+import java.util.LinkedList;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.action.DynaActionForm;
+
+import business.SystemAccess;
+
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.user.UserSessionData;
+import communication.alert.AlertConstants;
+import communication.exception.DCException;
+import communication.util.MailSender;
+
+
+public class ReportErrorAction extends AbstractAction {
+
+    public ActionForward cancel(HttpSession session,ActionMapping mapping, ActionForm form) {
+        return mapping.findForward("cancel");
+    }
+
+    public ActionForward action(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response) throws Throwable {
+        MailSender mailSender=new MailSender();
+        DynaActionForm forms=(DynaActionForm)form;
+        
+        HttpSession session = request.getSession();
+        SystemAccess sys=(SystemAccess)session.getAttribute("SystemAccess");
+        UserSessionData userRequest=sys.getUserSessionData();
+        String userLoginName=userRequest.getFilter().getLoginName();
+        
+        String body="";
+        
+        Exception e = (Exception)session.getAttribute("exception");
+        body += "<h2>Error reported by user</h2>";
+        body += "<br>";
+        body += "<b>User:</b> "+userLoginName;
+        body += "<br>";
+        body += "<b>Corp:</b> "+String.valueOf(userRequest.getFilter().getCorporationId());
+        body += "<br>";
+        body += "--------------------------------------------------------";
+        body += "<br>";
+        body += "<b>User inserted message</b>";
+        body += "<br>";
+        body += forms.getString("body");
+        body += "<br>";
+        body += "--------------------------------------------------------";
+        body += "<br>";
+        
+		boolean sended = false;
+		int count = 0;
+		while(!sended && count < 10) {
+			try {
+				Collection<String> to = new LinkedList<String>();
+				to.add("jrodriguez@cepasafedrive.com");
+				if(sys.isCorporation(CorporationData.BAYER_MX)) {
+					to.add("roadsafety@bayer.com");
+				}
+				sended = mailSender.sendImageMandrill(to,
+						"CEPA DataCenter", AlertConstants.EMAIL_SUPPORT,
+						"REPORTED ERROR", body, new LinkedList<String>(),
+						new LinkedList<String>(), 
+						"", "", new LinkedList<String>(),null);
+				sended = true;
+			}catch (Exception ex) {
+				ex.printStackTrace();
+			}
+			count++;
+		}
+
+        return mapping.findForward("sendreportsuccessful"); 
+    }
+}

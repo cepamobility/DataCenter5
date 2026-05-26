@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.log.fleet" >
+	<class name="ConsumedFuelLog" table="consumedfuellog">
+        
+       <composite-id class="ConsumedFuelLogPK" name="pk" >
+	        <key-property	name="consumedId"	type="java.lang.Integer"	column="consumedid"/>
+	        <key-property	name="userId"	type="java.lang.String"	column="userId"/>
+	        <key-property	name="date"	type="java.util.Date"	column="date"/>
+       </composite-id>
+
+        <property 	name="action" type="java.lang.Integer" column="action" not-null="true" />
+        
+        <property name="fleet" type="java.lang.Integer" column="fleet" not-null="true" />
+
+        <property 	name="period"	type="java.lang.Integer"	column="period" not-null="true" />
+        <property 	name="year"		type="java.lang.Integer"	column="year" not-null="true" />
+
+        <property name="corporation" type="java.lang.Integer" column="corporation" not-null="true" />
+        <property name="country" 	type="java.lang.Integer" column="country"  not-null="true" />
+        <property name="divOrg1" 	type="java.lang.Integer" column="divorg1" />
+        <property name="divOrg2" 		type="java.lang.Integer" column="divorg2" />
+        <property name="divOrg3" 	type="java.lang.Integer" column="divorg3" />
+		
+        <property name="typeVehicle" 	type="java.lang.String"	column="type"/>
+   	    <property 		name="vehicles"		type="java.lang.Integer"							column="vehicles" />
+   	    <property 		name="miles"		type="java.lang.Integer"							column="miles" />
+
+        <property name="fuel" 	type="java.lang.String"	column="fuel"/>                        
+   	    <property name="liters"	type="java.lang.Integer"	column="liters" />
+		
+
+    </class>
+</hibernate-mapping>

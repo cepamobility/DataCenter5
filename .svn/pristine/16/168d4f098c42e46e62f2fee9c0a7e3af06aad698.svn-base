@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.administration.tables" >
+    <class name="UserGroup" table="usergroups">
+
+       <composite-id class="UserGroupPK" name="pk" >
+       		<key-many-to-one
+       			 name="group"
+       			 column="id"
+       			 class="persistence.administration.group.tables.AbstractGroup"
+       	 	/>
+       	 	<key-many-to-one
+       	 		 name="user"
+       	 		 column="loginname"
+       	 		 class="persistence.administration.user.tables.User"
+       	 	/>
+       </composite-id>
+       
+
+	</class>
+
+</hibernate-mapping>

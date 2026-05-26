@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.driver.tables">
+	<class name="CsvEntityField" table="csventitiesfields">
+		
+       <composite-id class="CsvEntityFieldPK" name="pk" >
+       		<key-many-to-one
+       			 name="csvEntity"
+       			 column="idcsv"
+       			 class="CsvEntity"
+       	 	/>
+	        <key-property 	name="field"	type="java.lang.String"	column="field" />	        
+       </composite-id>
+       
+       <property name="order" type="java.lang.Integer">
+        	<column name="orden" />
+       </property>	
+		
+  	</class>
+</hibernate-mapping>

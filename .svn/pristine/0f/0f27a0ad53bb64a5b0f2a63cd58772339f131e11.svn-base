@@ -1,0 +1,637 @@
+/**
+ * Created on 16-dic-2005
+ * CEPA
+ * DataCenter 5
+ */
+package persistence.util;
+
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.StringTokenizer;
+
+import org.hibernate.HibernateException;
+import org.hibernate.classic.Session;
+
+import persistence.administration.corporation.tables.DivOrgItemLevel1;
+import persistence.hibernate.HibernateUtil;
+
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.DivOrgData;
+import communication.administration.corporation.tables.ItemData;
+import communication.administration.corporation.tables.LabelItemAttribute;
+import communication.administration.corporation.tables.LabelItemData;
+import communication.util.ItemValueData;
+import communication.util.LabelValueData;
+
+/**
+ * @author jrodriguez
+ */
+public class Util {
+
+    public static final double KMS_TO_MILES = 1.609344;
+    
+    
+    /**
+     * 
+     */
+    public Util() {
+        super();
+    }
+
+    public static int compareOnlyDate(Calendar c1, Calendar c2) {
+        if (c1.get(Calendar.YEAR) != c2.get(Calendar.YEAR)) 
+            return c1.get(Calendar.YEAR) - c2.get(Calendar.YEAR);
+        if (c1.get(Calendar.MONTH) != c2.get(Calendar.MONTH)) 
+            return c1.get(Calendar.MONTH) - c2.get(Calendar.MONTH);
+        return c1.get(Calendar.DAY_OF_MONTH) - c2.get(Calendar.DAY_OF_MONTH);
+   }
+	
+    public LabelValueData makeNode(Collection items1,LabelValue[] labels,Object idContainer) {
+        Hashtable itemsAux = new Hashtable();
+	    if(items1 != null) {
+	        Iterator itLevel1 = items1.iterator();
+	        while(itLevel1.hasNext()) {
+	            ItemValue itemValue1 = (ItemValue)itLevel1.next();
+	            if(!itemValue1.hasContainer()) {
+	                itemsAux.put(itemValue1.getId(),new ItemAux(itemValue1.getData()));
+	            }else {
+	                Iterator itLevel2 = itemValue1.getContainerIterator();
+	                while(itLevel2.hasNext()) {
+		                ItemValue itemValue2 = (ItemValue)itLevel2.next();
+			            if(!itemValue2.hasContainer()) {
+			                if(itemsAux.containsKey(itemValue2.getId())) {
+			                    ItemAux auxLevel1 = (ItemAux)itemsAux.get(itemValue2.getId());
+			                    auxLevel1.components.put(itemValue1.getId(),new ItemAux(itemValue1.getData()));
+			                }else {
+			                    ItemAux auxLevel2 = new ItemAux(itemValue2.getData());
+			                    auxLevel2.components.put(itemValue1.getId(),new ItemAux(itemValue1.getData()));
+			                    itemsAux.put(itemValue2.getId(),auxLevel2);
+			                }
+			            }else {
+			                Iterator itLevel3 = itemValue2.getContainerIterator();
+			                while(itLevel3.hasNext()) {
+					            ItemValue itemValue3 = (ItemValue)itLevel3.next();
+					            if(itemsAux.containsKey(itemValue3.getId())) {
+					                ItemAux auxLevel3 = (ItemAux)itemsAux.get(itemValue3.getId());
+					                if(auxLevel3.components.containsKey(itemValue2.getId())) {
+					                    ItemAux auxLevel2 = (ItemAux)auxLevel3.components.get(itemValue2.getId());
+					                    auxLevel2.components.put(itemValue1.getId(),new ItemAux(itemValue1.getData()));
+					                }else {
+					                    ItemAux auxLevel2 = new ItemAux(itemValue2.getData());
+					                    auxLevel2.components.put(itemValue1.getId(),new ItemAux(itemValue1.getData()));
+					                    auxLevel3.components.put(itemValue2.getId(),auxLevel2);
+					                }
+					            }else {
+					                ItemAux auxLevel3 = new ItemAux(itemValue3.getData());
+					                ItemAux auxLevel2 = new ItemAux(itemValue2.getData());
+					                auxLevel2.components.put(itemValue1.getId(),new ItemAux(itemValue1.getData()));
+					                auxLevel3.components.put(itemValue2.getId(),auxLevel2);
+					                itemsAux.put(itemValue3.getId(),auxLevel3);
+					            }
+			                }
+			            }
+	                }
+	            }
+	        }
+	    }
+	    int len = (labels != null) ? labels.length-1 : 0;
+	    return getComponent(itemsAux,labels,len,idContainer);
+    }
+    
+    public LabelValueData getComponent(Hashtable components,LabelValue[] labels,int level,Object idContainer) {
+        if(components.size() == 0) {
+            return null;
+        }
+        Collection data = new LinkedList(); 
+        Enumeration enum1 = components.elements();
+        while(enum1.hasMoreElements()) {
+            ItemAux child = (ItemAux)enum1.nextElement();
+            child.data.setComponents(getComponent(child.components,labels,level-1,idContainer));
+            data.add(child.data);
+        }
+        return labels[level].getData(idContainer,data);
+    }
+
+    class ItemAux {
+        
+        private Hashtable components;
+        private ItemValueData data;
+        
+        public ItemAux(ItemValueData data) {
+            this.data = data;
+            components = new Hashtable();
+        }
+    }
+
+    public static boolean empty(String string) {
+        return (string == null || string.trim().length() == 0);
+    }
+    
+    
+    public static DivOrgData getDivOrgData(DivOrgItemLevel1 level1,CorporationData corporationData) {
+       DivOrgData divOrgData = corporationData.getDivOrgData(level1.getDivOrg().getId().intValue());
+	    LabelItemAttribute[] labelAttrs = divOrgData.getLabels();
+	    ItemData itemData = new ItemData(level1.getAttributes());
+	    Collection items1 = new LinkedList();
+	    items1.add(itemData);
+	    LabelItemData labelData = null; 
+	    if(level1.getDivOrgItemLevel2() != null) {
+	        ItemData item2 = new ItemData(level1.getDivOrgItemLevel2().getAttributes());
+		    Collection items2 = new LinkedList();
+		    items2.add(item2);
+	        if(level1.getDivOrgItemLevel2().getDivOrgItemLevel3() == null) {
+		        item2.setSubItems(new LabelItemData(labelAttrs[1].getId(),labelAttrs[1].getName(),items1,labelAttrs[1].getShowLevel()));
+		        labelData = new LabelItemData(labelAttrs[0].getId(),labelAttrs[0].getName(),items2,labelAttrs[0].getShowLevel());
+	        }else {
+	            
+		        item2.setSubItems(new LabelItemData(labelAttrs[2].getId(),labelAttrs[2].getName(),items1,labelAttrs[2].getShowLevel()));
+	            
+		        ItemData item3 = new ItemData(level1.getDivOrgItemLevel2().getDivOrgItemLevel3().getAttributes());
+		        item3.setSubItems(new LabelItemData(labelAttrs[1].getId(),labelAttrs[1].getName(),items2,labelAttrs[1].getShowLevel()));
+
+		        Collection items3 = new LinkedList();
+			    items3.add(item3);
+			    
+		        labelData = new LabelItemData(labelAttrs[0].getId(),labelAttrs[0].getName(),items3,labelAttrs[0].getShowLevel());
+	        }
+	    }else {
+	        labelData = new LabelItemData(labelAttrs[0].getId(),labelAttrs[0].getName(),items1,labelAttrs[0].getShowLevel());
+	    }
+	    divOrgData.setDivOrgLevels(labelData);
+	    return divOrgData;
+    }
+    
+    // a partir de la coleccion de divorg arma los 3 atributos DivOrgItemLevel1
+    public static void loadDivOrgLevel1s(DivOrgItemLevel1 divOrg1,DivOrgItemLevel1 divOrg2,DivOrgItemLevel1 divOrg3,Collection divOrgSet)
+    throws HibernateException,Exception{
+    	Session session=HibernateUtil.currentSession();
+    	Iterator it=divOrgSet.iterator();
+    	
+		
+		if(it.hasNext()) {
+	        DivOrgData divOrg = (DivOrgData)it.next();
+	        ItemData item1 = (ItemData)divOrg.getDivOrgLevels().getItemIterator().next();
+	        while(item1.getSubItems() != null) {
+	            item1 = (ItemData)item1.getSubItems().getItemIterator().next();
+	        }
+	        divOrg1 = (DivOrgItemLevel1)session.load(DivOrgItemLevel1.class,item1.getId());
+	    }
+	    if(it.hasNext()) {
+	        DivOrgData divOrg = (DivOrgData)it.next();
+	        ItemData item1 = (ItemData)divOrg.getDivOrgLevels().getItemIterator().next();
+	        while(item1.getSubItems() != null) {
+	            item1 = (ItemData)item1.getSubItems().getItemIterator().next();
+	        }
+	        divOrg2 = (DivOrgItemLevel1)session.load(DivOrgItemLevel1.class,item1.getId());
+	    }
+	    if(it.hasNext()) {
+	        DivOrgData divOrg = (DivOrgData)it.next();
+	        ItemData item1 = (ItemData)divOrg.getDivOrgLevels().getItemIterator().next();
+	        while(item1.getSubItems() != null) {
+	            item1 = (ItemData)item1.getSubItems().getItemIterator().next();
+	        }
+	        divOrg3 = (DivOrgItemLevel1)session.load(DivOrgItemLevel1.class,item1.getId());
+	    }
+   }
+
+    public static String formatSQL(Date date) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        return "'"+calendar.get(Calendar.YEAR)+"-"+String.valueOf(calendar.get(Calendar.MONTH)+1)+"-"+calendar.get(Calendar.DATE)+"'";
+    }
+
+    public static String formatSQL(Calendar calendar) {
+        return "'"+calendar.get(Calendar.YEAR)+"-"+String.valueOf(calendar.get(Calendar.MONTH)+1)+"-"+calendar.get(Calendar.DATE)+"'";
+    }
+
+    //2014-07-30 10:42:19.93
+    public static String formatSQLHour(Date date) {
+        SimpleDateFormat format=new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        return "'"+format.format(date)+"'";
+    } 
+
+    public static String formatDate(Date date) {
+    	try{
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        return calendar.get(Calendar.DATE)+"/"+String.valueOf(calendar.get(Calendar.MONTH)+1)+"/"+calendar.get(Calendar.YEAR);
+    	}catch(Throwable th){
+    	}
+    	
+    	return "";
+    }
+    
+    public static String formatDateWithHour(Date date) {
+    	try{
+    		SimpleDateFormat format=new SimpleDateFormat("dd/MM/yyyy HH:mm:ss");
+        return format.format(date);
+    	}catch(Throwable th){
+    	}
+    	
+    	return "";
+    }
+    
+    public static String formatDateWithHour2(Date date) {
+    	try{
+    		SimpleDateFormat format=new SimpleDateFormat("dd/MM/yyyy HH:mm");
+        return format.format(date);
+    	}catch(Throwable th){
+    	}
+    	
+    	return "";
+    }
+
+    public static String formatSQL(Date date, int type) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        if(type == 1) {
+            calendar.add(Calendar.DATE,1);
+        }
+        return "'"+calendar.get(Calendar.YEAR)+"-"+String.valueOf(calendar.get(Calendar.MONTH)+1)+"-"+calendar.get(Calendar.DATE)+"' ";
+    
+    }
+
+    public static String formatHSQL(Date date, int type) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        if(type == 1) {
+            calendar.add(Calendar.DATE,1);
+        }
+        return  calendar.get(Calendar.YEAR)+"-"+String.valueOf(calendar.get(Calendar.MONTH)+1)+"-"+calendar.get(Calendar.DATE);
+    
+    }
+    
+    public static String formatHSQLFull(Date date, int type) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        if(type == 1) {
+            calendar.add(Calendar.DATE,1);
+        }
+        
+        SimpleDateFormat format=new SimpleDateFormat("yyyy-MM-dd");
+        return format.format(calendar.getTime());
+    
+    }
+    
+    public static String formatSQLFull(Date date, int type) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        if(type == 1) {
+            calendar.add(Calendar.DATE,1);
+        }
+        
+        SimpleDateFormat format=new SimpleDateFormat("yyyy-MM-dd");
+        return "'"+format.format(calendar.getTime())+"' ";
+    
+    }
+    
+    public static Date floorDate(Date d){
+    	Calendar cal=Calendar.getInstance();
+    	cal.setTime(d);
+    	cal.set(Calendar.HOUR, cal.getActualMinimum(Calendar.HOUR));
+    	cal.set(Calendar.MINUTE, cal.getActualMinimum(Calendar.MINUTE));
+    	cal.set(Calendar.SECOND, cal.getActualMinimum(Calendar.SECOND));
+    	cal.set(Calendar.MILLISECOND, cal.getActualMinimum(Calendar.MILLISECOND));
+    	
+    	
+    	return cal.getTime();
+    }
+    
+    
+    
+    public static Date topDate(Date d){
+    	Calendar cal=Calendar.getInstance();
+    	cal.setTime(d);
+    	cal.set(Calendar.HOUR,23);
+    	cal.set(Calendar.MINUTE, 59);
+    	cal.set(Calendar.SECOND, 59);
+    	cal.set(Calendar.MILLISECOND, 999);
+    	
+    	return cal.getTime();
+    }
+    
+    
+    public static Date topDate2(Date d){
+    	Calendar cal=Calendar.getInstance();
+    	cal.setTime(d);
+    	cal.add(Calendar.DATE,1);
+    	cal.set(Calendar.HOUR, cal.getMinimum(Calendar.HOUR));
+    	cal.set(Calendar.MINUTE, cal.getMinimum(Calendar.MINUTE));
+    	cal.set(Calendar.SECOND, cal.getMinimum(Calendar.SECOND));
+    	cal.set(Calendar.MILLISECOND, cal.getMinimum(Calendar.MILLISECOND));
+	
+    	return cal.getTime();
+    }
+    public static Date topDateMonth(Integer year,Integer month){
+    	Calendar cal=Calendar.getInstance();
+    	cal.setTime(new Date());
+    	cal.set(Calendar.MONTH, month-1);
+    	cal.set(Calendar.YEAR, year);
+    	cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
+    	cal.set(Calendar.HOUR, cal.getMaximum(Calendar.HOUR));
+    	cal.set(Calendar.MINUTE, cal.getMaximum(Calendar.MINUTE));
+    	cal.set(Calendar.SECOND, cal.getMaximum(Calendar.SECOND));
+    	cal.set(Calendar.MILLISECOND, cal.getMaximum(Calendar.MILLISECOND));
+
+    	
+    	return cal.getTime();
+    }
+    
+    public static Date floorDateMonth(Integer year,Integer month){
+    	Calendar cal=Calendar.getInstance();
+    	cal.setTime(new Date());
+    	cal.set(Calendar.MONTH, month-2);
+    	cal.set(Calendar.YEAR, year);
+    	cal.set(Calendar.DAY_OF_MONTH, cal.getActualMaximum(Calendar.DAY_OF_MONTH));
+    	cal.set(Calendar.HOUR, cal.getMaximum(Calendar.HOUR));
+    	cal.set(Calendar.MINUTE, cal.getMaximum(Calendar.MINUTE));
+    	cal.set(Calendar.SECOND, cal.getMaximum(Calendar.SECOND));
+    	cal.set(Calendar.MILLISECOND, cal.getMaximum(Calendar.MILLISECOND));
+
+    	
+    	return cal.getTime();
+    }
+    
+    public static Date topDateMonthDPA(Integer year,Integer month){
+    	Calendar cal=Calendar.getInstance();
+    	cal.setTime(new Date());
+    	cal.set(Calendar.MONTH,month);
+    	cal.set(Calendar.DAY_OF_MONTH, 1);
+    	cal.set(Calendar.YEAR, year);
+    	cal.set(Calendar.HOUR, cal.getMinimum(Calendar.HOUR));
+    	cal.set(Calendar.MINUTE, cal.getMinimum(Calendar.MINUTE));
+    	cal.set(Calendar.SECOND, cal.getMinimum(Calendar.SECOND));
+    	cal.set(Calendar.MILLISECOND, cal.getMinimum(Calendar.MILLISECOND));
+
+    	
+    	return cal.getTime();
+    }
+    
+    public static Date floorDateMonthDPA(Integer year,Integer month){
+    	Calendar cal=Calendar.getInstance();
+    	cal.setTime(new Date());
+    	cal.set(Calendar.MONTH, month-1);
+    	cal.set(Calendar.DAY_OF_MONTH, 24);
+    	cal.set(Calendar.YEAR, year);
+    	cal.set(Calendar.HOUR, cal.getMaximum(Calendar.HOUR));
+    	cal.set(Calendar.MINUTE, cal.getMaximum(Calendar.MINUTE));
+    	cal.set(Calendar.SECOND, cal.getMaximum(Calendar.SECOND));
+    	cal.set(Calendar.MILLISECOND, cal.getMaximum(Calendar.MILLISECOND));
+    	
+    	return cal.getTime();
+    }
+    
+    public static String formatSQL(Integer month,Integer year, int type) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.set(Calendar.YEAR,year.intValue());
+        calendar.set(Calendar.MONTH,month.intValue()-1);
+        if(type == 1) {
+            calendar.add(Calendar.MONTH,1);        	
+        }
+        return "'"+calendar.get(Calendar.YEAR)+"-"+String.valueOf(calendar.get(Calendar.MONTH)+1)+"-1 00:00' ";
+    }
+
+    public static String formatSQLHour(Date date, int type) {
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        if(type == 1) {
+            calendar.add(Calendar.DATE,1);
+        }
+        return "'"+calendar.get(Calendar.YEAR)+"-"+String.valueOf(calendar.get(Calendar.MONTH)+1)+"-"+calendar.get(Calendar.DATE)+" 00:00' ";
+    }
+
+    public static boolean isDate(String dayStr, String monthStr, String yearStr) {
+        try {
+            int day = Integer.parseInt(dayStr);
+            int month = Integer.parseInt(monthStr);
+            int year = Integer.parseInt(yearStr);
+            if(day <= 0 || month <= 0 || year <= 0) {
+                return false;
+            }
+            String validateYear=""+year;
+            if(validateYear.length()!=4){
+                return false;
+            }
+              switch(month) {
+                case 2:
+                    int max = (year % 4 == 0) ? 29 : 28; 
+                    if(day > max) {
+                        return false;
+                    }
+                    break;
+                case 1: case 3: case 5: case 7: case 8: case 10: case 12:
+                    if(day > 31) {
+                        return false;
+                    }    
+                    break;
+                case 4: case 6: case 9: case 11:
+                    if(day > 30) {
+                        return false;
+                    }    
+                    break;
+                default: return false;    
+            }
+            return true;
+        }catch(Exception e) {
+            return false;
+        }
+    }
+
+	public static String getDate(String year, String month, int add) {
+		Calendar c = Calendar.getInstance();
+		c.set(Calendar.YEAR, Integer.parseInt(year));
+		c.set(Calendar.MONTH, Integer.parseInt(month)-1+add);
+		return c.get(Calendar.YEAR)+"-"+String.valueOf(c.get(Calendar.MONTH)+1)+"-1";
+	}
+	
+	public static Date getDateFloor(Integer year, Integer month, Integer day) {
+		Calendar c = Calendar.getInstance();
+		c.set(Calendar.YEAR, year);
+		c.set(Calendar.MONTH, month-1);
+		c.set(Calendar.DATE, day);
+		c.set(Calendar.HOUR,0);
+		c.set(Calendar.MINUTE,0);
+		c.set(Calendar.SECOND,0);
+		
+		return c.getTime();
+	}
+	
+	public static Date getDateTop(Integer year, Integer month, Integer day) {
+		Calendar c = Calendar.getInstance();
+		c.set(Calendar.YEAR, year);
+		c.set(Calendar.MONTH, month-1);
+		c.set(Calendar.DATE, day);
+		c.set(Calendar.HOUR,23);
+		c.set(Calendar.MINUTE,59);
+		c.set(Calendar.SECOND,59);
+		return c.getTime();
+	}
+
+	/**
+     * Convierte un string en formato dd/mm/aaaa en un Calendar.
+     * @param word
+     * @return
+     */
+    public static Calendar getDate(String word) {
+    	word = word.replace("-", "/");
+    	if (word != null && word.trim() != ""){
+	        StringTokenizer tokDate = new StringTokenizer(word,"/");
+	        Calendar c = Calendar.getInstance();
+	        c.set(Calendar.DAY_OF_MONTH,Integer.parseInt(tokDate.nextToken()));
+	        c.set(Calendar.MONTH,Integer.parseInt(tokDate.nextToken())-1);
+	        c.set(Calendar.YEAR,Integer.parseInt(tokDate.nextToken()));
+	        
+	        c.set(Calendar.HOUR, 0);
+	        c.set(Calendar.MINUTE, 0);
+	        c.set(Calendar.SECOND,0);
+	        c.set(Calendar.MILLISECOND,0);
+	        
+	        return c;
+    	}
+    	return null;
+    }
+    
+    /**
+     * Convierte un string en formato dd/mm/aaaa en un Calendar.
+     * @param word
+     * @return
+     */
+    public static Date getDate(String value,String formatPattern) {
+    	try{
+    		SimpleDateFormat format=new SimpleDateFormat(formatPattern);
+    		return format.parse(value);
+    	}catch(Exception ex){
+    	}
+    	
+    	return null;
+    }
+   
+    /**
+     * 
+     * @param word
+     * @return
+     */
+    public static Date getDate(String year,String month,String day) {
+    	
+    	try{
+	        Calendar c = Calendar.getInstance();
+	        c.set(Calendar.DAY_OF_MONTH,Integer.parseInt(day));
+	        c.set(Calendar.MONTH,Integer.parseInt(month));
+	        c.set(Calendar.YEAR,Integer.parseInt(year));
+	        
+	        c.set(Calendar.HOUR, 0);
+	        c.set(Calendar.MINUTE, 0);
+	        c.set(Calendar.SECOND,0);
+	        c.set(Calendar.MILLISECOND,0);
+	        
+	        return c.getTime();
+    	}catch(Throwable th){
+    		
+    	}
+    	return null;
+    }
+    
+    public static int dpaDayBreak(Calendar cal){
+    	int day=26;
+    	
+    	if(cal.get(Calendar.YEAR)==2014 && cal.get(Calendar.MONTH)==6){
+    		day=24;
+    	}else if(cal.get(Calendar.YEAR)==2014 && cal.get(Calendar.MONTH)==5){
+    		day=25;
+    	}else if(cal.get(Calendar.YEAR)==2014 && cal.get(Calendar.MONTH)<5){
+    		day=26;
+    	}else  if((cal.get(Calendar.YEAR)==2014 && cal.get(Calendar.MONTH)>6 )|| cal.get(Calendar.YEAR)>2014){
+    		day=25;
+    	}
+    	
+    	return day;
+    }
+
+    public static String toHTMLString(String word) {
+        StringBuffer result = new StringBuffer();
+        for(int i = 0; i < word.length(); i++) {
+            char c = word.charAt(i);
+            switch(c) {
+               case 'á':
+                    result.append("&aacute;");
+                    break;
+               case 'â':
+	               result.append("&acirc;");
+	               break;
+               case 'ã':
+                   result.append("&atilde;");
+                   break;
+               case 'ä':
+	               result.append("&auml;");
+	               break;
+               case 'é':
+                    result.append("&eacute;");
+                    break;
+               case 'ê':
+                    // Todo
+                    result.append("&ecirc;");
+                    break;
+               case 'ë':
+	               result.append("&euml;");
+	               break;
+               case 'í':
+                    result.append("&iacute;");
+                    break;
+               case 'î':
+	               result.append("&icirc;");
+	               break;
+               case 'ï':
+	               result.append("&iuml;");
+	               break;
+               case 'ó':
+                    result.append("&oacute;");
+                    break;
+               case 'ô':
+	               result.append("&ocirc;");
+	               break;
+               case 'ö':
+	               result.append("&ouml;");
+	               break;
+               case 'õ':
+                    result.append("&otilde;");
+                    break;
+               case 'ú':
+                    result.append("&uacute;");
+                    break;
+               case 'û':
+	               result.append("&ucirc;");
+	               break;
+               case 'ü':
+	               result.append("&uuml;");
+	               break;
+                case 'ñ':
+                    result.append("&ntilde;");
+                    break;
+                case 'ç':
+                    result.append("&ccedil;");
+                    break;
+                case '\n':
+                    result.append("<br>");
+                    break;
+                default:
+                    result.append(c);
+            }
+        }
+        System.out.println("texto HTML: " + result.toString());
+        return result.toString();
+    }
+    
+    public static String getHour(Date date) {
+    	if(date == null)
+    		return "'00:00:00'";
+    	Calendar c = Calendar.getInstance();
+    	c.setTime(date);
+    	return "'"+c.get(Calendar.HOUR_OF_DAY)+":"+c.get(Calendar.MINUTE)+":00'";
+    }
+ }

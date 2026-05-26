@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.fleet.tables" >
+	<class name="AbstractFleet" table="genericfleets">
+        
+		<id column="id" name="id">
+            <generator class="sequence">
+            	<param name="sequence">Fleet_Sequence</param>
+            </generator>
+        </id>
+
+        <property 	name="name"			type="java.lang.String"		column="name"/>
+        <property 	name="description"	type="java.lang.String"		column="description"/>
+
+       	<property 	name="active" /><!-- No se usa este campo -->
+        <property 	name="period"		type="java.lang.Integer"		column="period"/>
+		<property	name="exclusionDate"	type="java.util.Date"	column="exclusionDate"	/>
+		<property 	name="blockMonth"	type="java.lang.Integer"	column="blockMonth" />
+		<property 	name="blockYear"	type="java.lang.Integer"	column="blockYear" />
+		
+        <many-to-one name="corporation" class="persistence.administration.corporation.tables.Corporation" not-null="true" />
+
+		<set inverse="true" name="divisionSet"  cascade="all-delete-orphan">
+        	<key>
+         		<column name="fleet"></column>
+         	</key>
+			<one-to-many class="FleetDivision" />
+		</set>
+
+		<joined-subclass name="IndividualFleet" table="individualfleets">
+			<key column="id"/>
+         	<set name="vehicleSet" table="vehiclefleets" > <!-- cascade="all-delete-orphan" -->
+          		<key column="id"></key>
+          		<many-to-many class="persistence.vehicle.tables.Vehicle" column="vehicle"></many-to-many>
+         	</set>
+		</joined-subclass>
+
+		<joined-subclass name="ColectiveFleet" table="colectivefleets">
+			<key column="id"/>
+  		</joined-subclass>
+
+    </class>
+</hibernate-mapping>

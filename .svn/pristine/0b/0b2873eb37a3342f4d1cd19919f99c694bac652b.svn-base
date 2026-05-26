@@ -1,0 +1,145 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>Documento sem t&iacute;tulo</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+
+<body leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
+<table width="559" border="0" align="center" cellpadding="0" cellspacing="0">
+  <tr> 
+    <td height="80"> 
+      <table width="90%" border="0" align="center" cellpadding="0" cellspacing="0">
+        <tr> 
+          <td><div align="center"><font size="5" face="Arial, Helvetica, sans-serif"><strong></strong></font></div>
+            <div align="center"></div>
+            <table width="91%" height="63" border="0" align="center" cellpadding="0" cellspacing="0" bgcolor="3B6692">
+              <tr> 
+                <td height="63" align="center" valign="middle"> <font color="#FFFFFF" size="5" face="Arial, Helvetica, sans-serif"><strong><em>Manual 
+                  de Usuario</em></strong></font><br> <font color="#FFFFFF" size="2" face="Arial, Helvetica, sans-serif"><strong>INSTRUCCIONES 
+                  B&Aacute;SICAS DE ACCESO Y USO</strong></font></td>
+              </tr>
+            </table></td>
+        </tr>
+      </table>
+      <div align="right"> </div></td>
+  </tr>
+  <tr valign="top"> 
+    <td height="21" colspan="2"> <hr color="#3B6692"noshade></td>
+  </tr>
+  <tr> 
+    <td height="454" colspan="2"> <div align="center"> 
+        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+          <tr> 
+            <td><font size="4" face="Arial, Helvetica, sans-serif"><strong>EVENTOS</strong></font></td>
+          </tr>
+          <tr> 
+            <td>&nbsp;</td>
+          </tr>
+          <tr> 
+            <td height="19"><div align="justify"><font size="2" face="Arial, Helvetica, sans-serif">La 
+                funci&oacute;n Eventos se despliega de la siguiente manera.</font></div></td>
+          </tr>
+          <tr> 
+            <td height="19"> <p>&nbsp;</p></td>
+          </tr>
+          <tr>
+            <td><font face="Arial, Helvetica, sans-serif"><strong>Evento/Mantenimiento</strong></font></td>
+          </tr>
+          <tr> 
+            <td>&nbsp;</td>
+          </tr>
+          <tr> 
+            <td> 
+              <table width="90%" height="421" border="1" align="center" cellpadding="0" cellspacing="0" bordercolor="#3B6692">
+                <tr> 
+                  <td height="419" valign="middle"> 
+                    <div align="justify"></div>
+                    <div align="justify"></div>
+                    <div align="justify"> 
+                      <table width="90%" border="0" align="center" cellpadding="0" cellspacing="0">
+                        <tr> 
+                          <td width="30%" height="107"><img src="/datacenter/util/imgs/mr_menu_4_es.jpg" width="153" height="107"></td>
+                          <td width="3%">&nbsp;</td>
+                          <td width="67%"><div align="justify">
+                              <p><font size="2" face="Arial, Helvetica, sans-serif">Este 
+                                item permite ingresar, editar y excluir los datos 
+                                de accidentes/incidentes y multas en el Data Center. 
+                                Todos los campos se&ntilde;alados con <font color="#FF0000">*</font> 
+                                deven ser completados de forma obligatoria.</font></p>
+                            </div></td>
+                        </tr>
+                        <tr> 
+                          <td height="19" colspan="3"> <div align="justify"> 
+                              <ul>
+                                <li> <font face="Arial, Helvetica, sans-serif" size="2"> 
+                                  Para<b> ingresar </b>un accidente o incidente 
+                                  clickear sobre la opci&oacute;n<b> Nuevo Accidente/ 
+                                  Incidente.</b></font></li>
+                                <li><font size="2" face="Arial, Helvetica, sans-serif">Para 
+                                  <strong>ingresar</strong> una multa hacer click 
+                                  sobre la opci&oacute;n <strong>Nueva Multa</strong>. 
+                                  </font></li>
+                              </ul>
+                              <p> <font face="Arial, Helvetica, sans-serif" size="2"> 
+                                <b>&nbsp;&nbsp;&nbsp;&nbsp; </b>&nbsp;Completar 
+                                el m&aacute;ximo de informaci&oacute;n posible. 
+                                Se recomienda antes de efectuar el ingreso, realizar 
+                                una b&uacute;squeda simple o avanzada para constatar 
+                                que el evento no haya sido ingresado previamente.</font></p>
+                              <ul>
+                                <li><font size="2" face="Arial, Helvetica, sans-serif"> 
+                                  Para <strong>editar</strong> un evento, debe 
+                                  realizarse una b&uacute;squeda simple o avanzada. 
+                                  Cuando se encuentre el evento deseado hacer 
+                                  click sobre la fecha del mismo. El Data Center 
+                                  mostrar&aacute; los detalles del evento. Hacer 
+                                  click sobre la opci&oacute;n Editar. Realizar 
+                                  las modificaciones deseadas y hacer click sobre 
+                                  &#8220;Salvar&#8221;.</font></li>
+                                <li><font size="2" face="Arial, Helvetica, sans-serif"> 
+                                  Para <strong>excluir</strong> un evento siga 
+                                  el mismo proceso de b&uacute;squeda del &iacute;tem 
+                                  anterior, pero al ser mostrados los detalles 
+                                  del evento, haga click sobre la opci&oacute;n 
+                                  Borrar.</font></li>
+                              </ul>
+                              <font size="2" face="Arial, Helvetica, sans-serif"> 
+                              </font></div></td>
+                        </tr>
+                      </table>
+                    </div></td>
+                </tr>
+              </table></td>
+          </tr>
+          <tr> 
+            <td>&nbsp;</td>
+          </tr>
+          <tr> 
+            <td>&nbsp;</td>
+          </tr>
+          <tr> 
+            <td>&nbsp;</td>
+          </tr>
+          <tr> 
+            <td>&nbsp;</td>
+          </tr>
+          <tr> 
+            <td>&nbsp;</td>
+          </tr>
+          <tr> 
+            <td>&nbsp;</td>
+          </tr>
+          <tr> 
+            <td><div align="center"><font size="1" face="Arial, Helvetica, sans-serif"><a href="layout.jsp?refer=/manual/spanish/manual1_es.htm" style="color:black;text-decoration:none">Volver 
+                al &Iacute;ndice</a></font></div></td>
+          </tr>
+        </table>
+      </div></td>
+  </tr>
+  <tr > 
+    <td height="19" colspan="2">&nbsp;</td>
+  </tr>
+</table>
+</body>
+</html>

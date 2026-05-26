@@ -1,0 +1,161 @@
+/**
+ * CEPA
+ * DataCenter 5
+ */
+package communication.driver.tables;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+
+import communication.language.Text;
+import persistence.driver.tables.Driver;
+
+public class ReportPlanData implements Serializable, Comparable {
+	
+	private DriverData driverData;
+
+	private MitigationPlanData mitigationPlan;
+	
+	private ArrayList<AnualPlanData> anualPlans;
+
+	private int order;
+	private int total;
+	private int done;
+	private int expired;
+
+	private Integer anualPercent;
+
+	public ReportPlanData(int order) {
+		this.order = order;
+	}
+
+	public DriverData getDriverData() {
+		return driverData;
+	}
+
+	public void setDriverData(DriverData driverData) {
+		this.driverData = driverData;
+	}
+
+	public MitigationPlanData getMitigationPlan() {
+		return mitigationPlan;
+	}
+
+	public void setMitigationPlan(MitigationPlanData mitigationPlan) {
+		this.mitigationPlan = mitigationPlan;
+	}
+
+	public ArrayList<AnualPlanData> getAnualPlans() {
+		return anualPlans;
+	}
+
+	public void setAnualPlans(ArrayList<AnualPlanData> anualPlans) {
+		this.anualPlans = anualPlans;
+		Iterator<AnualPlanData> activities = anualPlans.iterator();
+		total = anualPlans.size();
+		done = 0;
+		expired = 0;
+		while(activities.hasNext()) {
+			AnualPlanData activity = activities.next();
+			if(activity.isDone())
+				done++;
+			if(activity.isExpired())
+				expired++;
+		}
+		anualPercent = new Integer(done * 100 / total);
+	}
+
+	@Override
+	public int compareTo(Object arg0) {
+		ReportPlanData plan2 = (ReportPlanData)arg0;
+		switch(order) {
+			case 1:
+				if(mitigationPlan == null)
+					return 1;
+				if(plan2.mitigationPlan == null)
+					return -1;
+				if(mitigationPlan.getAdvance().equals(plan2.mitigationPlan.getAdvance())) {
+					if(anualPercent == null)
+						return 1;
+					if(plan2.anualPercent == null)
+						return -1;
+					return anualPercent.compareTo(plan2.anualPercent);
+				}
+				return mitigationPlan.getAdvance().compareTo(plan2.mitigationPlan.getAdvance());
+			case 2:
+				if(anualPercent == null)
+					return 1;
+				if(plan2.anualPercent == null)
+					return -1;
+				if(anualPercent.equals(plan2.anualPercent)) {
+					if(mitigationPlan == null)
+						return 1;
+					if(plan2.mitigationPlan == null)
+						return -1;
+					return mitigationPlan.getAdvance().compareTo(plan2.mitigationPlan.getAdvance());
+				}
+				return anualPercent.compareTo(plan2.anualPercent);
+			case 3:
+				if(plan2.mitigationPlan == null)
+					return 1;
+				if(mitigationPlan == null)
+					return -1;
+				if(plan2.mitigationPlan.getAdvance().equals(mitigationPlan.getAdvance())) {
+					if(plan2.anualPercent == null)
+						return 1;
+					if(anualPercent == null)
+						return -1;
+					return plan2.anualPercent.compareTo(anualPercent);
+				}
+				return plan2.mitigationPlan.getAdvance().compareTo(mitigationPlan.getAdvance());
+			case 4:
+				if(plan2.anualPercent == null)
+					return 1;
+				if(anualPercent == null)
+					return -1;
+				if(plan2.anualPercent.equals(anualPercent)) {
+					if(plan2.mitigationPlan == null)
+						return 1;
+					if(mitigationPlan == null)
+						return -1;
+					return plan2.mitigationPlan.getAdvance().compareTo(mitigationPlan.getAdvance());
+				}
+				return plan2.anualPercent.compareTo(anualPercent);
+			default:
+				return new String(driverData.getFirstName()+" "+driverData.getLastName()).compareTo(plan2.driverData.getFirstName()+" "+plan2.driverData.getLastName());
+		}
+	}
+
+	public int getTotal() {
+		return total;
+	}
+
+	public void setTotal(int total) {
+		this.total = total;
+	}
+
+	public int getDone() {
+		return done;
+	}
+
+	public void setDone(int done) {
+		this.done = done;
+	}
+
+	public int getExpired() {
+		return expired;
+	}
+
+	public void setExpired(int expired) {
+		this.expired = expired;
+	}
+
+	public Integer getAnualPercent() {
+		return anualPercent;
+	}
+}

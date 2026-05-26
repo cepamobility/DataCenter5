@@ -1,0 +1,28 @@
+<ion-view view-title="{{f}}">
+   
+	  <ion-content class="padding" style="cursor:pointer" ng-click="">
+	    <button class="button button-assertive" ng-click="openActivityPopup(ac)">
+		  {{txt.activityStart}}
+		</button>
+	    <div class="list card">
+	    
+	      <div class="item item-divider">
+	      <p>{{ac.name}} - {{ac.status}} -  {{txt.participants}}</p>
+	       <p>{{ac.date}}</p>
+	       <p>{{ac.countryName}}</p>
+	          <p>{{ac.divOrg1Name}}</p>
+	          <p>{{ac.divOrg2Name}}</p>
+	          <p>{{ac.divOrg3Name}}</p>
+	      </div>
+	      
+	       <ion-item class="item item-body"  ng-repeat="driver in ac.participants" type="item-text-wrap" >
+				<p>{{driver.corporationId}}</p>
+				<p>{{driver.id}}</p>
+				<p>{{driver.firstName}}</p>
+				<p>{{driver.lastName}}</p>
+				<i class="icon ion-chevron-right icon-accessory"></i>
+			</ion-item>	
+		  </div>
+	    </div>
+	  </ion-content>
+</ion-view>

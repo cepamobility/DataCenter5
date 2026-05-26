@@ -1,0 +1,460 @@
+<%@page language="java"
+	errorPage="../exception.jsp"
+	import="java.util.*"
+	import="java.util.LinkedList"
+	import="business.*"
+	import="business.driver.*" 
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.util.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.administration.user.tables.*"
+	import="communication.driver.tables.*"
+	import="communication.event.tables.*"
+	import="communication.activity.tables.*"
+	import="communication.vehicle.tables.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.driver.*"
+ 	import="communication.util.DateValue"
+ 	import="org.apache.struts.action.DynaActionForm"
+ %>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<html:html>
+<%! RequestDispatcher dispatcher; String context;String pathView; 
+	String pathMsg; String pathSearch; 
+	Text messages; String pathLanguage;
+	SystemAccess sys; 
+	TelematicControlData data;
+	DriverMainAttributes driver;
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	
+	int color = 1;
+	String check = Util.checkPermission(sys,SecurityConstants.MODIFY_DRIVER);	
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		messages=sys.getText();
+
+		pathLanguage="/util/jsp/language.jsp";
+	
+
+		dispatcher=request.getRequestDispatcher(pathLanguage);
+		dispatcher.include(request,response);
+	
+		context=request.getContextPath();
+		pathMsg="/util/jsp/message.jsp";
+	
+		dispatcher=request.getRequestDispatcher(pathMsg);
+		dispatcher.include(request,response);
+
+		String idDallas = (String)request.getParameter("idDallas");
+		
+		String id = (String)request.getParameter("id");
+		String vehicle = null;
+		VehicleMainAttributes dataVehicle = null;
+		Calendar c = Calendar.getInstance();
+		int month = c.get(Calendar.MONTH) + 1;
+		int year = c.get(Calendar.YEAR);
+		if(id != null){	
+			data = sys.getDriverReportFacade().findTelematicControl(new Integer(id), sys.getUserSessionData());
+			month = Integer.parseInt(Util.getMonth(data.getDate()));
+			year = Integer.parseInt(Util.getYear(data.getDate()));
+			driver = data.getDriver();
+			dataVehicle = data.getVehicle();
+			vehicle = String.valueOf(dataVehicle.getId());
+			switch(data.getType().intValue()) {
+				case 0:
+					color = 2;
+					break;
+				case 1:
+					color = 3;
+					break;
+			}
+			
+		}else {
+			String driverId = (String)request.getParameter("driver");
+			if(driverId != null){
+				driver = sys.getDriverReportFacade().findDriverMainData(new Integer(driverId),sys.getUserSessionData());
+				//driver = sys.getDriverReportFacade().findDriverByPrimaryKey(new Integer(driverId),sys.getUserSessionData());
+			}
+			
+			 DynaActionForm telematicControlData = (DynaActionForm)session.getAttribute("TelematicControlForm");
+			 if (telematicControlData != null){
+				 // Recargo el formulario
+			 }
+			 
+			vehicle = (String)request.getParameter("vehicle");
+			if(vehicle != null){
+				 dataVehicle = sys.getVehicleReportFacade().findVehicleById(new Integer (vehicle), sys.getUserSessionData());
+			}
+		}
+		//TelematicControlQueryForm form = (TelematicControlQueryForm);
+				
+		/*
+		*Campos que manejan las fechas MONTH y YEAR
+		*/
+		
+		/**
+		*Agrego el vehicle al controlTelematic
+		*/
+		
+		pathView="./view.jsp?id="+id;
+		session.setAttribute("url","driver/DriverView.jsp?id="+id);
+%>
+
+	<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	<script language="javascript" src='./menu/js/driverFunctions.js' type='text/javascript' >
+	</script>
+	<script>
+
+	function onSelect1(calendar, date) {
+			var date2 = calendar.date;
+			var time = date2.getTime();
+	  		var input_day = document.getElementById("dayId1");
+	  		var input_month = document.getElementById("monthId1");
+	  		var input_year = document.getElementById("yearId1");
+	  		var date3 = new Date(time);
+	  		input_day.value = date3.print("%d");
+	  		input_month.value = date3.print("%m");
+	  		input_year.value= parseInt(date3.print("%Y"),10);
+	  	}
+
+		function deleteControl() {
+		  	var form = document.forms['DeleteTelematicControlForm'];
+		  	if(confirm('<%=messages.getText("driver.telematiccontrol.confirmdelete")%>')) {
+				form.submit();
+			}
+		}
+
+		function onSelectFrom(calendar, date) {
+			var date2 = calendar.date;
+			var time = date2.getTime();
+			var input_month = document.getElementById("monthIdFrom");
+			var input_year = document.getElementById("yearIdFrom");
+			var date3 = new Date(time);
+			input_month.value = parseInt(date3.print("%m"), 10);
+			input_year.value = parseInt(date3.print("%Y"), 10);
+		}
+
+	</script>
+	
+	<head/>
+
+	<body onload="changeSelect()" bgcolor="#FFFFFF">
+
+<%
+		if(driver!=null){
+			if(id != null){
+%>
+		<html:form action="DeleteTelematicControl">
+			<html:hidden property="id" value="<%=id%>"/>	
+			<html:hidden property="driver" value="<%=String.valueOf(driver.getId())%>"/>
+		</html:form>
+<%			}	
+%>	
+		<html:form action="TelematicControl">
+<%			if(id != null){
+%>			<html:hidden property="id" value="<%=id%>"/>	
+<%			}	
+%>			<html:hidden property="driver" value="<%=String.valueOf(driver.getId())%>"/>
+<%			if(vehicle != null){
+%>			<html:hidden property="vehicle" value="<%=vehicle%>"/>
+<%			}
+%>	
+			<table width="650" align='center' cellpadding="0" cellspacing="0" border="0">  
+				<tr class="guide1">
+					<jsp:include  page='<%="../component/titlecomponent.jsp?colspan=5&title="+messages.getText("generic.driver.telematiccontrol")%>' />
+				</tr>
+				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+  				</tr>
+  				<tr>
+					<td valign="top" align="center">
+  						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("driver.telematiccontrol.data")%>' />
+						<table width="100%" align='center' cellpadding="0" cellspacing="0" border="0">  
+							<tr>
+							    <td>
+									<table width="100%">
+										<tr class="linetwo">
+											<th width="224" align="left"><%=messages.getText("driver.telematic.driver")%></th>
+											<td align="right">
+												<%=driver.getFirstName() + " " + driver.getLastName()%>
+											</td>
+										</tr>
+										<tr class="space">
+											<th align="right">&nbsp;</th>
+											<td align="right">&nbsp;</td>
+										</tr>
+										<!-- Vehicle -->
+										<tr class="linetwo">
+											<th width="224" align="left"><%=messages.getText("driver.telematiccontrol.associatedVehicle")%></th>
+											<td align="right">
+												<%=(dataVehicle != null) ? dataVehicle.getMatricula() : "---" %>
+											</td>
+										</tr>
+										<tr class="space">
+											<th align="right"></th>
+											<td align="right">&nbsp;</td>
+										</tr>
+										<!-- Opcion Colores -->
+										<tr class="linetwo">
+											<th width="224" align="left"><%=messages.getText("driver.telematiccontrol.color")%></th>
+											<td align="right">
+												<select name='color' id='color'>
+													<option value='1' <%=(color == 1) ? "selected='selected'" : ""%>><%=messages.getText("telematiccontrol.color.redoryellow") %></option>
+													<option value='2' <%=(color == 2) ? "selected='selected'" : ""%>><%=messages.getText("telematiccontrol.color.redhrd") %></option>
+													<option value='3' <%=(color == 3) ? "selected='selected'" : ""%>><%=messages.getText("telematiccontrol.color.green") %></option>
+												</select>
+											</td>
+										</tr>
+									<!--INICIO COLOR VERDE O ROJO POR HRD-->
+										<tr>
+						    				<td colspan="2">
+												<table class= green align='center' width="100%">
+       									<!-- FECHA -->
+		       										<tr  class="linetwo">
+		      											<th width="224" align="left"> <%=messages.getText("driver.telematic.date")%> <span class="required">*</span></th>
+		       											<td align="right">
+			       											<html:hidden property="date_green" value='<%="01"%>'/>
+			    											<html:select  property="month_green" styleClass="input" style="width:60;" styleId="monthIdFrom">
+<%					Collection months = new LinkedList();
+					months.add(new OptionItem("",String.valueOf(0)));
+					for(int i =	1; i <= 12; i++) { 
+%>																<html:option value="<%=String.valueOf(i)%>"><%=messages.getText("generic.month."+String.valueOf(i))%></html:option>
+<%					}
+%>			 												</html:select>
+			  												<html:select property="year_green" styleClass="input" styleId="yearIdFrom">
+<%					Collection years = new LinkedList();
+					Calendar instance = Calendar.getInstance();
+					years.add(new OptionItem("",String.valueOf(0)));
+					for(int i = 1998; i <= instance.get(Calendar.YEAR)+1; i++) {
+%>																<html:option value="<%=String.valueOf(i)%>" ><%=String.valueOf(i)%></html:option>
+<%					}
+%>			  												</html:select>
+	    													<html:img page="/component/jscalendar-1.0/img.gif" styleId="calendar_button2" style="cursor: pointer;"
+										 						onmouseover="this.style.background='red';" style="width:20;" onmouseout="this.style.background=''"/>
+							         					</td>
+	         											<script type="text/javascript">
+														Calendar.setup({
+					     											inputArea     :    "yearIdFrom",
+					     											ifFormat       :    "%d/%m/%Y",
+					     											showsTime      :    true,
+					     											timeFormat     :    "24",
+					     											button         :    "calendar_button2",
+					     											step           :    1,
+					     											onSelect       :    onSelectFrom,
+					     											singleClick    :    true
+					 											});
+														</script>
+													</tr>						
+												</table>
+											</td>
+										</tr>
+									<!--FIN COLOR VERDE O ROJO POR HRD-->
+									
+									
+									<!-- COMIENZA CAMPOS DE COLOR YELLOW AND RED -->
+										<tr>
+											<td colspan="2">
+												<table class=yellow_red align='center' width="100%">
+										<!-- Numero de ocurrencias -->
+													<tr class="linetwo">
+														<th width="224" align="left"><%=messages.getText("driver.telematic.occurrences")%></th>
+														<td align="right">
+															<html:text property='occurrences' styleClass='input' value='<%=(data != null && data.getOccurrences() != null) ? data.getOccurrences().toString() : ""%>'>
+															</html:text>
+														</td>
+													</tr>
+													<tr class="space">
+														<th align="right"></th>
+														<td align="right">&nbsp;</td>
+													</tr>								
+									<!-- Evento de velocidade máx. atingida (Km/h)* -->
+													<tr class="linetwo">
+														<th width="224" align="left"><%=messages.getText("driver.telematic.speed")%></th>
+														<td align="right">
+															<html:text property='speed' styleClass='input'	value='<%=(data != null && data.getSpeed() != null) ? data.getSpeed().toString() : ""%>'>
+															</html:text>
+														</td>
+													</tr>
+													<tr class="space">
+														<th align="right"></th>
+														<td align="right">&nbsp;</td>
+													</tr>
+									<!-- Limite excedido (Km/h)* -->
+													<tr class="linetwo">
+														<th width="224" align="left"><%=messages.getText("driver.telematic.limitExceeded")%></th>
+														<td align="right">
+															<html:text property='limitExceeded' styleClass='input'	value='<%=(data != null && data.getLimitExceeded() != null) ? data.getLimitExceeded().toString() : ""%>'>
+															</html:text>
+														</td>
+													</tr>
+													<tr class="space">
+														<th align="right"></th>
+														<td align="right">&nbsp;</td>
+													</tr>
+									<!-- Limite excedido en lluvia (Km/h)* -->
+													<tr class="linetwo">
+														<th width="224" align="left"><%=messages.getText("driver.telematic.limitExceededRain")%></th>
+														<td align="right">
+															<html:text property='limitExceededRain' styleClass='input' value='<%=(data != null && data.getLimitExceededRain() != null) ? data.getLimitExceededRain().toString() : ""%>'>
+															</html:text>
+														</td>
+													</tr>
+													<tr class="space">
+														<th align="right"></th>
+														<td align="right">&nbsp;</td>
+													</tr>
+								<!-- fecha -->
+													<tr class="linetwo">
+														<th width="224" align="left"><%=messages.getText("driver.telematic.date")%></th>
+														<td align="right" valign="middle">
+															<html:text property="date" style="width:20;" styleClass="input" styleId="dayId1" maxlength="2" value='<%=(data == null) ? "" : Util.getDay(data.getDate())%>' />&nbsp;/&nbsp;
+															<html:text property="month" style="width:20;" styleClass="input" styleId="monthId1" maxlength="2" value='<%=(data == null) ? "" : Util.getMonth(data.getDate())%>' />&nbsp;/&nbsp;
+															<html:text property="year" style="width:40;" styleClass="input" styleId="yearId1" maxlength="4" value='<%=(data == null) ? "" : Util.getYear(data.getDate())%>' />
+															<html:img page="/component/jscalendar-1.0/img.gif" styleId="calendar_button1" style="cursor: pointer; border: 1px solid red;" onmouseover="this.style.background='red';" style="width:20;" align="middle" onmouseout="this.style.background=''" />
+														</td>
+														<script type="text/javascript">
+															Calendar.setup({
+																inputArea : "yearId1",
+																ifFormat : "%d/%m/%Y",
+																showsTime : true,
+																timeFormat : "24",
+																button : "calendar_button1",
+																step : 1,
+																onSelect : onSelect1,
+																singleClick : true
+															});
+														</script>
+													</tr>
+													<tr class="space">
+														<th align="right"></th>
+														<td align="right">&nbsp;</td>
+													</tr>
+										<!-- Hora -->
+													<tr class="linetwo">
+														<th width="224" align="left"><%=messages.getText("driver.telematic.time")%>&nbsp;(hh:mm:ss)</th>
+														<td align="right">
+															<html:text property='time' styleClass='input' value='<%=(data != null && data.getTime() != null) ? data.getTime() : ""%>'>
+															</html:text>
+														</td>
+													</tr>
+													<tr class="space">
+														<th align="right"></th>
+														<td align="right">&nbsp;</td>
+													</tr>
+									<!-- Duracion del evento -->
+													<tr class="linetwo">
+														<th width="224" align="left"><%=messages.getText("driver.telematic.duration")%></th>
+														<td align="right">
+															<html:text property='duration' styleClass='input' value='<%=(data != null && data.getDuration() != null) ? data.getDuration() : ""%>'>
+															</html:text>
+														</td>
+													</tr>
+													<tr class="space">
+														<th align="right"></th>
+														<td align="right">&nbsp;</td>
+													</tr>
+									<!-- Duracion Total -->
+													<tr class="linetwo">
+														<th width="224" align="left"><%=messages.getText("driver.telematic.totalDuration")%></th>
+														<td align="right">
+															<html:text property='totalDuration' styleClass='input' value='<%=(data != null && data.getTotalDuration() != null) ? data.getTotalDuration() : ""%>'>
+															</html:text>
+														</td>
+													</tr>
+													<tr class="space">
+														<th align="right"></th>
+														<td align="right">&nbsp;</td>
+													</tr>
+									<!-- Distancia -->
+													<tr class="linetwo">
+														<th width="224" align="left"><%=messages.getText("driver.telematic.distance")%></th>
+														<td align="right">
+															<html:text property='distance' styleClass='input' value='<%=(data != null && data.getDistance() != null) ? data.getDistance().toString() : ""%>'>
+															</html:text>
+															</td>
+														</tr>
+													<tr class="space">
+														<th align="right"></th>
+														<td align="right">&nbsp;</td>
+													</tr>
+										<!-- velocidad media -->
+													<tr class="linetwo">
+														<th width="224" align="left"><%=messages.getText("driver.telematic.averageVelocity")%></th>
+														<td align="right">
+															<html:text property='averageVelocity' styleClass='input' value='<%=(data != null && data.getAverageVelocity() != null) ? data.getAverageVelocity().toString() : ""%>'>
+															</html:text>
+														</td>
+													</tr>
+													<tr class="space">
+														<th align="right"></th>
+														<td align="right">&nbsp;</td>
+													</tr>
+												<!-- Tipo de Control Telematico -->
+													<tr class="linetwo">
+														<th width="224" align="left"><%=messages.getText("driver.telematic.type")%></th>
+														<td align="right">
+															<html:hidden property="type" value="7"/>
+															<%=messages.getText("driver.telematiccontrol.excessivespeed")%>
+										    	    	</td>
+													</tr>
+													<tr class="space">
+														<th align="right"></th>
+														<td align="right">&nbsp;</td>
+													</tr>
+												</table>
+											</td>
+										</tr>
+									<!-- FIN ROJO O AMARILLO -->
+									
+										<tr>
+											<td colspan="3" align="right" class="linetwo">
+												<html:submit value='<%=messages.getText("generic.messages.save")%>'	styleClass="input" /> 
+<% 			if (id != null) {
+%> 												<input type="button" value='<%=messages.getText("generic.messages.delete")%>' class="input" onclick="javascript:deleteControl();" /> 
+<%	 		}
+%>											 	<html:cancel value='<%=messages.getText("generic.messages.cancel")%>' styleClass="input" />
+											</td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+						</table> 
+						<jsp:include  page="../component/utilityboxbottom.jsp" />		
+					</td>
+				</tr>
+			</table>			
+		</html:form>
+	<script type="text/javascript">
+<%		if (color == 1) { 
+%>			$('.green').hide();
+<%		}else { 
+	%>			$('.yellow_red').hide();
+<%		}
+%>		$('#color').change(function() {
+			if ($('#color').val() === '1') {
+				$('.yellow_red').show();
+				$('.green').hide();
+			} else {
+				$('.green').show();
+				$('.yellow_red').hide();
+				
+			}
+		});
+	</script>		
+<%
+		} else {
+%>		<jsp:include  page='<%="/util/allowedData.jsp?message=driver.error.access.driver"%>'/>
+<%
+		}
+	}
+%>
+	</body>
+</html:html>

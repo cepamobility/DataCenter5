@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.activity.tables" >
+    <class name="CheckList" table="checklist">
+		
+		 <id
+            column="id"
+            name="id"
+        >
+            <generator class="sequence">
+            	<param name="sequence">CheckList_Sequence</param>
+            </generator>
+        </id>
+        
+        <property column="goals" name="goals" type="java.lang.String" />      
+        <property column="scope" name="scope" type="java.lang.String" />
+        <property column="version"  name="version" type="java.lang.Integer" />                   
+
+        
+		<set name="points"  cascade="all-delete-orphan">
+			<key column="checklist" not-null="true"/>
+			<one-to-many class="Point" />
+		</set>        
+		
+	 </class>
+
+</hibernate-mapping>

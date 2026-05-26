@@ -1,0 +1,45 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.administration.group.tables" >
+	<class name="AbstractGroup" table="groups">
+        
+		<id column="id" name="id">
+            <generator class="sequence">
+            	<param name="sequence">Group_Sequence</param>
+            </generator>
+        </id>
+
+        <property 	name="name"			type="java.lang.String"		column="name" not-null="true"/>
+        <property 	name="description"	type="java.lang.String"		column="description" not-null="true"/>
+
+       	<property 	name="active" />
+       	
+        <property 	name="period"		type="java.lang.Integer"		column="period" not-null="true"/>
+        <property 	name="type"		type="java.lang.Integer"		column="type" not-null="true"/>
+		
+        <many-to-one name="corporation" class="persistence.administration.corporation.tables.Corporation" not-null="true" />
+
+		<joined-subclass name="IndividualGroup" table="individualgroups">
+			<key column="id"/>
+			<set inverse="true" name="lines"  cascade="all-delete-orphan">
+    	    	<key>
+        	 		<column name="groupElement"></column>
+         		</key>
+				<one-to-many class="GroupLine" />
+			</set>
+		</joined-subclass>
+
+		<joined-subclass name="ComposedGroup" table="composedgroups">
+			<key column="id"/>
+			<set inverse="true" name="groups"  cascade="all-delete-orphan">
+    	    	<key>
+        	 		<column name="groupElement"></column>
+         		</key>
+				<one-to-many class="GroupElement" />
+			</set>
+		</joined-subclass>
+    </class>
+</hibernate-mapping>

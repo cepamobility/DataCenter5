@@ -1,0 +1,68 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.activity.tables" >
+    <class name="CEPAActivity" table="cepaactivity">
+		
+		 <id
+            column="activityId"
+            name="activityId"
+        >
+            <generator class="sequence">
+            	<param name="sequence">CEPAActivity_Sequence</param>
+            </generator>
+        </id>
+        
+        <discriminator column="discriminator" type="string" />
+        
+       <many-to-one name="type" class="persistence.datatype.tables.CEPAActivityType"></many-to-one>        
+       
+       <many-to-one name="definition" class="persistence.activity.tables.CEPAActivityDefinition"></many-to-one>               
+       
+        <many-to-one name="geoLevel1" class="persistence.administration.corporation.tables.GeoLevel1" column="geolevel1" />       
+        
+        <many-to-one name="corpCountry" class="persistence.administration.corporation.tables.CorporationCountry" not-null="true" >
+             <column name="corporation"></column>
+             <column name="country"></column>
+        </many-to-one>
+        
+        <property	name="date" type="java.util.Date" column="date"/>    
+        
+        <property	name="dateExpiry" type="java.util.Date" />                    
+        
+        <property	name="city" type="java.lang.String" column="city"/>
+        <property	name="participants" type="java.lang.Integer" column="participants"/>
+        
+        <property name="isOld" not-null="true"  />
+        
+        <!-- Campo agregado el  26/08/2011 -->
+        <property name="observations" column="observations" type="java.lang.String"  />                
+        <property name="theme" column="theme" type="java.lang.String"  />                
+        
+        <property name="duration" type="java.lang.Integer" column="duration"/>
+        <property name="file" type="java.lang.String" column="file"/>
+        
+        <subclass discriminator-value="CEPAScheduleActivity" name="CEPAScheduleActivity">
+        	<many-to-one name="divOrg1" class="persistence.administration.corporation.tables.DivOrgItemLevel1"></many-to-one>
+            <many-to-one name="divOrg2" class="persistence.administration.corporation.tables.DivOrgItemLevel1"></many-to-one>
+            <many-to-one name="divOrg3" class="persistence.administration.corporation.tables.DivOrgItemLevel1"></many-to-one>
+            <many-to-one name="state" class="persistence.datatype.tables.CEPAActivityScheduleState"></many-to-one>
+              
+            <set inverse="true" name="instructorSet"  cascade="all-delete-orphan" lazy="false">
+				<key column="activityid" not-null="true"/>
+				<one-to-many class="CEPAScheduleActivityInstructor" />
+			</set>				
+				
+      	</subclass>
+      
+      <!--   
+      <subclass discriminator-value="CEPANoScheduleActivity" name="CEPANoScheduleActivity">
+      </subclass>
+        --> 
+	
+	 </class>
+
+</hibernate-mapping>

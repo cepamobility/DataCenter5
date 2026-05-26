@@ -1,0 +1,20 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.datatype.tables">
+    <class name="CrponPrimaryClasification" table="datatypecrponprimaryclasification">
+
+        <id	column="resourceBundleId"	name="resourceBundleId"	type="java.lang.String">
+            <generator class="native" />
+        </id>
+        
+        <set name="crponASecondaryClasificationValues" inverse="true">
+        	<key column="resourceBundleId"/>
+        	<one-to-many class="CrponSecondaryClasification"/>
+        </set>
+        <many-to-one name="corporation" class="persistence.administration.corporation.tables.Corporation"/>
+        <property name="oldId" />
+    </class>
+</hibernate-mapping>

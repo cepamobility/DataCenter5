@@ -1,0 +1,3529 @@
+<%@page import="communication.administration.corporation.util.DPAUnconformityItemFilter"%>
+<%@page import="communication.driver.tables.TelematicControlData"%>
+<%@page import="communication.administration.dpa.LevelOfServiceVehicleDPAData"%>
+<%@page import="communication.activity.tables.CheckListData"%>
+<%@page 
+	isThreadSafe="false"
+	import="java.util.*"
+	import="business.*"
+	import="business.vehicle.*" 
+	import="communication.language.*" 
+	import="communication.security.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.util.*"	
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.vehicle.*"
+	import="communication.administration.user.UserSessionData" 	
+	errorPage="../exception.jsp"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<html:html>
+<%! RequestDispatcher dispatcher; String context;String pathView; 
+	String pathMsg; String pathSearch; String id;
+	Text messages; String pathLanguage;
+	SystemAccess sys; VehicleData data; VehicleReportFacade vehicleReport;
+	UserSessionData userSessionData;
+	String allerganUnit;
+%>
+<%
+	session.removeAttribute("TruckCheckListForm");
+	session.removeAttribute("TruckCheckListEditForm");
+
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+
+	userSessionData=sys.getUserSessionData();
+	
+	String check = null;
+	if(userSessionData.isDriver()) {
+	    check = Util.checkPermission(sys,SecurityConstants.DRIVER_EDIT_VEHICLE);
+	}else {
+	    check = Util.checkPermission(sys,SecurityConstants.EDIT_VEHICLE);
+	}
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		messages=sys.getText();
+
+		int corporationId = sys.getCorporationId();
+		
+		pathLanguage="/util/jsp/language.jsp";
+	
+		dispatcher=request.getRequestDispatcher(pathLanguage);
+		dispatcher.include(request,response);
+	
+		context=request.getContextPath();
+		pathMsg="/util/jsp/message.jsp";
+	
+		dispatcher=request.getRequestDispatcher(pathMsg);
+		dispatcher.include(request,response);
+
+		id=(String)request.getParameter("id");
+		if(id==null){
+	id = (String)session.getAttribute("id");			
+	session.removeAttribute("id");
+		}
+		session.setAttribute("url","vehicle/VehicleView.jsp?id="+id);
+	
+		// Borro el contenido de from para los checklist
+		session.setAttribute("from","vehicleview");
+		
+		// Elimino form de checklist si es que existe
+		session.removeAttribute("VehicleCheckForm");	
+		
+		
+		String cancel = "layout.jsp?refer=/vehicle/VehicleList.jsp";
+		if(!Util.empty(request.getParameter("trailer"))) {
+		    cancel = "layout.jsp?refer=/vehicle/TrailerView.jsp?trailer="+request.getParameter("trailer")+"&vehicle="+id;
+		}else{
+	cancel = "javascript:history.back();";
+		}
+		
+		if(id!=null){	
+	pathView="./view.jsp?id="+id;
+	session.setAttribute("target","VehicleView");
+		
+	vehicleReport=sys.getVehicleReportFacade();
+	data=vehicleReport.findVehicleByPrimaryKey(new Integer(id),userSessionData); 
+
+	if(data!=null){
+		VehicleForm vehicleForm=VehicleUtil.createVehicleForm(data,VehicleUtil.VIEW,messages);
+		session.setAttribute("VehicleCreateForm",vehicleForm); 
+		
+		if(session.getAttribute("Breadcrumb") != null) {
+		    Hashtable parameters = new Hashtable();
+		    parameters.put("id",data.getId());
+		    parameters.put("name",data.getMatricula());
+		    ((Breadcrumb)session.getAttribute("Breadcrumb")).addItem(Breadcrumb.VEHICLE_EDIT,parameters);
+		}
+		
+
+		//	Datos Opcionales de Vehiculos (Camiones Brasil), en particular para KLABIN
+		boolean hasOptionalData = false;
+		if (corporationId == CorporationData.KLABIN || 
+		corporationId == CorporationData.YOLI ||
+		        corporationId == CorporationData.CIMSA ||
+		        corporationId == CorporationData.PEPSICO ||
+		        corporationId == CorporationData.FORESTALORIENTAL){
+	// Cimsa y Pepsico usan la matricula como numero economico
+	// y el campo prefijo de optionaInfo como matricula
+	
+	hasOptionalData = true;
+		}
+%>
+
+<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+<script type="text/javascript" src="./menu/js/html2canvas.min.js"></script>
+<head>
+	<script>
+
+	function CanvasToBase64Image(canvas)
+	{
+		var ctx = canvas.getContext("2d");
+		var dataURL = canvas.toDataURL("image/png");
+		var r = dataURL;//.replace(/^data:image\/(png|jpg);base64,/, "");
+		return r;
+	}
+
+	$(document).ready(
+		function(){
+			$("#linkpdfscreen").click(function(event ) {
+  			    event.preventDefault();
+  			    var sel=$("table#bvehicle");
+  			  var count = sel.length;
+  			  for(i=0; i<count;i++){
+	  			  		html2canvas(sel[i], {
+			            onrendered: function(canvas) {
+			                //document.body.appendChild(canvas);
+			                 fd = new FormData();
+							 xhr = new XMLHttpRequest();
+							 fd.append('contents', CanvasToBase64Image(canvas));
+							 fd.append('id', 0);
+							 xhr.open('POST', 'Copy.do',false);
+							 xhr.send(fd);
+							 document.location.href="ImageToPDF.do";	
+				        }
+			        });
+  			  }
+  			  
+  			
+  		  			  
+  			 		
+			});
+		}
+	);
+
+	
+	function setAction(form,action){
+		form.action.value=action;
+	}
+	function deleteIFConfirm(form,msg){
+		form.submit();
+	} 
+	function desassociate(formDes,formTrailers,msg){
+		var elements=formTrailers.elements;
+		var length=elements.length;
+		var i;
+		var list="";
+		
+		for(i=0;i<length;i++){
+			var element=elements[i];
+			if(element.type.toLowerCase()=="checkbox"){
+				if(element.checked){
+					if(list==""){
+						list=element.value;
+					}else{
+						list=element.value+"<"+list;
+					}	
+				}	
+			} 
+		}
+		if(list.length>0){
+			formDes.list.value=list;
+			if(confirm(msg)) {
+				formDes.submit();
+			}
+		} 
+	}
+
+
+	function selectContract(form1,form2){
+		form2.vehicle.value = form1.vehicle.value;
+		form2.day.value = form1.day.value;
+		form2.month.value = form1.month.value;
+		form2.year.value = form1.year.value;
+		form2.type.value = form1.type.value;
+		form2.submit();
+		
+	}
+
+	function dpaDeleteHistoryCheckList(){
+
+		if(confirm('<%=messages.getText("generic.dpachecklist.confirmdelete")%>')){
+			$('input[deleteCheckList="true"]').each(
+					function(){
+						if($(this).is(':checked')){
+							var tthis=this;
+							
+							//DPASendCheckList
+							$.ajax(
+								{
+									url:'DPASendCheckList.do?deleteCheckList=true&check='+$(this).attr('check'),
+									async:true,
+									dataType:'json',
+									success:function(res){
+										if(!res){
+											alert('No se puede eliminar, primero elimine las no conformidades asociadas');	
+										}else{
+											$(tthis).parent().parent().hide('slow',function(){$(this).remove();});				
+										}
+									}
+								}
+							);
+						}
+					}
+			);
+		}
+	}
+	
+	</script>
+</head>
+	
+<body bgcolor="#FFFFFF">
+		<!-- VehicleView.jsp -->
+		<html:form action="/DesassociateTrailer">
+			<html:hidden property="vehicle" value='<%=String.valueOf(data.getId())%>' />
+			<html:hidden property="list" />
+		</html:form>	
+		<form action="layout.jsp?refer=/vehicle/VehicleExclusion.jsp" name="exclusion" method="post">
+		<input type="hidden" name="checkboxParamList" value='<%=id%>' /> <input type="hidden" name="action" />								
+		</form>
+		<form action="layout.jsp?refer=/vehicle/VehicleEdit.jsp" name='edit' method="post">
+			<input type="hidden" name="id" value='<%=id%>' />
+			<input type="hidden" name="target" value="VehicleView" />
+		</form>	
+		<form action="layout.jsp?refer=/vehicle/ChangeToInstitutional.jsp" name='changeToInstitutional' method="post">
+			<input type="hidden" name="id" value='<%=id%>' /> 
+			<input type="hidden" name="target" value="VehicleView" />
+		</form>	
+		<form action="layout.jsp?refer=/driver/DriverSearch.jsp?link=layout.jsp?refer=/vehicle/ChangeDriver.jsp" name='changeDriver' method="post">
+		
+			<input type="hidden" name="id" value='<%=id%>' />
+			<input type="hidden" name="target" value="VehicleView" />
+		</form>					
+		<form action="layout.jsp?refer=/driver/DriverSearch.jsp?link=layout.jsp?refer=/vehicle/AssignDriver.jsp" name='assignDriver' method="post">
+			<input type="hidden" name="id" value='<%=id%>' />
+			<input type="hidden" name="target" value="VehicleView" />
+		</form>							
+		<form action='<%=cancel%>' name='cancel' method="post">
+			<input type="hidden" name="target" value="VehicleView" />
+		</form>
+		<table width="750" border="0" align="center" cellpadding="0" cellspacing="0" id="bvehicle">
+			<tr>
+				<jsp:include  page='<%="../component/titlecomponent.jsp?colspan=5&title="+messages.getText("web.vehicle.view")+" "+data.getMatricula()%>' />	
+		    </tr>
+			<tr>    
+				<jsp:include  page="../component/spaceline.jsp" />	
+		    </tr>
+		    <tr>
+		    	<!-- Muestro Opciones: -->		    	
+				<td colspan="5">
+					<jsp:include  page='<%="../component/utilitybox3top.jsp?title="+messages.getText("generic.messages.options")%>' />
+					<table width="100%" border="0" cellpadding="0" cellspacing="0"  class="texts1">					
+<%
+						boolean line = true;	
+										if(userSessionData.isDriver()) {	
+											if(userSessionData.getDriverData().getCountryName().equals(CountryData.ARGENTINA) && (Util.checkPermission(sys,SecurityConstants.DRIVER_MODIFY_VEHICLE) == null)) {
+					%>						<tr>							
+				    		<td style="width:50%">
+								<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+					    		<a href="#" onClick="javascript:document.forms['edit'].submit()" class="texts" >
+					    			<%=messages.getText("generic.messages.edit")%>
+					    		</a>
+					    	</td>
+						</tr>
+<%
+	}
+		}else {
+	
+	line = !line;
+%>				
+					<%=(!line) ? "<tr>" : ""%>							
+	      			<td style="width:50%">
+		             	<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+						<a href="" id="linkpdfscreen"class="texts"/> 
+		            	PDF </a> 
+					</td>
+					<%=(line) ? "</tr>" : ""%>		
+<%
+			if(userSessionData.checkPermission(SecurityConstants.MODIFY_VEHICLE)) {	
+						line = !line;
+		%>					
+
+
+<%=(!line) ? "<tr>" : ""%>							
+				    		<td style="width:50%">
+	                			<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="#" onClick="javascript:document.forms['edit'].submit()" class="texts" >
+									<%=messages.getText("generic.messages.edit")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								}
+															if((userSessionData.checkPermission(SecurityConstants.MODIFY_VEHICLE)) && (data.getUse().getResourceBundleId().equals("persistence.datatype.typeuse.individual"))) {	 
+																line = !line;
+							%>					<%=(!line) ? "<tr>" : ""%>							
+							<td style="width:50%">                		
+	            	    		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="#" onClick="javascript:document.forms['changeToInstitutional'].submit()" class="texts">
+									<%=messages.getText("generic.messages.changeToInstitutional")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								}
+															if((userSessionData.checkPermission(SecurityConstants.MODIFY_VEHICLE)) && (data.getUse().getResourceBundleId().equals("persistence.datatype.typeuse.individual"))) {	
+																session.setAttribute("idVehicle",id); 
+																line = !line;
+							%>					<%=(!line) ? "<tr>" : ""%>							
+							<td style="width:50%">    
+							<!-- Opcion de Cambiar Conductor: -->
+								<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="#"onClick="javascript:document.forms['changeDriver'].submit()" class="texts">
+									<%=messages.getText("generic.messages.changeDriver")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								}
+															if((userSessionData.checkPermission(SecurityConstants.MODIFY_VEHICLE)) && (data.getUse().getResourceBundleId().equals("persistence.datatype.typeuse.institutional"))) {	
+																session.setAttribute("idVehicle",id);			
+																line = !line;
+							%>					<%=(!line) ? "<tr>" : ""%>							
+							<td style="width:50%">    
+	                			<!--  Opciï¿½n de Asiganr Conductor: -->
+		                		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="#" onClick="javascript:document.forms['assignDriver'].submit()" class="texts">
+									<%=messages.getText("generic.messages.assignDriver")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								}
+																									
+																	if((userSessionData.checkPermission(SecurityConstants.MODIFY_VEHICLE)) ||
+																		(userSessionData.isForest() && userSessionData.checkPermission(SecurityConstants.CHECKLIST_VEHICLE))
+																		|| (sys.isCorporation(CorporationData.DPA) && userSessionData.checkPermission(SecurityConstants.CHECKLIST_VEHICLE))
+																		) {	
+																		line = !line;
+																		
+																		session.setAttribute("idVehicle",id);			
+																		String href = (userSessionData.isForest()) ?
+																				"layout.jsp?refer=/vehicle/TruckCheckForm.jsp" + "?id=" + id : 
+																				"layout.jsp?refer=/vehicle/VehicleCheckForm.jsp" + "?id=" + id;
+																		if(corporationId == CorporationData.CIMSA) {
+																			href = "layout.jsp?refer=/vehicle/CimsaCheckForm.jsp" + "?id=" + id;
+																		}
+																		if(corporationId == CorporationData.SYNGENTA) {
+																			href = "layout.jsp?refer=/vehicle/SyngentaCheckForm.jsp" + "?id=" + id;
+																		}
+																		
+																		if(corporationId == CorporationData.SYNGENTA_BR) {
+																			href = "mobile/checklistSyngentaBR.jsp?checklist="+CheckListData.CHECK_LIST_SYNGENTA_BR+"&id=" + id;
+																		}
+																		
+																		if(corporationId == CorporationData.PACIFICRUBIALES) {
+																			href = "layout.jsp?refer=/vehicle/SimpleCheckList.jsp" + "?id=" + id +"&plate="+data.getMatricula();
+																		}
+																		if (corporationId == CorporationData.NALCO) {
+																			href = "layout.jsp?refer=/vehicle/VehicleCheckFormNalco.jsp?id=" + id;
+																		}
+																		
+																		if (corporationId == CorporationData.ACU) {
+																			href = "checklistACU.jsp?checklist="+CheckListData.CHECK_LIST_FORMULARIO_ACU+"&id=" + id;
+																		}
+																		
+																		if(corporationId == CorporationData.CEPA){
+																			href ="checklistMP.jsp?checklist="+CheckListData.MDP_CHECKLIS_MERCANCIASPELIGROSAS+"&id="+id;
+																		}
+																		
+																		if (corporationId == CorporationData.COFUSA || corporationId == CorporationData.FORESTALORIENTAL || corporationId == CorporationData.WEYERHAEUSER || corporationId == CorporationData.MONTES_DE_PLATA) {
+																			String href1 = "checklistUPM.jsp?checklist="+CheckListData.UPM_CHECKLIST_PESADOS+"&id=" + id;
+																			String href2 = "checklistUPM.jsp?checklist="+CheckListData.UPM_CHECKLIST_SEGRUTA+"&id=" + id;
+							%>						<%=(!line) ? "<tr>" : ""%>							
+							<td style="width:50%">  
+		                			
+			                		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+									<a href='<%=href1%>' class="texts">
+										<%=messages.getText("generic.messages.addvehiclecheckupm2")%>
+									</a>
+								</td>
+						<%=(line) ? "</tr>" : ""%>
+<%
+	line = !line;
+%>
+							<%=(!line) ? "<tr>" : ""%>							
+								<td style="width:50%">  
+				                		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+										<a href='<%=href2%>' class="texts">
+											<%=messages.getText("generic.messages.addvehiclecheckupm1")%>
+										</a>
+									</td>
+							<%=(line) ? "</tr>" : ""%>	
+<%
+		if ( corporationId == CorporationData.WEYERHAEUSER || corporationId == CorporationData.MONTES_DE_PLATA) {
+						line = !line;
+			
+						String href3 = "checklistUPM.jsp?checklist="+CheckListData.UPM_CHECKLIST_INTERNO+"&id=" + id;
+	%>							<%=(!line) ? "<tr>" : ""%>							
+									<td style="width:50%">  
+				    					<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+										<a href='<%=href3%>' class="texts">
+											<%=messages.getText("checklist.weyer.internal")%>
+										</a>
+									</td>
+									<%=(line) ? "</tr>" : ""%>
+<%
+	}
+%>
+<%
+	if ( corporationId == CorporationData.MONTES_DE_PLATA) {
+				line = !line;
+	
+				String hrefMP  ="checklistMP.jsp?checklist="+CheckListData.MDP_CHECKLIS_MERCANCIASPELIGROSAS_2+"&id="+id;
+%>							<%=(!line) ? "<tr>" : ""%>							
+									<td style="width:50%">  
+				    					<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+										<a href='<%=hrefMP%>' class="texts">
+											<%=messages.getText("checklist.mp.title")%>
+										</a>
+									</td>
+									<%=(line) ? "</tr>" : ""%>
+<%
+	}
+%>
+
+<%
+	}else 
+		if (corporationId == CorporationData.DPA) {
+			String href1 = "checklistDPA.jsp?checklist="+CheckListData.DPA_CHECKLIST_T1+"&id=" + id;
+			String href2 = "checklistDPA.jsp?checklist="+CheckListData.DPA_CHECKLIST_T2+"&id=" + id;
+			String href3 = "layout.jsp?refer=/vehicle/telematicControlVehicleDPA.jsp?vehicle="+id;
+%>
+					<%=(line) ? "</tr>" : ""%>							
+						<%=(!line) ? "<tr>" : ""%>							
+							<td style="width:50%">  
+		                			
+			                		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+									<a href='<%=href1%>' class="texts">
+										<%=messages.getText("generic.messages.addvehiclecheckdpa1")%>
+									</a>
+								</td>
+						<%=(line) ? "</tr>" : ""%>
+						<%
+							line = !line;
+						%>
+						<%=(!line) ? "<tr>" : ""%>							
+							<td style="width:50%">  
+		                			
+			                		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+									<a href='<%=href2%>' class="texts">
+										<%=messages.getText("generic.messages.addvehiclecheckdpa2")%>
+									</a>
+								</td>
+						<%=(line) ? "</tr>" : ""%>
+						<%
+							line = !line;
+						%>
+						<%=(!line) ? "<tr>" : ""%>							
+							<td style="width:50%">  
+		                			
+			                		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+									<a href='<%=href3%>' class="texts">
+										<%=messages.getText("driver.modify.telematiccontrol")%>
+									</a>
+								</td>
+						<%=(line) ? "</tr>" : ""%>					
+				
+<%
+										}else {
+									%>					<%=(!line) ? "<tr>" : ""%>							
+						<td style="width:50%">  
+	                			
+		                		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href='<%=href%>' class="texts">
+									<%=messages.getText("generic.messages.addvehiclecheck")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								}
+																										if(corporationId == CorporationData.SYNGENTA) {
+																											line = !line;
+																											String href2 = "layout.jsp?refer=/vehicle/TruckCheckForm.jsp?id=" + id;
+							%>					<%=(!line) ? "<tr>" : ""%>							
+								<td style="width:50%">  
+		                			
+			                		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+									<a href='<%=href2%>' class="texts">
+										<%=messages.getText("generic.messages.addtruckvehiclecheck")%>
+									</a>
+								</td>
+					<%=(line) ? "</tr>" : ""%>							
+					
+<%
+													}						
+																																			}		
+																																			
+																																			// Seguimiento en Ruta: Solo para Forestales
+																																			if((userSessionData.isForest() && 
+																																					userSessionData.checkPermission(SecurityConstants.CHECKLIST_VEHICLE))
+																																				) {							
+																																					session.setAttribute("idVehicle",id);			
+																																					String href = "layout.jsp?refer=/vehicle/VehiclePursuitRouteForm.jsp" + "?id=" + id; 
+																																					line = !line;
+												%>					<%=(!line) ? "<tr>" : ""%>							
+								<td style="width:50%">  
+		                			
+			                		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+									<a href='<%=href%>' class="texts">
+										<%=messages.getText("generic.messages.addpursuitroute")%>
+									</a>
+								</td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								if(corporationId == CorporationData.LOSPIQUES) {
+																												line = !line;
+							%>					<%=(!line) ? "<tr>" : ""%>							
+								<td style="width:50%">  
+			                		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+									<a href='layout.jsp?refer=/vehicle/unconformities.jsp?id=<%=String.valueOf(data.getId())+"&name="+data.getMatricula()%>' class="texts">
+										<%=messages.getText("generic.driver.unconformities")%>
+									</a>								
+								</td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								}
+																										}	
+																									
+																	if((userSessionData.checkPermission(SecurityConstants.QUERY))) {	
+																		session.setAttribute("idVehicle",id);			
+																		String href = "layout.jsp?refer=/vehicle/VehicleDriversForm.jsp" + "?idVehicle=" + id + "&plate=" + data.getMatricula();
+																		line = !line;
+							%>					<%=(!line) ? "<tr>" : ""%>							
+							<td style="width:50%">
+		                		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href='<%=href%>' class="texts">
+									<%=messages.getText("generic.messages.viewdriverlist")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								}	
+																									
+																									
+																	// Exclusion
+																	if(data.getExclusionDate() != null) {	
+																		if((userSessionData.checkPermission(SecurityConstants.MODIFY_VEHICLE))) {	
+																			line = !line;
+							%>					<%=(!line) ? "<tr>" : ""%>							
+							<td style="width:50%">  
+								<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="javascript:setAction(document.forms['exclusion'],'include');deleteIFConfirm(document.forms['exclusion'],'<%=messages.getText("generic.driver.driverdata.confirminclude")%>');" class="texts")>
+				         			<%=messages.getText("generic.driver.include")%>
+				         		</a>
+				         	</td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								}	
+																	}else {
+																		if((userSessionData.checkPermission(SecurityConstants.MODIFY_VEHICLE))) {	
+																			line = !line;
+							%>					<%=(!line) ? "<tr>" : ""%>							
+							<td style="width:50%"> 	
+	        					<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="javascript:setAction(document.forms['exclusion'],'exclude');deleteIFConfirm(document.forms['exclusion'],'<%=messages.getText("generic.driver.driverdata.confirmexclude")%>');" class="texts">
+				    	     		<%=messages.getText("generic.driver.exclude")%>
+				        	 	</a>
+				        	</td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								}
+																		if(userSessionData.checkPermission(SecurityConstants.DELETE_VEHICLE)) {	
+																			line = !line;
+							%>					<%=(!line) ? "<tr>" : ""%>							
+					       	<td style="width:50%">  						
+		        				<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="javascript:setAction(document.forms['exclusion'],'delete');deleteIFConfirm(document.forms['exclusion'],'<%=messages.getText("generic.driver.driverdata.confirmdelete")%>');" class="texts">
+									<%=messages.getText("generic.messages.delete")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								}
+																									}
+																	if(data.getCountryId().intValue() == CountryData.ARGENTINA_ID.intValue() && corporationId == CorporationData.MONSANTO) {
+																		String maintenanceLink = "layout.jsp?refer=vehicle/maintenance.jsp?type=Create&id="+String.valueOf(data.getId());
+																		line = !line;
+							%>					<%=(!line) ? "<tr>" : ""%>							
+					       	<td style="width:50%" valign="middle">  						
+	        					<img border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href='<%=maintenanceLink%>' class="texts">
+									<%=messages.getText("generic.vehicle.addmaintenance")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								}						
+																	if(corporationId == CorporationData.ALLERGAN) {
+																		String maintenanceLink = "layout.jsp?refer=vehicle/contract.jsp?id="+String.valueOf(data.getId());
+																		line = !line;
+							%>					<%=(!line) ? "<tr>" : ""%>							
+					       	<td style="width:50%" valign="middle">  						
+	        					<img border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href='<%=maintenanceLink%>' class="texts">
+									<%=messages.getText("generic.vehicle.generatecontract")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								}						
+																	if(corporationId == CorporationData.PEPSICO) {
+																		String maintenanceLink = "layout.jsp?refer=vehicle/complaint.jsp?id="+String.valueOf(data.getId());
+																		line = !line;
+							%>					<%=(!line) ? "<tr>" : ""%>							
+					       	<td style="width:50%" valign="middle">  						
+	        					<img border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href='<%=maintenanceLink%>' class="texts">
+									<%=messages.getText("generic.vehicle.addcomplaint")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								}
+							%>					<%=(line) ? "<tr>" : ""%>							
+						<td style="width:50%"> 	
+							<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+							<a href="#" onClick="javascript:document.forms['cancel'].submit()" class="texts">
+								<%=messages.getText("generic.messages.cancel")%>
+							</a>
+						</td>
+					</tr>
+<%
+	}
+%>				</table>
+				<jsp:include page="../component/utilitybox3bottom.jsp"/>
+			</td>
+		</tr>
+		<!-- Fin Opciones -->
+		
+		<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+   		</tr>		
+<%
+			// ExclusionDate
+			if(data.getExclusionDate() != null) {
+		%>  	<tr>
+			<td colspan="5">
+				<span class="red"><%=messages.getText("generic.vehicle.excluded")%></span>
+			</td>
+	  	</tr>
+		<tr>
+			<td colspan="5">
+				<span class="red"><%=messages.getText("generic.driver.excludeddate")+": "+Util.formatDate(data.getExclusionDate())%>
+				</span>				
+			</td>
+	  	</tr>
+	   	<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+	  	</tr>
+<%
+	}
+// Fin ExclusionDate
+%>		<tr>
+			<td valign="top" style="width:49%">
+				<!--  Personal Data -->
+				<table width="100%" border="0" cellpadding="0" cellspacing="0">
+					<tr>
+						<td> 
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.personaldata")%>' />
+<%
+	if(data.getDriver() != null) {
+%>							<table width="100%" valign="top" align='center' cellpadding="0" cellspacing="0">
+								<tr>
+									<td align="left" class="texts">
+										<%=messages.getText("generic.driver.driverdata.firstname")%>
+									</td>
+									<td align="right" class="linetwo">
+										<%=data.getDriver().getFirstName()%>
+									</td>
+								</tr>
+								<tr class="space">
+									<th align="right">&nbsp;</th>
+									<td align="right">&nbsp;</td>
+								</tr>
+								<tr>
+									<td align="left" class="texts">
+										<%=messages.getText("generic.driver.driverdata.lastname")%>
+									</td>
+									<td align="right" class="linetwo">
+										<%=data.getDriver().getLastName()%>
+									</td>
+								</tr>								
+<%
+									if(corporationId != CorporationData.ALLERGAN) {
+								%>								<tr class="space">
+									<th align="right">&nbsp;</th>
+									<td align="right">&nbsp;</td>
+								</tr>
+								<tr>
+									<td align="left" class="texts">
+										<%=messages.getText("generic.driver.driverdata.country")%>
+									</td>
+									<td align="right" class="linetwo">
+										<%=messages.getText(data.getDriver().getCountryName())%>
+									</td>
+								</tr>								
+<%
+									}
+								%>								<tr class="space">
+									<th align="right">&nbsp;</th>
+									<td align="right">&nbsp;</td>
+								</tr>
+								<tr>
+									<td align="left" class="texts">
+										<%=messages.getText("generic.driver.driverdata.birthdate")%>
+									</td>
+									<td align="right" class="linetwo">
+										<%=Util.formatDate(data.getDriver().getBirthDate())%>
+									</td>
+								</tr>
+								<tr>
+									<td colspan="2" align="left" class="texts">
+										<%="("+messages.getText("generic.messages.dateformat")+")"%>
+									</td>
+								</tr>						
+								<tr  class="space">
+									<th align="right">&nbsp;</th>
+									<td align="right">&nbsp;</td>
+								</tr>
+								<tr  class="linetwo">
+									<th align="left" > <%=messages.getText("generic.driver.driverdata.corporationid")%></th>
+									<td align="right"><%=data.getDriver().getCorporationId()%></td>
+								</tr>						
+<%
+							if(data.getDriver().getExclusionDate() != null) {
+						%>								<tr class="space">
+									<th align="right">&nbsp;</th>
+									<td align="right">&nbsp;</td>
+								</tr>
+								<tr>
+									<td align="left" class="texts">
+										<%=messages.getText("generic.driver.driverdata.exclusiondate")%>
+									</td>
+									<td align="right" class="linetwo">
+										<%=Util.formatDate(data.getDriver().getExclusionDate())%>
+									</td>
+								</tr>								
+<%
+									} 
+															if(corporationId == CorporationData.ALLERGAN) {
+								%>								<tr class="space">
+									<th align="right">&nbsp;</th>
+									<td align="right">&nbsp;</td>
+								</tr>
+								<tr>
+									<td align="left" class="texts">
+										<%=messages.getText("generic.driver.driverdata.officeaddress")%>
+									</td>
+									<td align="right" class="linetwo">
+										<%=(data.getDriver().getOfficeAddress()!=null)? data.getDriver().getOfficeAddress() : "----"%>
+									</td>
+								</tr>								
+								<tr class="space">
+									<th align="right">&nbsp;</th>
+									<td align="right">&nbsp;</td>
+								</tr>
+								<tr>
+									<td align="left" class="texts">
+										<%=messages.getText("generic.driver.driverdata.superviser")%>
+									</td>
+									<td align="right" class="linetwo">
+										<%=(data.getDriver().getSuperviser() == null) ? "----" : data.getDriver().getSuperviser()%>
+									</td>
+								</tr>								
+								<tr class="space">
+									<th align="right">&nbsp;</th>
+									<td align="right">&nbsp;</td>
+								</tr>
+								<tr>
+									<td align="left" class="texts">
+										<%=messages.getText("generic.driver.driverdata.manager")%>
+									</td>
+									<td align="right" class="linetwo">
+										<%=(data.getDriver().getManager() == null) ? "----" : data.getDriver().getManager()%>
+									</td>
+								</tr>								
+								<tr class="space">
+									<th align="right">&nbsp;</th>
+									<td align="right">&nbsp;</td>
+								</tr>
+								<tr>
+									<td align="left" class="texts">
+										<%=messages.getText("generic.driver.driverdata.iddallas")%>
+									</td>
+									<td align="right" class="linetwo">
+										<%=(Util.empty(data.getDriver().getIdDallas())) ? "----" : messages.getText(data.getDriver().getIdDallas())%>
+									</td>
+								</tr>								
+								<tr class="space">
+									<th align="right">&nbsp;</th>
+									<td align="right">&nbsp;</td>
+								</tr>
+				  				<tr>
+		            				<th align="left" class="texts">
+		            					<%=messages.getText("generic.vehicledata.ownership")%>
+		            				</th>
+		            				<td align="right" class="linetwo">
+										<%=(vehicleForm.getCostCenter() != null && vehicleForm.getCostCenter().length() > 0) ? vehicleForm.getCostCenter() : "----"%>
+		            				</td>
+		          				</tr>
+<%
+	}
+%>							</table>
+<%
+	}else {
+%>							<table width="100%" border="0" align='left' cellpadding="0" cellspacing="0">
+								<tr>
+							    	<td class="default">
+										<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="default">
+											<tr  class="linetwo">
+												<td align="right" colspan="2">
+													<%=messages.getText("generic.vehicle.institutionalvehicle")%>
+												</td>
+											</tr>
+<%
+	if(sys.getCorporationId() == CorporationData.ALLERGAN) {
+%>											<tr class="space">
+												<th align="right">&nbsp;</th>
+												<td align="right">&nbsp;</td>
+											</tr>
+							  				<tr>
+					            				<th align="left">
+					            					<%=messages.getText("generic.vehicledata.ownership")%>
+					            				</th>
+					            				<td align="right" class="linetwo">
+													<%=(vehicleForm.getCostCenter() != null && vehicleForm.getCostCenter().length() > 0) ? vehicleForm.getCostCenter() : "----"%>
+					            				</td>
+					          				</tr>
+<%
+	}
+%>									</table>	
+							      	</td>
+								</tr>		      	
+							</table>	
+<%
+		}
+	%>	 						<jsp:include page="../component/utilityboxbottom.jsp"/>
+						</td>
+					</tr>
+				  	<tr>   
+						<jsp:include  page="../component/spaceline.jsp" />
+				  	</tr>
+<%
+	if(corporationId != CorporationData.ALLERGAN) {
+%>					<tr>
+    					<td>
+    		<!-- Muestro las Localidades: -->
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.vehicle.divgeo")%>' />
+<%
+	if(data.getCountry() != null) {
+	    			GeoItemData geoItem1 = (GeoItemData)data.getCountry().getItemIterator().next();
+%>
+							<table width="100%" height="100%" valign="top" cellpadding="0" cellspacing="0">
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(data.getCountry().getResourceKey())%> </th>
+									<td align="right">
+										<%=(geoItem1.getSubItems() != null) ? geoItem1.getName() : messages.getText(geoItem1.getName())%>
+									</td>
+								</tr>
+<%
+	if(geoItem1.getSubItems() != null) {
+		    	GeoItemData geoItem2 = (GeoItemData)geoItem1.getSubItems().getItemIterator().next();
+%>									
+								<tr  class="space"><td align="right">&nbsp;</td><td align="right">&nbsp;</td></tr>
+								<tr class="linetwo">
+									<th align="left"> 
+										<%=messages.getText(geoItem1.getSubItems().getResourceKey())%> 
+									</th>
+									<td align="right">
+										<%=(geoItem2.getSubItems() != null) ? geoItem2.getName() : messages.getText(geoItem2.getName())%>
+									</td>
+								</tr>
+<%
+	if(geoItem2.getSubItems() != null) {
+	    	GeoItemData geoItem3 = (GeoItemData)geoItem2.getSubItems().getItemIterator().next();
+%>								<tr  class="space">
+									<td align="right">&nbsp;
+									</td>
+									<td align="right">&nbsp;
+									</td>
+								</tr>
+								<tr class="linetwo">
+									<th align="left"> 
+										<%=messages.getText(geoItem2.getSubItems().getResourceKey())%> 
+									</th>
+									<td align="right">
+										<%=messages.getText(geoItem3.getName())%>
+									</td>
+								</tr>
+<%
+	}
+	}
+		}
+%>							</table>	
+							<jsp:include page="../component/utilityboxbottom.jsp"/>
+						</td>
+    				</tr>
+  					<tr>   
+						<jsp:include  page="../component/spaceline.jsp" />
+  					</tr>
+<%
+	}
+%>				</table>
+			</td>
+    		<td width="2%">&nbsp;</td>
+    		<td valign="top" style="width:49%">
+		<!--  Division Organizacional -->
+				<table width="100%" height="100%" valign="top" cellpadding="0" cellspacing="0">
+<%
+	Iterator it = data.getDivOrgsIterator();
+		while(it.hasNext()) {		
+	DivOrgData divOrgData = (DivOrgData)it.next();
+	if(divOrgData.getDivOrgLevels() != null) {
+		ItemData item1 = (ItemData)divOrgData.getDivOrgLevels().getItemIterator().next();
+	if(corporationId == CorporationData.ALLERGAN && divOrgData.getId().intValue() == 432227) {
+		allerganUnit = item1.getName();
+	}
+%>					<tr>
+						<td valign="top" width="50%">	
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText(divOrgData.getName())%>' />
+							<table width="100%" cellpadding="0" cellspacing="0">
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(divOrgData.getDivOrgLevels().getName())%> </th>
+									<td align="right"><%=item1.getName()%></td>
+								</tr>
+<%
+	if(item1.getSubItems() != null) {
+	ItemData item2 = (ItemData)item1.getSubItems().getItemIterator().next();
+%>								<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(item1.getSubItems().getName())%> </th>
+									<td align="right"><%=item2.getName()%></td>
+								</tr>
+<%
+	if(item2.getSubItems() != null) {
+		ItemData item3 = (ItemData)item2.getSubItems().getItemIterator().next();
+%>								<tr  class="space"><td align="right">&nbsp;</td><td align="right">&nbsp;</td></tr>
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(item2.getSubItems().getName())%> </th>
+									<td align="right"><%=item3.getName()%></td>
+								</tr>
+<%
+	}
+		}
+%>
+							</table>
+   							<jsp:include page="../component/utilityboxbottom.jsp"/>	
+	   					</td>
+	   				</tr>
+	   				<tr>
+	   					<td height="5">
+	   						<img src="x" width="1" height="1">
+	   					</td>
+	   				</tr>
+<%
+	}
+		}
+%>				</table>	
+			</td>
+		</tr>
+	<!-- Termina Personal data y divisiones organizacionales  -->
+<%
+	if(corporationId != CorporationData.ALLERGAN){
+%>		<tr>    
+			<jsp:include  page="../component/spaceline.jsp" />
+    	</tr>
+  		<tr>
+    		<td colspan="3">
+				<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.messages.administrativedata")%>' />
+				<table width="100%" cellpadding="0" cellspacing="0" border="0">
+					
+					<tr>
+						<!--  Tipo de Vehiculo: -->
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.vehicletype")%></td>
+						<td align="right" class="linetwo"><%=vehicleForm.getType()%></td>
+					</tr>								
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<!--  Matricula o Numero Economico para algunas empresas -->
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.registrationNumber")%></td>
+						<td align="right" class="linetwo"><%=vehicleForm.getMatricula()%></td>
+					</tr>
+<%
+	if(corporationId == CorporationData.MONSANTO) {
+%>					<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left"> <%=messages.getText("corporation.monsanto.assignedvehicles")%></th>
+						<td align="left">
+							<div align="right"><%=(Util.empty(vehicleForm.getAssignedVehicle())) ? "" : messages.getText(vehicleForm.getAssignedVehicle())%></div>
+						</td>
+					</tr>
+<%
+	}
+		if(!sys.isCorporation(new int[]{CorporationData.CIMSA,CorporationData.PEPSICO,CorporationData.DOW})) {
+	// CIMSA y PEPSICO no muestran el costo del vehiculo
+%>					
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<!--  Costo ó para J&J TCO -->
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.cost")%></td>
+						<td align="right" class="linetwo"><%=(vehicleForm.getCost() == null) ? "---" : vehicleForm.getCost()%></td>
+					</tr>
+<%
+	// Optional Data - Klabin
+		}
+		if (hasOptionalData){
+	// Informacion Opcional del Vehiculo:
+%>					
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<!-- Prefijo, número economico o placa -->
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.prefix")%></td>
+						<td align="right" class="linetwo"><%=(!Util.empty(vehicleForm.getPrefix()))?vehicleForm.getPrefix():"---"%></td>
+					</tr>
+<%
+	} 
+	
+		// Centro de Costo:
+	
+		if(corporationId == CorporationData.CIMSA) {
+%>						<tr class="space">
+							<th align="right">&nbsp;</th>
+							<td align="right">&nbsp;</td>
+						</tr>
+		  				<tr class="texts" >
+            				<th align="left">
+            					<%=messages.getText("generic.vehicledata.ensurancepolicy")%>
+            				</th>
+            				<td align="right" class="linetwo">
+								<%=(vehicleForm.getCostCenter() != null && vehicleForm.getCostCenter().length() > 0) ? vehicleForm.getCostCenter() : "----"%>
+            				</td>
+          				</tr>
+						<tr  class="space">
+							<th align="right">&nbsp;</th>
+							<td align="right">&nbsp;</td>
+						</tr>
+		  				<tr class="texts" >
+            				<th align="left">
+            					<%=messages.getText("generic.vehicledata.ensurancepoint")%>
+            				</th>
+            				<td align="right" class="linetwo">
+	 							<%=(!Util.empty(vehicleForm.getEnsurance())) ? vehicleForm.getEnsurance() : "----"%>
+            				</td>
+          				</tr>
+<%
+	}else {
+	if(!sys.isCorporation(new int[]{CorporationData.KLABIN,CorporationData.PEPSICO,CorporationData.DOW})) {
+		// Klabin no tiene centro de costo
+		// PEPSICO no tiene centro de costo
+		//Para J&J es el campo MRC Nombre
+%>						<tr class="space">
+							<th align="right">&nbsp;</th>
+							<td align="right">&nbsp;</td>
+						</tr>
+						<tr>
+							<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.costCenter")%></td>
+							<td align="right" class="linetwo">
+								<%=(vehicleForm.getCostCenter() != null && vehicleForm.getCostCenter().length() > 0) ? vehicleForm.getCostCenter() : "----"%>
+							</td>
+						</tr>		
+<%
+			} 
+			if(corporationId == CorporationData.ALLERGAN) {
+		%>					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("divorg.allergan.division")%></td>
+						<td align="right" class="linetwo">
+							<%=allerganUnit%>
+						</td>
+					</tr>		
+<%
+			}
+		%>					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.permissionNumber")%></td>
+						<td align="right" class="linetwo">
+<%
+	String permissionNumber = vehicleForm.getPermissionNumber();
+%>			<%=(permissionNumber != null && permissionNumber.length() > 0) ? permissionNumber : "----"%>				
+						</td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+<%
+	if(!sys.isCorporation(CorporationData.DOW)) {
+%>					<tr  class="linetwo">
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.permissionExpiryDate")%><%=" ( "+messages.getText("generic.messages.dateformat")+" )"%></td>
+						<td align="right" class="linetwo">
+<%
+	String expiryDay = vehicleForm.getPermissionExpiryDay();
+		String expiryMonth = vehicleForm.getPermissionExpiryMonth();
+		String expiryYear = vehicleForm.getPermissionExpiryYear();
+%>
+			<%=(expiryDay != null && expiryDay.length() > 0) ? expiryDay+"-"+ expiryMonth +"-"+ expiryYear : "----"%>	
+						</td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+<%
+	}
+%>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.purchaseDate")%><%=" ( "+messages.getText("generic.messages.dateformat")+" )"%></td>
+						<td align="right" class="linetwo">
+<%
+	String purchaseDay = vehicleForm.getPurchaseDay();
+	String purchaseMonth = vehicleForm.getPurchaseMonth();
+	String purchaseYear = vehicleForm.getPurchaseYear();
+%>
+		<%=(purchaseDay != null && purchaseDay.length() > 0) ? purchaseDay+"-"+ purchaseMonth +"-"+purchaseYear: "----"%> 
+						</td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+<%
+	if(!sys.isCorporation(CorporationData.DOW)) {
+%>					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.ownership")%></td>
+						<td align="right" class="linetwo">
+<%
+	String ownership = vehicleForm.getOwnership();
+%>				<%=(ownership != null && ownership.length() > 0) ? ownership: "----"%>
+						</td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+<%
+	}						
+	if (sys.isCorporation(CorporationData.MONSANTO)) {
+%>					<tr>
+            			<td align="left" class="texts"> 
+            					<%=messages.getText("vehicle.data.greencard")%>
+            			</td>
+						<td align="right" class="linetwo">
+							<%
+								String greencard = vehicleForm.getGreenCardDate();
+							%>
+							<%=(!Util.empty(greencard)) ? greencard : "----"%>
+						</td>
+					</tr>
+          				
+<%
+          					} 
+          				          					if(sys.getUserSessionData().isForest()) {
+          				          					
+          				          						if (hasOptionalData && !userSessionData.getFilter().getCorporationId().equals(new Integer(CorporationData.YOLI))){ 
+          				          							// KLABIN - Los camiones Brasilerons no tienen sucta o mtop tienen antt y citv
+          				%>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("vehicle.data.antt")%></td>
+						<td align="right" class="linetwo">
+<%
+	String antt = vehicleForm.getAnttDate();
+%>			<%=(!Util.empty(antt)) ? antt : "----"%>
+						</td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("vehicle.data.citv")%></td>
+						<td align="right" class="linetwo">
+<%
+	String citv = vehicleForm.getCitvDate();
+%>			<%=(!Util.empty(citv)) ? citv : "----"%>
+						</td>
+					</tr>
+					
+<%
+						}else{
+																	// SUCTA y MTOP
+					%>	
+    				<tr>
+						<td align="left" class="texts"><%=messages.getText("vehicle.data.sucta")%></td>
+						<td align="right" class="linetwo">
+<%
+	String sunca = vehicleForm.getSuctaDate();
+%>			<%=(!Util.empty(sunca)) ? sunca : "----"%>
+						</td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("vehicle.data.mtop")%></td>
+						<td align="right" class="linetwo">
+<%
+	String mtop = vehicleForm.getMtopDate();
+%>			<%=(!Util.empty(mtop)) ? mtop : "----"%>
+						</td>
+					</tr>
+<%
+	}
+		// Fin Sucta - MTOP
+%>
+					<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("vehicle.data.ownercard")%></td>
+						<td align="right" class="linetwo">
+							<%=(Boolean.parseBoolean(vehicleForm.getOwnerCard())) ? messages.getText("generic.vehiclecheck.form.correct") : messages.getText("generic.vehiclecheck.form.incorrect")%>
+						</td>
+					</tr>
+<%
+	//Kilometraje Actual y fecha de medicion.
+          		if (hasOptionalData){
+%>					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("vehicle.data.currentkm")%></td>
+						<td align="right" class="linetwo">
+							<%=(vehicleForm.getCurrentKm() == null) ? "----" : vehicleForm.getCurrentKm()%>
+						</td>
+					</tr>	
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+          			<tr>
+						<td align="left" class="texts"><%=messages.getText("vehicle.data.datecurrentkm")%></td>
+						<td align="right" class="linetwo">
+							<%=(vehicleForm.getDateCurrentKm() == null) ? "----" : Util.formatDate(vehicleForm.getDateCurrentKm())%>
+						</td>
+					</tr>
+<%
+	}
+%>					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+       				<tr>
+						<td align="left" class="texts"><%=messages.getText("vehicle.data.ensurancetype")%></td>
+						<td align="right" class="linetwo">
+							<%=(Util.empty(vehicleForm.getEnsuranceType())) ? "----" : messages.getText(vehicleForm.getEnsuranceType())%>
+						</td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("vehicle.data.ensurance")%></td>
+						<td align="right" class="linetwo">
+ 							<%=(!Util.empty(vehicleForm.getEnsurance())) ? vehicleForm.getEnsurance() : "----"%>
+						</td>
+					</tr>
+<%
+	if(sys.isCorporation(CorporationData.MONTES_DE_PLATA)) {
+%>	
+					<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr class="linetwo">
+						<th align="left" >
+							<%=messages.getText("generic.vehicle.vehicledata.neumaticsuspension")%>
+						</th>
+						<td align="right">
+ 							<%=(!Util.empty(vehicleForm.getPrefix())) ? messages.getText(vehicleForm.getPrefix()) : "----"%>
+						</td>
+					</tr>
+					<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left"> 
+							<%=messages.getText("generic.vehicle.vehicledata.weightcontrol")%>
+						</th>
+						<td align="right">
+ 							<%=(!Util.empty(vehicleForm.getMonitoringSystem())) ? messages.getText(vehicleForm.getMonitoringSystem()) : "----"%>
+						</td>
+					</tr>
+					<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr class="linetwo" >
+						<th align="left"> 
+							<%=messages.getText("generic.vehicle.vehicledata.euromotor")%>
+						</th>
+						<td align="right">
+ 							<%=(!Util.empty(vehicleForm.getRenavan())) ? messages.getText(vehicleForm.getRenavan()) : "----"%>
+						</td>
+					</tr>
+						<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+						<tr class="texts" >
+							<th align="left"> 
+								<%=messages.getText("generic.vehicle.vehicledata.mode")%>
+							</th>
+							<td align="right">
+								<%=(!Util.empty(vehicleForm.getTachograph())) ? messages.getText(vehicleForm.getTachograph()) : "----"%>
+							</td>
+						</tr>
+<%
+	}
+	if(hasOptionalData) {
+		    	if(!userSessionData.getFilter().getCorporationId().equals(new Integer(CorporationData.YOLI))) {
+%>
+					<tr class="space">
+					<th align="right">&nbsp;</th>
+					<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("vehicle.data.totalgrossweight")%></td>
+						<td align="right" class="linetwo">
+<%
+	String totalgrossweight = vehicleForm.getTotalGrossWeight();
+%>						<%=(!Util.empty(totalgrossweight)) ? totalgrossweight : "----"%>
+						</td>
+					</tr>
+					
+					<tr class="space">
+					<th align="right">&nbsp;</th>
+					<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("vehicle.data.totalcombinedgrossweight")%></td>
+						<td align="right" class="linetwo">
+<%
+	String totalcombinedgrossweight = vehicleForm.getTotalCombinedGrossWeight();
+%>						<%=(!Util.empty(totalcombinedgrossweight)) ? totalcombinedgrossweight : "----"%>
+						</td>
+					</tr>
+<%
+	}
+%>						
+					<!--  Sistema de Seguimiento -->
+					<tr class="space">
+					<th align="right">&nbsp;</th>
+					<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("vehicle.data.monitoringsystem")%></td>
+						<td align="right" class="linetwo">
+<%
+	String monitoringsystem = messages.getText(vehicleForm.getMonitoringSystem());
+%>					<%=(!Util.empty(monitoringsystem)) ? monitoringsystem : "----"%>
+						</td>
+					</tr>		
+<%
+			if(!userSessionData.getFilter().getCorporationId().equals(new Integer(CorporationData.YOLI))) {
+		%>					<!-- Tachograph -->
+					<tr class="space">
+					<th align="right">&nbsp;</th>
+					<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("vehicle.data.tachograph")%></td>
+						<td align="right" class="linetwo">
+<%
+	String tachograph = messages.getText(vehicleForm.getTachograph());
+%>						<%=(!Util.empty(tachograph)) ? tachograph : "----"%>
+						</td>
+					</tr>					
+					
+<%
+											}
+																																				}
+																																			}
+																																				}
+										%>
+				</table>
+				<jsp:include page="../component/utilityboxbottom.jsp"/>
+			</td>
+	    </tr>
+<%
+	}
+%>		<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+		</tr>
+	    
+<%
+	    	if(sys.getCorporationId() == CorporationData.MONSANTO) {
+	    %>
+  			<tr>
+    			<td colspan="3" valign="top">
+					<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.messages.extradata")%>' />
+        			<table width="100%" cellpadding="0" cellspacing="0">
+          				<tr class="texts">
+            				<th align="left" >
+            					<%=messages.getText("generic.vehicle.vehicledata.active")%>
+            				</th>
+            				<td align="right" class="linetwo">
+                				<%=vehicleForm.getPrefix()%>
+            				</td>
+          				</tr>
+						<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+						<tr  class="linetwo">
+							<th align="left"> 
+            					<%=messages.getText("generic.vehicle.vehicledata.responsible")%>
+							</th>
+							<td align="right" class="linetwo">
+                				<%=vehicleForm.getMonitoringSystem()%>
+							</td>
+						</tr>
+						<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+          				<tr class="texts">
+            				<th align="left" > 
+            					<%=messages.getText("generic.vehicle.vehicledata.company")%>
+            				</th>
+            				<td align="right" class="linetwo">
+                				<%=vehicleForm.getTachograph()%>
+            				</td>
+          				</tr>
+						<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+		  				<tr class="texts" >
+            				<th align="left"> 
+            					<%=messages.getText("generic.vehicle.vehicledata.plate")%>
+            				</th>
+            				<td align="right" class="linetwo">
+                 				<%=vehicleForm.getRenavan()%>
+            				</td>
+          				</tr>
+        			</table>
+      				<jsp:include page="../component/utilityboxbottom.jsp"/>
+				</td>
+  			</tr>
+  			<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+  			</tr>
+
+<%
+	}
+%>
+		<tr>
+			<td width="100%" colspan="3">
+				<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.messages.observations")%>' />
+				<table width="100%" cellpadding="0" cellspacing="0">
+					<tr>
+						<td class="linetwo">
+							<%=(vehicleForm.getObservations() == null) ? "" : vehicleForm.getObservations()%>
+						</td>
+					</tr>
+				</table>
+				<jsp:include  page="../component/utilityboxbottom.jsp" />
+			</td>
+		</tr>
+	  	<tr>
+	    	<td>
+				<jsp:include  page='<%="../component/spaceline.jsp?colspan=5"%>'/>
+			</td>
+	 	 </tr>
+<%
+	if(sys.isCorporation(CorporationData.DOW)) {
+%>
+  			<tr>
+    			<td width="100%" valign="top" colspan="3">
+					<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.messages.technicaldata")%>' />
+        			<table width="100%" cellpadding="0" cellspacing="0">
+          				<tr>
+            				<th align="left"  class="texts"> 
+            					<%=messages.getText("generic.vehicle.vehicledata.trade")%>
+            				</th>
+            				<td align="right" class="linetwo">
+<%
+	String trade = "----";
+		    if(!Util.empty(vehicleForm.getTrade())) {
+		        if(vehicleForm.getTrade().equals("generic.messages.nodata")) {
+		            trade = messages.getText(vehicleForm.getTrade());
+		        }else {
+		            trade = vehicleForm.getTrade();
+		        }
+		    }
+%>							<%=trade%>
+            				</td>
+          				</tr>
+						<tr class="space">
+							<th align="right">&nbsp;</th>
+							<td align="right">&nbsp;</td>
+						</tr>
+          				<tr>
+            				<th width="224" align="left" class="texts"> <%=messages.getText("generic.vehicle.vehicledata.model")%></th>
+            				<td align="right" class="linetwo">
+								<%
+									String model = vehicleForm.getModel();
+								%>
+								<%=(model != null && model.length() > 0) ? model: "----"%>
+	          				</td>
+          				</tr>
+						<tr class="space">
+							<th align="right">&nbsp;</th>
+							<td align="right">&nbsp;</td>
+						</tr>
+          				<tr>
+            				<th align="left" class="texts"> 
+            					<%=messages.getText("generic.vehicle.vehicledata.year")%>
+            				</th>
+            				<td align="right" class="linetwo">
+								<%=vehicleForm.getYear()%>
+            				</td>
+          				</tr>
+						<tr class="space">
+							<th align="right">&nbsp;</th>
+							<td align="right">&nbsp;</td>
+						</tr>
+          				<tr>
+            				<th align="left" class="texts"> 
+            					<%=messages.getText("generic.vehicle.vehicledata.costCenter")%>
+            				</th>
+            				<td align="right" class="linetwo">
+								<%=(vehicleForm.getCostCenter() != null && vehicleForm.getCostCenter().length() > 0) ? vehicleForm.getCostCenter() : "----"%>
+            				</td>
+          				</tr>
+						<tr class="space">
+							<th align="right">&nbsp;</th>
+							<td align="right">&nbsp;</td>
+						</tr>
+          				<tr>
+            				<th align="left" class="texts"> 
+            					<%=messages.getText("generic.vehicle.vehicledata.colour")%> 
+            				</th>
+            				<td align="right" class="linetwo">
+							<%
+								String color = vehicleForm.getColour();
+							%>
+							<%=(color != null && color.length() > 0) ? color : "----"%>
+            				</td>
+          				</tr>
+	      				<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+          				<tr>
+            				<th width="224" align="left" class="texts"> 
+            					<%=messages.getText("generic.vehicle.vehicledata.chasisNumber")%> 
+            				</th>
+            				<td align="right" class="linetwo">
+								<%
+									String chasisNumber = vehicleForm.getChasisNumber();
+								%>
+								<%=(chasisNumber != null && chasisNumber.length() > 0) ? chasisNumber: "----"%>
+            				</td>
+          				</tr>
+						<tr class="space">
+							<th align="right">&nbsp;</th>
+							<td align="right">&nbsp;</td>
+						</tr>
+          				<tr>
+            				<th align="left" class="texts"> 
+            					<%=messages.getText("generic.vehicle.vehicledata.fuel")%>
+            				</th>
+            				<td align="right" class="linetwo">
+							<%
+								String fuel = vehicleForm.getFuel();
+							%>
+							<%=(fuel != null && fuel.length() > 0) ? fuel: "----"%>
+            				</td>
+          				</tr>
+        			</table>
+					<jsp:include  page="../component/utilityboxbottom.jsp" />
+				</td>
+			</tr>
+<%
+	} else {
+%>
+	  	<tr valign="top">
+	    	<td>
+				<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.messages.technicaldata")%>' />
+				<table width="100%" cellpadding="0" cellspacing="0" border="0">
+<%
+	if(corporationId == CorporationData.ALLERGAN) {
+%>
+					<tr>
+						<!--  Matricula o Numero Economico para algunas empresas -->
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.registrationNumber")%></td>
+						<td align="right" class="linetwo"><%=vehicleForm.getMatricula()%></td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<!--  Tipo de Vehiculo: -->
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.vehicletype")%></td>
+						<td align="right" class="linetwo"><%=vehicleForm.getType()%></td>
+					</tr>								
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+<%
+	}
+%>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.trade")%></td>
+						<td align="right" class="linetwo">
+<%
+	String trade = "----";
+		    if(!Util.empty(vehicleForm.getTrade())) {
+		        if(vehicleForm.getTrade().equals("generic.messages.nodata")) {
+		            trade = messages.getText(vehicleForm.getTrade());
+		        }else {
+		            trade = vehicleForm.getTrade();
+		        }
+		    }
+%>							<%=trade%>
+						</td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.model")%></td>
+						<td align="right" class="linetwo">
+						<%
+							String model = vehicleForm.getModel();
+						%>
+						<%=(model != null && model.length() > 0) ? model: "----"%>
+						</td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts">
+							<%=messages.getText("generic.vehicle.vehicledata.year")%>
+						</td>
+						<td align="right" class="linetwo">
+							<%=vehicleForm.getYear()%>
+						</td>
+					</tr>																											
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+<%
+	if(corporationId != CorporationData.CIMSA) {
+%>					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.colour")%></td>
+						<td align="right" class="linetwo">
+							<%
+								String color = vehicleForm.getColour();
+							%>
+							<%=(color != null && color.length() > 0) ? color : "----"%>
+						</td>
+					</tr>			
+<%
+				}
+			%>					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"> <%=messages.getText("generic.vehicle.vehicledata.chasisNumber")%></td>
+						<td align="right" class="linetwo">
+							<%
+								String chasisNumber = vehicleForm.getChasisNumber();
+							%>
+							<%=(chasisNumber != null && chasisNumber.length() > 0) ? chasisNumber: "----"%>
+						</td>
+					</tr>
+					
+<%
+						if(corporationId == CorporationData.ALLERGAN) {
+					%>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<!--  Matricula o Numero Economico para algunas empresas -->
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.permissionNumber")%></td>
+						<td align="right" class="linetwo"><%=vehicleForm.getPermissionNumber()%></td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.purchaseDate")%><br><%=messages.getText("generic.messages.dateformat")%></td>
+						<td align="right" class="linetwo">
+<%
+	String purchaseDay = vehicleForm.getPurchaseDay();
+	String purchaseMonth = vehicleForm.getPurchaseMonth();
+	String purchaseYear = vehicleForm.getPurchaseYear();
+%>
+		<%=(purchaseDay != null && purchaseDay.length() > 0) ? purchaseDay+"-"+ purchaseMonth +"-"+purchaseYear: "----"%> 
+						</td>
+					</tr>
+<%
+	}
+%>
+					<!-- J&J: Promedio de emision de CO2 -->
+					<%
+						if (corporationId == CorporationData.JJ){
+					%> 
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"> <%=messages.getText("generic.vehicle.vehicledata.co2emission")%></td>
+						<td align="right" class="linetwo">
+							<%
+								String co2emission = vehicleForm.getCo2emission();
+							%>
+							<%=(co2emission != null && co2emission.length() > 0) ? co2emission: "----"%>
+						</td>
+					</tr>
+					<%
+						}
+					%>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					
+					<%
+											if(sys.getUserSessionData().isForest()) {
+										%>
+       				<tr>
+						<td align="left" class="texts"> <%=messages.getText("vehicle.data.axiscount")%></td>
+           				<td align="right" class="linetwo">
+							<%=(vehicleForm.getAxisCount() != null && vehicleForm.getAxisCount().length() > 0) ? vehicleForm.getAxisCount() : "----"%>
+						</td>
+					</tr>
+					
+					<%
+											}
+										%>
+					
+					<%
+											// LimitLoad
+																																					if (hasOptionalData){
+										%>
+					
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+       				<tr>
+						<td align="left" class="texts"> <%=messages.getText("generic.vehicle.vehicledata.limitload")%></td>
+           				<td align="right" class="linetwo">
+							<%=(vehicleForm.getLimitLoad() != null)?vehicleForm.getLimitLoad():"----"%>
+						</td>
+					</tr>	
+						
+					<%
+													}
+												%>				
+				</table>
+				<jsp:include page="../component/utilityboxbottom.jsp"/>
+			</td>
+	    	<td>&nbsp;</td>
+    		<td>
+				<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.vehicle.vehicledata.fuel")%>' />
+				<table width="100%" border="0" cellspacing="0" cellpadding="0">
+<%
+	if(corporationId != CorporationData.ALLERGAN) {
+%>					<tr>
+						<td align="left" class="texts">
+							<%=messages.getText("generic.vehicle.vehicledata.engine")%>
+						</td>
+						<td align="right" class="linetwo">
+							<%=(Util.empty(vehicleForm.getEngine())) ? "----" : messages.getText(vehicleForm.getEngine())%>
+						</td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+<%
+	}
+%>					<tr>
+						<td align="left" class="texts">
+							<%=messages.getText("vehicle.data.hp")%>
+						</td>
+						<td align="right" class="linetwo">
+							<%=(Util.empty(vehicleForm.getHp())) ? "----" : messages.getText(vehicleForm.getHp())%>
+						</td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts">
+							<%=messages.getText("generic.vehicle.vehicledata.fuel")%>
+						</td>
+						<td align="right" class="linetwo">
+							<%
+								String fuel = vehicleForm.getFuel();
+							%>
+							<%=(fuel != null && fuel.length() > 0) ? fuel: "----"%>
+						</td>
+					</tr>
+<%
+	if(corporationId != CorporationData.ALLERGAN) {
+%>					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts">
+							<%=messages.getText("generic.vehicle.vehicledata.tankCapacity")%>
+						</td>
+						<td align="right" class="linetwo">
+							<%
+								String tankCapacity = vehicleForm.getTankCapacity();
+							%>
+							<%=(tankCapacity != null && tankCapacity.length() > 0 && tankCapacity != "null") ? tankCapacity: "----"%>
+						</td>
+					</tr>
+<%
+	if(sys.getCorporationId() == CorporationData.JJ) {
+%>					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.consume")%></td>
+						<td align="right" class="linetwo">
+							<%
+								String consume = vehicleForm.getConsume();
+							%>
+							<%=(consume != null && consume.length() > 0) ? consume : "----"%>
+						</td>
+					</tr>
+<%
+	}
+%>					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.volumeunit")%></td>
+						<td align="right" class="linetwo">
+							<%
+								String tankUnit = vehicleForm.getTankUnit();
+							%>
+							<%=(tankUnit != null && tankUnit.length() > 0 ) ? tankUnit : "----"%>
+						</td>
+					</tr>
+<%
+	}
+%>				</table>
+				<jsp:include page="../component/utilityboxbottom.jsp"/>
+<%
+	if(corporationId == CorporationData.ALLERGAN) {
+	Collection odometers = sys.getFleetReportFacade().findVehicleOdometers(new Integer(id), userSessionData);
+	String odometer = "";
+	if(odometers.size() > 1) {
+		it = odometers.iterator();
+		Object[] data1 = (Object[]) it.next();
+		Object[] data2 = (Object[]) it.next();
+		odometer = String.valueOf((Integer)data1[0] - (Integer)data2[0]);
+	}
+%>				<br>
+				<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.messages.odometer")%>' />
+				<table width="100%" cellpadding="0" cellspacing="0" border="0">
+					<tr> 
+						<td align="left" class="texts">
+							<%=messages.getText("generic.vehicle.kms")%>
+						</td>
+						<td align="right" class="linetwo">
+							<%=odometer%>
+						</td>
+					</tr>				
+				</table>
+				<jsp:include page="../component/utilityboxbottom.jsp"/>
+<%
+	}
+%>				
+			</td>
+  		</tr>
+  		<tr>   
+			<jsp:include  page='<%="../component/spaceline.jsp?colspan=5"%>'/>	
+  		</tr>
+<%
+	if(corporationId != CorporationData.ALLERGAN) {
+%>  		<tr valign="top">
+<%
+	if(corporationId != CorporationData.CIMSA) {
+%>    		<td>
+				<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.messages.coverTypes")%>' />
+				<table width="100%" cellpadding="0" cellspacing="0" border="0">
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.cover")%></td>
+						<td align="right" class="linetwo">
+							<%
+								String cover = vehicleForm.getCover();
+							%>
+							<%=(cover != null && cover.length() > 0) ? cover: "----"%>
+						</td>
+					</tr>			
+				</table>
+				<jsp:include page="../component/utilityboxbottom.jsp"/>
+			</td>
+    		<td width="5">&nbsp;</td>
+    			<td width="49%" valign="top" rowspan="3"></td>
+<%
+	}else {
+%>				<td width="49%" valign="top">&nbsp;</td>
+    			<td width="2%" valign="top">&nbsp;</td>
+    			<td width="49%" valign="top" rowspan="2"></td>
+    			
+<%
+    				}
+    			%>
+		</tr>
+		<tr>    
+			<jsp:include  page="../component/spaceline.jsp" />
+		</tr>
+<%
+	}
+%>
+<%--DATOS VEHICLE SMF MONSANTO --%>		
+	<%
+				if(corporationId == CorporationData.MONSANTO){
+			%>
+		<tr>
+			<td>
+			<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.vehicle.vehicleSMF")%>' />
+				<table width="100%" cellpading="0" cellspacing="0">
+					<tr>
+					<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicleSMF.ordernumber")%></td>
+					<td align="right" class="linetwo">
+						<%
+							String orderNumber = (vehicleForm.getOrderNumber()!=null) ? vehicleForm.getOrderNumber().toString():"---";
+						%>
+						<%=orderNumber%>
+					</td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicleSMF.corporationSMF")%></td>
+						<td align="right" class="linetwo">
+							<%=(Util.empty(vehicleForm.getCorporationSMF())) ? "---" : vehicleForm.getCorporationSMF()%>
+						</td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicleSMF.instalationDateSMF")%></td>
+						<td align="right" class="linetwo">
+							<%=(Util.empty(vehicleForm.getDateInstalation())) ? "---" : vehicleForm.getDateInstalation()%>
+						</td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicleSMF.localInstallation")%></td>
+						<td align="right" class="linetwo">
+							<%=(Util.empty(vehicleForm.getLocalInstallation())) ? "---" : vehicleForm.getLocalInstallation()%>
+						</td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicleSMF.responsibleTechnical")%></td>
+						<td align="right" class="linetwo">
+							<%=(Util.empty(vehicleForm.getResponsibleTechnical())) ? "---" : vehicleForm.getResponsibleTechnical()%>
+						</td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicleSMF.observationsSMF")%></td>
+						<td align="right" class="linetwo">
+							<%=(Util.empty(vehicleForm.getObservationsSMF())) ? "---" : vehicleForm.getObservationsSMF()%>
+						</td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicleSMF.ustContact")%></td>
+						<td align="right" class="linetwo">
+							<%=(Util.empty(vehicleForm.getUstContact())) ? "---" : vehicleForm.getUstContact()%>
+						</td>
+					</tr>
+					</table>
+			<jsp:include page="../component/utilityboxbottom.jsp"/>
+			</td>
+			</tr>
+		<tr>    
+			<jsp:include  page="../component/spaceline.jsp" />
+		</tr>
+	<%
+		}
+	%>	
+<%--FIN DATOS VEHICLE SMF MONSANTO--%>
+<%
+	if(corporationId != CorporationData.ALLERGAN){
+%> 		
+	<tr>
+		<td>
+<%
+	if(sys.getCorporationId() == CorporationData.MONSANTO){
+%>			
+			<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.messages.accesories")%>' />
+   			<table width="100%" border="0" align='right' cellpadding="0" cellspacing="0">
+<%
+	}else {
+%>
+ 			<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.messages.accesories")%>' />
+       			<table width="100%" cellpadding="0" cellspacing="0">
+<%
+	}
+%>   
+     		 		
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.airBag")%></td>
+						<td align="right" class="linetwo">
+							<%
+								String airBag = vehicleForm.getAirBag();
+							%>
+							<%=(airBag != null && airBag.equals("on")) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no")%>
+						</td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.abs")%></td>
+						<td align="right" class="linetwo">
+							<%
+								String abs = vehicleForm.getAbs();
+							%>
+							<%=(abs != null && abs.equals("on")) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no")%>
+						</td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.aireAcondicionado")%></td>
+						<td align="right" class="linetwo">
+							<%
+								String aireAcondicionado = vehicleForm.getAireAcondicionado();
+							%>
+							<%=(aireAcondicionado != null && aireAcondicionado.equals("on")) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no")%>
+						</td>
+					</tr>	
+<%
+		if(sys.isCorporation(CorporationData.FORESTALORIENTAL)) {
+	%>					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.neumaticsuspension")%></td>
+						<td align="right" class="linetwo">
+							<%
+								String suspension = vehicleForm.getSuspension();
+							%>
+							<%=(suspension != null && suspension.equals("on")) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no")%>
+						</td>
+					</tr>
+					<%
+						if (hasOptionalData){
+					%>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.optionalinfo.renavan")%></td>
+						<td align="right" class="linetwo">
+							<%
+								String renavan = vehicleForm.getRenavan();
+							%>
+							<%=(renavan != null && renavan.equals("SI")) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no")%>
+						</td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.optionalinfo.prefix")%></td>
+						<td align="right" class="linetwo">
+							<%
+								String prefix = vehicleForm.getPrefix();
+							%>
+							<%=(prefix != null && prefix.equals("SI")) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no")%>
+						</td>
+					</tr>
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.optionalinfo.monitoringsystem")%></td>
+						<td align="right" class="linetwo">
+							<%
+								String monitoringsystem = vehicleForm.getMonitoringSystem();
+							%>
+							<%=(monitoringsystem != null && monitoringsystem.equals("SI")) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no")%>
+						</td>
+					</tr>
+					<%
+						}
+					%>		
+<%
+			}
+				// ASR
+				if (hasOptionalData && !userSessionData.isCorporation(new int[]{CorporationData.YOLI, CorporationData.FORESTALORIENTAL})){
+		%>
+					
+					<tr class="space">
+						<th align="right">&nbsp;</th>
+						<td align="right">&nbsp;</td>
+					</tr>
+					<tr>
+						<td align="left" class="texts"><%=messages.getText("generic.vehicle.vehicledata.asr")%></td>
+						<td align="right" class="linetwo">
+							<%
+								String asr = vehicleForm.getAsr();
+							%>
+							<%=(asr != null && asr.equals("on")) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no")%>
+						</td>
+					</tr>	
+<%
+		}
+	%>																
+				</table>
+			<jsp:include page="../component/utilityboxbottom.jsp"/>
+			</td>
+		</tr>
+		<tr>    
+			<jsp:include  page="../component/spaceline.jsp" />
+		</tr>
+<%
+	if(!sys.isCorporation(new int[]{CorporationData.CIMSA,CorporationData.ALLERGAN,CorporationData.SYNGENTA_BR})) {
+%>		<tr>
+    		<td>
+				<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.messages.odometer")%>' />
+				<table width="100%" cellpadding="0" cellspacing="0" border="0">
+					<tr> 
+						<td align="left" class="texts">
+							<%=messages.getText("generic.vehicle.vehicledata.distanceunit")%>
+						</td>
+						<td align="right" class="linetwo">
+							<%
+								String distanceUnit = vehicleForm.getDistanceUnit();
+							%>
+							<%=(distanceUnit != null && distanceUnit.length() > 0) ? distanceUnit : "----"%>
+						</td>
+					</tr>				
+				</table>
+				<jsp:include page="../component/utilityboxbottom.jsp"/>
+			</td>
+  		</tr>
+<%
+	}else {
+%>  	<tr> 
+				<jsp:include  page='<%="../component/spaceline.jsp?colspan=5"%>'/>
+  		</tr>
+<%
+	}
+		}
+		if(userSessionData.isForest() || corporationId == CorporationData.CIMSA) {
+%>  	<tr> 
+			<jsp:include  page='<%="../component/spaceline.jsp?colspan=5"%>'/>
+  		</tr>
+    	<tr valign="top">
+	    	<td colspan="3">
+	    		<form name="trailers">
+					<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("vehicle.data.trailer")%>' />
+					<table width="100%">
+						<tr>
+							<td width='3%' class="guide2" align="center">
+							</td>
+							<td width='32%' class="guide2" align="center">
+								<%=messages.getText("vehicle.trailer.plate")%>
+							</td>
+		    				<td width='32%'	class="guide2" align="center">
+	    						<%=messages.getText("vehicle.trailer.trade")%>
+	    					</td>
+							<td width='32%' class="guide2" align="center">
+								<%=messages.getText("vehicle.trailer.model")%>
+							</td>
+						</tr>
+<%
+	Collection trailers = vehicleReport.getVehicleTrailers(data.getId(),userSessionData);
+	if(trailers.size() == 0) {
+%>						<tr>
+							<td colspan="4">
+								<span class="linetwo"><%=messages.getText("vehicle.data.notrailer")%></span>
+							</td>								
+						</tr>
+<%
+	}else {
+    			Iterator itTrailers = trailers.iterator();
+    			while(itTrailers.hasNext()) {
+    			    TrailerMainData trailer = (TrailerMainData)itTrailers.next();
+%>						<tr align=center align="right" class="linetwo">
+			            	<td width='3%' align="right">
+			            		<input type="checkbox" value='<%=String.valueOf(trailer.getId())%>'>
+				            </td>						                
+   							<td width='32%' align="right">
+								<a href='layout.jsp?refer=/vehicle/TrailerView.jsp?trailer=<%=trailer.getId()%>&vehicle=<%=data.getId()%>' > 
+	        	   					<%=trailer.getPlate()%>
+	           					</a>
+	           				</td>
+			            	<td width='32%' align="right">
+			            		<%=messages.getText(trailer.getTrade().getResourceBundleId())%> 
+				            </td>						                
+				            <td width='32%' align="right">
+				            	<%=trailer.getModel()%> 
+				            </td>						                
+						</tr>
+<%
+	}
+	}
+
+	// <!--  Botones para asociar o desasociar una plataforma de carga. -->
+	if(userSessionData.checkPermission(SecurityConstants.MODIFY_VEHICLE)) {
+%>						<tr>
+							<td colspan="4" align="right">
+	            				<input type="button"  value='<%=messages.getText("trailer.add.new")%>' class="input" onclick="location.href='layout.jsp?refer=/vehicle/createTrailer.jsp?vehicle=<%=String.valueOf(data.getId())%>'" />
+								<input type="button" value='<%=messages.getText("trailer.add.existing")%>' class="input" onclick="location.href='layout.jsp?refer=/vehicle/TrailerList.jsp?vehicle=<%=String.valueOf(data.getId())%>'" />								
+<%
+									if(trailers.size() > 0) {
+								%>								<input type="button" value='<%=messages.getText("generic.messages.desassociate")%>' class="input" onclick="javascript:desassociate(document.forms['DesassociateTrailerForm'],document.forms['trailers'],'<%=messages.getText("trailer.desassociate.confirm")%>');" />
+<%
+	}
+%>							
+							</td>								
+						</tr>
+<%
+	}
+%>	
+					
+					</table>
+					<jsp:include page="../component/utilityboxbottom.jsp"/>	
+				</form>
+			</td>
+  		</tr>
+<%
+	if(corporationId == CorporationData.LOSPIQUES) {
+%>		<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+		</tr>
+		<tr>
+			<td width="100%" colspan="5">
+				<table width="100%" cellpadding="0" cellspacing="0">
+					<tr>
+						<td valign="top">
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.unconformities")%>' />
+							<table width="100%" cellpadding="0" cellspacing="0">
+								<tr>
+									<td width='10%' class="guide2" align="center">
+										<%=messages.getText("driver.prizes.date")%>
+									</td>
+   									<td width='20%'	class="guide2" align="center">
+   										<%=messages.getText("driver.unconformities.origin")%>
+   									</td>
+   									<td width='20%'	class="guide2" align="center">
+   										<%=messages.getText("driver.unconformities.department")%>
+   									</td>
+   									<td width='10%'	class="guide2" align="center">
+   										<%=messages.getText("driver.unconformities.charge")%>
+   									</td>
+   									<td width='40%'	class="guide2" align="center">
+   										<%=messages.getText("driver.unconformities.observations")%>
+   									</td>
+								</tr>
+<%
+	Collection unconformities = data.getUnconformities();
+	if(unconformities.size() == 0) {
+%>								<tr>
+									<td colspan="5">
+										<span class="linetwo"><%=messages.getText("driver.unconformities.nodata")%></span>
+									</td>								
+								</tr>
+<%
+	}else {
+    			Iterator itUnconformities = unconformities.iterator();
+    			boolean lineone = false;
+    			while(itUnconformities.hasNext()) {
+    				UnconformityData unconformity = (UnconformityData)itUnconformities.next();
+%>								<tr align=center align="right" class='<%=(lineone) ? "lineone" : "linetwo"%>'>
+				            		<td class='<%=(lineone) ? "lineone" : "linetwo"%>' align="center"><%=Util.formatDate(unconformity.getDate())%> </td>
+				            		<td class='<%=(lineone) ? "lineone" : "linetwo"%>' align="center"><%=unconformity.getOrigin()%> </td>
+				            		<td class='<%=(lineone) ? "lineone" : "linetwo"%>' align="center"><%=unconformity.getDepartment()%> </td>
+				            		<td class='<%=(lineone) ? "lineone" : "linetwo"%>' align="center"><%=unconformity.getCharge()%> </td>
+				            		<td class='<%=(lineone) ? "lineone" : "linetwo"%>' align="center"><%=unconformity.getObservations()%> </td>
+								</tr>
+<%
+	lineone = !lineone;
+	   			}
+	}
+%>
+							</table>
+							<jsp:include page="../component/utilityboxbottom.jsp"/>	
+						</td>
+					</tr>
+		  		</table>
+			</td>
+		</tr>				
+<%
+					}	
+											}
+	if((corporationId == CorporationData.MONSANTO && data.getCountryId().intValue() == CountryData.ARGENTINA_ID.intValue()) || (sys.isCorporation(CorporationData.BAYER_MX))){
+%>
+  		<tr> 
+			<jsp:include  page='<%="../component/spaceline.jsp?colspan=5"%>'/>
+  		</tr>
+    	<tr valign="top">
+	    	<td colspan="3">
+				<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.vehicle.maintenances")%>' />
+				<table width="100%">
+					<tr>
+						<td width='25%' class="guide2" align="center">
+							<%=messages.getText("generic.driver.observation.date")%><%=" "+messages.getText("generic.messages.dateformat")%>
+						</td>
+<%			if(!sys.isCorporation(CorporationData.BAYER_MX)) {
+%>						<td width='50%' class="guide2" align="center">
+							<%=messages.getText("vehicle.maintenance.type")%>
+						</td>
+						<td width='25%'	class="guide2" align="center">
+							<%=messages.getText("vehicle.maintenance.cost")%>
+						</td>
+<%			}else {
+%>						<td width='75%'	class="guide2" align="left">
+							<%=messages.getText("generic.data.insertedby")%>
+						</td>
+<%			}
+%>					</tr>
+<%			Collection maintenances = sys.getVehicleReportFacade().getVehicleMaintenances(new Integer(id),userSessionData);
+			if(maintenances.size() == 0) {
+%>					<tr>
+						<td colspan="3">
+							<span class="linetwo"><%=messages.getText("generic.vehicle.nomaitenances")%></span>
+						</td>								
+					</tr>
+<%
+			}else {
+    			Iterator itMaintenances = maintenances.iterator();
+    			boolean lineone = false;
+    			while(itMaintenances.hasNext()) {
+    				VehicleMaintenanceData maintenance = (VehicleMaintenanceData)itMaintenances.next();
+					String maintenanceLink = "layout.jsp?refer=vehicle/maintenance.jsp?type=Edit&id="+String.valueOf(maintenance.getId());
+%>					<tr align=center align="right" class='<%=(lineone) ? "lineone" : "linetwo"%>'>
+   						<td width='25%' align="center">
+<%					if(sys.isCorporation(CorporationData.BAYER_MX)) {
+%>   						<%=Util.formatDate(maintenance.getDate())%>
+<%					}else {
+%>							<a href='<%=maintenanceLink%>'>
+             					<%=Util.formatDate(maintenance.getDate())%>
+             				</a>
+<%					}
+%>            			</td>
+<%					if(!sys.isCorporation(CorporationData.BAYER_MX)) {	
+						switch(maintenance.getType().intValue()) {
+							case VehicleMaintenanceData.RUTINA:
+%>						<td width='50%' align="center"><%=messages.getText("vehicle.maintenancetype.rutina")%> </td>
+<%								break;
+							case VehicleMaintenanceData.REPARATION:
+%>			            <td width='50%' align="center"><%=messages.getText("vehicle.maintenancetype.reparation")%> </td>
+<%								break;
+							case VehicleMaintenanceData.INC_ACC:
+%>			            <td width='50%' align="center"><%=messages.getText("vehicle.maintenancetype.incacc")%> </td>
+<%								break;
+							default:
+%>			            <td width='50%' align="center">--</td>
+<%							break;
+						}
+%>			            <td width='24%' align="center"><%=(maintenance.getCost()==null)?"----":String.valueOf(maintenance.getCost())%> </td>						                
+<%					}else {
+%>						<td align="left"><%=(maintenance.getDescription()==null)?"----":maintenance.getDescription()%></td>
+<%					}
+%>					</tr>
+<%					lineone = !lineone;
+	   			}
+			}
+%>				</table>
+				<jsp:include page='<%="../component/utilityboxbottom.jsp"%>'/>	
+			</td>
+<%
+	}
+		if(corporationId == CorporationData.PEPSICO) {
+%>		<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+		</tr>
+		<tr>
+			<td width="100%" colspan="5">
+				<table width="100%" cellpadding="0" cellspacing="0">
+					<tr>
+						<td valign="top">
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.vehicle.complaints")%>' />
+							<table width="100%" cellpadding="0" cellspacing="0">
+								<tr>
+									<td width='33%' class="guide2" align="center">
+										<%=messages.getText("vehicle.complaint.reportdate")%>
+									</td>
+   									<td width='33%'	class="guide2" align="center">
+   										<%=messages.getText("vehicle.complaint.phonetype")%>
+   									</td>
+   									<td width='33%'	class="guide2" align="center">
+   										<%=messages.getText("vehicle.complaint.location")%>
+   									</td>
+								</tr>
+<%
+	Collection compliants = vehicleReport.getVehicleComplaints(new Integer(id),userSessionData);
+	if(compliants.size() == 0) {
+%>								<tr>
+									<td colspan="3">
+										<span class="linetwo"><%=messages.getText("driver.compliants.nodata")%></span>
+									</td>								
+								</tr>
+<%
+	}else {
+    			Iterator itCompliants = compliants.iterator();
+    			boolean lineone = false;
+    			while(itCompliants.hasNext()) {
+    				Object[] data = (Object[])itCompliants.next();
+%>								<tr align=center align="right" class='<%=(lineone) ? "lineone" : "linetwo"%>'>
+				            		<td class='<%=(lineone) ? "lineone" : "linetwo"%>' align="center">	
+				            			<a href='<%="layout.jsp?refer=vehicle/complaint.jsp&id="+String.valueOf(data[0])+"&type=Edit"%>' />
+				            				<%=Util.formatDate((Date)data[1])%>
+				            			</a> 
+				            		</td>
+				            		<td class='<%=(lineone) ? "lineone" : "linetwo"%>' align="center">
+				            			<%=(data[2] != null) ?
+				            					messages.getText((String)data[2])
+				            					: messages.getText("generic.messages.nodata")%> 
+				            		</td>
+				            		<td class='<%=(lineone) ? "lineone" : "linetwo"%>' align="center"><%=String.valueOf(data[3])%> </td>
+								</tr>
+<%
+	lineone = !lineone;
+	   			}
+	}
+%>
+							</table>
+							<jsp:include page="../component/utilityboxbottom.jsp"/>	
+						</td>
+					</tr>
+		  		</table>
+			</td>
+		</tr>				
+<%
+					}
+				%>  		
+  		<tr> 
+			<jsp:include  page='<%="../component/spaceline.jsp?colspan=5"%>'/>
+  		</tr>
+<%
+	if(userSessionData.isCepaUser()) {
+%>    	<tr valign="top">
+	    	<td colspan="3">
+				<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.observations")%>' />
+				<table width="100%">
+					<tr>
+						<td width='24%' class="guide2" align="center">
+							<%=messages.getText("generic.driver.observation.date")%><%=" "+messages.getText("generic.messages.dateformat")%>
+						</td>
+						<td width='24%' class="guide2" align="center">
+							<%=messages.getText("generic.driver.observation.action")%>
+						</td>
+						<td width='24%'	class="guide2" align="center">
+							<%=messages.getText("generic.driver.observation.user")%>
+						</td>
+	    				<td width='24%'	class="guide2" align="center">
+	    					<%=messages.getText("generic.driver.observation.comment")%>
+	    				</td>
+					</tr>
+<%
+	Collection observations = sys.getVehicleReportFacade().getObservations(new Integer(id),userSessionData);
+	if(observations.size() == 0) {
+%>					<tr>
+						<td colspan="3">
+							<span class="linetwo"><%=messages.getText("generic.event.noobservations")%></span>
+						</td>								
+					</tr>
+<%
+	}else {
+    			Iterator itObservations = observations.iterator();
+    			boolean lineone = false;
+    			while(itObservations.hasNext()) {
+    			    VehicleObservationData observation = (VehicleObservationData)itObservations.next();
+%>					<tr align=center align="right" class='<%=(lineone) ? "lineone" : "linetwo"%>'>
+   						<td width='24%' align="right">
+             				<%=Util.formatDate(observation.getDate())%>
+            			</td>
+<%
+	switch(observation.getAction().intValue()) {
+		case LogActions.CREATE:
+%>						<td width='24%' align="right"><%=messages.getText("generic.log.create")%> </td>
+<%
+	break;
+		case LogActions.UPDATE:
+%>			            <td width='24%' align="right"><%=messages.getText("generic.log.update")%> </td>
+<%
+	break;
+		case LogActions.DELETE:
+%>			            <td width='24%' align="right"><%=messages.getText("generic.log.delete")%> </td>
+<%
+	break;
+		case LogActions.INCLUDE:
+%>			            <td width='24%' align="right"><%=messages.getText("generic.log.include")%> </td>
+<%
+	break;
+		case LogActions.EXCLUDE:
+%>			            <td width='24%' align="right"><%=messages.getText("generic.log.exclude")%> </td>
+<%
+	break;
+		default:
+%>			            <td width='24%' align="right">---</td>
+<%
+	break;
+	}
+%>			            <td width='24%' align="right"><%=observation.getUser()%> </td>						                
+			            <td width='24%' align="right"><%=(observation.getComment()==null)?"----":observation.getComment()%> </td>						                
+					</tr>
+<%
+	lineone = !lineone;
+	   			}
+	}
+%>				</table>
+				<jsp:include page='<%="../component/utilityboxbottom.jsp"%>'/>	
+			</td>
+<%
+	}
+%>		
+		</tr>
+		<tr> 
+			<jsp:include  page='<%="../component/spaceline.jsp?colspan=5"%>'/>
+  		</tr>
+  		
+  		<!--  Historial de CheckList -->
+    	<tr valign="top">
+	    	<td colspan="3">
+				<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("vehicle.checklist.history")%>' />
+				<table width="100%">
+<%
+	if(corporationId == CorporationData.CEPA || corporationId == CorporationData.ACU || corporationId == CorporationData.DPA || corporationId == CorporationData.COFUSA ||  sys.isCorporation(CorporationData.FORESTALORIENTAL)  || sys.isCorporation(CorporationData.MONTES_DE_PLATA) || sys.isCorporation(CorporationData.WEYERHAEUSER) ) {
+%>					<tr>
+						<td width='3%' class="guide2" align="center">
+							
+						</td>
+						<td width='30%' class="guide2" align="center">
+							<%=messages.getText("generic.driver.observation.date")%><%=" "+messages.getText("generic.messages.dateformat")%>
+						</td>
+						<td width='20%' class="guide2" align="center">
+							<%=messages.getText("generic.messages.type")%>
+						</td>
+						<td width='30%' class="guide2" align="center">
+							<%=messages.getText("generic.checklist.inspector")%>
+						</td>
+	<%
+		if(corporationId != CorporationData.ACU ){
+	%>					
+	    				<td width='20%'	class="guide2" align="center">
+	    					<%=messages.getText("generic.activity.result")%>
+	    				</td>
+<%
+	}else {
+%>	
+						<td width='20%'	class="guide2" align="center">
+	    					<%="PDF"%>
+	    				</td>
+<%
+	}
+%>					<tr>
+
+				<tr>
+	    				
+					</tr>
+<%
+	}else {
+%>					<tr>
+						<td width='32%' class="guide2" align="center">
+							<%=messages.getText("generic.driver.observation.date")%><%=" "+messages.getText("generic.messages.dateformat")%>
+						</td>
+						<td width='32%' class="guide2" align="center">
+							<%=(corporationId == CorporationData.PACIFICRUBIALES) ? messages.getText("vehicle.checklist.apt") : messages.getText("generic.driver.name")%>
+						</td>
+	    				<td width='32%'	class="guide2" align="center">
+	    					<%=(corporationId == CorporationData.DPA) ? messages.getText("generic.activity.result") :messages.getText("generic.driver.observation.comment")%>
+	    				</td>
+					</tr>
+
+<%
+	}
+	Collection checks = null;
+	checks = sys.getVehicleReportFacade().findVehicleChecks(new Integer(id),userSessionData);
+	Collection checks2 = checks;
+	if(checks == null || checks.size() == 0) {
+%>					<tr>
+						<td colspan="3">
+							<span class="linetwo"><%=messages.getText("generic.event.noobservations")%></span>
+						</td>								
+					</tr>
+<%
+	}else {
+    			Iterator itChecks = checks.iterator();
+    			boolean lineone = false;
+    			while(itChecks.hasNext()) {
+    				boolean seguimiento=false;
+    			    Object[] checkData = (Object[])itChecks.next();
+    			    String link = (!sys.getUserSessionData().isForest()) ? "layout.jsp?refer=/vehicle/VehicleCheckView.jsp?vehicle="+String.valueOf(data.getId())+"&check="+String.valueOf(checkData[0]) : "layout.jsp?refer=/vehicle/TruckCheckView.jsp?check="+String.valueOf(checkData[0]) ;
+    			    if(corporationId == CorporationData.CIMSA) {
+    			    	link = "layout.jsp?refer=/vehicle/CimsaCheckView.jsp?vehicle="+String.valueOf(data.getId())+"&check="+String.valueOf(checkData[0]);
+    			    }
+    			    if(corporationId == CorporationData.SYNGENTA || (corporationId == CorporationData.SYNGENTA_BR && ((Integer)checkData[0]).intValue() <= 103434)) {
+    			    	 if(((Boolean)checkData[6]).booleanValue()) {
+    			             link = "layout.jsp?refer=/vehicle/SyngentaCheckView.jsp?vehicle="+String.valueOf(data.getId())+"&check="+String.valueOf(checkData[0]);
+    			            }else {
+    			             link = "layout.jsp?refer=/vehicle/TruckCheckView.jsp?check="+String.valueOf(checkData[0]);  
+    			         }    			    }
+    			    if(corporationId == CorporationData.NALCO) {
+    			    	link = "layout.jsp?refer=/vehicle/VehicleCheckViewNalco.jsp?vehicle="+String.valueOf(data.getId())+"&check="+String.valueOf(checkData[0]);
+    			    }
+    			    if(corporationId==CorporationData.SYNGENTA_BR && ((Integer)checkData[0]).intValue() > 103434){
+    			    	link = "layout.jsp?refer=/vehicle/VehicleCheckViewSyngentaBR.jsp?vehicle="+String.valueOf(data.getId())+"&check="+String.valueOf(checkData[0]);
+    			    }
+    			    if(corporationId == CorporationData.PACIFICRUBIALES) {
+%>					<tr align=center align="right" class='<%=(lineone) ? "lineone" : "linetwo"%>'>
+ 						
+   						<td width='32%' align="center">
+             				<%=Util.formatDate((Date)checkData[1])%>
+            			</td>
+			            <td width='32%' align="center">
+<%
+	String isApt = (checkData[4] != null && ((Integer)checkData[4]).intValue() == 1) ? 
+		messages.getText("generic.messages.yes") : messages.getText("generic.messages.no");
+%>			            	<%=isApt%> 
+			            </td>						                
+			            <td width='32%' align="left">
+			            	<%=(checkData[3] == null) ? "----" : checkData[3]%> 
+			            </td>						                
+					</tr>
+<%
+	}else if(corporationId == CorporationData.ACU  ||corporationId == CorporationData.DPA ||  sys.isCorporation(CorporationData.COFUSA) || sys.isCorporation(CorporationData.FORESTALORIENTAL) || sys.isCorporation(CorporationData.MONTES_DE_PLATA) || sys.isCorporation(CorporationData.WEYERHAEUSER) || sys.isCorporation(CorporationData.CEPA)) {
+		String type = "---";
+		boolean isMP=false;
+    			    	if(sys.isCorporation(CorporationData.DPA)){
+    			    		if(checkData[2] != null ) {
+    							type = (Integer.parseInt((String)checkData[2]) == CheckListData.DPA_CHECKLIST_T1) ? "T1" : "T2";
+    							link = "layout.jsp?refer=/vehicle/VehicleCheckViewDPA.jsp?vehicle="+String.valueOf(data.getId())+"&check="+String.valueOf(checkData[0]);
+    						}else{
+    							type = "Formato Inicial";
+    							link = "layout.jsp?refer=/vehicle/TruckCheckView.jsp?check="+String.valueOf(checkData[0]);
+    						}
+    			    		
+    			    	}else{
+    			    		if(checkData[2] != null && (((String)checkData[2]).equals(String.valueOf(CheckListData.UPM_CHECKLIST_PESADOS)) || ((String)checkData[2]).equals(String.valueOf(CheckListData.UPM_CHECKLIST_SEGRUTA))  || ((String)checkData[2]).equals(String.valueOf(CheckListData.UPM_CHECKLIST_INTERNO))  || ((String)checkData[2]).equals(String.valueOf(CheckListData.MDP_CHECKLIS_MERCANCIASPELIGROSAS)) || ((String)checkData[2]).equals(String.valueOf(CheckListData.MDP_CHECKLIS_MERCANCIASPELIGROSAS_2)))) {
+    							type = (Integer.parseInt((String)checkData[2]) == CheckListData.UPM_CHECKLIST_SEGRUTA) ? "Seguimiento en ruta" :type;
+    							type=(Integer.parseInt((String)checkData[2]) == CheckListData.UPM_CHECKLIST_PESADOS) ? "Check List Pesados" :type;
+    							type=(Integer.parseInt((String)checkData[2]) == CheckListData.UPM_CHECKLIST_INTERNO) ? messages.getText("checklist.weyer.internal"):type;
+    							type=(Integer.parseInt((String)checkData[2]) == CheckListData.MDP_CHECKLIS_MERCANCIASPELIGROSAS || Integer.parseInt((String)checkData[2]) == CheckListData.MDP_CHECKLIS_MERCANCIASPELIGROSAS_2) ? messages.getText("checklist.mp.title") :type;
+    							isMP=Integer.parseInt((String)checkData[2]) == CheckListData.MDP_CHECKLIS_MERCANCIASPELIGROSAS || Integer.parseInt((String)checkData[2]) == CheckListData.MDP_CHECKLIS_MERCANCIASPELIGROSAS_2;
+    							seguimiento= (Integer.parseInt((String)checkData[2]) == CheckListData.UPM_CHECKLIST_SEGRUTA) ;
+    							link = "layout.jsp?refer=/vehicle/VehicleCheckViewUPM.jsp?vehicle="+String.valueOf(data.getId())+"&check="+String.valueOf(checkData[0]);
+    						}else if(checkData[2] != null && (((String)checkData[2]).equals(String.valueOf(CheckListData.CHECK_LIST_FORMULARIO_ACU)))){
+     							 type = "FORMULARIO ACU";
+	   							 link = "#";
+    						}else{	
+    							type = "Formato Inicial";
+    							 link = "layout.jsp?refer=/vehicle/TruckCheckView.jsp?check="+String.valueOf(checkData[0]);
+    						}
+			
+    			    		if(isMP){
+    			    			 link = "#";
+    			    		}
+    			    	}
+    			    	if(!(seguimiento) ){//Los seguimientos van en la solapa de seguimientos
+%>					<tr align=center align="right" class='<%=(lineone) ? "lineone" : "linetwo"%>'>
+						<td><input type="checkbox" deleteCheckList="true" check='<%=String.valueOf(checkData[0])%>'/></td>
+   						<td align="center">
+   						
+		                	<a href='<%=link%>' > 
+             					<%=Util.formatDate((Date)checkData[1])%>
+             				</a>
+            			</td>
+			            <td align="center">
+			            	<%=type%> 
+			            </td>						                
+			            <td align="right">
+			            	<%=(checkData[5] == null) ? "----" : checkData[5]%> 
+			            </td>						                
+			            <td align="center">
+<%
+	String apruved = (checkData[4] != null && ((Integer)checkData[4]).intValue() == 1) ? messages.getText("generic.messages.approved") : messages.getText("generic.messages.notapproved");
+	
+	if(corporationId != CorporationData.ACU && !isMP ){
+%>
+<%=apruved%> 
+<%
+ 	}else{
+ %>
+
+	<a href="#" onclick="javascript:window.open('layout.jsp?refer=vehicle/VehicleCheckViewDPAImages.jsp?check=<%=String.valueOf(checkData[0])%>&vehicleId=<%=id%>');">Subir Imagenes</a>
+	<a href="#" onclick="javascript:window.open('DownloadChecklistPDF.do?id=<%=String.valueOf(checkData[0])%>');">Descargar PDF</a>
+<%
+	}
+%>
+			            	
+			            </td>						                
+					</tr>
+<%
+	}
+	}else {
+%>					<tr align=center align="right" class='<%=(lineone) ? "lineone" : "linetwo"%>'>
+   						<td width='32%' align="right">
+		                	<a href='<%=link%>' > 
+             					<%=Util.formatDate((Date)checkData[1])%>
+             				</a>
+            			</td>
+			            <td width='32%' align="right">
+			            	<%=(checkData[2] == null) ? "----" : ((checkData[2].equals("42") || checkData[2].equals("95")) ? checkData[5] : checkData[2])%> 
+			            </td>						                
+			            <td width='32%' align="right">
+			            	<%=(checkData[3] == null) ? "----" : 
+			            		(checkData[3].toString().length() >= 100)?checkData[3].toString().substring(0,99).concat("..."):
+			            			checkData[3].toString()%> 
+			            </td>						                
+					</tr>
+<%
+	}
+	lineone = !lineone;
+	   			}
+	}
+%>			
+<%
+				if(corporationId == CorporationData.DPA || corporationId == CorporationData.MONTES_DE_PLATA || corporationId == CorporationData.COFUSA || corporationId == CorporationData.FORESTALORIENTAL || sys.isCorporation(CorporationData.WEYERHAEUSER) ) {
+								if(sys.getUserSessionData().isCepaUser() ){
+			%>
+		<tr><td colspan="5" align="right">
+			<input type="button" onclick="dpaDeleteHistoryCheckList();" value='<%=messages.getText("generic.messages.delete")%>'></input>
+		</td></tr>
+	<%
+		}
+			}
+	%>
+	</table>
+				<jsp:include page="../component/utilityboxbottom.jsp"/>	
+			</td>
+  		</tr>
+		<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+  		<%
+  			if(sys.isCorporation(CorporationData.MONTES_DE_PLATA) || sys.isCorporation(CorporationData.FORESTALORIENTAL) || sys.isCorporation(CorporationData.WEYERHAEUSER) || sys.isCorporation(CorporationData.COFUSA)){
+  		%>
+  		<tr>
+			<td width="100%" colspan="5">
+				<table width="100%" cellpadding="0" cellspacing="0">
+					<tr>
+						<td valign="top">
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title=No Conformidades"%>' />
+							<table width="100%" cellpadding="0" cellspacing="0">
+								<tr>
+									<td width='10%' class="guide2" align="center">
+										<%=messages.getText("generic.driver.observation.date")%>
+									</td>
+									<td width='10%' class="guide2" align="center">
+										<%=messages.getText("generic.dpa.unconformity.termdate")%>
+									</td>
+									<td width='40%' class="guide2" align="center">
+										<%=messages.getText("generic.dpa.unconformity.items")%>
+									</td>
+   									<td width='40%' class="guide2" align="center">
+										<%=messages.getText("generic.dpa.uncnformity.comment")%>
+									</td>
+   									
+								</tr>
+<%
+	DPAUnconformityItemFilter filter=new DPAUnconformityItemFilter();
+	filter.setId(Integer.valueOf(id));
+	Collection unconformities=sys.getCorporationReportFacade().exportUnconformityItemsCheckList(sys.getUserSessionData(), sys.getText(),null, filter);
+	if(unconformities.size() == 0) {
+%>								<tr>
+									<td >
+										<span class="linetwo"><%="No tiene."%></span>
+									</td>								
+								</tr>
+<%
+	}else {
+    			Iterator itLOS = unconformities.iterator();
+    			boolean lineone = false;
+    			while(itLOS.hasNext()) {
+    				ArrayList<String> level = (ArrayList<String>)itLOS.next();
+%>									<tr align=center align="right" class='<%=(lineone) ? "lineone" : "linetwo"%>' style=<%=(level.get(6).equalsIgnoreCase("V")) ? "background-color:red;" : ""%>>
+	          							<td width='10%' align="center">
+	              							 <a href='<%=level.get(0)%>' >  <%=level.get(2)%></a>
+	              						</td>
+	              						<td width='10%' align="center">
+	              							   <%=level.get(4)%> 
+	              						</td>
+	              						<td width='40%' align="center">
+	              							 <%=level.get(3)%>
+	              						</td>
+	              						<td width='40%' align="center">
+	              							 <%=level.get(5)%>
+	              						</td>
+						           </tr>
+<%
+	lineone = !lineone;
+	   			}
+	}
+%>			
+										
+							</table>
+							<jsp:include page="../component/utilityboxbottom.jsp"/>	
+						</td>
+			   		</tr>
+			   	</table>
+			</td>
+		</tr>
+		<%
+			}
+		%>
+  		<%
+  			if(corporationId==CorporationData.DPA && Util.checkPermission(sys, SecurityConstants.EDIT_VEHICLE)==null){
+  		%>
+  		
+  		<tr>
+			<td width="100%" colspan="5">
+				<table width="100%" cellpadding="0" cellspacing="0">
+					<tr>
+						<td valign="top">
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.dpa.levelofservicedriver")%>' />
+							<table width="100%" cellpadding="0" cellspacing="0">
+								<tr>
+									<td width='32%' class="guide2" align="center">
+										<%=messages.getText("generic.activity.date")%>
+									</td>
+									<td width='32%' class="guide2" align="center">
+										<%=messages.getText("generic.dpa.levelofservicedriver.inspector")%>
+									</td>
+   									
+								</tr>
+<%
+	Collection collLOS=sys.getCorporationReportFacade().findLevelOfServiceVehiclesDPAByDriverId(sys.getUserSessionData(), Integer.valueOf(id));
+	if(collLOS.size() == 0) {
+%>								<tr>
+									<td >
+										<span class="linetwo"><%=messages.getText("generic.dpa.levelofservicesdriver.nodata")%></span>
+									</td>								
+								</tr>
+<%
+	}else {
+    			Iterator itLOS = collLOS.iterator();
+    			boolean lineone = false;
+    			while(itLOS.hasNext()) {
+    				LevelOfServiceVehicleDPAData level = (LevelOfServiceVehicleDPAData)itLOS.next();
+%>									<tr align=center align="right" class='<%=(lineone) ? "lineone" : "linetwo"%>'>
+	          							<td width='32%' align="center">
+	              							<a href='layout.jsp?refer=/dpa/DPALevelOfServiceVehicleForm.jsp?id=<%=level.getId()%>' > <%=Util.formatDate(level.getDate())%></a>
+	              						</td>
+	              						<td width='32%' align="center">
+	              							 <%=level.getInspector()%></a>
+	              						</td>
+						           </tr>
+<%
+	lineone = !lineone;
+	   			}
+	}
+%>			
+									<tr>
+	          							<td align="right" colspan="2">
+	              							<input class="input" type="button" onclick="document.location.href='layout.jsp?refer=/dpa/DPALevelOfServiceVehicleForm.jsp?vehicleId=<%=id%>'" value='<%=messages.getText("generic.messages.new")%>'/>
+	              						</td>
+						           </tr>				
+							</table>
+							<jsp:include page="../component/utilityboxbottom.jsp"/>	
+						</td>
+			   		</tr>
+			   	</table>
+			</td>
+		</tr>
+		  		<tr>
+			<td width="100%" colspan="5">
+				<table width="100%" cellpadding="0" cellspacing="0">
+					<tr>
+						<td valign="top">
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("driver.telematiccontrol")%>' />
+							<table width="100%" cellpadding="0" cellspacing="0">
+								<tr>
+									<td width='32%' class="guide2" align="center">
+										<%=messages.getText("generic.activity.date")%>
+									</td>
+									<td width='32%' class="guide2" align="center">
+										<%=messages.getText("generic.messages.type")%>
+									</td>
+   									
+								</tr>
+<%
+	Collection collt=sys.getVehicleReportFacade().findTelematicControls(Integer.valueOf(id), sys.getUserSessionData());
+	if(collt.size() == 0) {
+%>								<tr>
+									<td >
+										<span class="linetwo"></span>
+									</td>								
+								</tr>
+<%
+	}else {
+    			Iterator itt = collt.iterator();
+    			boolean lineone = false;
+    			while(itt.hasNext()) {
+    				TelematicControlData level = (TelematicControlData)itt.next();
+%>									<tr align=center align="right" class='<%=(lineone) ? "lineone" : "linetwo"%>'>
+	          							<td width='32%' align="center">
+	              							<a href='layout.jsp?refer=/vehicle/telematicControlVehicleDPA.jsp?id=<%=level.getId()%>' > <%=Util.formatDate(level.getDate())%></a>
+	              						</td>
+	              						<td width='32%' align="center">
+	              							 <%=messages.getText(level.getStringType())%></a>
+	              						</td>
+						           </tr>
+<%
+	lineone = !lineone;
+	   			}
+	}
+%>			
+									<tr>
+	          							<td align="right" colspan="2">
+	              							<input class="input" type="button" onclick="document.location.href='layout.jsp?refer=/vehicle/telematicControlVehicleDPA.jsp?vehicle=<%=id%>'" value='<%=messages.getText("generic.messages.new")%>'/>
+	              						</td>
+						           </tr>				
+							</table>
+							<jsp:include page="../component/utilityboxbottom.jsp"/>	
+						</td>
+			   		</tr>
+			   	</table>
+			</td>
+		</tr>   		
+<%
+   			}
+   		%>  		
+  		
+  		<!-- TODO: Historial de Contratos, Allergan -->
+<%
+	if (sys.getCorporationId() == CorporationData.ALLERGAN) {
+%>
+		<tr> 
+			<jsp:include  page='<%="../component/spaceline.jsp?colspan=5"%>'/>
+  		</tr>
+    	<tr valign="top">
+	    	<td colspan="3">
+				<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("vehicle.contracts")%>' />
+				<table width="100%">
+					<tr>
+						<td width='33%' class="guide2" align="center">
+							<%=messages.getText("generic.driver.observation.date")%><%=" "+messages.getText("generic.messages.dateformat")%>
+						</td>
+						<td width='66%' class="guide2" align="center">
+							<%=messages.getText("generic.messages.type")%>
+						</td>
+					</tr>
+
+<%
+	Collection contracts = null;
+	contracts = sys.getVehicleReportFacade().findVehicleContracts(
+	new Integer(id),userSessionData);
+	
+	if(contracts == null || contracts.size() == 0) {
+%>				<tr>
+						<td colspan="3">
+							<span class="linetwo"><%=messages.getText("generic.event.nocontracts")%></span>
+						</td>								
+					</tr>
+<%
+	}else {
+    			Iterator itContracts = contracts.iterator();
+    			boolean lineone = false;
+    			int iContract = 1;
+    			while(itContracts.hasNext()) {
+    			    VehicleContractData contractData = (VehicleContractData)itContracts.next();
+    			    if (contractData != null){
+    			    	Calendar c = Calendar.getInstance();
+    			    	c.setTime(contractData.getDate());
+%>					
+					<tr align=center align="right" class='<%=(lineone) ? "lineone" : "linetwo"%>'>
+						<td width='33%' align="center">							
+             				<%=Util.formatDate(contractData.getDate())%>
+            			</td>
+			            <td width='66%' align="center">
+			            	<form name="Contract<%=iContract%>" >
+			            	<input type="hidden" name="vehicle" value="<%=contractData.getId().toString()%>" />
+							<input type="hidden" name="day" value="<%=new Integer(c.get(Calendar.DATE)).toString()%>" />
+							<input type="hidden" name="month" value="<%=new Integer(c.get(Calendar.MONTH)+1).toString()%>" />
+             				<input type="hidden" name="year"  value="<%=new Integer(c.get(Calendar.YEAR)).toString()%>"/>
+         					<input type="hidden" name="type"  value="<%=contractData.getType().getResourceBundleId()%>"/>
+							<a href="javascript:selectContract(document.forms['Contract<%=iContract%>'],document.forms['VehicleContractForm']);">
+			            		<%=messages.getText(contractData.getType().getResourceBundleId())%>
+			            	</a>
+			            	</form>
+			            </td>               
+					</tr>
+					
+<%
+						}
+																	lineone = !lineone;
+																	iContract++;
+															   			}
+															}
+					%>				</table>
+				<jsp:include page="../component/utilityboxbottom.jsp"/>	
+			</td>
+  		</tr>
+  		
+<%
+  			} // if allergan, fin contratos de alquiler allergan
+  		%>
+
+
+<%
+	if(userSessionData.isForest()) {
+%>    		<!--  Seguimientos en Ruta -->
+  		<tr> 
+			<jsp:include  page='<%="../component/spaceline.jsp?colspan=5"%>'/>
+  		</tr>
+    	<tr valign="top">
+	    	<td colspan="3">
+				<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("vehicle.seguimientoenruta.history")%>' />
+				<table width="100%">
+					<tr>
+						<td width='32%' class="guide2" align="center">
+							<%=messages.getText("generic.driver.observation.date")%><%=" "+messages.getText("generic.messages.dateformat")%>
+						</td>
+						<td width='32%' class="guide2" align="center">
+							<%=messages.getText("generic.activity.form.seguimientoenruta.instructor")%><!-- Instructor -->
+						</td>
+	    				<td width='32%'	class="guide2" align="center">
+	    					<%=messages.getText("generic.driver.observation.comment")%>
+	    				</td>
+					</tr>
+<%
+	checks = sys.getVehicleReportFacade().findVehiclePursuitRoutes(new Integer(id),userSessionData);
+   //#seguimientos
+    
+	if((checks == null || checks.size() == 0) && (checks2 == null || checks2.size() == 0)) {
+%>					<tr>
+						<td colspan="3">
+							<span class="linetwo"><%=messages.getText("generic.event.noobservations")%></span>
+						</td>								
+					</tr>
+<%
+	}else {
+    			Iterator itChecks = checks.iterator();
+    			boolean lineone = false;
+    			while(itChecks.hasNext()) {
+    			    Object[] checkData = (Object[])itChecks.next();
+    			    String link = "layout.jsp?refer=/vehicle/VehiclePursuitRouteView.jsp?check="+String.valueOf(checkData[0]) ;
+%>					<tr align=center align="right" class='<%=(lineone) ? "lineone" : "linetwo"%>'>
+   						<td width='32%' align="right">
+		                	<a href='<%=link%>' > 
+             					<%=Util.formatDate((Date)checkData[1])%>
+             				</a>
+            			</td>
+			            <td width='32%' align="right">
+			            	<%=checkData[2]%> 
+			            </td>						                
+			            <td width='32%' align="right">
+			            	<%=(checkData[3] == null) ? "----" : checkData[3]%> 
+			            </td>						                
+					</tr>
+<%
+	lineone = !lineone;
+
+	   			}
+    			
+    			itChecks = checks2.iterator();
+    			while(itChecks.hasNext()) {
+    			    Object[] checkData = (Object[])itChecks.next();
+    			    
+	    	    	if(( ((String)checkData[2]).equals( String.valueOf( CheckListData.UPM_CHECKLIST_SEGRUTA)))){
+	    	    		String type =  "Seguimiento en ruta";
+	  					String link = "layout.jsp?refer=/vehicle/VehicleCheckViewUPM.jsp?vehicle="+String.valueOf(data.getId())+"&check="+String.valueOf(checkData[0]);
+%>	
+	    			    				<tr align=center align="right" class='<%=(lineone) ? "lineone" : "linetwo"%>'>
+	    			       						<td width='32%' align="right">
+	    			    		                	<a href='<%=link%>' > 
+	    			                 					<%=Util.formatDate((Date)checkData[1])%>
+	    			                 				</a>
+	    			                			</td>
+	    			    			            <td width='32%' align="right">
+	    			    			              <%=(checkData[5] == null) ? "----" : checkData[5]%> 
+	    			    			            </td>						                
+	    			    			            <td width='32%' align="right">
+	    			    			            	<%=(checkData[3] == null) ? "----" : checkData[3]%> 
+	    			    			            </td>						                
+	    			    					</tr>
+	    			    <%
+	    			    	lineone = !lineone;
+	    			    	    			    	    	    	}
+	    			    	    			        			}			    
+	    			    	    			    	}
+	    			    %>				
+				</table>
+				<jsp:include page="../component/utilityboxbottom.jsp"/>	
+			</td>
+  		</tr>
+  		
+  		
+<%
+  		  			}
+  		  		  		  				}
+  		  		%>
+  	<tr>   
+		<jsp:include  page='<%="../component/spaceline.jsp?colspan=5"%>'/>
+	
+    </tr>
+	<tr>   
+		<jsp:include  page="../component/spaceline.jsp" />	
+    </tr>
+		    <tr>
+		    	<!-- Muestro Opciones: -->		    	
+				<td colspan="5">
+					<jsp:include  page='<%="../component/utilitybox3top.jsp?title="+messages.getText("generic.messages.options")%>' />
+					<table width="100%" border="0" cellpadding="0" cellspacing="0"  class="texts1">					
+<%
+						line = true;
+									if(userSessionData.isDriver()) {	
+									if(userSessionData.getDriverData().getCountryName().equals(CountryData.ARGENTINA) && (Util.checkPermission(sys,SecurityConstants.DRIVER_MODIFY_VEHICLE) == null)) {
+					%>						<tr>							
+		    		<td style="width:50%">
+						<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+			    		<a href="#" onClick="javascript:document.forms['edit'].submit()" class="texts" >
+			    			<%=messages.getText("generic.messages.edit")%>
+			    		</a>
+			    	</td>
+				</tr>
+	<%
+			}
+		}else {
+			
+			line = !line;
+			%>				
+			<%=(!line) ? "<tr>" : "" %>							
+  			<td style="width:50%">
+             	<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+				<a href="" id="linkpdfscreen"class="texts"/> 
+            	PDF </a> 
+			</td>
+			<%=(line) ? "</tr>" : "" %>		
+<%
+
+	if(userSessionData.checkPermission(SecurityConstants.MODIFY_VEHICLE)) {	
+		line = !line;
+%>					<%=(!line) ? "<tr>" : ""%>							
+				    		<td style="width:50%">
+	                			<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="#" onClick="javascript:document.forms['edit'].submit()" class="texts" >
+									<%=messages.getText("generic.messages.edit")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								}
+															if((userSessionData.checkPermission(SecurityConstants.MODIFY_VEHICLE)) && (data.getUse().getResourceBundleId().equals("persistence.datatype.typeuse.individual"))) {	 
+																line = !line;
+							%>					<%=(!line) ? "<tr>" : ""%>							
+							<td style="width:50%">                		
+	            	    		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="#" onClick="javascript:document.forms['changeToInstitutional'].submit()" class="texts">
+									<%=messages.getText("generic.messages.changeToInstitutional")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								}
+															if((userSessionData.checkPermission(SecurityConstants.MODIFY_VEHICLE)) && (data.getUse().getResourceBundleId().equals("persistence.datatype.typeuse.individual"))) {	
+																session.setAttribute("idVehicle",id); 
+																line = !line;
+							%>					<%=(!line) ? "<tr>" : ""%>							
+							<td style="width:50%">    
+							<!-- Opcion de Cambiar Conductor: -->
+								<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="#"onClick="javascript:document.forms['changeDriver'].submit()" class="texts">
+									<%=messages.getText("generic.messages.changeDriver")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								}
+															if((userSessionData.checkPermission(SecurityConstants.MODIFY_VEHICLE)) && (data.getUse().getResourceBundleId().equals("persistence.datatype.typeuse.institutional"))) {	
+																session.setAttribute("idVehicle",id);			
+																line = !line;
+							%>					<%=(!line) ? "<tr>" : ""%>							
+							<td style="width:50%">    
+	                			<!--  Opciï¿½n de Asiganr Conductor: -->
+		                		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="#" onClick="javascript:document.forms['assignDriver'].submit()" class="texts">
+									<%=messages.getText("generic.messages.assignDriver")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : ""%>							
+<%
+								}
+															
+									if((userSessionData.checkPermission(SecurityConstants.MODIFY_VEHICLE)) ||
+										(userSessionData.isForest() && userSessionData.checkPermission(SecurityConstants.CHECKLIST_VEHICLE))
+										|| (sys.isCorporation(CorporationData.DPA) && userSessionData.checkPermission(SecurityConstants.CHECKLIST_VEHICLE))
+										) {	
+										line = !line;
+										
+										session.setAttribute("idVehicle",id);			
+										String href = (userSessionData.isForest()) ?
+												"layout.jsp?refer=/vehicle/TruckCheckForm.jsp" + "?id=" + id : 
+												"layout.jsp?refer=/vehicle/VehicleCheckForm.jsp" + "?id=" + id;
+										if(corporationId == CorporationData.CIMSA) {
+											href = "layout.jsp?refer=/vehicle/CimsaCheckForm.jsp" + "?id=" + id;
+										}
+										if(corporationId == CorporationData.SYNGENTA) {
+											href = "layout.jsp?refer=/vehicle/SyngentaCheckForm.jsp" + "?id=" + id;
+										}
+										if(corporationId == CorporationData.SYNGENTA_BR) {
+											href = "mobile/checklistSyngentaBR.jsp?checklist="+CheckListData.CHECK_LIST_SYNGENTA_BR+"&id=" + id;
+										}
+										if(corporationId == CorporationData.PACIFICRUBIALES) {
+											href = "layout.jsp?refer=/vehicle/SimpleCheckList.jsp" + "?id=" + id +"&plate="+data.getMatricula();
+										}
+										if (corporationId == CorporationData.NALCO) {
+											href = "layout.jsp?refer=/vehicle/VehicleCheckFormNalco.jsp?id=" + id;
+										}
+										if (corporationId == CorporationData.ACU) {
+											href = "checklistACU.jsp?checklist="+CheckListData.CHECK_LIST_FORMULARIO_ACU+"&id=" + id;
+										}
+										if (corporationId == CorporationData.COFUSA || corporationId == CorporationData.FORESTALORIENTAL || corporationId == CorporationData.WEYERHAEUSER ||corporationId == CorporationData.MONTES_DE_PLATA ) {
+											String href1 = "checklistUPM.jsp?checklist="+CheckListData.UPM_CHECKLIST_PESADOS+"&id=" + id;
+											String href2 = "checklistUPM.jsp?checklist="+CheckListData.UPM_CHECKLIST_SEGRUTA+"&id=" + id;
+							%>						<%=(!line) ? "<tr>" : "" %>							
+							<td style="width:50%">  
+		                			
+			                		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+									<a href='<%=href1 %>' class="texts">
+										<%=messages.getText("generic.messages.addvehiclecheckupm2")%>
+									</a>
+								</td>
+						<%=(line) ? "</tr>" : ""%>
+<%								if(corporationId != CorporationData.WEYERHAEUSER){
+									line = !line;
+%>
+							<%=(!line) ? "<tr>" : ""%>							
+								<td style="width:50%">  
+				                		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+										<a href='<%=href2%>' class="texts">
+											<%=messages.getText("generic.messages.addvehiclecheckupm1")%>
+										</a>
+									</td>
+							<%=(line) ? "</tr>" : ""%>	
+<%								}else {
+									line = !line;
+									String href3 = "checklistUPM.jsp?checklist="+CheckListData.UPM_CHECKLIST_INTERNO+"&id=" + id;
+%>							<%=(!line) ? "<tr>" : ""%>							
+								<td style="width:50%">  
+			    					<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+									<a href='<%=href3%>' class="texts">
+										<%=messages.getText("checklist.weyer.internal")%>
+									</a>
+								</td>
+								<%=(line) ? "</tr>" : ""%>
+<%								}
+							}else 
+						if (corporationId == CorporationData.DPA) {
+							String href1 = "checklistDPA.jsp?checklist="+CheckListData.DPA_CHECKLIST_T1+"&id=" + id;
+							String href2 = "checklistDPA.jsp?checklist="+CheckListData.DPA_CHECKLIST_T2+"&id=" + id;
+%>						<%=(!line) ? "<tr>" : "" %>							
+							<td style="width:50%">  
+		                			
+			                		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+									<a href='<%=href1 %>' class="texts">
+										<%=messages.getText("generic.messages.addvehiclecheckdpa1")%>
+									</a>
+								</td>
+						<%=(line) ? "</tr>" : "" %>
+						<% line = !line; %>
+						<%=(!line) ? "<tr>" : "" %>							
+							<td style="width:50%">  
+		                			
+			                		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+									<a href='<%=href2 %>' class="texts">
+										<%=messages.getText("generic.messages.addvehiclecheckdpa2")%>
+									</a>
+								</td>
+						<%=(line) ? "</tr>" : "" %>							
+<%						}else {
+	%>					<%=(!line) ? "<tr>" : "" %>							
+							<td style="width:50%">  
+		                			
+			                		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+									<a href='<%=href %>' class="texts">
+										<%=messages.getText("generic.messages.addvehiclecheck")%>
+									</a>
+								</td>
+						<%=(line) ? "</tr>" : "" %>							
+	<%						if(corporationId == CorporationData.SYNGENTA) {
+								line = !line;
+								String href2 = "layout.jsp?refer=/vehicle/TruckCheckForm.jsp?id=" + id;
+	%>					<%=(!line) ? "<tr>" : "" %>							
+									<td style="width:50%">  
+			                			
+				                		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+										<a href='<%=href2 %>' class="texts">
+											<%=messages.getText("generic.messages.addtruckvehiclecheck")%>
+										</a>
+									</td>
+						<%=(line) ? "</tr>" : "" %>							
+	<%						}
+						}
+					}		
+					
+					// Seguimiento en Ruta: Solo para Forestales
+					if((userSessionData.isForest() && 
+							userSessionData.checkPermission(SecurityConstants.CHECKLIST_VEHICLE))
+						) {							
+							session.setAttribute("idVehicle",id);			
+							String href = "layout.jsp?refer=/vehicle/VehiclePursuitRouteForm.jsp" + "?id=" + id; 
+							line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+								<td style="width:50%">  
+		                			
+			                		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+									<a href='<%=href %>' class="texts">
+										<%=messages.getText("generic.messages.addpursuitroute")%>
+									</a>
+								</td>
+					<%=(line) ? "</tr>" : "" %>							
+<%							if(corporationId == CorporationData.LOSPIQUES) {
+								line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+								<td style="width:50%">  
+			                		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+									<a href='layout.jsp?refer=/vehicle/unconformities.jsp?id=<%=String.valueOf(data.getId())+"&name="+data.getMatricula()%>' class="texts">
+										<%=messages.getText("generic.driver.unconformities")%>
+									</a>								
+								</td>
+					<%=(line) ? "</tr>" : "" %>							
+<%							}
+						}	
+					
+					if((userSessionData.checkPermission(SecurityConstants.QUERY))) {	
+						session.setAttribute("idVehicle",id);			
+						String href = "layout.jsp?refer=/vehicle/VehicleDriversForm.jsp" + "?idVehicle=" + id + "&plate=" + data.getMatricula();
+						line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+							<td style="width:50%">
+		                		<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href='<%=href %>' class="texts">
+									<%=messages.getText("generic.messages.viewdriverlist")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : "" %>							
+<%					}	
+					
+					
+					// Exclusion
+					if(data.getExclusionDate() != null) {	
+						if((userSessionData.checkPermission(SecurityConstants.MODIFY_VEHICLE))) {	
+							line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+							<td style="width:50%">  
+								<img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="javascript:setAction(document.forms['exclusion'],'include');deleteIFConfirm(document.forms['exclusion'],'<%=messages.getText("generic.driver.driverdata.confirminclude")%>');" class="texts")>
+				         			<%=messages.getText("generic.driver.include")%>
+				         		</a>
+				         	</td>
+					<%=(line) ? "</tr>" : "" %>							
+<%						}	
+					}else {
+						if((userSessionData.checkPermission(SecurityConstants.MODIFY_VEHICLE))) {	
+							line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+							<td style="width:50%"> 	
+	        					<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="javascript:setAction(document.forms['exclusion'],'exclude');deleteIFConfirm(document.forms['exclusion'],'<%=messages.getText("generic.driver.driverdata.confirmexclude")%>');" class="texts">
+				    	     		<%=messages.getText("generic.driver.exclude")%>
+				        	 	</a>
+				        	</td>
+					<%=(line) ? "</tr>" : "" %>							
+<%						}
+						if(userSessionData.checkPermission(SecurityConstants.DELETE_VEHICLE)) {	
+							line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+					       	<td style="width:50%">  						
+		        				<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href="javascript:setAction(document.forms['exclusion'],'delete');deleteIFConfirm(document.forms['exclusion'],'<%=messages.getText("generic.driver.driverdata.confirmdelete")%>');" class="texts">
+									<%=messages.getText("generic.messages.delete")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : "" %>							
+<%						}
+					}
+					if(data.getCountryId().intValue() == CountryData.ARGENTINA_ID.intValue() && corporationId == CorporationData.MONSANTO) {
+						String maintenanceLink = "layout.jsp?refer=vehicle/maintenance.jsp?type=Create&id="+String.valueOf(data.getId());
+						line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+					       	<td style="width:50%" valign="middle">  						
+	        					<img border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href='<%=maintenanceLink%>' class="texts">
+									<%=messages.getText("generic.vehicle.addmaintenance")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : "" %>							
+<%					}						
+					if(corporationId == CorporationData.ALLERGAN) {
+						String maintenanceLink = "layout.jsp?refer=vehicle/contract.jsp?id="+String.valueOf(data.getId());
+						line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+					       	<td style="width:50%" valign="middle">  						
+	        					<img border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href='<%=maintenanceLink%>' class="texts">
+									<%=messages.getText("generic.vehicle.generatecontract")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : "" %>							
+<%					}						
+					if(corporationId == CorporationData.PEPSICO) {
+						String maintenanceLink = "layout.jsp?refer=vehicle/complaint.jsp?id="+String.valueOf(data.getId());
+						line = !line;
+%>					<%=(!line) ? "<tr>" : "" %>							
+					       	<td style="width:50%" valign="middle">  						
+	        					<img border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+								<a href='<%=maintenanceLink%>' class="texts">
+									<%=messages.getText("generic.vehicle.addcomplaint")%>
+								</a>
+							</td>
+					<%=(line) ? "</tr>" : "" %>							
+<%					}						
+%>					<%=(line) ? "<tr>" : "" %>							
+						<td style="width:50%"> 	
+							<img align="middle" border="0" src="/datacenter/util/imgs/icon2.gif" width="12">&nbsp;
+							<a href="#" onClick="javascript:document.forms['cancel'].submit()" class="texts">
+								<%=messages.getText("generic.messages.cancel")%>
+							</a>
+						</td>
+					</tr>
+<%				} 
+%>				</table>
+				<jsp:include page="../component/utilitybox3bottom.jsp"/>
+			</td>
+		</tr>
+		<!-- Fin Opciones -->
+		
+		<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+   		</tr>
+	
+</table>
+ 
+
+<%			}else {
+%>	<jsp:include  page='<%="/util/allowedData.jsp?message=vehicle.error.access.vehicle" %>'/>
+<%			}
+		}else{
+			dispatcher=request.getRequestDispatcher("layout.jsp?refer=/vehicle/VehicleList.jsp");
+			dispatcher.forward(request,response);
+		}	
+	}
+	
+%>
+
+<% if (sys.getCorporationId() == CorporationData.ALLERGAN){ %>
+<!-- Form para generar los contratos -->
+<html:form action="/VehicleContract" method="post">	
+<html:hidden property="vehicle" value="" />
+<html:hidden property="day" value="" />
+<html:hidden property="month" value="" />
+<html:hidden property="year"  value=""/>
+<html:hidden property="type"  value=""/>
+</html:form>
+<% } %>
+
+</html:html>
+

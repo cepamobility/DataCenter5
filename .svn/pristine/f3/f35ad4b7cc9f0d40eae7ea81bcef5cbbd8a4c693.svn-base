@@ -1,0 +1,555 @@
+package communication.alert;
+
+import java.io.Serializable;
+import java.net.InetAddress;
+
+import persistence.driver.tables.Driver;
+
+import communication.administration.corporation.tables.CorporationData;
+import communication.driver.tables.DriverData;
+import communication.language.Text;
+import communication.security.SecurityConstants;
+public class AlertConstants implements Serializable {
+	
+	//public static final String SCHEDULED ="scheduled";
+	//public static final String NOTSHEDULED ="notscheduled";
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	// Nuevo proveedor de Email:
+	public static final String MAILSERVER = "smtp.gmail.com";
+	public static final String REPLY_TO = "info@cepadc.com";
+	
+	public static final String MAILSERVER2 = "smtp.cepainternational.com";
+	public static final String DATACENTER_EMAIL_USER = "datacenter@cepainternational.com";
+	public static final String DATACENTER_EMAIL_PASSWORD = "datacenter10";
+	
+	/*
+	 * Outgoing Mail Server: mail.cepalogistica.com (server requires authentication) port 587
+		Outgoing Mail Server: (SSL) elite1245.inmotionhosting.com (server requires authentication) port 465
+	 */
+	public static final String MAILSERVER_INMOTION = "mail.cepalogistica.com";
+	
+	//	CEPA-INTERNATIONAL
+	// public static final String MAILSERVER = "smtp.cepainternational.com";
+	
+	
+	/*
+	 * ConfigurÃ© el mail datacenter@cepainternational.com, clave: datacenter10, 
+	 * para hacer envÃ­os de las herramientas electrÃ³nicas; voy a armar 
+	 * tambiÃ©n los correos da@cepainternational.com, ebtw@cepainternational.com y 
+	 * mailing@cepainternational.com para los distintos productos. 
+	 * Se configura igual que las cuentas anteriores en Locaweb; POP3, 
+	 * servidor POP: pop.cepainternational.com, 
+	 * servidor SMTP: smtp.cepainternational.com,
+	 * nombre de usuario = direcciÃ³n completa de mail.
+	 */
+	
+	
+	// public static final String MAILSERVER = "smtp.cepasafedrive.com";
+	// public static final String GMAIL_SMTP = "smtp.gmail.com";
+	// public static final String MAILSERVER = GMAIL_SMTP;
+	
+	/**
+	 * Nuevo dominio de datacenter:
+	 */
+	public static final String DC_DOMAIN = "www.cepadc.com";
+
+	/**
+	 * Todas las alertas deben mandarse con copia oculta a: alertasdc@gmail.com
+	 */
+	public static final String BCC = "alertasdc@gmail.com";
+	public static final String BCC_PASSWORD = "RPDEy8k9";
+
+	/**
+	 * Algunas cuentas de email de empleados de CEPA:
+	 */
+	public static final String EMAIL_FER = "fcarriquiry@cepasafedrive.com";
+	public static final String EMAIL_JUAN = "jrodriguez@cepasafedrive.com";
+	public static final String EMAIL_GABI_MARINI = "gmarini@cepasafedrive.com";
+	public static final String EMAIL_MICA = "aflorin@cepasafedrive.com";
+	public static final String EMAIL_SYNGENTA_BR = "f.millan@cepasafedrive.com";
+	
+	public static final String EMAIL_CRIS = "csantos@cepadc.com";
+	
+	public static final String EMAIL_LILLY = "mpatrone@cepasafedrive.com";
+	public static final String EMAIL_MONSANTO_AR = "mpatrone@cepasafedrive.com";
+
+	/**
+	 * Nueva configuracion de email de FOSA:
+	 */
+	public static final String FROM_FOSA = "fosa@cepadc.com";
+	//public static final String FROM_FOSA= "fosadatacenter@cepasafedrive.com";
+	public static final String FROMNAME_FOSA = "Forestal Oriental DataCenter";
+	public static final String DIGITAL_SIGNATURE_FOSA="Alejandro Florin";
+	public static final String DIGITAL_SIGNATURE_SYNGENTA_BR="CEPA do Brasil";
+	// public static final String FROMPASSWORD_FOSA = "fosaalertas01";
+	public static final String FROMPASSWORD_FOSA = "fosa01";
+	
+	/* Nueva configuracion de email de WEYERHAEUSER */
+	public static final String FROM_WEYERHAEUSER = "weyerhaeuser@cepadc.com";
+	public static final String FROMNAME_WEYERHAEUSER = "Weyerhaeuser DataCenter";
+	public static final String DIGITAL_SIGNATURE_WEYERHAEUSER = "Veronica Luongo";
+	public static final String FROMPASSWORD_WEYERHAEUSER = "weyerhaeuser01";
+	
+	/**
+	 * Nueva configuracion de email de Monsanto General:
+	 */
+	// public static final String FROM_MONSANTO_DC= "monsantodc@cepasafedrive.com";
+	public static final String FROM_MONSANTO_DC = "monsanto@cepadc.com";
+	public static final String FROMNAME_MONSANTO_DC = "Monsanto DC DataCenter";
+	public static final String DIGITAL_SIGNATURE_MONSANTO_DC="Paula Patrone";
+	// public static final String FROMPASSWORD_MONSANTO_DC = "Mcl1BC06";
+	public static final String FROMPASSWORD_MONSANTO_DC = "monsanto01";
+	
+	/**
+	 * Nueva configuracion de email para Monsanto Argentina y Paraguay
+	 */
+	//Para mandar alertas desde la cuenta de monsantodc@cepasafedrive.com para Monsanto Argentina
+	// public static final String FROM_MONSANTO_AR= "monsantodc@cepasafedrive.com";
+	public static final String FROM_MONSANTO_AR = "monsanto@cepadc.com";
+	public static final String FROMNAME_MONSANTO_AR = "Monsanto DC DataCenter";
+	public static final String DIGITAL_SIGNATURE_MONSANTO_AR ="Paula Patrone";
+	public static final String DIGITAL_SIGNATURE_MONSANTO_PY ="Paula Patrone";
+	// public static final String FROMPASSWORD_MONSANTO_AR = "Mcl1BC06";
+	public static final String FROMPASSWORD_MONSANTO_AR = "monsanto01";
+	
+	
+	public static final String FROM_MONSANTO_PY = "monsanto@cepadc.com";
+	public static final String FROMPASSWORD_MONSANTO_PY = "monsanto01";
+	/**
+	 * Nueva configuracion de email para Monsanto Brasil	 * 
+	 */
+	//Para mandar alertas desde la cuenta de monsantodcbr@cepasafedrive.com para Monsanto Brasil
+	// public static final String FROM_MONSANTO_BR= "monsantodcbr@cepasafedrive.com";
+	public static final String FROM_MONSANTO_BR= "monsantobr@cepadc.com";
+	public static final String FROMNAME_MONSANTO_BR= "Monsanto Brasil DataCenter";
+	public static final String DIGITAL_SIGNATURE_MONSANTO_BR="Gabriela Marini";
+	public static final String FROMPASSWORD_MONSANTO_BR = "monsantobr01";
+	
+	/**
+	 * Nueva configuracion de email para Bayer	 * 
+	 */
+	//Para mandar alertas desde la cuenta de monsantodcbr@cepasafedrive.com para Monsanto Brasil
+	// public static final String FROM_MONSANTO_BR= "monsantodcbr@cepasafedrive.com";
+	public static final String FROM_BAYER_BR= "bayer@cepadc.com";
+	public static final String FROMNAME_BAYER_BR= "Depto Data Center - CEPA Brasil";
+	public static final String DIGITAL_SIGNATURE_BAYER_BR="Depto Data Center ";
+	public static final String FROMPASSWORD_BAYER_BR = "bayer01";
+	
+	
+	// Nueva: bayer@cepalogistica.com
+	
+	public static final String[] BAYER_ALERT_EMAILS = 
+			{
+			"bayer1@cepalogistica.com","bayer2@cepalogistica.com",
+			"bayer3@cepalogistica.com","bayer4@cepalogistica.com",
+			"bayer5@cepalogistica.com","bayer6@cepalogistica.com",
+			"bayer7@cepalogistica.com","bayer8@cepalogistica.com",
+			"bayer9@cepalogistica.com","bayer10@cepalogistica.com",
+			"bayer11@cepalogistica.com","bayer12@cepalogistica.com",
+			"bayer13@cepalogistica.com","bayer14@cepalogistica.com",
+			"bayer15@cepalogistica.com","bayer16@cepalogistica.com",
+			"bayer17@cepalogistica.com","bayer18@cepalogistica.com",
+			"bayer19@cepalogistica.com","bayer20@cepalogistica.com"			
+			};
+	
+	/*
+	public static final String[] BAYER_ALERT_EMAILS =
+			 {
+			  "bayer1@cepainternational.com","bayer2@cepainternational.com",
+			  "bayer3@cepainternational.com","bayer4@cepainternational.com",
+			  "bayer5@cepainternational.com","bayer6@cepainternational.com",
+			  "bayer7@cepainternational.com","bayer8@cepainternational.com",
+			  "bayer9@cepainternational.com","bayer10@cepainternational.com",
+			  "bayer11@cepainternational.com","bayer12@cepainternational.com",
+			  "bayer13@cepainternational.com","bayer14@cepainternational.com",
+			  "bayer15@cepainternational.com","bayer16@cepainternational.com",
+			  "bayer17@cepainternational.com","bayer18@cepainternational.com",
+			  "bayer19@cepainternational.com","bayer20@cepainternational.com",
+			  };
+			  */
+	public static final String BAYER_ALERT_EMAILS_PASSWORD = "bayer2011";
+	
+	/**
+	 * Nueva configuracion de email para J&J
+	 */
+	//Para mandar alertas desde la cuenta de sfdatacenter@cepasafedrive.com
+	// public static final String FROM_JJ= "sfdatacenter@cepasafedrive.com";
+	public static final String FROM_JJ = "sf@cepadc.com";
+	public static final String FROMNAME_JJ= "SF DataCenter";
+	public static final String DIGITAL_SIGNATURE_JJ="Valentina Lados";
+	// public static final String FROMPASSWORD_JJ = "$fDATA34";
+	public static final String FROMPASSWORD_JJ = "sf2010";
+	
+	
+	/**
+	 * Configuracion de email para Lilly:
+	 */
+	public static final String FROM_LILLY = "lilly@cepadc.com";
+	public static final String FROMNAME_LILLY = "CEPA Data Center";
+	public static final String DIGITAL_SIGNATURE_LILLY="Alfonsina Clavette";
+	public static final String FROMPASSWORD_LILLY = "lilly01";
+	
+	/**
+	 * Nueva configuracion de email general de datacenter
+	 */
+	public static final String FROM_DC = "datacenter@cepadc.com";
+	public static final String FROMNAME_DC = "CEPA DATA CENTER";
+	public static final String DIGITAL_SIGNATURE_DC="";
+	public static final String FROMPASSWORD_DC = "datacenter01";
+	public static final String DIGITAL_SIGNATURE_MANAGER="Valentina Lados";
+
+	
+	
+	
+	//Para mandar alertas desde la cuenta de alertas@cepasafedrive.com
+	//public static final String FROM_ALERTS = "alertas@cepasafedrive.com";
+	//public static final String FROMNAME_ALERTS = "ALERTS DATACENTER";
+	//public static final String DIGITAL_SIGNATURE_ALERTS="Juan Rodriguez";
+	//public static final String FROMPASSWORDALERTS = "Aj18%99n";	
+	
+
+	/**
+	 * Directorios donde guardar archivos temporales de alertas, logs
+	 * y archivos a enviar en las alertas.
+	 */
+	//Directorio para almacenar reportes generados por alertas
+	// public static final String TEMP_DIRECTORY_ALERT = "/tmp/datacenter/alerts/";
+	public static final String TEMP_DIRECTORY_ALERT = 
+					SecurityConstants.isWindowsOS()?
+							"C:\\jboss51\\datacenter\\alerts.war\\":
+							"/home/jboss51/datacenter/alerts.war/";
+	
+	 /**
+	 * Directorio para guardar los reportes de J&J
+	 */
+	public static final String TEMP_DIRECTORY_REPORTER_JJ = 
+		SecurityConstants.isWindowsOS()?
+				"C:\\jboss51\\datacenter\\datacenter5.war\\reporterjj\\":
+				"/home/jboss51/datacenter/datacenter5.war/reporterjj/";
+
+	 /**
+	 * Directorio para guardar los reportes de J&J
+	 */
+	public static final String TEMP_DIRECTORY_DPA = 
+		SecurityConstants.isWindowsOS()?
+				"C:\\jboss51\\datacenter\\datacenter5.war\\dpa\\":
+				"/home/jboss51/datacenter/datacenter5.war/dpa/";
+	
+	public static final String TEMP_DIRECTORY_IMAGE_DPA = 
+	SecurityConstants.isWindowsOS()?
+			TEMP_DIRECTORY_DPA+"checklist\\images\\":TEMP_DIRECTORY_DPA+"checklist/images/";
+
+	public static final String TEMP_DIRECTORY_GENERAL = 
+			SecurityConstants.isWindowsOS()?
+					"C:\\jboss51\\datacenter\\datacenter5.war\\general\\":
+					"/home/jboss51/datacenter/datacenter5.war/general/";
+		
+
+	public static final String TEMP_DIRECTORY_SYNGENTA = 
+			SecurityConstants.isWindowsOS()?
+					"C:\\jboss51\\datacenter\\datacenter5.war\\syngenta\\":
+					"/home/jboss51/datacenter/datacenter5.war/syngenta/";
+	
+	public static final String TEMP_DIRECTORY_DOWNLOAD =
+			SecurityConstants.isWindowsOS()?
+					"C:\\jboss51\\datacenter\\datacenter5.war\\downloads\\":
+					"/home/jboss51/datacenter/datacenter5.war/downloads/";
+
+	public static final String FILE_DIRECTORY_ACTIVITY = 
+			SecurityConstants.isWindowsOS()?
+					"C:\\jboss51\\datacenter\\datacenter5.war\\activity\\":
+					"/home/jboss51/datacenter/datacenter5.war/activity/";
+	
+		public static final String TEMP_DIRECTORY_IMAGE_SYNGENTA = 
+		SecurityConstants.isWindowsOS()?
+				TEMP_DIRECTORY_SYNGENTA+"checklist\\images\\":TEMP_DIRECTORY_SYNGENTA+"checklist/images/";
+
+		public static final String TEMP_DIRECTORY_IMAGE_GENERAL = 
+		SecurityConstants.isWindowsOS()?
+				TEMP_DIRECTORY_GENERAL+"checklist\\images\\":TEMP_DIRECTORY_GENERAL+"checklist/images/";
+ 
+		
+		
+	/**
+	 * Directorio para guardar los reportes de J&J
+	 */
+	public static final String TEMP_DIRECTORY_ACTIVITIES = 
+		SecurityConstants.isWindowsOS()?
+				"C:\\jboss51\\datacenter\\datacenter5.war\\activities\\":
+				"/home/jboss51/datacenter/datacenter5.war/activities/";
+
+	/**
+	 * Directorio para guardar los archivos de alertas de bayer
+	 */
+	public static final String TEMP_DIRECTORY_ALERT_BAYER = 
+		SecurityConstants.isWindowsOS()?
+				"C:\\jboss51\\datacenter\\alerts.war\\bayer":
+				"/home/jboss51/datacenter/alerts.war/bayer";
+	
+	public static final String TEMP_DIRECTORY_ALERT_MONSANTO = 
+		SecurityConstants.isWindowsOS()?
+				"C:\\jboss51\\datacenter\\alerts.war\\monsanto":
+				"/home/jboss51/datacenter/alerts.war/monsanto";
+	
+	public static final String TEMP_DIRECTORY_ALERT_GENERIC = 
+		SecurityConstants.isWindowsOS()?
+				"C:\\jboss51\\datacenter\\alerts.war\\mailingGenericAlert.txt":
+				"/home/jboss51/datacenter/alerts.war/mailingGenericAlert.txt";
+	
+	public static final String TEMP_DIRECTORY_ALERT_LILLY = 
+		SecurityConstants.isWindowsOS()?
+				"C:\\jboss51\\datacenter\\alerts.war\\mailingLilly.txt":
+				"/home/jboss51/datacenter/alerts.war/mailingLilly.txt";
+	
+	public static final String TEMP_DIRECTORY_ALERT_MONSANTO_BRASIL = 
+		SecurityConstants.isWindowsOS()?
+				"C:\\jboss51\\datacenter\\alerts.war\\mailingMonsantoBrasil.txt":
+				"/home/jboss51/datacenter/alerts.war/mailingMonsantoBrasil.txt";
+
+	public static final String TEMP_DIRECTORY_ALERT_MONSANTO_ARGENTINA = 
+		SecurityConstants.isWindowsOS()?
+				"C:\\jboss51\\datacenter\\alerts.war\\mailingMonsantoAR.txt":
+				"/home/jboss51/datacenter/alerts.war/mailingMonsantoAR.txt";
+	
+	public static final String TEMP_DIRECTORY_ALERT_MONSANTO_PARAGUAY = 
+		SecurityConstants.isWindowsOS()?
+				"C:\\jboss51\\datacenter\\alerts.war\\mailingMonsantoPY.txt":
+				"/home/jboss51/datacenter/alerts.war/mailingMonsantoPY.txt";
+	
+	public static final String TEMP_DIRECTORY_ALERT_MONSANTO_URUGUAY = 
+		SecurityConstants.isWindowsOS()?
+				"C:\\jboss51\\datacenter\\alerts.war\\mailingMonsantoUY.txt":
+				"/home/jboss51/datacenter/alerts.war/mailingMonsantoUY.txt";
+	
+	public static final String TEMP_DIRECTORY_REPORTER_SYNGENTA = 
+			SecurityConstants.isWindowsOS()?
+					"C:\\jboss51\\datacenter\\alerts.war\\syngenta\\":
+					"/home/jboss51/datacenter/alerts.war/syngenta/";
+
+	public static final String TEMP_DIRECTORY_GABINETES = 
+			SecurityConstants.isWindowsOS()?
+					"C:\\jboss51\\datacenter\\datacenter5.war\\gabinetes\\":
+						"/home/jboss51/datacenter/datacenter5.war/gabinetes/";
+
+	public static final String TEMP_DIRECTORY_CARTERINHA = 
+			SecurityConstants.isWindowsOS()?
+					"C:\\jboss51\\datacenter\\datacenter5.war\\dow\\carterinha\\":
+						"/home/jboss51/datacenter/datacenter5.war/dow/carterinha/";
+	public static final String TEMP_DIRECTORY_CARTERINHA_OUT = "../datacenter5/dow/carterinha/out/";
+
+	public static final String UPM_DIRECTORY_CARNET = 
+			SecurityConstants.isWindowsOS()?
+					"C:\\jboss51\\datacenter\\datacenter5.war\\fosa\\carnet\\":
+						"/home/jboss51/datacenter/datacenter5.war/fosa/carnet/";
+	public static final String UPM_DIRECTORY_CARNET_OUT = "../datacenter5/fosa/carnet/out/";
+
+	public static final String MDP_DIRECTORY_CARNET = 
+			SecurityConstants.isWindowsOS()?
+					"C:\\jboss51\\datacenter\\datacenter5.war\\mdp\\carnet\\":
+						"/home/jboss51/datacenter/datacenter5.war/mdp/carnet/";
+	public static final String MDP_DIRECTORY_CARNET_OUT = "../datacenter5/mdp/carnet/out/";
+
+	public static final String TEMP_DIRECTORY_CERTIFICADOS = 
+			SecurityConstants.isWindowsOS()?
+					"C:\\jboss51\\datacenter\\datacenter5.war\\certificados\\":
+						"/home/jboss51/datacenter/datacenter5.war/certificados/";
+
+	public static final String TEMP_DIRECTORY_BAYERMX = 
+			SecurityConstants.isWindowsOS()?
+					"C:\\jboss51\\datacenter\\datacenter5.war\\bayermx\\":
+						"/home/jboss51/datacenter/datacenter5.war/bayermx/";
+
+	public static final String TEMP_DIRECTORY_ALLERGAN = 
+			SecurityConstants.isWindowsOS()?
+					"C:\\jboss51\\datacenter\\datacenter5.war\\allergan\\":
+						"/home/jboss51/datacenter/datacenter5.war/allergan/";
+
+	public static final String TEMP_DIRECTORY_JASPERREPORT = 
+	SecurityConstants.isWindowsOS()?
+			"C:\\jboss51\\datacenter\\datacenter5.war\\jasperreports\\":
+				"/home/jboss51/datacenter/datacenter5.war/jasperreports/";
+
+	public static final String TEMP_DIRECTORY_ACTIVITY_QR = 
+			SecurityConstants.isWindowsOS()?
+					"C:\\jboss51\\datacenter\\datacenter5.war\\activityqr\\":
+						"/home/jboss51/datacenter/datacenter5.war/activityqr/";
+
+	public static final String TEMP_DIRECTORY_REPORT = 
+			SecurityConstants.isWindowsOS()?
+					"C:\\jboss51\\datacenter\\datacenter5.war\\reports\\":
+						"/home/jboss51/datacenter/datacenter5.war/reports/";
+
+
+	public static final String FONT_REPORT_NAME = TEMP_DIRECTORY_JASPERREPORT+"/fonts/HelveticaNeue-LightCond.otf";
+
+	public static final int FLEET_MONSANTO_AR = 9398;
+	public static final int FLEET_MONSANTO_BR = 9405;
+	public static final int FLEET_MONSANTO_PY = 9431;
+	public static final int FLEET_MONSANTO_UY = 9462;
+	
+	public static final String SERVER_PRODUCTION_IP = "74.124.197.17";
+	public static final String SERVER_LOCAL_IP = "127.0.0.1";
+	public static final String SERVER_LOCAL_IP2 = "127.0.0.2";
+	
+	public static final String DATABASE_SERVER = 
+		SecurityConstants.isProductionServer()?
+				"jdbc:postgresql://74.124.197.17:5432/datacenter5":
+				"jdbc:postgresql://localhost:5432/datacenter";
+	
+	/** 
+	 * Flotas de Lilly 
+	 * 
+	 */
+	public static final int FLEET_LILLY_ENGLISH = 1; // 9448, 9444, 9441, 9442, 9451
+	public static final int FLEET_LILLY_SPANISH_WITHOUT_ODOMETER = 2; // 9446, 9445, 9447, 9443, 9449, 9450
+	public static final int FLEET_LILLY_SPANISH_WITH_ODOMETER = 3; // 9453, 9454, 9456
+	
+	public static final int ACTIVE= 0;
+    public static final int FINALIZED = 1;
+    public static final int ALL = 2;
+    public static final String ALERT_TRAILER ="alert.type.checklist.trailer";
+    public static final String ALERT_TRUCK = "alert.type.checklist.truck";
+    public static final String ALERT_VEHICLE = "alert.type.checklist.vehicle";
+    public static final String ALERT_GENERAL = "alert.type.checklist.general";
+
+    
+    public static final String ALERT_COMPLETE_TRAILER = "completeTrailer";
+    public static final String ALERT_COMPLETE_VEHICLE = "completeVehicle";
+    public static final String ALERT_COMPLETE_TRUCK = "completeTruck";
+    
+    public static final String ALERT_PRIORITY_HIGH = "generic.alert.priority.high";
+    public static final String ALERT_PRIORITY_MEDIUM = "generic.alert.priority.medium";
+    public static final String ALERT_PRIORITY_LOW = "generic.alert.priority.low";
+    
+    public static final String ALERT_FRECUENCY_YEARLY = "generic.alert.frecuency.yearly";
+    public static final String ALERT_FRECUENCY_DAILY = "generic.alert.frecuency.daily";
+    public static final String ALERT_FRECUENCY_MONTHLY = "generic.alert.frecuency.monthly";
+    public static final String ALERT_FRECUENCY_WEEKLY = "generic.alert.frecuency.weekly";
+    public static final String ALERT_FRECUENCY_NA = "generic.alert.frecuency.na";
+    
+    /**
+     * Tipos de Alertas: parenttype de la tabla alert
+     */
+    public static final String ALERTTYPE_CHECKLIST_TRUCK = "alert.type.checklist.truck";
+    public static final String ALERTTYPE_CHECKLIST_TRAILER = "alert.type.checklist.trailer";
+    public static final String ALERTTYPE_CHECKLIST_VEHICLE = "alert.type.checklist.vehicle";
+    public static final String ALERTTYPE_CHECKLIST_GENERAL = "alert.type.checklist.general";
+    
+    public static final String ALERTTYPE_REMINDER_FLEET = "alert.type.reminder.fleet";
+    public static final String ALERTTYPE_REPORT_DRIVER = "alert.type.report.driver";
+    
+    public static final String ALERTTYPE_LICENSE_EXPIRY = "alert.type.licenceexpiry";
+    public static final String ALERTTYPE_LOWPOINTS = "alert.type.driverwithlowpoints";
+    public static final String ALERTTYPE_TRAVEL = "alert.type.travel";
+    public static final String ALERTTYPE_CEPA_TIPS = "alert.type.cepatips";
+	
+    /**
+     * Identificadores de Alertas
+     */
+    public static final int ALLERGAN_LICENSE_EXPIRY_30DAYS = 10233; /* Allergan License Expiry 30 Days */
+    public static final int BAYER_LICENSE_EXPIRY_30DAYS = 10207; /* Bayer License Expiry 30 Days */
+
+    public static final int BAYER_LICENSE_EXPIRY_7DAYS = 10208;  /* Bayer License Expiry 7 Days */
+    public static final int BAYER_LICENSE_EXPIRY_1DAY_PASS = 10209; /* Bayer License Expiry 1 Day Pass */
+    public static final int CIMSA_LICENSE_EXPIRY = 10201;
+    public static final int NALCO_LICENSE_EXPIRY = 10210;
+    public static final int MONSANTO_BRASIL_REMEMBER_ALERT = 10204;
+    public static final int MONSANTO_ARGENTINA_REMEMBER_ALERT = 10203;
+    public static final int MONSANTO_PARAGUAY_REMEMBER_ALERT = 10211;
+    
+    public static final int LILLY_ENGLISH_REMEMBER_ALERT_1DIA = 10212;
+    public static final int LILLY_ENGLISH_REMEMBER_ALERT_5DIA = 10213;
+    public static final int LILLY_SPANISH_WITHOUT_ODOMETERS_REMEMBER_ALERT_1DIA = 10214;
+    public static final int LILLY_SPANISH_WITHOUT_ODOMETERS_REMEMBER_ALERT_5DIA = 10215;
+    public static final int LILLY_SPANISH_WITH_ODOMETERS_REMEMBER_ALERT_1DIA = 10216;
+    public static final int LILLY_SPANISH_WITH_ODOMETERS_REMEMBER_ALERT_2DIA = 10217;
+    public static final int LILLY_SPANISH_WITH_ODOMETERS_REMEMBER_ALERT_3DIA = 10218;
+    public static final int LILLY_SPANISH_WITH_ODOMETERS_REMEMBER_ALERT_4DIA = 10219;
+    public static final int LILLY_SPANISH_WITH_ODOMETERS_REMEMBER_ALERT_5DIA = 10220;
+    
+	public static final String EMAIL_MONSANTO_DRIVERS = "monsantoatualizacao@cepadc.com";
+	public static final String PASSWORD_MONSANTO_DRIVERS = "cepa2015";
+    
+	
+	public static String getTEMPImage(int coprporation){
+		switch (coprporation) {
+		case CorporationData.DPA:
+			return TEMP_DIRECTORY_IMAGE_DPA;
+		case CorporationData.SYNGENTA:
+			return TEMP_DIRECTORY_IMAGE_SYNGENTA;
+		case CorporationData.SYNGENTA_BR:
+			return TEMP_DIRECTORY_IMAGE_SYNGENTA;	
+		}
+		
+		return TEMP_DIRECTORY_IMAGE_GENERAL;
+	}
+	
+	public static String getTEMP(int coprporation){
+		switch (coprporation) {
+			case CorporationData.JJ:
+				return TEMP_DIRECTORY_REPORTER_JJ;
+			case CorporationData.DPA:
+				return TEMP_DIRECTORY_DPA;
+			case CorporationData.SYNGENTA:
+				return TEMP_DIRECTORY_SYNGENTA;
+		}
+		
+		return TEMP_DIRECTORY_GENERAL;
+	}
+    	
+	/**
+	 * Devuelve true si estoy en el servidor de produccion y false
+	 * en caso contario.
+	 * @return
+	 */
+	public static boolean isProductionServer(){
+		try{
+			InetAddress inetAddress = InetAddress.getLocalHost();
+			String ip = inetAddress.getHostAddress();
+			System.out.println("Server IP: " + ip);
+			if (ip.equalsIgnoreCase(AlertConstants.SERVER_PRODUCTION_IP)){
+				return true;
+			}else{
+				return false;
+			}
+		}catch (Exception e){
+			e.printStackTrace();
+			return false;
+		}
+	}
+
+
+	public static String getBodyChangeDriver(boolean changeVehicle, boolean exclude, boolean include, DriverData data, Driver driver, int corporation) {
+		String corporationStr = "--";
+		switch(corporation) {
+			case CorporationData.MONSANTO:
+				corporationStr = "Monsanto";
+				break;
+			case CorporationData.BAYER:
+				corporationStr = "Bayer "+driver.getDivOrg1().getDivOrgItemLevel2().getDivOrgItemLevel3().getResourceKey();
+				break;
+		}
+		String body = "<p>A mudança ocorreu em um condutor</p>";
+		body += "<p>Condutor:" + data.getFirstName() + " " + data.getLastName() +"</p>";
+		body += "<p>Corporação:" + corporationStr +"</p>";
+		if(corporation == CorporationData.MONSANTO) {
+			body += "<p>Observações:" + data.getLicenseObs() +"</p>";
+		}
+		String link = "https://www.cepadc.com/datacenter/layout.jsp?refer=/driver/DriverView.jsp?id="+data.getId();
+		body += "<p>Link: <a href='"+link+"'>"+link+"</a></p>";
+		if(changeVehicle) {
+			body += "<p>- Veículo autorizado anterior:"+Text.getVehicleAllowed(driver.getVehicleAllowed()) +"</p>";
+			body += "<p>- Veículo autorizado novo:"+Text.getVehicleAllowed(data.getVehicleAllowed().getResourceBundleId()) +"</p>";
+		}
+		if(exclude)
+			body += "<p>- O condutor foi desativado</p>";
+		if(include)
+			body += "<p>- O condutor foi ativado</p>";
+		return body;
+	}
+	 
+}

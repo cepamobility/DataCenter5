@@ -1,0 +1,125 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>Documento sem t&iacute;tulo</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+
+<body leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
+<table width="559" border="0" align="center" cellpadding="0" cellspacing="0">
+  <tr> 
+    <td height="79" colspan="4"> 
+      <table width="90%" border="0" align="center" cellpadding="0" cellspacing="0">
+        <tr> 
+          <td><div align="center"><font size="5" face="Arial, Helvetica, sans-serif"><strong></strong></font></div>
+            <div align="center"></div>
+            <table width="91%" height="63" border="0" align="center" cellpadding="0" cellspacing="0" bgcolor="3B6692">
+              <tr> 
+                <td height="63" align="center" valign="middle"> <font color="#FFFFFF" size="5" face="Arial, Helvetica, sans-serif"><strong><em>Manual 
+                  do Usu&aacute;rio</em></strong></font><br> <font color="#FFFFFF" size="3" face="Arial, Helvetica, sans-serif"><strong><font size="2">INSTRU&Ccedil;&Otilde;ES 
+                  B&Aacute;SICAS DE ACESSO E USO</font></strong></font></td>
+              </tr>
+            </table></td>
+        </tr>
+      </table>
+      <div align="right"> </div></td>
+  </tr>
+  <tr valign="top"> 
+    <td height="21" colspan="5"> <hr color="#3B6692"noshade></td>
+  </tr>
+  <tr> 
+    <td colspan="5"><font size="3" face="Arial, Helvetica, sans-serif"><strong>CONSULTAS</strong></font></td>
+  </tr>
+  <tr> 
+    <td height="454" colspan="5"> <div align="center"> 
+        <table width="100%" border="0" cellspacing="0" cellpadding="0">
+          <tr> 
+            <td>&nbsp;</td>
+          </tr>
+          <tr> 
+            <td height="19"><div align="justify"><font size="2" face="Arial, Helvetica, sans-serif">Esta 
+                fun&ccedil;&atilde;o permite consultar e visualizar um grupo de 
+                condutores.</font></div></td>
+          </tr>
+          <tr> 
+            <td height="19"> <p>&nbsp;</p></td>
+          </tr>
+          <tr> 
+            <td><font face="Arial, Helvetica, sans-serif"><strong>Condutores/Consultas/Por 
+              Condutores e Eventos</strong></font></td>
+          </tr>
+          <tr> 
+            <td><font face="Arial, Helvetica, sans-serif">&nbsp;</font></td>
+          </tr>
+          <tr> 
+            <td><font face="Arial, Helvetica, sans-serif">&nbsp;</font> <table width="90%" height="223" border="1" align="center" cellpadding="0" cellspacing="0" bordercolor="#3B6692">
+                <tr> 
+                  <td height="221"> 
+                    <div align="justify"></div>
+                    <div align="justify"></div>
+                    <div align="justify"> 
+                      <table width="90%" border="0" align="center" cellpadding="0" cellspacing="0">
+                        <tr> 
+                          <td width="30%" height="176"><img src="/datacenter/util/imgs/mn_menu_2.jpg" width="152" height="176"></td>
+                          <td width="3%">&nbsp;</td>
+                          <td width="67%"> <div align="justify"><font size="2" face="Arial, Helvetica, sans-serif">Este 
+                              item permite buscar condutores por crit&eacute;rios 
+                              organizacionais como pa&iacute;s, divis&atilde;o, 
+                              unidade e tamb&eacute;m por quantidade de eventos 
+                              registrados. &Eacute; poss&iacute;vel combinar quantidade 
+                              de multas, acidentes e incidentes para visualiza&ccedil;&atilde;o 
+                              dos condutores.</font></div></td>
+                        </tr>
+                      </table>
+                    </div></td>
+                </tr>
+              </table></td>
+          </tr>
+          <tr> 
+            <td> <div align="justify"></div></td>
+          </tr>
+          <tr> 
+            <td><font face="Arial, Helvetica, sans-serif">&nbsp;</font></td>
+          </tr>
+          <tr> 
+            <td><font face="Arial, Helvetica, sans-serif"><strong>Condutores/Vencimento 
+              de CNH</strong></font></td>
+          </tr>
+          <tr> 
+           <td>&nbsp;</td>
+          </tr>
+          <tr> 
+            <td><table width="90%" height="210" border="1" align="center" cellpadding="0" cellspacing="0" bordercolor="#3B6692">
+                <tr> 
+                  <td> <div align="justify"></div>
+                    <div align="justify"></div>
+                    <div align="justify"> 
+                      <table width="90%" border="0" align="center" cellpadding="0" cellspacing="0">
+                        <tr> 
+                          <td width="30%"><img src="/datacenter/util/imgs/mn_menu_3.jpg" width="152" height="176"></td>
+                          <td width="3%">&nbsp;</td>
+                          <td width="67%"><div align="justify"><font size="2" face="Arial, Helvetica, sans-serif">Esta 
+                              fun&ccedil;&atilde;o permite consultar e visualizar 
+                              um grupo de condutores conforme o crit&eacute;rio 
+                              organizacional e per&iacute;odo de vencimento da 
+                              carteira de habilita&ccedil;&atilde;o (CNH).</font></div></td>
+                        </tr>
+                      </table>
+                    </div></td>
+                </tr>
+              </table>
+              <font size="2" face="Arial, Helvetica, sans-serif">&nbsp;</font></td>
+          </tr>
+          <tr> 
+            <td>&nbsp;</td>
+          </tr>
+        </table>
+      </div></td>
+  </tr>
+  <tr > 
+    <td colspan="5"><div align="center"><font size="1" face="Arial, Helvetica, sans-serif"><a href="layout.jsp?refer=/manual/portuguese/manual1.htm" style="color:black;text-decoration:none">Voltar 
+        ao &Iacute;ndice</a></font></div></td>
+  </tr>
+</table>
+</body>
+</html>

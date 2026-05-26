@@ -1,0 +1,162 @@
+/*
+ * Created on 27-oct-2005
+ *
+ * TODO To change the template for this generated file go to
+ * Window - Preferences - Java - Code Style - Code Templates
+ */
+package presentation.translator.web.reporterjj;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.OutputStream;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.LinkedList;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import net.sf.jasperreports.engine.JRExporterParameter;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.export.JRPdfExporter;
+import net.sf.jasperreports.engine.util.JRLoader;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.action.DynaActionForm;
+
+import presentation.translator.web.util.AbstractAction;
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+
+import communication.activity.tables.CheckListData;
+import communication.alert.AlertConstants;
+import communication.language.Text;
+import communication.reporterjj.CheckListDataSource;
+import communication.vehicle.tables.VehicleCheckData;
+
+/**
+ * @author fcarriquiry
+ */
+public class PDFCheckListAction extends AbstractAction {
+
+	public ActionForward action(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response) throws Throwable {
+
+        HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+   	  	generateReport(mapping, form, request, response);
+      
+   	  	return null;
+	}
+	
+	public ActionForward generateReport(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response) throws Throwable {
+
+        HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        Text messages = sys.getText();
+        
+        DynaActionForm controlData = (DynaActionForm)form;
+        
+ 		VehicleCheckData vehicleCheck = sys.getVehicleReportFacade().findVehicleCheck(new Integer(controlData.getString("check")), sys.getUserSessionData());
+		
+		CheckListData checkList = sys.getVehicleReportFacade().findVehicleCheckList(sys.getUserSessionData());
+		
+        HashMap<String,Object> parameters = new HashMap<String,Object>();
+        parameters.put("header", AlertConstants.getTEMP(sys.getCorporationId())+"images/header.jpg");
+        parameters.put("header1", AlertConstants.getTEMP(sys.getCorporationId())+"images/group_header.jpg");
+        parameters.put("footer", AlertConstants.getTEMP(sys.getCorporationId())+"images/footer.jpg");
+        parameters.put("logo_cepa", AlertConstants.getTEMP(sys.getCorporationId())+"images/logo_cepa.png");
+        parameters.put("title",  messages.getText("generic.activity.form.truckchecklist").toUpperCase());
+        parameters.put("table", AlertConstants.getTEMP(sys.getCorporationId())+"images/tabla_completa.png");
+        parameters.put("date", Util.formatDate(Calendar.getInstance().getTime()));
+                
+        parameters.put("obstext", messages.getText("generic.messages.observations"));
+        String obsStr = "---";
+		if (vehicleCheck.getObs() != null) {
+			obsStr = vehicleCheck.getObs();					
+		}
+        parameters.put("obsvalue", obsStr);
+		
+		
+		String dateStr = "---";
+		String nameStr = "---";
+		String licenseNumberStr = "---";
+		String licenseExpiry = "---";
+		String tradeStr = "---";
+		String modelStr = "---";
+		String plateStr = "---";
+		String serieStr = "---";
+		String vehicleKmStr = "---";
+		if (vehicleCheck.getDate() != null) {
+			Calendar date = Calendar.getInstance();					
+			date.setTime(vehicleCheck.getDate());
+			dateStr = String.valueOf(date.get(Calendar.DATE))+"/"+String.valueOf(date.get(Calendar.MONTH)+1)+"/"+String.valueOf(date.get(Calendar.YEAR));
+		}
+		if (vehicleCheck.getName() != null) {
+			nameStr = vehicleCheck.getName();
+		}	
+		if (vehicleCheck.getLicenseNumber() != null) {
+			licenseNumberStr = vehicleCheck.getLicenseNumber();
+		}					
+		if (vehicleCheck.getDateLicenseExpiry() != null) {
+			Calendar date = Calendar.getInstance();					
+			date.setTime(vehicleCheck.getDateLicenseExpiry());
+			licenseExpiry=String.valueOf(date.get(Calendar.DATE))+"/"+String.valueOf(date.get(Calendar.MONTH)+1)+"/"+String.valueOf(date.get(Calendar.YEAR));					
+		}				
+		if (vehicleCheck.getVehicle().getTrade() != null) {
+			tradeStr = messages.getText(vehicleCheck.getVehicle().getTrade().getResourceBundleId());
+		}
+		if (vehicleCheck.getVehicle().getModel() != null) {
+			modelStr = vehicleCheck.getVehicle().getModel();						
+		}
+		if (vehicleCheck.getVehicle().getMatricula() != null) {				
+			plateStr = vehicleCheck.getVehicle().getMatricula();				
+		}
+		if (vehicleCheck.getSerie() != null) {	
+			serieStr = messages.getText(vehicleCheck.getSerie());					
+		}
+		if (vehicleCheck.getVehicleKm()!=null) {
+			vehicleKmStr = vehicleCheck.getVehicleKm().toString();				
+		}	
+		parameters.put("checkdata", messages.getText("generic.activity.date")+": "+dateStr);					
+		parameters.put("name", messages.getText("generic.driver.name")+": "+nameStr);					
+		parameters.put("license", messages.getText("generic.driver.licenseNumber")+": "+licenseNumberStr);					
+		parameters.put("expiry", messages.getText("generic.activity.dateLicenseExpiry")+": "+licenseExpiry);		
+		parameters.put("trade", messages.getText("generic.activity.form.tranningonthejob.trade")+": "+tradeStr);		
+		parameters.put("model", messages.getText("generic.vehicle.model")+": "+modelStr);		
+		parameters.put("plate", messages.getText("generic.activity.form.vehiclecheck.plate")+": "+plateStr);		
+		parameters.put("serie", messages.getText("generic.vehicle.serie")+": "+serieStr);		
+		parameters.put("kms", messages.getText("generic.vehiclecheck.form.vehicleKm")+": "+vehicleKmStr);		
+        
+	    
+	    CheckListDataSource dataSource = new CheckListDataSource(vehicleCheck, checkList, sys);
+	    
+        JasperCompileManager.compileReportToFile(AlertConstants.getTEMP(sys.getCorporationId())+"jasper/CheckListJJ.jrxml", AlertConstants.getTEMP(sys.getCorporationId())+"jasper/CheckListJJ.jasper");
+        FileInputStream input2 = new FileInputStream(new File(AlertConstants.getTEMP(sys.getCorporationId())+"jasper/CheckListJJ.jasper"));
+
+        JasperReport jasperReport = (JasperReport)JRLoader.loadObject(input2);
+        response.setHeader("Content-Type", "application/pdf");
+   	 	response.setHeader("Content-Disposition", "inline; filename=\"CheckList_"+vehicleCheck.getVehicle().getMatricula().replace(" ", "_")+".pdf");
+        OutputStream out = response.getOutputStream();
+        JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, dataSource);
+        
+        JRPdfExporter exporter = new JRPdfExporter();
+        exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
+        exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, out);
+        exporter.exportReport();       
+        out.flush();
+        out.close();
+	 
+		return null;
+	}
+	
+    public ActionForward cancel(HttpSession session,ActionMapping mapping, ActionForm form) {
+        return null;
+    }
+}

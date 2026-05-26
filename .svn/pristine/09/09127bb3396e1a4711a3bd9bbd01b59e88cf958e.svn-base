@@ -1,0 +1,143 @@
+<%@page import="communication.administration.corporation.tables.CorporationData"%>
+<%@page import="presentation.translator.web.dpa.DPACheckListXLSForm"%>
+<%@page import="communication.datatype.DataTypeConstants"%>
+<%@page language="java" 
+	errorPage="../exception.jsp" 
+	import="business.*"
+	import="business.activity.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.activity.schedule.*" 	
+ 	import="presentation.translator.web.vehicle.*"
+ 	import="communication.administration.user.*" 	
+ 	import="communication.datatype.tables.ActivityTypeDataType"
+	import="business.vehicle.VehicleReportFacade"
+	import="java.util.*"	
+	import="org.apache.struts.action.DynaActionForm"
+	import="communication.activity.tables.*"
+	import="business.vehicle.VehicleReportFacadeBean"
+%>
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+<%!
+	RequestDispatcher dispatcher; 
+	Text messages; SystemAccess sys;
+	UserSessionData userSessionData; 
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	userSessionData=sys.getUserSessionData();	
+
+	String check = Util.checkPermission(sys,SecurityConstants.QUERY);	
+	if (check!=null) { 
+		response.sendRedirect(request.getContextPath()+check);	
+	}else {
+		messages=sys.getText();
+	
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+%>	
+<html:html>
+	<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+	</head>
+	<body>
+		<center>
+			<html:form action="/ReportCheckListForestalesXLS">
+				<table width="768" border="0" cellspacing="0" cellpadding="0">  
+					<tr class="guide1">
+						<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText("truck.checklist.report")%>' />
+		  			</tr>
+      				<tr>
+						<jsp:include  page="../component/spaceline.jsp" />
+  					</tr>
+					<tr> 
+						<td height="40" colspan="3" valign="middle">
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("truck.checklist.data")%>' />
+							<table width="100%" height="60" border="0" cellpadding="0" cellspacing="0">
+   	 							<tr> 
+       								<td width="50%" align="left" class="texts">        
+   										<%= messages.getText("generic.messages.datestart")%><%=" ( "+messages.getText("generic.messages.dateformat")+" ) "%>
+									</td>
+									<td width="50%" align="right" class="linetwo">
+		       							<jsp:include  page='<%="../component/dateComponent.jsp?index=1&day=startDay&month=startMonth&year=startYear&form=CheckListReportXLSForm"%>' />
+									</td>
+   								</tr>
+   								<tr><td colspan=2>&nbsp</td></tr>
+   								<tr> 
+       								<td width="50%" align="left" class="texts">        
+   										<%= messages.getText("generic.messages.dateend")%><%=" ( "+messages.getText("generic.messages.dateformat")+" ) "%>
+									</td>
+									<td width="50%" align="right" class="linetwo">
+		       							<jsp:include  page='<%="../component/dateComponent.jsp?index=2&day=endDay&month=endMonth&year=endYear&form=CheckListReportXLSForm"%>' />
+									</td>
+   								</tr>
+   								<tr><td colspan=2>&nbsp</td></tr>
+   								<tr> 
+       								<td width="50%" align="left" class="texts">        
+   										<%= "Incluir Comentarios "%>
+									</td>
+									<td width="50%" align="right" class="linetwo">
+		       							<html:checkbox property="comment"></html:checkbox>
+									</td>
+   								</tr>
+   								<tr><td colspan=2>&nbsp</td></tr>
+   								<tr> 
+       								<td width="50%" align="left" class="texts">        
+   										<%= messages.getText("generic.messages.type")%>
+									</td>
+									<td width="50%" align="right" class="linetwo">
+									<% if( sys.isCorporation(CorporationData.ACU) ){ %>
+						 				<html:select property="type" styleClass="input">
+						 					<html:option value='<%= ""+CheckListData.CHECK_LIST_FORMULARIO_ACU%>'><%="Checklist Formulario ACU" %></html:option>
+						 				</html:select>
+									<% } else if( sys.isCorporation(CorporationData.CEPA) ){ %>
+						 				<html:select property="type" styleClass="input">
+						 					<html:option value='<%= ""+CheckListData.MDP_CHECKLIS_MERCANCIASPELIGROSAS%>'><%="Checklist Formulario PETROBRAS" %></html:option>
+						 				</html:select>
+									<% }else{%> 
+						 				<html:select property="type" styleClass="input">
+						 				<% if(!sys.isCorporation(CorporationData.SYNGENTA_BR)) {%>	
+						 					<html:option value="0"><%=messages.getText("generic.messages.all") %></html:option>
+						 					<html:option value="80"><%=messages.getText("generic.messages.addvehiclecheckupm2")%></html:option>
+						 					<html:option value="84"><%=messages.getText("generic.messages.checkinternal")%></html:option>
+<%											if(sys.isCorporation(CorporationData.MONTES_DE_PLATA)) {
+%>						 					<html:option value="791"><%=messages.getText("generic.messages.seguimientosinternos")%></html:option>
+<%											}
+%>						 					<html:option value="79"><%=messages.getText("generic.messages.addvehiclecheckupm1")%></html:option>
+						 					<html:option value="92"><%=messages.getText("generic.messages.addinsumoscheck")%></html:option>
+						 				<% }else{%>
+						 					<html:option value="95"><%="Checklistk"%></html:option>
+						 				<% }%>		
+						 				</html:select>
+						 			<% }%>	
+									</td>
+   								</tr>
+   								<tr><td colspan=2>&nbsp</td></tr>
+   								<tr>
+   									<td colspan=2 align="right">
+   										<html:submit value='<%=messages.getText("generic.messages.search")%>' styleClass="input"/>
+   									</td>
+   								</tr>
+							</table>
+							<jsp:include  page="../component/utilityboxbottom.jsp" />
+						</td>
+					</tr>  
+      				<tr>
+						<jsp:include  page="../component/spaceline.jsp" />
+  					</tr>
+  				</table>
+			</html:form>
+		</center>
+	</body>
+</html:html>
+<%
+	}
+%>

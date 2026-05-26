@@ -1,0 +1,48 @@
+<%@page import="communication.administration.corporation.tables.CorporationData"%>
+<%@page import="communication.security.SecurityConstants"%>
+<%@ page language="java"
+	errorPage="../exception.jsp"
+	import="business.*"
+	import="java.util.*"
+	import="communication.language.Text"
+	import="java.net.InetAddress"
+	import="communication.administration.bookmark.tables.BookmarkData"
+%>
+<%!
+	SystemAccess sys;
+	Text messages;
+%>
+<%
+	sys=(SystemAccess)session.getAttribute("SystemAccess");
+
+%>
+<%
+	if(sys.isCorporation(CorporationData.MONTES_DE_PLATA)){
+%>
+<form id="wrt" target="_black" style="display: none;" action="<%= SecurityConstants.isProductionServer()?"/DCWebReportToolsMDP/webapi/security/loginaut":"http://localhost:8087/DCWebReportToolsMDP/webapi/security/loginaut"%>" method="post"> 
+	<input type="hidden" name="loginName" value="<%=request.getUserPrincipal().getName()%>"/> 
+	<input type="hidden" name="a" value="<%=sys.getUserSessionData().getFilter().getEncriptPassword()%>"/> 
+</form> 		
+<%
+	}
+%>
+<%
+	if(sys.isCorporation(CorporationData.FORESTALORIENTAL)){
+%>
+<form id="wrt" target="_black" style="display: none;" action="<%= SecurityConstants.isProductionServer()?"/DCWebReportToolsUPM/webapi/security/loginaut":"http://localhost:8087/DCWebReportToolsUPM/webapi/security/loginaut"%>" method="post"> 
+	<input type="hidden" name="loginName" value="<%=request.getUserPrincipal().getName()%>"/> 
+	<input type="hidden" name="a" value="<%=sys.getUserSessionData().getFilter().getEncriptPassword()%>"/> 
+</form> 		
+<%
+	}
+%>
+<%
+	if(sys.isCorporation(CorporationData.JJ)){
+%>
+<form id="wrt" target="_black" style="display: none;" action="<%= SecurityConstants.isProductionServer()?"/DCWebReportToolsJJ/webapi/security/loginaut":"http://localhost:8087/DCWebReportToolsJJ/webapi/security/loginaut"%>" method="post"> 
+	<input type="hidden" name="loginName" value="<%=request.getUserPrincipal().getName()%>"/> 
+	<input type="hidden" name="a" value="<%=sys.getUserSessionData().getFilter().getEncriptPassword()%>"/> 
+</form> 		
+<%
+	}
+%>

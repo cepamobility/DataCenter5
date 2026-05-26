@@ -1,0 +1,56 @@
+/**
+ * CEPA
+ * DataCenter 5
+ */
+package communication.driver.tables;
+
+import java.io.Serializable;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.List;
+
+import communication.language.Text;
+import persistence.driver.tables.Driver;
+
+public class ReportPlanData implements Serializable{
+	
+	private DriverData driverData;
+
+	private MitigationPlanData mitigationPlan;
+	
+	private ArrayList<AnualPlanData> anualPlans;
+
+	
+	
+	public DriverData getDriverData() {
+		return driverData;
+	}
+
+	public void setDriverData(DriverData driverData) {
+		this.driverData = driverData;
+	}
+
+	public MitigationPlanData getMitigationPlan() {
+		return mitigationPlan;
+	}
+
+	public void setMitigationPlan(MitigationPlanData mitigationPlan) {
+		this.mitigationPlan = mitigationPlan;
+	}
+
+	public ArrayList<AnualPlanData> getAnualPlans() {
+		return anualPlans;
+	}
+
+	public void setAnualPlans(ArrayList<AnualPlanData> anualPlans) {
+		this.anualPlans = anualPlans;
+	}
+	
+	
+	 
+	
+
+}

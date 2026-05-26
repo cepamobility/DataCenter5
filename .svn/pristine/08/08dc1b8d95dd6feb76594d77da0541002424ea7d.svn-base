@@ -1,0 +1,156 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.log.event" >
+	<class name="EventLog" table="eventlog">
+        
+       	<composite-id class="EventLogPK" name="pk" >
+	        <key-property	name="event"	type="java.lang.Integer"		column="event"/>
+	        <key-property	name="userId"	type="java.lang.String"		column="userid"/>
+	        <key-property	name="date"		type="java.util.Date"		column="date"/>
+       	</composite-id>
+        
+        <property	name="action"			type="java.lang.Integer"		column="action"			not-null="true" />
+        <property	name="discriminator"		type="java.lang.String"		column="discriminator"	not-null="true" />
+		
+	   	<property 	name="driver" 			type="java.lang.Integer"  	column="driver" />
+
+  		<property 	name="corporation" 		type="java.lang.Integer"  	column="corporation"/>
+   		<property 	name="country" 			type="java.lang.Integer" 	column="country"/>
+
+        <property 	name="geoLevel1" 		type="java.lang.Integer" 	column="geolevel1" />
+        <property 	name="state"			type="java.lang.String"		column="state"/>
+
+        <property 	name="divOrg1" 			type="java.lang.Integer" 	column="divorg1" />
+        <property 	name="divOrg2" 			type="java.lang.Integer" 	column="divorg2" />
+        <property 	name="divOrg3" 			type="java.lang.Integer" 	column="divorg3" />
+		
+       	<property 	name="city" 			type="java.lang.String"		column="city"/>
+
+	   	<property 	name="vehicle"			type="java.lang.Integer" 	column="vehicle"/>
+
+        <property 	name="plate"			type="java.lang.String"		column="plate"/>
+        <property 	name="trade"				type="java.lang.String"		column="trade"/>
+        <property 	name="model"			type="java.lang.String"		column="model"/>
+        <property 	name="year"				type="java.lang.String"		column="year"/>
+        <property 	name="companycar"/>
+   		<property 	name="eventDate" 				type="java.sql.Date" 		column="eventdate"	/>
+   		<property 	name="hour" 			type="java.sql.Time" 		column="time"	/>
+
+   		<property 	name="working" 			type="java.lang.String" 		column="working" />
+    
+   		<property 	name="status" 			type="java.lang.Integer" 	column="status"/>
+
+   		<property 	name="evitability" 		type="java.lang.String" 		column="evitability"	/>
+   		<property 	name="recomendation" 	type="java.lang.String" 		column="recomendation" />
+		<property 	name="nonrecordable"/>
+        <property 	name="type"				type="java.lang.String"		column="type"/>
+   	    <property 	name="points"			type="java.lang.Integer"		column="points"/>
+       	<property 	name="qualify"			type="java.lang.String"		column="qualify"/>
+        <property 	name="cost"				type="java.lang.Integer"		column="cost"/>
+
+        <property 	name="observations"		type="java.lang.String"		column="observations"/>
+    		
+
+			<property name="zone" type="java.lang.String"	column="zone"/>
+			<property name="policeReport" type="java.lang.String" column="policeReport" />
+			
+        	<property name="damage" />
+        	
+  		    
+	        <property 	name="story"	type="java.lang.String"	column="story"/>
+
+		    <property name="collision" type="java.lang.String"	column="collision"/>
+
+		    <property name="accident" type="java.lang.String"	column="accident"/>
+
+		    <property name="incident"	type="java.lang.String"	column="incident"/>
+
+  			<property name="handle" type="java.lang.String"	column="handle"/>
+
+        	<property name="hitrun"	type="java.lang.String"	column="hitrun" />
+
+		    <property name="principalFactor" type="java.lang.String"	column="principalfactor" />
+
+        	<property name="factortooclose" />
+        	<property name="factorhighspeed" />
+        	<property name="factorsigns" />
+        	<property name="factorturn" />
+        	<property name="factorlight" />
+        	<property name="factorstop" />
+        	<property name="factorother" />
+        	<property name="factorchangelane" />
+        	<property name="factoralcohol" />
+        	<property name="factorovertaking" />
+        	<property name="factorsleep" />
+        	<property name="factordistraction" />
+			<property name="factorConcience" />	
+
+        	<property name="collisionAngle"	type="java.lang.String"	column="collisionangle" />
+
+        	<property name="driverstate"	type="java.lang.String"	column="driverstate" />
+        	<property name="dayslost"	type="java.lang.Integer"	column="dayslost" />
+        	<property name="otherpartydayslost"	type="java.lang.Integer"	column="otherpartydayslost" />
+        	<property name="fatalitiesothercount"	type="java.lang.Integer"	column="fatalitiesothercount" />
+        	<property name="injuredothercount"	type="java.lang.Integer"	column="injuredothercount" />
+        	<property name="fatalitiesfunccount"	type="java.lang.Integer"	column="fatalitiesfunccount" />
+        	<property name="injuredfunccount"	type="java.lang.Integer"	column="injuredfunccount" />
+        	<property name="safefunccount"	type="java.lang.Integer"	column="safefunccount" />
+			<property name="safeothercount"	type="java.lang.Integer"	column="safeothercount" />
+
+        	<property name="damage1" />
+        	<property name="damage2" />
+        	<property name="damage3" />
+        	<property name="damage4" />
+        	<property name="damage5" />
+        	<property name="damage6" />
+        	<property name="damage7" />
+        	<property name="damage8" />
+        	<property name="damage9" />
+        	<property name="damage10" />
+
+        	<property name="selfbelt"  	type="java.lang.String"	column="selfbelt" />
+        	<property name="alcohol" 	type="java.lang.String"	column="alcohol" />
+        	<property name="otherVehicles" type="java.lang.String"	column="othervehicles" />
+        	<property name="cellular"	type="java.lang.String"	column="cellular" />
+
+        	<property name="maxSpeed"	type="java.lang.Integer"	column="maxspeed" />
+        	<property name="vehicleSpeed"	type="java.lang.Integer"	column="vehiclespeed" />
+        	<property name="collisionSpeed"	type="java.lang.Integer"	column="collisionspeed" />
+        	<property name="reportedSpeed"	type="java.lang.Integer"	column="reportedspeed" />
+        	<property name="speedUnit"	type="java.lang.String"	column="speedunit" />
+
+	
+		    <property name="climate" type="java.lang.String"/>
+	    	<property name="lighting" type="java.lang.String"/>
+	  		<property name="way" type="java.lang.String"/>
+		    <property name="direction" type="java.lang.String"/>
+			<property name="control" type="java.lang.String"/>
+			<property name="pavement" type="java.lang.String"/>
+	  		<property name="condition" type="java.lang.String"/>
+
+ 	        <property name="pedestrianCount"	type="java.lang.Integer"	column="pedestriancount" />
+    	    <property name="pedestrian1"	type="java.lang.String"	column="pedestrian1" />
+    	    <property name="pedestrianComment1"	type="java.lang.String"	column="pedestrianComment1" />
+        	<property name="pedestrian2"	type="java.lang.String"	column="pedestrian2" />
+    	    <property name="pedestrianComment2"	type="java.lang.String"	column="pedestrianComment2" />
+	        <property name="pedestrian3"	type="java.lang.String"	column="pedestrian3" />
+    	    <property name="pedestrianComment3"	type="java.lang.String"	column="pedestrianComment3" />
+	
+	        <property	name="comment"		type="java.lang.String"		column="comment"	/>
+
+			<set inverse="true" name="vehiclesInvolved"  cascade="all-delete-orphan">
+		        <key>
+		        	<column name="eventVehicle"></column>
+		        	<column name="userVehicle"></column>
+		        	<column name="dateVehicle"></column>
+		        </key>
+	        	<one-to-many class="VehicleInvolvedLog"/>
+    		</set>	  		
+
+    </class>
+</hibernate-mapping>
+
+

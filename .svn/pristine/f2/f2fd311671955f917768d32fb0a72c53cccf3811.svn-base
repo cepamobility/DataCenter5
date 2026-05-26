@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configurations>
+<archive destination="packaged archives" exploded="false" name="EJB.jar" used="true">
+<folder excludes="communication/*.class" includes="**/*Bean.class,**/*Session.class" location="bin" name="bin" prefix="" project="" projectLocation="bin" used="true"/>
+<file location="src/META-INF/ejb-jar.xml" name="ejb-jar.xml" prefix="META-INF" project="" projectLocation="src/META-INF/ejb-jar.xml" used="true"/>
+<file location="src/META-INF/jboss.xml" name="jboss.xml" prefix="META-INF" project="" projectLocation="src/META-INF/jboss.xml" used="true"/>
+<folder excludes="" includes="persistence/administration/user/tables/*.*,persistence/administration/corporation/tables/*.*" location="bin" name="bin" prefix="" project="" projectLocation="bin" used="true"/>
+<file location="src/hibernate.cfg.xml" name="hibernate.cfg.xml" prefix="" project="" projectLocation="src/hibernate.cfg.xml" used="true"/>
+<folder excludes="" includes="org/*.class,org/*/*.class,org/*/*/*.class,org/*/*/*/*.class" location="lib" name="lib" prefix="" project="" projectLocation="lib" used="false"/>
+</archive>
+<archive destination="packaged archives" exploded="false" name="Communication.jar" used="true">
+<folder excludes="" includes="communication/*.class,communication/**/*.class" location="bin" name="bin" prefix="" project="" projectLocation="bin" used="true"/>
+</archive>
+<archive destination="packaged archives" exploded="false" name="EJB-Client.jar" used="true">
+<folder excludes="**/*Bean.class,**/*Session.class,persistence/*/tables/*.class" includes="business/**/*.class,persistence/**/*.class" location="bin" name="bin" prefix="" project="" projectLocation="bin" used="true"/>
+</archive>
+<archive destination="packaged archives" exploded="false" name="Presentation.war" used="true">
+<folder excludes="" includes="" location="src/presentation/web" name="web" prefix="" project="" projectLocation="src/presentation/web" used="true"/>
+<folder excludes="" includes="presentation/*/*.class,presentation/*/*/*.class,presentation/*/*/*/*.class,presentation/*/*/*/*/*.class,presentation/*/*/*/*.xml" location="bin" name="bin" prefix="WEB-INF/classes" project="" projectLocation="bin" used="true"/>
+<file location="src/WEB-INF/web.xml" name="web.xml" prefix="WEB-INF" project="" projectLocation="src/WEB-INF/web.xml" used="true"/>
+<file location="src/WEB-INF/jboss-web.xml" name="jboss-web.xml" prefix="WEB-INF" project="" projectLocation="src/WEB-INF/jboss-web.xml" used="true"/>
+<folder excludes="" includes="" location="src/WEB-INF" name="WEB-INF" prefix="WEB-INF" project="" projectLocation="src/WEB-INF" used="true"/>
+<folder excludes="" includes="**/*.*, *.class" location="src/presentation/web/menu" name="menu" prefix="" project="" projectLocation="src/presentation/web/menu" used="true"/>
+<file location="lib/jfreereport-ext-0.8.7-3.jar" name="jfreereport-ext-0.8.7-3.jar" prefix="WEB-INF/classes" project="" projectLocation="lib/jfreereport-ext-0.8.7-3.jar" used="true"/>
+</archive>
+<archive destination="packaged archives" exploded="false" name="Persistence.har" used="true">
+<folder excludes="" includes="persistence/**/tables/*.*,persistence/**/tables/**/*.*,persistence/log/**/*.*" location="bin" name="bin" prefix="" project="" projectLocation="bin" used="true"/>
+<file location="src/META-INF/jboss-service.xml" name="jboss-service.xml" prefix="META-INF" project="" projectLocation="src/META-INF/jboss-service.xml" used="true"/>
+</archive>
+<archive destination="packaged archives" exploded="false" name="DataCenter5.ear" used="true">
+<file location="packaged archives/Presentation.war" name="Presentation.war" prefix="" project="" projectLocation="packaged archives/Presentation.war" used="true"/>
+<file location="packaged archives/EJB.jar" name="EJB.jar" prefix="" project="" projectLocation="packaged archives/EJB.jar" used="true"/>
+<file location="packaged archives/EJB-Client.jar" name="EJB-Client.jar" prefix="" project="" projectLocation="packaged archives/EJB-Client.jar" used="true"/>
+<file location="packaged archives/Communication.jar" name="Communication.jar" prefix="" project="" projectLocation="packaged archives/Communication.jar" used="true"/>
+<file location="src/META-INF/application.xml" name="application.xml" prefix="META-INF" project="" projectLocation="src/META-INF/application.xml" used="true"/>
+<file location="packaged archives/Persistence.har" name="Persistence.har" prefix="" project="" projectLocation="packaged archives/Persistence.har" used="true"/>
+<file location="src/META-INF/jboss-app.xml" name="jboss-app.xml" prefix="META-INF" project="" projectLocation="src/META-INF/jboss-app.xml" used="true"/>
+</archive>
+<archive destination="packaged archives" exploded="false" name="ActiveSessions.sar" used="true">
+<file location="src/persistence/administration/jboss/jboss-service.xml" name="jboss-service.xml" prefix="META-INF" project="" projectLocation="src/persistence/administration/jboss/jboss-service.xml" used="true"/>
+<folder excludes="" includes="persistence/administration/jboss/*.class" location="bin" name="bin" prefix="" project="" projectLocation="bin" used="true"/>
+</archive>
+</configurations>

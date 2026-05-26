@@ -1,0 +1,10 @@
+/* Empty. Add your own CSS if you like */
+.popup {
+  width: 400px;
+  height: 350px;
+}
+
+.wrapping-list .item-content, .wrapping-list .item {
+   overflow: initial !important;
+    white-space: initial !important;
+}

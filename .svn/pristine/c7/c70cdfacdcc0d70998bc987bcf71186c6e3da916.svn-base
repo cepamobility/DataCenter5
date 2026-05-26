@@ -1,0 +1,305 @@
+
+<%@page import="org.apache.struts.action.DynaActionForm"%>
+<%@page language="java" 
+	errorPage="../../exception.jsp"
+	import="business.*"
+	import="business.activity.*"
+	import="business.administration.user.*"
+	import="communication.datatype.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.activity.tables.*"
+	import="communication.util.*"
+	import="communication.driver.tables.*"
+	import="communication.datatype.tables.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.activity.schedule.*" 	
+ 	import="communication.administration.user.*" 	
+ 	import="communication.datatype.tables.ActivityTypeDataType"
+	import="business.activity.ActivityReportFacade"
+	import="business.datatype.*"
+	import="java.util.*"	
+	import="org.apache.struts.action.DynaActionForm"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<%!
+	RequestDispatcher dispatcher; 
+	Text messages; SystemAccess sys;
+	UserSessionData userSessionData; 
+	ActivityReportFacade activityReport;
+	String idActivity, idDriver, url;
+	String enabled;
+	int columns;
+	DriverMainAttributes driver;
+	CEPAActivityScheduleRegistryData registryData;
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	userSessionData=sys.getUserSessionData();	
+	String check = Util.checkPermission(sys,SecurityConstants.CREATE_CEPASCHEDULEACTIVITYREGISTRY);	
+	String check1 = Util.checkPermission(sys,SecurityConstants.CREATE_CD_ACTIVITY);		
+	if ((check!=null) && (check1!=null)) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		messages=sys.getText();
+	
+	
+		// session.setAttribute("url","activity/schedule/CEPAActivityScheduleView.jsp");
+		url = "activity/schedule/CEPAActivityScheduleView.jsp";
+		userSessionData.setUrl(url);
+		
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+
+		HashMap mapValues = new HashMap();
+		if(session.getAttribute("Msg") != null) {
+	mapValues = (HashMap)userSessionData.getValue();
+		}
+
+		idActivity =(String)request.getParameter("idActivity");
+		if(idActivity==null){
+	idActivity=(String)session.getAttribute("id");			
+		}
+		// session.setAttribute("id",idActivity);
+		
+		idDriver = (String)request.getParameter("idDriver");
+		if(idDriver==null){
+		    idDriver=(String)session.getAttribute("driver");			
+		}
+		if(!Util.empty(idDriver)){
+	driver = sys.getDriverReportFacade().findDriverMainData(Integer.valueOf(idDriver),sys.getUserSessionData());
+		}
+		
+		ActivityReportFacade activityReport = sys.getActivityReportFacade();
+		registryData = activityReport.getCompleteResult(new Integer(idActivity),new Integer(idDriver),sys.getUserSessionData());		
+		String instructor = "";
+		String vehicleType = "";
+		String plate = "";
+		String trade = "";
+		String initialHr = "";
+		String initialMinute = "";
+		String finalHr = "";
+		String finalMinute = "";
+		String initialKm = "";
+		String finalKm = "";
+		if(session.getAttribute("ActivityRegistryForm") != null) {
+		    DynaActionForm form = (DynaActionForm)session.getAttribute("ActivityRegistryForm");
+		    instructor = form.getString("instructor");
+		    vehicleType = form.getString("vehicleType");
+		    plate = form.getString("plate");
+		    trade = form.getString("trade");
+	initialHr = form.getString("initialHr");
+	
+	initialMinute = form.getString("initialMinute");
+	finalHr = form.getString("finalHr");
+	finalMinute = form.getString("finalMinute");
+		}else {
+		    instructor = registryData.getInstructor();
+		    vehicleType = (registryData.getVehicleType() != null) ? registryData.getVehicleType() : "";
+		    plate = (registryData.getPlate() != null) ? registryData.getPlate() : "";
+		    trade = registryData.getTrade();
+		    Calendar c = Calendar.getInstance();
+	if(registryData.getInitialHr() != null) {
+	    c.setTime(registryData.getInitialHr());
+	    initialHr = (registryData.getInitialHr() != null) ? String.valueOf(c.get(Calendar.HOUR_OF_DAY)) : "";
+	    initialMinute = (registryData.getInitialHr() != null) ? String.valueOf(c.get(Calendar.MINUTE)) : "";
+	}
+	if(registryData.getFinalHr() != null) {
+	    c.setTime(registryData.getFinalHr());
+	    finalHr = (registryData.getFinalHr() != null) ? String.valueOf(c.get(Calendar.HOUR_OF_DAY)) : "";
+	    finalMinute = (registryData.getFinalHr() != null) ? String.valueOf(c.get(Calendar.MINUTE)) : "";
+	}
+		}
+		
+		DataTypeReportFacade reportDataType = sys.getDataTypeReportFacade();
+		
+		CheckListData checkList = sys.getActivityReportFacade().findCheckList(new Integer(CheckListData.REPORTERJJ_COMMENTARYDRIVE),userSessionData);	
+		Iterator pointIt = checkList.getSortPoints();
+		String line = "linetwo";
+%>
+
+	<html:form action = "/ActivityRenovation" method="post">
+		
+		<html:hidden property="idDriver" value='<%=idDriver%>' />
+		<html:hidden property="idActivity" value='<%=idActivity%>' />
+		<html:hidden property="url" value='<%=url%>' />		
+		<html:hidden property="checkboxParamList" value="checkboxParamList" />
+		<html:hidden property="partner" value="partner" />	
+		<html:hidden property="cepaCourse" value="cepaCourse" />	
+		<html:hidden property="conductionType" value="conductionType" />
+		<html:hidden property="skidcar" value="skidcar" />	
+		<html:hidden property="pointCommentList" value="pointCommentList" />
+		<html:hidden property="circulationAreaHighWay" value="false" />
+		<html:hidden property="circulationAreaRoad" value="false" />	
+		<html:hidden property="circulationAreaSubUrban" value="false" />	
+		<html:hidden property="circulationAreaUrban" value="false" />											
+		<html:hidden property="velocityBox" value="" />											
+		<html:hidden property="light" value="" />
+		<html:hidden property="commentaryDriveOther" value="commentaryDriveOther" />					
+		<html:hidden property="frenaje"/>		
+		<center>
+	  		<table width="850" border="0" cellpadding="0" cellspacing="0">
+				<tr>
+					<td align="center" colspan="3">
+						<table width="100%" border="0" cellpadding="0" cellspacing="0">
+	    					<tr> 
+	      						<td width="9">
+							      	<img src="/datacenter/util/imgs/titulo_left.gif" width="9" height="40">
+								</td>
+	      						<th width="832" background="/datacenter/util/imgs/bg2.gif" align="center">
+									<font color="#FFFFFF" size="4" face="Arial, Helvetica, sans-serif">
+										<%=messages.getText("generic.activity.form.formulario")%>
+	            					</font>
+	      						</th>
+	      						<td width="9">
+							      	<img src="/datacenter/util/imgs/titulo_right.gif" width="9" height="40">
+	      						</td>
+	    					</tr>
+	  					</table>
+					</td>
+				</tr>
+				<tr>
+		        	<td height="10"><img src="x" width="1" height="1"></td>
+				</tr>
+				<tr>
+					<td colspan="3">
+						<table width="100%" border="0" cellpadding="0" cellspacing="0">
+							<tr>
+								<th class="linetwo" align="left"><%=messages.getText("generic.data.driver")+": "%></th>
+								<td class="linetwo" align="left"><%=driver.getFirstName()+" "+driver.getLastName()%></td>
+							</tr>
+							<tr>
+					        	<td height="5"><img src="x" width="1" height="1"></td>
+							</tr>
+							<tr>
+								<th class="linetwo" align="left"><%=messages.getText("generic.activity.instructor")+": "%></th>
+								<td class="linetwo" align="left">
+									<html:text property="instructor" value='<%=instructor%>' style="width:250;" styleClass="input"/>	
+								</td>
+							</tr>
+							
+	  					</table>
+					</td>
+				</tr>
+				<tr>
+		        	<td height="10"><img src="x" width="1" height="1"></td>
+				</tr>
+				<tr> 
+<%		PointData point = null;
+		while(pointIt.hasNext()) {			
+			point = (PointData)pointIt.next();
+			Collection items = point.getItems();
+			Collections.sort((List)items);
+			Iterator itemIt = items.iterator();
+			int index = 1;
+%>
+		  			<td colspan="3"> 
+			    		<jsp:include  page='<%="../../component/utilityboxtop.jsp?title="+messages.getText(point.getText())%>' /> 
+						<table width="100%" border="0" align='center' cellpadding="0" cellspacing="0">
+							<tr  class="guide2" height="30">
+					            <td align="left" width="80%" class="red"><%=messages.getText("reporterjj.commentarydrive.text3")%></td>
+					            <td align="center" width="10%"><%=messages.getText("reporterjj.commentarydrive.positivebehaviour")%></td>
+					            <td align="center" width="10%"><%=messages.getText("reporterjj.commentarydrive.precisamelhorar")%></td>
+							</tr>	
+<%			while(itemIt.hasNext()) {
+				ItemData item = (ItemData)itemIt.next();
+%>
+	   						<tr  class="linetwo" height="30">
+					            <td align="left">
+				            		<%=messages.getText(item.getText())%>
+					            </td>
+<%				for(int i = 1; i <= 2; i++) {		
+					String checkvalue = "";
+					if(mapValues.containsKey(item.getId()) && Integer.parseInt((String) mapValues.get(item.getId())) == i) {
+						checkvalue = "checked";
+					}
+%>								<td align="center">		            			
+									<input type='radio' name='<%="item-"+item.getId()%>' value='<%=i%>' <%=checkvalue%>></input>
+								</td>
+<%				}
+%>				        </tr>		
+<%				if(itemIt.hasNext()) {
+%>   						<tr class="space"><th colspan="3"><hr></th></tr>
+<%				}		
+				index++;
+			}
+%>
+   							<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+   						</table>
+	    				<jsp:include page="../../component/utilityboxbottom.jsp"/>
+		      		</td>	
+		  		</tr>
+		  		<tr> 
+		    		<jsp:include  page="../../component/spaceline.jsp" />
+		  		</tr>
+<%		}
+%>			
+			  	<tr> 
+		  			<td colspan="3"> 
+			    		<jsp:include  page='<%="../../component/utilityboxtop.jsp?title="+messages.getText("reporterjj.commentarydrive.reconheciento")%>' /> 
+						<table width="100%" border="0" align='center' cellpadding="0" cellspacing="0">
+							<tr class="linetwo">
+								<td>
+									<%=messages.getText("reporterjj.commentarydrive.reconhecientotext")%>
+								</td>
+						  	</tr>
+							<tr  class="linetwo" height="30">
+								<td>
+									<textarea cols="150" rows="5" class="input" name='<%="point-"+point.getId()%>'></textarea>
+								</td>
+	   						</tr>
+						</table>			
+		    			<jsp:include page="../../component/utilityboxbottom.jsp"/>
+			      	</td>	
+			  	</tr>
+			  	<tr> 
+			    	<jsp:include  page="../../component/spaceline.jsp" />
+			  	</tr>
+			  	<tr> 
+		  			<td colspan="3"> 
+			    		<jsp:include  page='<%="../../component/utilityboxtop.jsp?title="+messages.getText("reporterjj.commentarydrive.precisamelhorar")%>' /> 
+						<table width="100%" border="0" align='center' cellpadding="0" cellspacing="0">
+							<tr class="linetwo">
+								<td>
+									<%=messages.getText("reporterjj.commentarydrive.precisamelhorartext")%>
+								</td>
+						  	</tr>
+							<tr  class="linetwo" height="30">
+								<td>
+									<html:textarea cols="150" rows="5" styleClass="input" property='obs'></html:textarea>
+								</td>
+	   						</tr>
+						</table>			
+		    			<jsp:include page="../../component/utilityboxbottom.jsp"/>
+			      	</td>	
+			  	</tr>
+			  	<tr> 
+			    	<jsp:include  page="../../component/spaceline.jsp" />
+			  	</tr>
+				<tr>
+					<td colspan="3" align="right">
+		    			<jsp:include  page='../../component/utilitybox2top.jsp' />
+		    			<table width="100%" cellpadding="0" cellspacing="0">
+		    				<tr class="lineone">
+	   							<td align="right">
+	   								<html:submit value='<%=messages.getText("generic.messages.send")%>' styleClass="input" />
+	   								<html:cancel value='<%=messages.getText("generic.messages.cancel")%>' styleClass="input" />
+								</td>
+	   						</tr>
+						</table>			
+		    			<jsp:include page="../../component/utilitybox2bottom.jsp"/>
+			      	</td>	
+			  	</tr>
+			</table>
+		</center>
+	</html:form>
+
+  
+  <form name="FormCD" method="post" action='layout.jsp?refer=/activity/schedule/CEPAActivityScheduleView.jsp?idActivity=<%=idActivity %>' />
+<%	}
+%>
+

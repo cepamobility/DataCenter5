@@ -1,0 +1,334 @@
+<%@page language="java"
+	errorPage="../exception.jsp"
+	import="java.util.*"
+	import="java.util.LinkedList"
+	import="business.*"
+	import="business.alert.*" 
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.util.*"
+	import="communication.alert.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.administration.corporation.tables.ItemData"
+	import="communication.administration.user.tables.*"
+	import="communication.alert.tables.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.alert.*"
+ 	import="communication.util.DateValue"
+ 	import="communication.administration.user.UserSessionData"  
+ %>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<html:html>
+<%! RequestDispatcher dispatcher; String context;String pathView; 
+	String pathMsg; String pathSearch; 
+	Text messages; String pathLanguage;
+	SystemAccess sys; AlertData data;
+	UserSessionData userSessionData;
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	userSessionData = sys.getUserSessionData();
+	
+	String check = Util.checkPermission(sys,SecurityConstants.ALERT_VIEW);	
+	
+	if(check != null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		messages=sys.getText();
+
+		pathLanguage="/util/jsp/language.jsp";
+	
+		dispatcher=request.getRequestDispatcher(pathLanguage);
+		dispatcher.include(request,response);
+	
+		context=request.getContextPath();
+		pathMsg="/util/jsp/message.jsp";
+	
+		dispatcher=request.getRequestDispatcher(pathMsg);
+		dispatcher.include(request,response);
+
+		String id = (String)request.getParameter("id");
+		if(id == null){
+	id = (String)request.getAttribute("id");
+	request.removeAttribute("id");
+		}
+		if(id == null){
+	id = (String)session.getAttribute("id");
+	session.removeAttribute("id");
+		}
+		if(id != null){	
+	data = sys.getAlertReportFacade().findAlertByPrimaryKey(new Integer(id), sys.getUserSessionData());
+		}
+		pathView="./AlertView.jsp?id="+id;
+		session.setAttribute("url","alert/AlertView.jsp?id="+id);
+	  
+	
+		if(data!=null){
+	session.setAttribute("target","AlertView");
+	AlertForm alertForm = new AlertForm(data);
+	session.setAttribute("AlertForm",alertForm);
+%>
+
+<head>
+<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+
+<script>
+	function setAction(form,action){
+		form.action.value=action;
+	}
+	function deleteIFConfirm(form,msg){
+		form.submit();
+	}
+</script>
+</head>
+
+<body bgcolor="#FFFFFF">
+	<form action="layout.jsp?refer=/alert/AlertExclusion.jsp" name="exclusion" method="post">
+		<input type="hidden" name="checkboxParamList" value='<%=String.valueOf(data.getAlertId())%>' />		
+		<input type="hidden" name="action" />		
+	</form>
+	<form action="layout.jsp?refer=/alert/AlertEdit.jsp" name='edit' method="post">
+		<input type="hidden" name="id" value='<%=String.valueOf(data.getAlertId())%>' />
+		<input type="hidden" name="target" value="DriverView" />
+	</form>	
+	<form action="layout.jsp?refer=/alert/alertList.jsp" name='cancel' method="post">
+		<input type="hidden" name="target" value="alertView" />
+	</form>	
+	<table width="700" align='center' cellpadding="0" cellspacing="0">
+		<tr class="guide1">
+			<jsp:include  page='<%="../component/titlecomponent.jsp?colspan=5&title="+messages.getText("web.alert.view")+"  "+Util.formatDate(data.getLastdate())%>' />
+		</tr>
+   		<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+  		
+  		<tr>
+			<td width="100%" valign="top" colspan="5">
+				<jsp:include  page='<%="../component/utilitybox3top.jsp?title="+messages.getText("generic.messages.options")%>' />
+				<table width="100%" class="texts1" border="0" cellpadding="0" cellspacing="0">
+					<tr> 
+          				<td width="3%" class="texts1"><img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;</td>
+          				<td width="46%"><a href="javascript:document.forms['cancel'].submit()" class="texts"> 
+		           	 	<%=messages.getText("generic.messages.cancel")%> </a></td>
+        			</tr>
+        		</table>
+        		<jsp:include page="../component/utilitybox3bottom.jsp"/>
+			</td>
+		</tr>
+		<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+  		  			
+<%
+  		  				if(data != null && data.getEnddate() != null) {
+  		  			%>  	<tr>
+			<td colspan="5">
+				<span class="red"><%=messages.getText("generic.alert.search.finalized")%></span>
+			</td>
+  		</tr>
+		<tr>
+			<td colspan="5">
+				<span class="red"><%=messages.getText("generic.alert.finisheddate")+": "
+					+ ((data.getEnddate() != null) ? Util.formatDate(data.getEnddate()):"---")%>
+				</span>				
+			</td>
+  		</tr>
+		<tr >
+ 			<td align="left" colspan="5">
+ 				<span class="red"><%="( "+messages.getText("generic.supportmaterial.reports.format")+": "+
+ 						messages.getText("generic.messages.dateformat")+" )"%>
+ 				</span>
+    		</td>
+		</tr>
+   		<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+<%
+	}
+%>  	<tr>
+			<td valign="top" width="34%" >
+					<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+
+								messages.getText("generic.alert.data")%>' />	
+						<table width="100%"  border="0" cellpadding="0" cellspacing="0">
+							<tr class="texts">
+								<td width="41%" align="left">
+									<%=messages.getText("generic.messages.initialdate")%>
+									<%=" ("+messages.getText("generic.messages.dateformat")+")"%>
+								</td>
+								<td width="59%"  align="right">
+    								<%=(data.getStartdate() != null) ? messages.getText(
+    										Util.formatDate(data.getStartdate())):"---"%>
+						        </td>
+	    					</tr>
+				    	  	<tr>
+								<jsp:include  page="../component/spaceline.jsp" /> 
+					      	</tr>
+	    					<tr class="texts">	  
+	    						<td width="41%" align="left">
+									<%=messages.getText("generic.alert.messages.lastdate")%>
+										<%=" ("+messages.getText("generic.messages.dateformat")+")"%>
+								</td>
+	    						<td width="59%"  align="right">
+	    							<%=(data.getLastdate()!=null)? Util.formatDate(data.getLastdate()):
+	    								messages.getText("generic.alert.na")%>
+	          					</td>    									  
+							</tr>
+				    	  	<tr>
+								<jsp:include  page="../component/spaceline.jsp" /> 
+					      	</tr>
+					      	<tr class="texts">	  
+	    						<td width="41%" align="left">
+									<%=messages.getText("generic.alert.messages.nextdate")%>
+									<%=" ("+messages.getText("generic.messages.dateformat")+")"%>
+								</td>
+	    						<td width="59%"  align="right">
+	    							<%=(data.getNextdate() != null) ? messages.getText(Util.formatDate(data.getNextdate())): 
+	    								messages.getText("generic.alert.na")%>
+	          					</td>    									  
+							</tr>
+				    	  	<tr>
+								<jsp:include  page="../component/spaceline.jsp" /> 
+					      	</tr>
+							<tr class="texts">
+								<td align="left">
+									<%=messages.getText("generic.alert.alerttype")%>
+								</td>
+								<td align="right">
+									<%=(data.getAlertType() != null) ?
+											messages.getText(data.getAlertType().getResourceBundleId()):
+											messages.getText("generic.alert.na") %>							
+    					  	    </td>																									
+							</tr>		
+				    	  	<tr>
+								<jsp:include  page="../component/spaceline.jsp" /> 
+					      	</tr>
+					      	<tr class="texts">
+								<td align="left">
+									<%=messages.getText("generic.alert.alertpriority")%>
+								</td>
+								<td align="right">
+									<%=(data.getPriority() != null) ? 
+											messages.getText(data.getPriority().getResourceBundleId()):
+											messages.getText("generic.alert.na") %>								
+    					  	    </td>
+			
+							</tr>	
+							<tr>
+								<jsp:include  page="../component/spaceline.jsp" /> 
+					      	</tr>
+							<tr class="texts">
+								<td align="left">
+									<%=messages.getText("generic.alert.alertfrecuency")%>
+								</td>
+								<td align="right">
+									<%=(data.getFrecuency() != null) ?
+												messages.getText(data.getFrecuency().getResourceBundleId()):
+												messages.getText("generic.alert.na") %>								
+    					  	    </td>
+			
+							</tr>
+						</table>
+						<jsp:include page="../component/utilityboxbottom.jsp"/>
+			</td>
+			<td width="1%" valign="top"></td>
+			<td width="63%" valign="top">
+				<table width="100%" height="100%" cellpadding="0" cellspacing="0">
+					<tr>
+						<td valign="top" width="49%">	
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.alert.data.mail")%>' />
+							<table width="100%"  cellpadding="0" cellspacing="0" >
+								<tr class="linetwo">
+									<td class="linetwo">
+										<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.alert.search.subject")%>' />
+											<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="default">
+    			                				<tr  class="linetwo">
+						        					<td align="left" class="linetwo"><%=(data.getSubject() != null)?data.getSubject():""%></td>
+			    			  					</tr>      					
+				      						</table>
+											<jsp:include  page="../component/utilitybox2bottom.jsp" />
+				      				</td>
+				      			</tr>
+								<tr class="space"><td>&nbsp;</td></tr>
+								<tr class="linetwo">
+									<td class="linetwo">
+										<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.alert.search.body")%>' />
+											<div id="scrollalert">
+												<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="default">
+    			                					<tr  class="linetwo">
+						        						<td align="left" class="linetwo"><%=(data.getBody() != null)?data.getBody():""%></td>
+			    			  						</tr>      					
+				      							</table>
+				      						</div>
+											<jsp:include  page="../component/utilitybox2bottom.jsp" />
+				      				</td>
+				      			</tr>
+								<tr class="space"><td>&nbsp;</td></tr>
+								<tr class="linetwo">
+									<td class="linetwo">
+										<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.message.sendemail")%>' />
+											<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="default">
+ <% 			
+ 
+ 			if (data != null && data.getTo() != null && data.getTo().size() > 0){
+ 				Iterator iter = data.getTo().iterator();
+				AlertToData email;
+				while (iter.hasNext()) {
+						email = (AlertToData) iter.next();
+						if (email != null && email.getEmail() != null && email.getEmail().trim() != ""){
+%>											<tr  class="linetwo">
+													<td align="left" class="linetwo"><%=email.getEmail()%></td>		
+											</tr>
+											<tr class="linetwo">
+												<jsp:include  page="../component/spaceline.jsp" />
+  											</tr>
+<% 					}
+				}
+ 			}
+%>	   					
+				      						</table>
+											<jsp:include  page="../component/utilitybox2bottom.jsp" />
+				      				</td>
+				      				
+				      			</tr>
+							</table>
+							<jsp:include page="../component/utilityboxbottom.jsp"/>
+						</td>
+					</tr>
+				</table>
+				
+			</td>
+								
+		</tr>
+		<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+  		
+  		<tr>
+			<td width="100%" valign="top" colspan="5">
+				<jsp:include  page='<%="../component/utilitybox3top.jsp?title="+messages.getText("generic.messages.options")%>' />
+				<table width="100%" class="texts1" border="0" cellpadding="0" cellspacing="0">
+					<tr> 
+          				<td width="3%" class="texts1"><img align="middle" border="0" src="./util/imgs/icon2.gif" width="12">&nbsp;</td>
+          				<td width="46%"><a href="javascript:document.forms['cancel'].submit()" class="texts"> 
+		           	 	<%=messages.getText("generic.messages.cancel")%> </a></td>
+        			</tr>
+        		</table>
+        		<jsp:include page="../component/utilitybox3bottom.jsp"/>
+			</td>
+		</tr>
+					
+	</table>
+	<br />
+	<br />
+<%		}else {
+%>		
+				<jsp:include  page='<%="/util/allowedData.jsp?message=alert.error.access.driver" %>'/>
+<%		}
+	}
+%>
+</body>
+</html:html>

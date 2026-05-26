@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.administration.group.tables" >
+	<class name="GroupElement" table="groupelements">
+        
+		<id column="id" name="id">
+            <generator class="sequence">
+            	<param name="sequence">GroupElement_Sequence</param>
+            </generator>
+        </id>
+		<many-to-one name="groupElement" column="groupElement" not-null="true"/>
+
+        <many-to-one name="element" class="persistence.administration.group.tables.AbstractGroup" column="element" />
+
+    </class>
+</hibernate-mapping>

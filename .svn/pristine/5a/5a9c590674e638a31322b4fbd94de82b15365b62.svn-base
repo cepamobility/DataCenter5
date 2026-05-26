@@ -1,0 +1,1171 @@
+/*
+ * Created on 24-feb-2006
+ *
+ * TODO To change the template for this generated file go to
+ * Window - Preferences - Java - Code Style - Code Templates
+ */
+package presentation.translator.web.reporterjj;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+import javax.swing.table.AbstractTableModel;
+
+import net.sf.jasperreports.engine.JRExporterParameter;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.export.JRPdfExporter;
+import net.sf.jasperreports.engine.util.JRLoader;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.action.DynaActionForm;
+
+import presentation.report.ReportFactory;
+import presentation.report.ReportUtil;
+import presentation.report.reporterjj.CommentaryDriveDataSource;
+import presentation.report.reporterjj.SelfEvaluationData;
+import presentation.report.reporterjj.SelfEvaluationReportFactory;
+import presentation.translator.web.util.AbstractAction;
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+import business.activity.ActivityABMFacade;
+import business.activity.ActivityReportFacade;
+
+import communication.activity.tables.CEPAActivityConstants;
+import communication.activity.tables.CEPAActivityDefinitionData;
+import communication.activity.tables.CEPAActivityScheduleData;
+import communication.activity.tables.CEPAActivityScheduleRegistryData;
+import communication.activity.tables.CheckListData;
+import communication.activity.tables.ItemData;
+import communication.activity.tables.ItemValueData;
+import communication.activity.tables.PointCommentData;
+import communication.activity.tables.PointData;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.CountryData;
+import communication.administration.corporation.tables.DivOrgAttribute;
+import communication.administration.corporation.tables.DivOrgData;
+import communication.administration.corporation.tables.GeoLabelData;
+import communication.administration.user.UserSessionData;
+import communication.alert.AlertConstants;
+import communication.datatype.tables.ActivityStateDataType;
+import communication.driver.tables.DriverData;
+import communication.language.Text;
+import communication.reporterjj.CheckListDataSource;
+import communication.security.SecurityConstants;
+import communication.util.MailSender;
+import communication.vehicle.tables.VehicleCheckData;
+import communication.vehicle.tables.VehicleData;
+
+/**
+ * @author adocarmo
+ */
+public class ReportRegistryAction extends AbstractAction {
+
+		
+	public ActionForward action(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response) throws Exception {
+		
+        HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+		UserSessionData userSessionData = sys.getUserSessionData();
+		Text messages = sys.getText();
+		boolean reporterjjmx = userSessionData.getFilter().getLoginName().equals(SecurityConstants.LOGIN_REPORTERJJ_MX);
+		
+		DynaActionForm formData = (DynaActionForm) form;	
+		ActivityReportFacade activityReport = sys.getActivityReportFacade();
+
+		String activityType = formData.getString("activity");
+		String email = formData.getString("email");
+		String emailManager = formData.getString("managerEmail");
+		String managerName = formData.getString("managerName");
+		Collection to = new LinkedList();
+		Collection manager = new LinkedList();
+    	if(sys.isCorporation(CorporationData.BAYER_MX)) {
+	        if(activityReport.existsTodayActivity(userSessionData.getDriverData().getId(), activityType, userSessionData)) {
+	        	return mapping.findForward("cancel_bayermx");
+	        }
+    	}
+
+    	DriverData driver = sys.getDriverReportFacade().findDriverByPrimaryKey(userSessionData.getDriverData().getId(),userSessionData);
+
+        int checkListId = (activityType.equals(CEPAActivityConstants.REPORTERJJ_SELFEVALUATION)) ? CheckListData.REPORTERJJ_SELF_EVALUATION : CheckListData.COMMENTARY_DRIVE_JJ2;
+		CheckListData checkList = activityReport.findCheckList(checkListId, userSessionData);
+
+		Date activityDate = Calendar.getInstance().getTime(); 
+		if(activityType.equals(CEPAActivityConstants.REPORTERJJ_COMMENTARYDRIVE)) {
+			activityDate = Util.getDate(formData.getString("date"), formData.getString("month"), formData.getString("year"));
+			if(activityDate == null) {
+				activityDate = Calendar.getInstance().getTime();
+			}
+		}
+
+        Collection itemValueSet = new LinkedList();
+        Collection<PointCommentData> pointObs = new LinkedList<PointCommentData>();
+        Iterator points = checkList.getSortPoints();
+        HashMap values = new HashMap();
+        String errors = "";
+        int index = 1;
+        boolean[] pdfs = {false,false,false,false,false,false,false,false,false,false,false};
+        String[] pdfFiles = {"1_Antecipando_Riscos.pdf","2_Colisoes_em_Marcha_a_Re.pdf","3_Distancia.pdf","4_Faixa_de_Circulacao.pdf","5_Manutencao.pdf","6_Planejamento.pdf","7_Sinalizacao.pdf","8_Velocidade.pdf","9_Uso_dos_Comandos.pdf","10_Atitude.pdf","11_Estacionamento.pdf"};
+        while(points.hasNext()) {
+        	PointData point = (PointData)points.next();
+        	Iterator itemsIt = point.getSortItems();
+            while(itemsIt.hasNext()) {
+                ItemData item = (ItemData)itemsIt.next();
+                String insertedValue = request.getParameter("item-"+String.valueOf(item.getId()));
+                if(!Util.isNumber(insertedValue) || insertedValue.equals("-1")) {
+                	if(errors.length() > 0) {
+                		errors += ",";
+                	}
+                	errors += String.valueOf(index);
+                }else {
+            		int val = Integer.parseInt(insertedValue);
+                	if(activityType.equals(CEPAActivityConstants.REPORTERJJ_COMMENTARYDRIVE)) {
+                		if((item.getId() == 9520 || item.getId() == 9521 || item.getId() == 9524 || item.getId() == 9525) && val == 2) {
+                			pdfs[0] = true;
+                		}
+                		if((item.getId() == 9523 || item.getId() == 9527 || item.getId() == 9528 || item.getId() == 9529) && val == 2) {
+                			pdfs[2] = true;
+                		}
+                		if((item.getId() == 9526 || item.getId() == 9531 || item.getId() == 9532) && val == 2) {
+                			pdfs[3] = true;
+                		}
+                		if(point.getId() == 1560 && val == 2) {
+                			pdfs[4] = true;
+                		}
+                		if(point.getId() == 1561 && val == 2) {
+                			pdfs[5] = true;
+                		}
+                		if((item.getId() == 9530 || item.getId() == 9533) && val == 2) {
+                			pdfs[6] = true;
+                		}
+                		if((item.getId() == 9517 || item.getId() == 9519) && val == 2) {
+                			pdfs[7] = true;
+                		}
+                		if((point.getId() == 1562 && val == 2) || (item.getId() == 9522 && val == 2)) {
+                			pdfs[8] = true;
+                		}
+                		if(((item.getId() == 9518 || item.getId() == 9534) && val == 2) || (point.getId() == 1565 && val == 2)) {
+                			pdfs[9] = true;
+                		}
+                		if(point.getId() == 1564 && val == 2) {
+                			pdfs[10] = true;
+                		}
+                	}else {
+                		if((isIn(item.getId(),new int[]{9127,9128,9136,9136,9139,9157}) && val < 3)  || (isIn(item.getId(),new int[]{9129,9130,9140,9145,9151,9155,9156,9158,9160}) && val > 2)) {
+                			pdfs[0] = true;
+                		}
+                		if(item.getId() == 9133 && val > 2) {
+                    		pdfs[1] = true;
+                    	}
+                		if(isIn(item.getId(),new int[]{9134,9135,9144}) && val > 2) {
+                			pdfs[2] = true;
+                		}
+                		if(isIn(item.getId(),new int[]{9138,9142,9150}) && val > 2) {
+                			pdfs[3] = true;
+                		}
+                		if(isIn(item.getId(),new int[]{9115,9116,9117,9118,9119,9120,9124}) && val > 2) {
+                			pdfs[4] = true;
+                		}
+                		if(isIn(item.getId(),new int[]{9125,9147}) && val < 3) {
+                			pdfs[5] = true;
+                		}
+                		if(isIn(item.getId(),new int[]{9132,9146,9152}) && val > 2) {
+                			pdfs[6] = true;
+                		}
+                		if((isIn(item.getId(),new int[]{9110}) && val < 3)  || (isIn(item.getId(),new int[]{9126,9141,9153}) && val > 2)) {
+                			pdfs[7] = true;
+                		}
+                		if((isIn(item.getId(),new int[]{9137,9154}) && val < 3)  || (isIn(item.getId(),new int[]{9121,9122,9123,9149,9159}) && val > 2)) {
+                			pdfs[8] = true;
+                		}
+                		if((isIn(item.getId(),new int[]{9111,9112,9114,9148}) && val < 3)  || (isIn(item.getId(),new int[]{9108,9109,9113,9143}) && val > 2)) {
+                			pdfs[9] = true;
+                		}
+                		if(item.getId() == 9131 && val > 2) {
+                			pdfs[10] = true;
+                		}
+                	}
+                	values.put("i"+item.getId(), insertedValue);
+                    itemValueSet.add(new ItemValueData(item,new Integer(insertedValue)));
+                }
+                index++;
+            }
+            String pointObsText = request.getParameter("point-"+String.valueOf(point.getId()));
+            if(!Util.empty(pointObsText)) {
+            	pointObs.add(new PointCommentData(point,pointObsText));
+            	values.put("p"+point.getId(), pointObsText);
+            }
+        }
+
+
+		if(Util.empty(driver.getEmail())) {
+			if(Util.empty(email) || !Util.checkEmail(email)) {
+	        	userSessionData.setValue(values);
+	        	session.setAttribute("Msg",messages.getText("generic.alert.invalidemail"));
+				return (activityType.equals(CEPAActivityConstants.REPORTERJJ_SELFEVALUATION)) ? mapping.findForward("back1") : mapping.findForward("back2");
+			}else {
+				to.add(email);
+			}
+		}else {
+			if(Util.empty(email)) {
+				to.add(driver.getEmail());
+			}else {
+				if(!Util.checkEmail(email)) {
+		        	userSessionData.setValue(values);
+		        	session.setAttribute("Msg",messages.getText("generic.alert.invalidemail"));
+					return (activityType.equals(CEPAActivityConstants.REPORTERJJ_SELFEVALUATION)) ? mapping.findForward("back1") : mapping.findForward("back2");
+				}else {
+					to.add(email);
+				}
+			}
+		}
+		if(Util.empty(emailManager) || !Util.checkEmail(emailManager)) {
+        	userSessionData.setValue(values);
+        	session.setAttribute("Msg","Email de Gerente incorrecto");
+			return (activityType.equals(CEPAActivityConstants.REPORTERJJ_SELFEVALUATION)) ? mapping.findForward("back1") : mapping.findForward("back2");
+		}else {
+			manager.add(emailManager);
+		}
+
+		if(errors.length() > 0) {
+        	userSessionData.setValue(values);
+			session.setAttribute("Msg",messages.getText("reporterjj.commentarydrive.errorfields")+" "+errors);
+			return (activityType.equals(CEPAActivityConstants.REPORTERJJ_SELFEVALUATION)) ? mapping.findForward("back1") : mapping.findForward("back2");
+        }else {
+			DivOrgAttribute[] divOrgs = userSessionData.getFilter().getDivOrgsAttrs();
+	        Collection list = new LinkedList();
+	        Iterator it = driver.getDivOrgsIterator();
+	        DivOrgData opGroup = (DivOrgData)it.next();
+	        Integer opGroupId = ((communication.administration.corporation.tables.ItemData)opGroup.getDivOrgLevels().getItemIterator().next()).getId();
+	        boolean isMedical = false;
+	        String opGroupDescription = "";
+	        switch(opGroupId) {
+	        	case 300022:
+	        		opGroupDescription = "Pharma ";
+	        		break;
+	        	case 300051:
+	        		Integer franchiseId = ((communication.administration.corporation.tables.ItemData)opGroup.getDivOrgLevels().getItemIterator().next()).getId();
+	        		if(franchiseId == 300999) {
+		        		opGroupDescription = "Vision Care ";	        			
+	        		}else {
+		        		opGroupDescription = "Medical ";
+		        		if(driver.getCountryName().equals(CountryData.BRASIL)) {
+		        			isMedical = true;
+		        		}
+	        		}
+	        		break;
+	        	case 300000:
+	        		franchiseId = ((communication.administration.corporation.tables.ItemData)opGroup.getDivOrgLevels().getItemIterator().next()).getId();
+	        		if(franchiseId == 300002) {
+		        		opGroupDescription = "Vision Care ";	        			
+	        		}else {
+	        			opGroupDescription = "Consumer ";
+	        		}
+	        		break;
+	        }
+	        list.add(opGroup);
+	        list.add((DivOrgData)it.next());
+	        if(sys.isCorporation(CorporationData.BAYER_MX))
+	        	list.add((DivOrgData)it.next());
+	
+	        if(isMedical) {
+	            pdfFiles = new String[] {"1_Antecipando_Riscos_Medical.pdf","2_Colisoes_em_Marcha_a_Re_Medical.pdf","3_Distancia_Medical.pdf","4_Faixa_de_Circulacao_Medical.pdf","5_Manutencao_Medical.pdf","6_Planejamento_Medical.pdf","7_Sinalizacao_Medical.pdf","8_Velocidade_Medical.pdf","9_Uso_dos_Comandos_Medical.pdf","10_Atitude_Medical.pdf","11_Estacionamento_Medical.pdf"};
+
+	        }
+	        GeoLabelData countrygeo = driver.getCountry();
+	
+	        CEPAActivityScheduleData activity = new CEPAActivityScheduleData(list,countrygeo,CEPAActivityScheduleData.EN_SUPERVISION,null,new CEPAActivityDefinitionData(activityType),
+	        		activityType,
+	        		new CorporationData(userSessionData.getFilter().getCorporationId()),
+	        		"X",activityDate,false,null,0,"",0,"",null, null);        
+	
+			
+	        //Access ActivityABMFacade
+	        ActivityABMFacade activityABM = sys.getActivityABMFacade();				
+	        String comment = (sys.isCorporation(CorporationData.JJ)) ? "Reporter J&J" : "Conducción Comentada";
+	        Integer activityId = activityABM.createCEPAScheduleActivity(activity,comment,userSessionData);
+	        activity.setActivityId(activityId);
+	
+	 		CEPAActivityScheduleRegistryData registryData= new CEPAActivityScheduleRegistryData(activity,driver,itemValueSet,pointObs,formData.getString("obs"));
+	 		registryData.setNote(CEPAActivityScheduleRegistryData.APRUVED);
+	 		registryData.setHasResult(true);
+	 		registryData.setInstructor(managerName);
+	 		activityABM.createCEPAScheduleActivityRegistry(registryData,userSessionData,false);
+	
+	        activity.setState(new ActivityStateDataType(CEPAActivityScheduleData.DICTADA));
+	        activityABM.updateCEPAScheduleActivity(activity, "", userSessionData);
+
+	        String fileNameRV = null;
+	 		String fileRV = null;
+	 		boolean rv = userSessionData.getLenguage().equals("es") && userSessionData.getVehicleCheck() != null;
+	 		if(rv) {
+	 			VehicleCheckData vehicleCheck = userSessionData.getVehicleCheck();
+	 			sys.getVehicleABMFacade().createOrUpdateVehicleCheck(vehicleCheck,"creacion reporterjj",userSessionData);
+	 			
+	 			CheckListData checkListRV = sys.getVehicleReportFacade().findVehicleCheckList(sys.getUserSessionData());
+	 			
+	 	        HashMap<String,Object> parameters = new HashMap<String,Object>();
+	 	        parameters.put("header", AlertConstants.getTEMP(sys.getCorporationId())+"images/header.jpg");
+	 	        parameters.put("header1", AlertConstants.getTEMP(sys.getCorporationId())+"images/group_header.jpg");
+	 	        parameters.put("footer", AlertConstants.getTEMP(sys.getCorporationId())+"images/footer.jpg");
+	 	        parameters.put("logo_cepa", AlertConstants.getTEMP(sys.getCorporationId())+"images/logo_cepa.png");
+	 	        parameters.put("title",  messages.getText("reporterjj.checklist.point").toUpperCase());
+	 	        parameters.put("table", AlertConstants.getTEMP(sys.getCorporationId())+"images/tabla_completa.png");
+	 	        parameters.put("date", Util.formatDate(Calendar.getInstance().getTime()));
+	 	                
+	 	        parameters.put("obstext", messages.getText("generic.messages.observations"));
+	 	        String obsStr = "---";
+	 			if (vehicleCheck.getObs() != null) {
+	 				obsStr = vehicleCheck.getObs();					
+	 			}
+	 	        parameters.put("obsvalue", obsStr);
+	 			
+	 			
+	 			String dateStr = "---";
+	 			String nameStr = "---";
+	 			String licenseNumberStr = "---";
+	 			String licenseExpiry = "---";
+	 			String tradeStr = "---";
+	 			String modelStr = "---";
+	 			String plateStr = "---";
+	 			String serieStr = "---";
+	 			String vehicleKmStr = "---";
+	 			if (vehicleCheck.getDate() != null) {
+	 				Calendar date = Calendar.getInstance();					
+	 				date.setTime(vehicleCheck.getDate());
+	 				dateStr = String.valueOf(date.get(Calendar.DATE))+"/"+String.valueOf(date.get(Calendar.MONTH)+1)+"/"+String.valueOf(date.get(Calendar.YEAR));
+	 			}
+	 			if (vehicleCheck.getName() != null) {
+	 				nameStr = vehicleCheck.getName();
+	 			}	
+	 			if (vehicleCheck.getLicenseNumber() != null) {
+	 				licenseNumberStr = vehicleCheck.getLicenseNumber();
+	 			}					
+	 			if (vehicleCheck.getDateLicenseExpiry() != null) {
+	 				Calendar date = Calendar.getInstance();					
+	 				date.setTime(vehicleCheck.getDateLicenseExpiry());
+	 				licenseExpiry=String.valueOf(date.get(Calendar.DATE))+"/"+String.valueOf(date.get(Calendar.MONTH)+1)+"/"+String.valueOf(date.get(Calendar.YEAR));					
+	 			}else if(userSessionData.getFilter().getLoginName().equals(SecurityConstants.LOGIN_REPORTERJJ_MX)) {
+	 				licenseExpiry = "Permanente";
+	 			}
+	 			VehicleData vehicleData = sys.getVehicleReportFacade().findVehicleByPrimaryKey(vehicleCheck.getVehicle().getId(), userSessionData);
+	 			if (vehicleData.getTrade() != null) {
+	 				tradeStr = messages.getText(vehicleData.getTrade().getResourceBundleId());
+	 			}
+	 			if (vehicleData.getModel() != null) {
+	 				modelStr = vehicleData.getModel();						
+	 			}
+	 			if (vehicleData.getMatricula() != null) {				
+	 				plateStr = vehicleData.getMatricula();				
+	 			}
+	 			if (vehicleCheck.getSerie() != null) {	
+	 				serieStr = messages.getText(vehicleCheck.getSerie());					
+	 			}
+	 			if (vehicleCheck.getVehicleKm()!=null) {
+	 				vehicleKmStr = vehicleCheck.getVehicleKm().toString();				
+	 			}	
+	 			parameters.put("checkdata", messages.getText("generic.activity.date")+": "+dateStr);					
+	 			parameters.put("name", messages.getText("generic.driver.name")+": "+nameStr);					
+	 			parameters.put("license", messages.getText("generic.driver.licenseNumber")+": "+licenseNumberStr);					
+	 			parameters.put("expiry", messages.getText("generic.activity.dateLicenseExpiry")+": "+licenseExpiry);		
+	 			parameters.put("trade", messages.getText("generic.activity.form.tranningonthejob.trade")+": "+tradeStr);		
+	 			parameters.put("model", messages.getText("generic.vehicle.model")+": "+modelStr);		
+	 			parameters.put("plate", messages.getText("generic.activity.form.vehiclecheck.plate")+": "+plateStr);		
+	 			parameters.put("serie", messages.getText("generic.vehicle.serie")+": "+serieStr);		
+	 			parameters.put("kms", messages.getText("generic.vehiclecheck.form.vehicleKm")+": "+vehicleKmStr);		
+	 	        
+	 		    
+	 		    CheckListDataSource dataSource = new CheckListDataSource(vehicleCheck, checkListRV, sys);
+	 		   FileInputStream input2 = null;
+	 	        //JasperCompileManager.compileReportToFile(AlertConstants.getTEMP(sys.getCorporationId())+"jasper/CheckListJJ.jrxml", AlertConstants.getTEMP(sys.getCorporationId())+"jasper/CheckListJJ.jasper");
+	 		   input2 = new FileInputStream(new File(AlertConstants.getTEMP(sys.getCorporationId())+"jasper/CheckListJJ.jasper"));
+	 	        JasperReport jasperReport = (JasperReport)JRLoader.loadObject(input2);
+	 	        JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, dataSource);
+	 	        
+	 	        JRPdfExporter exporter = new JRPdfExporter();
+		 		fileNameRV = "ReporterJJ_"+messages.getText("reporterjj.checklist.point")+"_"+driver.getCorporationId()+".pdf";
+		 		fileRV = AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+fileNameRV;
+		        FileOutputStream outRV = new FileOutputStream(new File(fileRV));
+	 	        exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
+	 	        exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, outRV);
+	 	        exporter.exportReport();       
+
+	 		}
+	 		String fileName = (activityType.equals(CEPAActivityConstants.REPORTERJJ_SELFEVALUATION)) ? "ReporterJJ_"+messages.getText("reporterjj.selfevaluation.point")+"_"+driver.getCorporationId()+".pdf" : "ReporterJJ_"+messages.getText("scheduledactivitytype.reporterjj.commentarydrive")+"_"+driver.getCorporationId()+".pdf";
+	 		if(sys.isCorporation(CorporationData.BAYER_MX)) {
+	 			fileName = "Reporter_Bayer_"+messages.getText("scheduledactivitytype.reporterjj.commentarydrive")+".pdf";
+	 		}
+	 		String file = AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+fileName;
+	 		AbstractTableModel data = null;
+	 		if(activityType.equals(CEPAActivityConstants.REPORTERJJ_SELFEVALUATION)) {
+		 		data = new SelfEvaluationData(registryData,checkList,messages);
+		 		ReportFactory factory = new SelfEvaluationReportFactory("ReporterJJ",data,form,sys,activityId);
+		    	ReportUtil reportUtil = new ReportUtil();
+		    	reportUtil.executeReport(mapping,response,factory.createReport(),"PDFFile",session,file,true);
+	 		}else {
+	 			CommentaryDriveDataSource dataSource = new CommentaryDriveDataSource(registryData,checkList,sys);
+		
+		        HashMap<String,Object> parameters2 = new HashMap<String,Object>();
+		        parameters2.put("header", AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"images/header.jpg");
+		        parameters2.put("footer", AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"images/footer.jpg");
+		        parameters2.put("title", messages.getText("scheduledactivitytype.reporterjj.commentarydrive"));
+		        parameters2.put("tabla1",AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"images/tabla1.jpg");
+		        parameters2.put("tabla2",AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"images/tabla3.jpg");
+		        parameters2.put("tabla3",AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"images/tabla2.jpg");
+		        parameters2.put("tabla4",AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"images/tabla4.jpg");
+		        parameters2.put("tabla5",AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"images/group_header.jpg");
+		        parameters2.put("tabla6",AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"images/tabla5.jpg");
+		        parameters2.put("date", Util.formatDate(activityDate));
+		        parameters2.put("drivertxt",messages.getText("generic.driver.driverdata.firstname"));
+		        if(sys.isCorporation(CorporationData.JJ)) {
+		        	parameters2.put("wwidtxt",messages.getText("generic.driver.driverdata.wwid").toUpperCase());
+			        parameters2.put("logos", AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"images/logos.jpg");
+		        }else {
+		        	parameters2.put("wwidtxt",messages.getText("generic.driver.driverdata.corporationid"));
+			        parameters2.put("logos", AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"images/logo_bayer.jpg");
+		        }
+		        if(driver.getCorporationId() == null) {
+		        	parameters2.put("wwid","---");
+		        } else {
+		        	parameters2.put("wwid",driver.getCorporationId());
+		        }
+	        	parameters2.put("managertxt",messages.getText("generic.activity.cc.gerente"));
+	        	
+		        parameters2.put("ccdatetxt",messages.getText("generic.activity.date"));
+		        parameters2.put("driver",driver.getFirstName()+" "+driver.getLastName());
+		        parameters2.put("manager",managerName);
+		        parameters2.put("ccdate",Util.formatDate(activityDate));
+		        parameters2.put("obstext", messages.getText("generic.messages.observations"));
+		        parameters2.put("obsvalue", registryData.getObs());
+		
+		        FileInputStream input2 = null;
+		        if(reporterjjmx) {
+			        //JasperCompileManager.compileReportToFile(AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"jasper/ReporterJJ_CCmx.jrxml", AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"jasper/ReporterJJ_CCmx.jasper");
+		        	input2 = new FileInputStream(new File(AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"jasper/ReporterJJ_CCmx.jasper"));
+		        }else {
+		        //JasperCompileManager.compileReportToFile(AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"jasper/ReporterJJ_CC.jrxml", AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"jasper/ReporterJJ_CC.jasper");
+		        	input2 = new FileInputStream(new File(AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"jasper/ReporterJJ_CC.jasper"));
+		        }
+		
+		        JasperReport jasperReport = (JasperReport)JRLoader.loadObject(input2);
+		        FileOutputStream out2 = new FileOutputStream(new File(file));
+		        JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters2, dataSource);
+		       
+		        JRPdfExporter exporter = new JRPdfExporter();
+		        exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
+		        exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, out2);
+		        exporter.exportReport();       
+		        out2.flush();
+		        out2.close();
+		        
+	 		}
+	 		
+	 		if(SecurityConstants.isProductionServer()) {
+		    	MailSender sender = new MailSender();
+				Collection bcc = new LinkedList();
+				bcc.add("f.millan@cepasafedrive.com");	
+				if(activityType.equals(CEPAActivityConstants.REPORTERJJ_SELFEVALUATION)) {
+					String body = createSelfEvaluationBody(driver.getFirstName()+" "+driver.getLastName(),((SelfEvaluationData)data).getResults(), opGroupDescription, isMedical);
+	
+					boolean sended = false;
+					int count = 0;
+					while(!sended && count < 10) {
+				    	String[] mailAddress = sys.getDataTypeReportFacade().getAvailableAddress(CorporationData.REPORTER_JJ, sys.getUserSessionData()); 
+						String mailServer = AlertConstants.MAILSERVER; 
+						if (mailAddress[0] != null && mailAddress[0].contains("cepainternational.com")){
+							mailServer = AlertConstants.MAILSERVER2;
+						}else if (mailAddress[0] != null && mailAddress[0].contains("cepalogistica.com")){
+							mailServer = AlertConstants.MAILSERVER_INMOTION;
+						}
+						Collection<String> files = new LinkedList();
+						Collection<String> names = new LinkedList();
+						files.add(file);
+						names.add(fileName);
+						for(int i = 0; i < pdfs.length; i++) {
+							if(pdfs[i]) {
+								files.add(AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+pdfFiles[i]);
+								names.add(pdfFiles[i]);
+							}
+						}
+						try {
+							if(isMedical) {
+								sender.sendImage(to,
+										mailServer,
+										"CEPA DataCenter", 
+										mailAddress[0],
+										mailAddress[1], 
+										"Auto-avaliaÃ§Ã£o como Motorista", body, files,
+										names, 
+										"", "", bcc,AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"firma_feedback_jj.jpg");
+							}else {
+								sender.send(to,
+									mailServer,
+									"CEPA DataCenter", 
+									mailAddress[0],
+									mailAddress[1], 
+									"Auto-avaliaÃ§Ã£o como Motorista", body, files,
+									names, 
+									"", "", bcc);
+							}
+						}catch (Exception e) {
+							
+						}
+						sended = true;
+						count++;
+					}
+					body = createManagerBody(managerName,driver.getFirstName()+" "+driver.getLastName(),((SelfEvaluationData)data).getResults(), opGroupDescription, isMedical);
+					sended = false;
+					count = 0;
+					while(!sended && count < 10) {
+				    	String[] mailAddress = sys.getDataTypeReportFacade().getAvailableAddress(CorporationData.REPORTER_JJ, sys.getUserSessionData()); 
+						String mailServer = AlertConstants.MAILSERVER; 
+						if (mailAddress[0] != null && mailAddress[0].contains("cepainternational.com")){
+							mailServer = AlertConstants.MAILSERVER2;
+						}else if (mailAddress[0] != null && mailAddress[0].contains("cepalogistica.com")){
+							mailServer = AlertConstants.MAILSERVER_INMOTION;
+						}
+						try {
+							if(isMedical) {
+								sender.sendImage(manager,
+								mailServer,
+								"CEPA DataCenter", 
+								mailAddress[0],
+								mailAddress[1], 
+								"Auto-avaliaÃ§Ã£o como Motorista", body,new LinkedList(),new LinkedList(),"", "", bcc,AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"firma_feedback_jj.jpg");
+							}else {
+								sender.send(manager,
+								mailServer,
+								"CEPA DataCenter", 
+								mailAddress[0],
+								mailAddress[1], 
+								"Auto-avaliaÃ§Ã£o como Motorista", body, "f.millan@cepasafedrive.com");
+							}
+							sended = true;
+						}catch (Exception e) {
+							
+						}
+						count++;
+					}
+				}else {
+					String body = createCommentaryDriveBody(driver.getFirstName()+" "+driver.getLastName(), opGroupDescription, isMedical, userSessionData, rv);
+					to.addAll(manager);
+					String subject = messages.getText("scheduledactivitytype.reporterjj.commentarydrive");
+					if(userSessionData.getLenguage().equals("es")) {
+						if(SecurityConstants.isProductionServer() && driver.getCountryName().equals(CountryData.MEXICO) && sys.isCorporation(CorporationData.JJ)) {
+							to.add("RA-JANMX-SAFE-Fleet@ITS.JNJ.com");
+							bcc.add("support@cepasafedrive.com");
+							subject = "Revisión Vehicular y Conducción Comentada SAFE Fleet";
+						}else {
+							//bcc.add("jrodriguez@cepasafedrive.com");
+							//bcc.add("federico.millan@cepasafedrive.com");
+							subject = "Revisión Vehicular y Conducción Comentada";
+							if(sys.isCorporation(CorporationData.BAYER_MX)) {
+								subject = "Conducción Comentada ROAD Safety";
+							}
+						}
+					}
+					Collection<String> files = new LinkedList();
+					Collection<String> names = new LinkedList();
+					files.add(file);
+					names.add(fileName);
+		 	        if(fileNameRV != null) {
+		 	        	files.add(fileRV);
+		 	        	names.add(fileNameRV);
+		 	        }
+	
+					if(userSessionData.getLenguage().equals("pt")) {
+						for(int i = 0; i < pdfs.length; i++) {
+							if(pdfs[i]) {
+								files.add(AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+pdfFiles[i]);
+								names.add(pdfFiles[i]);
+							}
+						}
+					}
+					boolean sended = false;
+					int count = 0;
+					while(!sended && count < 10) {
+				    	String[] mailAddress = sys.getDataTypeReportFacade().getAvailableAddress(CorporationData.REPORTER_JJ, sys.getUserSessionData()); 
+						String mailServer = AlertConstants.MAILSERVER; 
+						if (mailAddress[0] != null && mailAddress[0].contains("cepainternational.com")){
+							mailServer = AlertConstants.MAILSERVER2;
+						}else if (mailAddress[0] != null && mailAddress[0].contains("cepalogistica.com")){
+							mailServer = AlertConstants.MAILSERVER_INMOTION;
+						}
+						try {
+							if(isMedical) {
+								sender.sendImage(to,
+										mailServer,
+										"CEPA DataCenter", 
+										mailAddress[0],
+										mailAddress[1], 
+										subject, body, files,names,
+										"", "", bcc,AlertConstants.TEMP_DIRECTORY_REPORTER_JJ+"firma_feedback_jj.jpg");
+							}else {
+								sender.send(to,
+									mailServer,
+									"CEPA DataCenter", 
+									mailAddress[0],
+									mailAddress[1], 
+									subject,
+									body, files,names,
+									"", "", bcc);
+							}
+							sended = true;
+						}catch (Exception e) {
+							
+						}
+						count++;
+					}
+				}
+	 		}
+			if(reporterjjmx) {
+				userSessionData.setValue(userSessionData.getVehicleCheck().getVehicle().getMatricula());
+				//userSessionData.setVehicleCheck(null);
+				return mapping.findForward("successmx");
+			}
+	    	userSessionData.setValue(activityId);
+			return (activityType.equals(CEPAActivityConstants.REPORTERJJ_SELFEVALUATION)) ? mapping.findForward("success1") : mapping.findForward("success2");
+        }
+	}
+
+    private boolean isIn(Integer id, int[] ids) {
+    	for(int i = 0; i < ids.length; i++) {
+    		if(id == ids[i]) {
+    			return true;
+    		}
+    	}
+    	return false;
+	}
+
+	private String createCommentaryDriveBody(String name, String opGroup, boolean isMedical, UserSessionData userSessionData, boolean rv) {
+		String body = "";
+		body += "<div style=\"margin:0in 0in 0.0001pt;font-size:11pt;font-family:Calibri,sans-serif\">";
+		body += "	<span lang=\"PT-BR\" style=\"font-size:14pt\">"+name+"</span>";
+		body += "</div>";
+		if(userSessionData.getLenguage().equals("es")) {
+			body += "<div style=\"margin:0in 0in 0.0001pt;font-size:11pt;font-family:Calibri,sans-serif\">";
+			body += "	<span lang=\"PT-BR\" style=\"font-size:14pt\">&nbsp;</span>";
+			body += "</div>";
+			body += "<div style=\"margin:0in 0in 0.0001pt;font-size:11pt;font-family:Calibri,sans-serif\">";
+			body += "	<span lang=\"PT-BR\" style=\"font-size:14pt\">";
+			if(rv) {
+				body += "		Est&aacute; recibiendo copia del feedback de su multiplicador relacionado con la actividad 'Revisi&oacute;n Vehicular' y 'Conducci&oacute;n Comentada'.";
+			} else {
+				body += (userSessionData.isCorporation(CorporationData.BAYER_MX)) ? "		Est&aacute; recibiendo copia del feedback de su monitor relacionado con la actividad 'Conducci&oacute;n Comentada'." : "		Est&aacute; recibiendo copia del feedback de su multiplicador relacionado con la actividad 'Conducci&oacute;n Comentada'.";
+			}
+			body += "	</span>";
+			body += "</div>";
+			body += "<div style=\"margin:0in 0in 0.0001pt;font-size:11pt;font-family:Calibri,sans-serif\">";
+			body += "	<span lang=\"PT-BR\" style=\"font-size:14pt\">&nbsp;</span>";
+			body += "</div>";
+			body += "<div style=\"margin:0in 0in 0.0001pt;font-size:11pt;font-family:Calibri,sans-serif\">";
+			body += "	<span lang=\"PT-BR\" style=\"font-size:14pt\">";
+			body += "		En caso de tener observaciones u oportunidades de mejora en los puntos evaluados, es muy importante que usted" ;
+			body += " adopte la acci&oacute;n correctiva del caso, perfeccionando cada d&iacute;a su habilidad y h&aacute;bitos en la conducci&oacute;n.";
+			body += "	</span>";
+			body += "</div>";
+			body += "<div style=\"margin:0in 0in 0.0001pt;font-size:11pt;font-family:Calibri,sans-serif\">";
+			body += "	<span lang=\"PT-BR\" style=\"font-size:14pt\">&nbsp;</span>";
+			body += "</div>";
+			body += "<div style=\"margin:0in 0in 0.0001pt;font-size:11pt;font-family:Calibri,sans-serif\">";
+			body += "	<span lang=\"PT-BR\" style=\"font-size:14pt\">";
+			body += "		<b>Su participaci&oacute;n ha sido muy valiosa, gracias.</b>";
+			body += "	</span>";
+			body += "</div>";
+			body += "<div style=\"margin:0in 0in 0.0001pt;font-size:11pt;font-family:Calibri,sans-serif\" class=\"adL\">";
+			body += "	<span lang=\"PT-BR\" style=\"font-size:14pt\">&nbsp;</span></div>";
+			body += "</div>";		
+			body += "<br><br><div><span style=\"border-collapse:collapse\">";
+			if(userSessionData.isCorporation(CorporationData.JJ)) {
+				body += "<font face=\"Calibri\"><div style=\"margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;font:normal normal normal 18px/normal Helvetica\"><b>Equipo SAFE Fleet</b></div>";
+			}else if(userSessionData.isCorporation(CorporationData.BAYER_MX)) {
+				body += "<font face=\"Calibri\"><div style=\"margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;font:normal normal normal 18px/normal Helvetica\"><b>Programa ROAD Safety Bayer</b></div>";
+			}else {
+				body += "<font face=\"Calibri\"><div style=\"margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;font:normal normal normal 18px/normal Helvetica\"><b>Equipo CEPA</b></div>";
+			}
+			body += "</font></span></div>";		
+		}else {
+			body += "<div style=\"margin:0in 0in 0.0001pt;font-size:11pt;font-family:Calibri,sans-serif\">";
+			body += "	<span lang=\"PT-BR\" style=\"font-size:14pt\">&nbsp;</span>";
+			body += "</div>";
+			body += "<div style=\"margin:0in 0in 0.0001pt;font-size:11pt;font-family:Calibri,sans-serif\">";
+			body += "	<span lang=\"PT-BR\" style=\"font-size:14pt\">";
+			body += "		Voc&ecirc; est&aacute; recebendo o feedback de seu gerente sobre os diversos itens observados na sua Dire&ccedil;&atilde;o Comentada.";
+			body += "	</span>";
+			body += "</div>";
+			body += "<div style=\"margin:0in 0in 0.0001pt;font-size:11pt;font-family:Calibri,sans-serif\">";
+			body += "	<span lang=\"PT-BR\" style=\"font-size:14pt\">&nbsp;</span>";
+			body += "</div>";
+			body += "<div style=\"margin:0in 0in 0.0001pt;font-size:11pt;font-family:Calibri,sans-serif\">";
+			body += "	<span lang=\"PT-BR\" style=\"font-size:14pt\">";
+			body += "		&Eacute; muito importante que voc&ecirc; observe os itens que foram identificados como oportunidades de melhoria ";
+			body += "		para que voc&ecirc; possa cada vez mais aperfei&ccedil;oar suas habilidades como motorista.";
+			body += "	</span>";
+			body += "</div>";
+			body += "<div style=\"margin:0in 0in 0.0001pt;font-size:11pt;font-family:Calibri,sans-serif\">";
+			body += "	<span lang=\"PT-BR\" style=\"font-size:14pt\">&nbsp;</span>";
+			body += "</div>";
+			body += "<div style=\"margin:0in 0in 0.0001pt;font-size:11pt;font-family:Calibri,sans-serif\">";
+			body += "	<span lang=\"PT-BR\" style=\"font-size:14pt\">";
+			body += "		Se voc&ecirc; recebeu tamb&eacute;m algum registro de reconhecimento, &eacute; um bom sinal para que voc&ecirc; continue dirigindo ";
+			body += "		sempre de forma preventiva. Assim voc&ecirc; estar&aacute; se prevenindo para evitar acidentes dirigindo a servi&ccedil;o da Cia."; 
+			body += "		ou particularmente com seus familiares";
+			body += "	</span>";
+			body += "</div>";
+			body += "<div class=\"yj6qo\"></div>";
+			body += "<div style=\"margin:0in 0in 0.0001pt;font-size:11pt;font-family:Calibri,sans-serif\" class=\"adL\">";
+			body += "	<span lang=\"PT-BR\" style=\"font-size:14pt\">&nbsp;</span>";
+			body += "</div>";
+			body += "<div style=\"margin:0in 0in 0.0001pt;font-size:11pt;font-family:Calibri,sans-serif\" class=\"adL\">";
+			body += "	<span lang=\"PT-BR\" style=\"font-size:14pt\">&nbsp;</span></div>";
+			body += "</div>";		
+			body += getFooter(opGroup, isMedical);
+		}
+		return body;
+    }
+
+	private String createSelfEvaluationBody(String name,String[] results, String opGroup, boolean isMedical) {
+    	
+    	double total = 0;
+    	for(int i = 0; i < results.length;  i++) {
+    		total += Double.parseDouble(results[i]);
+    	}
+    	total = total / 8.0;
+    	total = Math.round(total * Math.pow(10,2)) / Math.pow(10,2);
+    	String green = "#355724";
+    	String yellow = "#FFC000";
+    	String red = "red";
+    	String extra = "";
+		String body = "";
+		body += "<p>";
+		body += "	<div style=\"margin:0in 0in 0.0001pt;font-size:12pt;font-family:'Times New Roman',serif\">";
+		body += "		<span lang=\"PT-BR\" style=\"font-size:16pt\">Prezado "+name+"</span>";
+		body += "	</div>";
+		body += "	<div style=\"margin:0in 0in 0.0001pt;font-size:12pt;font-family:'Times New Roman',serif\">";
+		body += "		<span lang=\"PT-BR\" style=\"font-size:16pt\">&nbsp;</span>";
+		body += "	</div>";
+		body += "	<div style=\"margin:0in 0in 0.0001pt;font-size:12pt;font-family:'Times New Roman',serif\">";
+		body += "		<span lang=\"PT-BR\" style=\"font-size:16pt\">";
+		body += "			Segue abaixo o resumo do seu Exerc&iacute;cio de Auto Avalia&ccedil;&atilde;o como Motorista que tamb&eacute;m foi ";
+		body += "			enviado ao gerente que voc&ecirc; indicou como seu superior imediato.<br>";
+		body += "			Os resultados dessa atividade foram registrados no CEPA - Data Center, ";
+		body += "			para consulta e&nbsp; acompanhamento nas pr&oacute;ximas avalia&ccedil;&otilde;es.";
+		body += "		</span>";
+		body += "	</div>";
+		body += "	<div style=\"margin:0in 0in 0.0001pt;font-size:12pt;font-family:'Times New Roman',serif\">";
+		body += "		<span lang=\"PT-BR\" style=\"font-size:16pt\">";
+		body += "			Para maior efic&aacute;cia dessa atividade, recomendamos que reveja os itens com pontua&ccedil;&otilde;es que indiquem ";
+		body += "			'oportunidades de melhoria' e estabele&ccedil;a um Plano de A&ccedil;&atilde;o devidamente alinhado com sua chefia ";
+		body += "			para contribuir com seu aprimoramento como motorista.";
+		body += "		</span>";
+		body += "	</div>";
+		body += "	<div style=\"margin:0in 0in 0.0001pt;font-size:12pt;font-family:'Times New Roman',serif\">";
+		body += "		<span lang=\"PT-BR\" style=\"font-size:16pt\">";
+		body += "			Esse Plano de A&ccedil;&atilde;o ser&aacute; muito importante para aprimorar seu desempenho na preven&ccedil;&atilde;o dos acidentes de tr&acirc;nsito.";
+		body += "			<br>Recomendamos que o Plano de A&ccedil;&atilde;o seja o mais simples poss&iacute;vel, porem com foco nas &aacute;reas que realmente ";
+		body += "			indiquem a necessidade da mudan&ccedil;a de seu comportamento na dire&ccedil;&atilde;o.";
+		body += "		</span>";
+		body += "	</div>";
+		body += "	<div style=\"margin:0in 0in 0.0001pt;font-size:12pt;font-family:'Times New Roman',serif\">";
+		body += "		<span lang=\"PT-BR\" style=\"font-size:16pt\">&nbsp;</span>";
+		body += "	</div>";
+		body += "	<div style=\"margin:0in 0in 0.0001pt;font-size:12pt;font-family:'Times New Roman',serif\">";
+		body += "		<span lang=\"PT-BR\" style=\"font-size:16pt\">";
+		body += "			Esperamos continuar contando com sua participa&ccedil;&atilde;o ativa nas diversas atividades do Programa Safe Fleet.";
+		body += "		</span>";
+		body += "	</div>";
+		body += "	<div style=\"margin:0in 0in 0.0001pt;font-size:12pt;font-family:'Times New Roman',serif\">";
+		body += "		<span lang=\"PT-BR\" style=\"color:rgb(31,73,125)\">&nbsp;</span>";
+		body += "	</div>";
+		body += "</p>";
+		body += "<p><div style=\"margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;font:normal normal normal 12px/normal 'Lucida Grande'\">";
+		body += "<span style='font-size:16px'><font face='Calibri'><b>COMO INTERPRETAR AS SUAS PONTUA&ccedil;&otilde;ES EM CADA CATEGORIA</b></font></span></div></p>";
+		body += "<font face=\"Calibri\">";
+		body += "<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"678\" style=\"border-collapse:collapse;width:678pt\">";
+		body += "<colgroup><col width=\"219\" style=\"width:219pt\">";
+		body += "<col width=\"193\" style=\"width:193pt\">";
+		body += "<col width=\"216\" style=\"width:216pt\">";
+		body += "</colgroup><tbody><tr height=\"17\" style=\"min-height:17.25pt\">";
+		body += " <td height=\"17\" width=\"219\" style=\"min-height:17.25pt;width:219pt\"></td>";
+		body += " <td width=\"193\" style=\"width:193pt\"></td>";
+		body += " <td width=\"216\" style=\"width:216pt\"></td>";
+		body += "</tr>";
+		body += "<tr height=\"16\" style=\"min-height:16.75pt\">";
+		body += "<td height=\"16\" style=\"min-height:16.75pt\"><b><font size=\"4\">Categoria</font></b></td>";
+		body += "<td></td>";
+		body += "<td><b><font size=\"4\">Pontua&ccedil;&atilde;o</font></b></td>";
+		body += "</tr>";
+		body += "<tr height=\"16\" style=\"min-height:16.75pt\">";
+		body += "<td height=\"16\" style=\"min-height:16.75pt\"><b><font size=\"4\">Total</font></b></td>";
+		body += "<td></td>";
+		String color = "";
+		extra = "";
+		if(total <= 4.25) {
+			color = green;
+		} else if(total <= 6.5) {
+			color = yellow;
+		} else {
+			color = red;
+			extra = " ( oportunidade de melhoria )";
+		}
+		body += "<td><b><font size=\"4\" color=\""+color+"\">"+String.valueOf(total)+extra+"</font></b></td>";
+		body += "</tr>";
+		body += "<tr height=\"16\" style=\"min-height:16.75pt\">";
+		body += "<td height=\"16\" style=\"min-height:16.75pt\"><b><font size=\"4\">1 - Atitude</font></b></td>";
+		body += "<td></td>";
+		color = "";
+		extra = "";
+		if(Double.parseDouble(results[0]) <= 4.25) {
+			color = green;
+		} else if(Double.parseDouble(results[0]) <= 6.5) {
+			color = yellow;
+		} else {
+			color = red;
+			extra = " ( oportunidade de melhoria )";
+		}
+		body += "<td><b><font size=\"4\" color=\""+color+"\">"+results[0]+extra+"</font></b></td>";
+		body += "</tr>";
+		body += "<tr height=\"16\" style=\"min-height:16.75pt\">";
+		body += "<td height=\"16\" colspan=\"2\" style=\"min-height:16.75pt\"><b><font size=\"4\">2";
+		body += "- Manuten&ccedil;&atilde;o</font></b></td>";
+		color = "";
+		extra = "";
+		if(Double.parseDouble(results[1]) <= 4.25) {
+			color = green;
+		} else if(Double.parseDouble(results[1]) <= 6.5) {
+			color = yellow;
+		} else {
+			color = red;
+			extra = " ( oportunidade de melhoria )";
+		}
+		body += "<td><b><font size=\"4\" color=\""+color+"\">"+results[1]+extra+"</font></b></td>";
+		body += "</tr>";
+		body += "<tr height=\"16\" style=\"min-height:16.75pt\">";
+		body += "<td height=\"16\" style=\"min-height:16.75pt\"><b><font size=\"4\">3 - Cuidados antes de sair</font></b></td>";
+		body += "<td></td>";
+		color = "";
+		extra = "";
+		if(Double.parseDouble(results[2]) <= 4.25) {
+			color = green;
+		} else if(Double.parseDouble(results[2]) <= 6.5) {
+			color = yellow;
+		} else {
+			color = red;
+			extra = " ( oportunidade de melhoria )";
+		}
+		body += "<td><b><font size=\"4\" color=\""+color+"\">"+results[2]+extra+"</font></b></td>";
+		body += "</tr>";
+		body += "<tr height=\"16\" style=\"min-height:16.75pt\">";
+		body += "<td height=\"16\" colspan=\"2\" style=\"min-height:16.75pt\"><b><font size=\"4\">4";
+		body += "- Cruzamentos</font></b></td>";
+		color = "";
+		extra = "";
+		if(Double.parseDouble(results[3]) <= 4.25) {
+			color = green;
+		} else if(Double.parseDouble(results[3]) <= 6.5) {
+			color = yellow;
+		} else {
+			color = red;
+			extra = " ( oportunidade de melhoria )";
+		}
+		body += "<td><b><font size=\"4\" color=\""+color+"\">"+results[3]+extra+"</font></b></td>";
+		body += "</tr>";
+		body += "<tr height=\"16\" style=\"min-height:16.75pt\">";
+		body += "<td height=\"16\" colspan=\"2\" style=\"min-height:16.75pt\"><b><font size=\"4\">5";
+		body += "- Estacionamento</font></b></td>";
+		color = "";
+		extra = "";
+		if(Double.parseDouble(results[4]) <= 4.25) {
+			color = green;
+		} else if(Double.parseDouble(results[4]) <= 6.5) {
+			color = yellow;
+		} else {
+			color = red;
+			extra = " ( oportunidade de melhoria )";
+		}
+		body += "<td><b><font size=\"4\" color=\""+color+"\">"+results[4]+extra+"</font></b></td>";
+		body += "</tr>";
+		body += "<tr height=\"16\" style=\"min-height:16.75pt\">";
+		body += "<td height=\"16\" colspan=\"2\" style=\"min-height:16.75pt\"><b><font size=\"4\">6";
+		body += "- Espa&ccedil;o de seguran&ccedil;a</font></b></td>";
+		color = "";
+		extra = "";
+		if(Double.parseDouble(results[5]) <= 4.25) {
+			color = green;
+		} else if(Double.parseDouble(results[5]) <= 6.5) {
+			color = yellow;
+		} else {
+			color = red;
+			extra = " ( oportunidade de melhoria )";
+		}
+		body += "<td><b><font size=\"4\" color=\""+color+"\">"+results[5]+extra+"</font></b></td>";
+		body += "</tr>";
+		body += "<tr height=\"16\" style=\"min-height:16.75pt\">";
+		body += "<td height=\"16\" style=\"min-height:16.75pt\"><b><font size=\"4\">7 - Geral</font></b></td>";
+		body += "<td></td>";
+		color = "";
+		extra = "";
+		if(Double.parseDouble(results[6]) <= 4.25) {
+			color = green;
+		} else if(Double.parseDouble(results[6]) <= 6.5) {
+			color = yellow;
+		} else {
+			color = red;
+			extra = " ( oportunidade de melhoria )";
+		}
+		body += "<td><b><font size=\"4\" color=\""+color+"\">"+results[6]+extra+"</font></b></td>";
+		body += "</tr>";
+		body += "<tr height=\"16\" style=\"min-height:16.75pt\">";
+		body += "<td height=\"16\" colspan=\"2\" style=\"min-height:16.75pt\"><b><font size=\"4\">8";
+		body += "- Percep&ccedil;&atilde;o</font></b></td>";
+		color = "";
+		extra = "";
+		if(Double.parseDouble(results[7]) <= 4.25) {
+			color = green;
+		} else if(Double.parseDouble(results[7]) <= 6.5) {
+			color = yellow;
+		} else {
+			color = red;
+			extra = " ( oportunidade de melhoria )";
+		}
+		body += "<td><b><font size=\"4\" color=\""+color+"\">"+results[7]+extra+"</font></b></td>";
+		body += "</tr>";
+		body += "<tr height=\"12\" style=\"min-height:12.0pt\">";
+		body += "<td height=\"12\" style=\"min-height:12.0pt\"><b><font size=\"4\"><br></font></b></td><td></td>";
+		body += "<td></td>";
+		body += "</tr>";
+		body += "<tr height=\"12\" style=\"min-height:12.0pt\">";
+		body += "<td height=\"12\" style=\"min-height:12.0pt\"><br></td></tr></tbody></table><br>";
+		body += "<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"655\" style=\"font-size:14px;border-collapse:collapse;width:655pt\">";
+		body += "<colgroup><col width=\"655\" style=\"width:555pt\">";
+		body += "</colgroup><tbody><tr height=\"20\" style=\"min-height:20.0pt\">";
+		body += "<td height=\"20\" width=\"655\" style=\"min-height:20.0pt;width:655pt\"><font size=\"2\"><b><font color=\""+green+"\">Pontua&ccedil;&atilde;o Baixa ";
+		body += "- 2.00 a 4.25</font></b><span><b><font color=\""+green+"\">&nbsp;</font></b>&nbsp; </span><font color=\""+yellow+"\"><b>Pontua&ccedil;&atilde;o M&eacute;dia - de";
+		body += " 4.25 a 6.50</b></font><span>&nbsp;</span></font><b><font color=\""+red+"\" size=\"2\">Pontua&ccedil;&atilde;o Alta - 6.50 a ";
+		body += "10.0 (oportunidade de melhoria)</font><br><div style=\"margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;font:normal normal normal 12px/normal Helvetica\"><font color=\"#232323\"><br></font></div>";
+		body += "<div style=\"margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;font:normal normal normal 12px/normal Helvetica\"><font color=\"#232323\">Quanto maior for a pontua&ccedil;&atilde;o, maior tamb&eacute;m ser&aacute; a sua oportunidade de melhoria.&nbsp;</font></div></b></td></tr></tbody></table>";
+		body += "<span style=\"border-collapse:collapse\"><b><div style=\"margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;font:normal normal normal 12px/normal Helvetica;display:inline!important\">";
+		body += "<font color=\"#232323\">Assim, a pior pontua&ccedil;&atilde;o que voc&ecirc; pode obter ser&aacute; 10.0. Isso indica que voc&ecirc; que voc&ecirc; atribuiu a menor pontua&ccedil;&atilde;o poss&iacute;vel para os itens que s&atilde;o considerados como extremamente importantes.</font></div></b></span><span style=\"font-size:16px\">";
+		body += "<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"655\" style=\"border-collapse:collapse;width:555pt\"></table></span><span style=\"border-collapse:collapse\"><b><div style=\"margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;font:normal normal normal 12px/normal Helvetica;display:inline!important\">";
+		body += "<font color=\"#232323\">A melhor pontua&ccedil;&atilde;o poss&iacute;vel &eacute; 2.0 e indicar&aacute; que voc&ecirc; atribuiu a maior pontua&ccedil;&atilde;o para itens considerados importantes de acordo com a opini&atilde;o dos especialistas.</font></div></b></span><span style=\"font-size:16px\"></span><b></b></font>";
+		body += "<br><br><div><span style=\"border-collapse:collapse\">";
+		body += "<font face=\"Calibri\"><div style=\"margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;font:normal normal normal 10px/normal Helvetica\">1 - <b>ATITUDE: </b>Deixar-se afetar negativamente por mudan&ccedil;as nas condi&ccedil;&otilde;es de tr&acirc;nsito, press&otilde;es de hor&aacute;rios, distra&ccedil;&otilde;es, problemas pessoais etc...</div>";
+		body += "<div style=\"margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;font:normal normal normal 10px/normal Helvetica\">2 - <b>MANUTEN&ccedil;&atilde;O</b>: Cuidados com as condi&ccedil;&otilde;es do ve&iacute;culo ( manuten&ccedil;&atilde;o, limpeza, itens de seguran&ccedil;a, revis&otilde;es tec...)</div>";
+		body += "<div style=\"margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;font:normal normal normal 10px/normal Helvetica\">3 - <b>SA&Iacute;DA: </b>Preocupa&ccedil;&atilde;o com procedimentos de seguran&ccedil;a antes de sair com o ve&iacute;culo ( ajustes dos espelhos, ajuste do assento, revis&atilde;o do itiner&aacute;rio etc...)</div>";
+		body += "<div style=\"margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;font:normal normal normal 10px/normal Helvetica\">4 - <b>CRUZAMENTOS: </b>Redobrar os cuidados nos cruzamentos tais como : Reduzir previamente a velocidade, n&atilde;o entrar sem os devidos cuidados mesmo com o sinal no verde, sinalizar as inten&ccedil;&otilde;es para outros motoristas etc...&nbsp;</div>";
+		body += "<div style=\"margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;font:normal normal normal 10px/normal Helvetica\">5 - <b>ESTACIONAMENTO</b>: Estacionar em locais seguros, de r&eacute; ( sempre que poss&iacute;vel ), observar movimenta&ccedil;&otilde;es antes de sair.</div>";
+		body += "<div style=\"margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;font:normal normal normal 10px/normal Helvetica\">6 - <b>ESPA&Ccedil;AMENTO</b>: Observar dist&acirc;ncia de seguimento ( regra dos 2 ou 4 segundos ), cuidados com os pontos-cegos, posicionar-se corretamente nas faixas, evitar freadas bruscas, ter sempre rotas de escape etc...</div>";
+		body += "<div style=\"margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;font:normal normal normal 10px/normal Helvetica\">7 - <b>GERAL: </b>Obedecer as regras de tr&acirc;nsito, evitar dirigir cansado, com sono, n&atilde;o comer ou mexer em nada ao&nbsp;dirigir, estar sempre preparado para quaisquer emereg&ecirc;ncias, sinalizar sempre as inten&ccedil;&otilde;es etc...</div>";
+		body += "<div style=\"margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;font:normal normal normal 10px/normal Helvetica\">8 - <b>PERCEP&Ccedil;&Atilde;O</b>: Observar tudo ao redor ( frente, atr&aacute;s, de lado ), aten&ccedil;&atilde;o Ã s manobras de outros motoristas, verificar os espelhos retrovisores a cada 5 - 7 segundos, aten&ccedil;&atilde;o aos ve&iacute;culos colados atr&aacute;s e com o tr&acirc;nsito Ã  frente. &nbsp; &nbsp;</div>";
+		body += "</font></span></div>";
+		
+		body += getFooter(opGroup,isMedical);
+		return body;
+	}
+
+    private String getFooter(String opGroup, boolean isMedical) {
+		String footer = "<br><br><div><span style=\"border-collapse:collapse\">";
+		if(isMedical) {
+			footer += "<font face=\"Calibri\"><div style=\"margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;font:normal normal normal 18px/normal Helvetica\">Equipe SAFE Fleet</div>";
+			footer += "</font></span></div>";
+			footer += "<p><img src=\"cid:figura1\" alt=\"\"></p>";
+		} else {
+			footer += "<font face=\"Calibri\"><div style=\"margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;font:normal normal normal 18px/normal Helvetica\">Equipe SAFE Fleet</div>";
+			footer += "<div style=\"margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;font:normal normal normal 16px/normal Helvetica\">"+opGroup+"Brasil</div>";
+			footer += "</font></span></div>";
+		}
+		return footer;
+	}
+
+	private String createManagerBody(String manager,String driver,String[] results, String opGroup, boolean isMedical) {
+    	
+    	double total = 0;
+    	for(int i = 0; i < results.length;  i++) {
+    		total += Double.parseDouble(results[i]);
+    	}
+    	total = total / 8.0;
+    	total = Math.round(total * Math.pow(10,2)) / Math.pow(10,2);
+    	String green = "#355724";
+    	String yellow = "#FFC000";
+    	String red = "red";
+    	String extra = "";
+
+    	
+		String body = "";
+		body += "<p class=\"MsoNormal\" style=\"margin:0in 0in 10pt;line-height:17px;font-size:11pt;font-family:Calibri,sans-serif\">";
+		body += "	<span lang=\"PT-BR\" style=\"font-size:16pt;line-height:24px\">";
+		body += "		Prezado "+manager;
+		body += "	</span>";
+		body += "</p>";
+		body += "<p class=\"MsoNormal\" style=\"margin:0in 0in 10pt;line-height:17px;font-size:11pt;font-family:Calibri,sans-serif\">";
+		body += "	<span lang=\"PT-BR\" style=\"font-size:16pt;line-height:24px\">";
+		body += "		Informamos que "+driver+" completou o Exerc&iacute;cio de Auto Avalia&ccedil;&atilde;o como Motorista.";
+		body += "		<br>";
+		body += "		Os resultados dessa atividade ( descritos resumidamente abaixo ) foram enviados ao ";
+		body += "		pr&oacute;prio condutor e registrados no CEPA - Data Center, para consulta e&nbsp; ";
+		body += "		acompanhamento nas pr&oacute;ximas avalia&ccedil;&otilde;es.";
+		body += "		<br>";
+		body += "		Recomendamos verificar os itens com pontua&ccedil;&otilde;es que indiquem ";
+		body += "		'oportunidades de melhoria' e estabelecer um Plano de A&ccedil;&atilde;o com o condutor para contribuir com seu ";
+		body += "		aprimoramento como motorista.";
+		body += "		<br>";
+		body += "	</span>";
+		body += "	<span lang=\"PT-BR\" style=\"font-size:16pt;line-height:24px\">";
+		body += "		Seu apoio e acompanhamento do Plano de A&ccedil;&atilde;o ser&aacute; muito importante como refor&ccedil;o para que ";
+		body += "		"+driver+" possa aprimorar seu desempenho na preven&ccedil;&atilde;o dos acidentes de tr&acirc;nsito.";
+		body += "		<br>";
+		body += "		Recomendamos que o Plano de A&ccedil;&atilde;o seja o mais simples poss&iacute;vel, porem com foco nas &aacute;reas ";
+		body += "		que realmente indiquem a necessidade da mudan&ccedil;a de comportamento na dire&ccedil;&atilde;o.";
+		body += "	</span>";
+		body += "</p>";
+		body += "<p class=\"MsoNormal\" style=\"margin:0in 0in 10pt;line-height:17px;font-size:11pt;font-family:Calibri,sans-serif\">";
+		body += "	<span lang=\"PT-BR\" style=\"font-size:16pt;line-height:24px\">";
+		body += "		Contamos com sua ajuda.";
+		body += "	</span>";
+		body += "</p>";
+		body += "<p class=\"MsoNormal\" style=\"margin:0in 0in 10pt;line-height:17px;font-size:11pt;font-family:Calibri,sans-serif\">";
+		body += "	<span lang=\"PT-BR\" style=\"font-size:16pt;line-height:24px\">&nbsp;</span>";
+		body += "</p>";
+		body += "<p class=\"MsoNormal\" style=\"margin:0in 0in 10pt;line-height:17px;font-size:11pt;font-family:Calibri,sans-serif\">";
+		body += "	<b>";
+		body += "		<span lang=\"PT-BR\" style=\"font-size:18pt;line-height:27px\">";
+		body += "			Resumo da auto-avalia&ccedil;&atilde;o como motorista do "+driver;
+		body += "		</span>";
+		body += "	</b>";
+		body += "	<span lang=\"PT-BR\" style=\"font-size:9pt;line-height:13px;font-family:'Lucida Grande',serif\">";
+		body += "	</span>";
+		body += "</p>";
+		body += "<table border=\"0\" cellpadding=\"0\" cellspacing=\"0\" width=\"655\" style=\"font-size:14px;border-collapse:collapse;width:655pt\">";
+		body += "<colgroup><col width=\"655\" style=\"width:555pt\">";
+		body += "</colgroup><tbody><tr height=\"20\" style=\"min-height:20.0pt\">";
+		body += "<td height=\"20\" width=\"655\" style=\"min-height:20.0pt;width:655pt\"><font size=\"2\"><b><font color=\""+green+"\">Pontua&ccedil;&atilde;o Baixa ";
+		body += "- 2.00 a 4.25</font></b><span><b><font color=\""+green+"\">&nbsp;</font></b>&nbsp; </span><font color=\""+yellow+"\"><b>Pontua&ccedil;&atilde;o M&eacute;dia - de";
+		body += " 4.25 a 6.50</b></font><span>&nbsp;</span></font><b><font color=\""+red+"\" size=\"2\">Pontua&ccedil;&atilde;o Alta - 6.50 a ";
+		body += "10.0 (oportunidade de melhoria)</font><br><div style=\"margin-top:0px;margin-right:0px;margin-bottom:0px;margin-left:0px;font:normal normal normal 12px/normal Helvetica\"><font color=\"#232323\"><br></font></div>";
+		body += "</b></td></tr></tbody></table>";		
+		body += "<table border=\"0\" cellspacing=\"0\" cellpadding=\"0\" width=\"904\" style=\"width:678pt;border-collapse:collapse\">";
+		body += "	<tr style=\"min-height:12.75pt\">";
+		body += "		<td width=\"315\" style=\"width:236.45pt;padding:0in;min-height:12.75pt\"></td>";
+		body += "		<td width=\"278\" style=\"width:208.35pt;padding:0in;min-height:12.75pt\"></td>		";
+		body += "		<td width=\"311\" style=\"width:233.2pt;padding:0in;min-height:12.75pt\"></td>";
+		body += "	</tr>";
+		body += "	<tr style=\"min-height:12pt;min-height:16.75pt\">";
+		body += "		<td style=\"padding:0in;min-height:12pt;min-height:16.75pt\">";
+		body += "			<p class=\"MsoNormal\" style=\"margin:0in 0in 10pt;line-height:17px;font-size:11pt;font-family:Calibri,sans-serif\">";
+		body += "				<b>";
+		body += "					<span style=\"font-size:13.5pt;line-height:20px\">Categoria</span>";
+		body += "				</b>";
+		body += "				<span style=\"font-size:12pt;line-height:18px;font-family:'Times New Roman',serif\"></span>";
+		body += "			</p>";
+		body += "		</td>";
+		body += "		<td style=\"padding:0in;min-height:12pt\"></td>";
+		body += "		<td style=\"padding:0in;min-height:12pt\">";
+		body += "			<p class=\"MsoNormal\" style=\"margin:0in 0in 10pt;line-height:17px;font-size:11pt;font-family:Calibri,sans-serif\">";
+		body += "				<b>";
+		body += "					<span style=\"font-size:13.5pt;line-height:20px\">Pontua&ccedil;&atilde;o</span>";
+		body += "				</b>";
+		body += "				<span style=\"font-size:12pt;line-height:18px;font-family:'Times New Roman',serif\"></span>";
+		body += "			</p>";
+		body += "		</td>";
+		body += "	</tr>";
+
+		String color = "";
+		extra = "";
+		if(total <= 4.25) {
+			color = green;
+		} else if(total <= 6.5) {
+			color = yellow;
+		} else {
+			color = red;
+			extra = " ( oportunidade de melhoria )";
+		}
+		body += "	<tr style=\"min-height:12pt;min-height:16.75pt\">";
+		body += "		<td style=\"padding:0in;min-height:12pt;min-height:16.75pt\">";
+		body += "			<p class=\"MsoNormal\" style=\"margin:0in 0in 10pt;line-height:17px;font-size:11pt;font-family:Calibri,sans-serif\">";
+		body += "				<b>";
+		body += "					<span style=\"font-size:13.5pt;line-height:20px\">Total</span>";
+		body += "				</b>";
+		body += "				<span style=\"font-size:12pt;line-height:18px;font-family:'Times New Roman',serif\"></span>";
+		body += "			</p>";
+		body += "		</td>";
+		body += "		<td style=\"padding:0in;min-height:12pt\"></td>";
+		body += "		<td style=\"padding:0in;min-height:12pt\">";
+		body += "			<p class=\"MsoNormal\" style=\"margin:0in 0in 10pt;line-height:17px;font-size:11pt;font-family:Calibri,sans-serif\">";
+		body += "				<b>";
+		body += "					<span style=\"font-size:13.5pt;line-height:20px;color:"+color+"\">"+total+extra+"</span>";
+		body += "				</b>";
+		body += "				<span style=\"font-size:12pt;line-height:18px;font-family:'Times New Roman',serif\"></span>";
+		body += "			</p>";
+		body += "		</td>";
+		body += "	</tr>";
+		
+		String[] texts = {"1 - Atitude","2- Manuten&ccedil;&atilde;o","3 - Cuidados antes de sair","4- Cruzamentos","5- Estacionamento","6- Espa&ccedil;o de seguran&ccedil;a","7 - Geral","8- Percep&ccedil;&atilde;o"};
+		for(int i = 0; i < 8; i++) {
+			color = "";
+			extra = "";
+			if(Double.parseDouble(results[i]) <= 4.25) {
+				color = green;
+			} else if(Double.parseDouble(results[i]) <= 6.5) {
+				color = yellow;
+			} else {
+				color = red;
+				extra = " ( oportunidade de melhoria )";
+			}
+			body += "	<tr style=\"min-height:12pt;min-height:16.75pt\">";
+			body += "		<td style=\"padding:0in;min-height:12pt;min-height:16.75pt\">";
+			body += "			<p class=\"MsoNormal\" style=\"margin:0in 0in 10pt;line-height:17px;font-size:11pt;font-family:Calibri,sans-serif\">";
+			body += "				<b>";
+			body += "					<span style=\"font-size:13.5pt;line-height:20px\">"+texts[i]+"</span>";
+			body += "				</b>";
+			body += "				<span style=\"font-size:12pt;line-height:18px;font-family:'Times New Roman',serif\"></span>";
+			body += "			</p>";
+			body += "		</td>";
+			body += "		<td style=\"padding:0in;min-height:12pt\"></td>";
+			body += "		<td style=\"padding:0in;min-height:12pt\">";
+			body += "			<p class=\"MsoNormal\" style=\"margin:0in 0in 10pt;line-height:17px;font-size:11pt;font-family:Calibri,sans-serif\">";
+			body += "				<b>";
+			body += "					<span style=\"font-size:13.5pt;line-height:20px;color:"+color+"\">"+results[i]+extra+"</span>";
+			body += "				</b>";
+			body += "				<span style=\"font-size:12pt;line-height:18px;font-family:'Times New Roman',serif\"></span>";
+			body += "			</p>";
+			body += "		</td>";
+			body += "	</tr>";
+		}
+		body += "</table>";
+		body += getFooter(opGroup, isMedical);
+		return body;
+	}
+
+    public ActionForward cancel(HttpSession session,ActionMapping mapping, ActionForm form) {
+    	SystemAccess sys = (SystemAccess)session.getAttribute("SystemAccess");
+    	if(sys.isCorporation(CorporationData.BAYER_MX)) {
+        	return mapping.findForward("cancel_bayermx");
+    	}
+        if(sys.getUserSessionData().getLenguage().equals("es")) {
+        	return mapping.findForward("cancelar");
+        }else {
+        	return mapping.findForward("cancel");
+        }
+    }    
+
+    private boolean isMedical(DivOrgData opGroup) {
+    	Integer franchiseId = ((communication.administration.corporation.tables.ItemData)opGroup.getDivOrgLevels().getItemIterator().next()).getId();
+		if(franchiseId != 300999) {
+			return true;
+		}
+		return true;
+    }
+}

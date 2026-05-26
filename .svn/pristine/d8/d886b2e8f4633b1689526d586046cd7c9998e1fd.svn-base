@@ -1,0 +1,146 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>Documento sem t&iacute;tulo</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+
+<body leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
+<table width="559" border="0" align="center" cellpadding="0" cellspacing="0">
+  <tr> 
+    <td height="79" colspan="4"> <div align="right">
+        <table width="90%" border="0" align="center" cellpadding="0" cellspacing="0">
+          <tr> 
+            <td><div align="center"><font size="5" face="Arial, Helvetica, sans-serif"><strong></strong></font></div>
+              <div align="center"></div>
+              <table width="91%" height="63" border="0" align="center" cellpadding="0" cellspacing="0" bgcolor="3B6692">
+                <tr> 
+                  <td height="63" align="center" valign="middle"> <font color="#FFFFFF" size="5" face="Arial, Helvetica, sans-serif"><strong><em>User 
+                    Manual </em></strong></font><br> <font color="#FFFFFF" size="4" face="Arial, Helvetica, sans-serif"><strong><font size="2">BASIC 
+                    INSTRUCTIONS ON ACCESS AND USE</font></strong></font><font color="#FFFFFF" size="3" face="Arial, Helvetica, sans-serif"><strong></strong></font></td>
+                </tr>
+              </table></td>
+          </tr>
+        </table>
+      </div></td>
+  </tr>
+  <tr valign="top"> 
+    <td height="21" colspan="5"> <hr color="#3B6692"noshade></td>
+  </tr>
+  <tr> 
+    <td colspan="5"> <div align="center"> 
+        <table width="95%" border="0" cellspacing="0" cellpadding="0">
+          <tr> 
+            <td bgcolor="#E9E9E9"><font size="4" face="Arial, Helvetica, sans-serif"><strong>MENU</strong></font></td>
+          </tr>
+          <tr> 
+            <td bgcolor="#E9E9E9">&nbsp;</td>
+          </tr>
+          <tr> 
+            <td height="16" bgcolor="#E9E9E9"> <blockquote> 
+                <div align="left"><font size="2" face="Arial, Helvetica, sans-serif">The 
+                  Menu is displayed on the upper left side of the screen.</font></div>
+              </blockquote></td>
+          </tr>
+          <tr> 
+            <td height="27" bgcolor="#E9E9E9"> <blockquote> 
+                <div align="left"><font size="2" face="Arial, Helvetica, sans-serif">System 
+                  applications will be explained in the following sections.</font></div>
+              </blockquote></td>
+          </tr>
+          <tr> 
+            <td bgcolor="#E9E9E9"> <div align="left"></div></td>
+          </tr>
+          <tr> 
+            <td bgcolor="#E9E9E9"> <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tr> 
+                  <td width="5%">&nbsp;</td>
+                  <td width="95%"><div align="center"><img src="/datacenter/util/imgs/mn_menu_en.jpg" width="152" height="302"></div></td>
+                </tr>
+              </table></td>
+          </tr>
+          <tr> 
+            <td bgcolor="#E9E9E9">&nbsp;</td>
+          </tr>
+          <tr> 
+            <td bgcolor="#E9E9E9"><table width="90%" border="0" align="center" cellpadding="0" cellspacing="0">
+                <tr> 
+                  <td height="35"> <div align="justify"> 
+                      <ul>
+                        <li><font size="2" face="Arial, Helvetica, sans-serif"><em><strong>Drivers:</strong></em> 
+                          Input, edit, and query driver data, including driving 
+                          records and Driver&#8217;s License expiry date.</font></li>
+                      </ul>
+                    </div></td>
+                </tr>
+                <tr> 
+                  <td><div align="justify"> 
+                      <ul>
+                        <li><em><font size="2" face="Arial, Helvetica, sans-serif"><strong>Events:</strong> 
+                          </font></em><font size="2" face="Arial, Helvetica, sans-serif">Input 
+                          and query data on fines, accidents, and incidents and 
+                          view fleet performance statistics. </font> </li>
+                      </ul>
+                    </div></td>
+                </tr>
+                <tr> 
+                  <td height="35"> <div align="justify"> 
+                      <ul>
+                        <li> <font size="2" face="Arial, Helvetica, sans-serif"><strong><em>Fleets:</em></strong> 
+                          Input and query fleet mileage data. The option Vehicles 
+                          allows inputting, editing, and querying data on those 
+                          vehicles that comprise the fleet. </font></li>
+                      </ul>
+                    </div></td>
+                </tr>
+                <tr> 
+                  <td><div align="justify"> 
+                      <ul>
+                        <li><font size="2" face="Arial, Helvetica, sans-serif"><strong><em>Activities:</em></strong> 
+                          Input, edit, and query data related to completed activities 
+                          (training sessions, assessments, etc.). </font></li>
+                      </ul>
+                    </div></td>
+                </tr>
+                <tr> 
+                  <td><div align="justify"> 
+                      <ul>
+                        <li><font size="2" face="Arial, Helvetica, sans-serif"><strong><em>Administration:</em></strong> 
+                          Used exclusively by CEPA to edit all corporate items 
+                          and users.</font></li>
+                      </ul>
+                    </div></td>
+                </tr>
+                <tr> 
+                  <td><div align="justify"> 
+                      <ul>
+                        <li><font size="2" face="Arial, Helvetica, sans-serif"> 
+                          <em><strong>Queries:</strong></em> Query and view several 
+                          statistic performance data such as APMM, Events, etc.</font></li>
+                      </ul>
+                    </div></td>
+                </tr>
+              </table></td>
+          </tr>
+          <tr> 
+            <td bgcolor="#E9E9E9"><div align="justify"></div></td>
+          </tr>
+          <tr> 
+            <td bgcolor="#E9E9E9">&nbsp;</td>
+          </tr>
+          <tr> 
+            <td bgcolor="#E9E9E9">&nbsp;</td>
+          </tr>
+        </table>
+      </div></td>
+  </tr>
+  <tr>
+    <td height="19" colspan="5">&nbsp;</td>
+  </tr>
+  <tr> 
+    <td height="19" colspan="5"><div align="center"><font size="1" face="Arial, Helvetica, sans-serif"><a href="layout.jsp?refer=/manual/english/manual1_en.htm" style="color:black;text-decoration:none">Back 
+        to Contens</a></font></div></td>
+  </tr>
+</table>
+</body>
+</html>

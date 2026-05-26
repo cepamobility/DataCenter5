@@ -1,0 +1,279 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.administration.tables" >
+    <class name="LevelOfServiceDriverDPA" table="levelofservicedriverdpa">
+
+        <id
+            name="id"
+            column="id"
+            type="java.lang.Integer"
+        >
+            <generator class="sequence">
+            	<param name="sequence">LevelOfServiceDriverDPA_Sequence</param>
+            </generator>
+           
+        </id>
+        
+        <property
+			name="inspector"
+			column="inspector"
+			type="java.lang.String"
+			not-null="false" 
+		/>
+		
+		<property
+			name="driverId"
+			column="driverId"
+			type="java.lang.Integer"
+			not-null="false" 
+		/>
+		
+		<property
+			name="date"
+			column="date"
+			type="java.util.Date"
+			not-null="false" 
+		/>
+		
+		<property
+			name="status"
+			column="status"
+			type="java.lang.String"
+			not-null="false" 
+		/>
+		<property
+			name="corporationId"
+			column="corporationId"
+			type="java.lang.String"
+			not-null="false" 
+		/>
+	
+		
+		<property
+				name="firstName"
+				column="firstName"
+				type="java.lang.String"
+				not-null="false" 
+			/>
+			
+		<property
+				name="lastName"
+				column="lastName"
+				type="java.lang.String"
+				not-null="false" 
+			/>	
+	
+		<property
+				name="plant"
+				column="plant"
+				type="java.lang.String"
+				not-null="false" 
+			/>
+		
+		<property
+				name="fleet"
+				column="fleet"
+				type="java.lang.Integer"
+				not-null="false" 
+			/>
+	
+		<property
+				name="function"
+				column="function"
+				type="java.lang.String"
+				not-null="false" 
+			/>
+	
+		<property
+				name="celular"
+				column="celular"
+				type="java.lang.String"
+				not-null="false" 
+			/>
+	
+		<property
+				name="birthDate"
+				column="birthDate"
+				type="java.util.Date"
+				not-null="false" 
+			/>
+	
+		<property
+				name="idade"
+				column="idade"
+				type="java.lang.String"
+				not-null="false" 
+			/>
+	
+		<property
+				name="cpf"
+				column="cpf"
+				type="java.lang.String"
+				not-null="false" 
+			/>
+	
+		<property
+				name="rg"
+				column="rg"
+				type="java.lang.String"
+				not-null="false" 
+			/>
+	
+	
+		<property
+				name="uf"
+				column="uf"
+				type="java.lang.String"
+				not-null="false" 
+			/>
+	
+		<property
+				name="vcnh"
+				column="vcnh"
+				type="java.util.Date"
+				not-null="false" 
+			/>
+	
+		<property
+				name="libPamcary"
+				column="libPamcary"
+				type="java.lang.String"
+				not-null="false" 
+			/>
+	
+		<property
+				name="dataVal"
+				column="dataVal"
+				type="java.util.Date"
+				not-null="false" 
+			/>
+	
+		<property
+				name="dirDefensiva"
+				column="dirDefensiva"
+				type="java.util.Date"
+				not-null="false" 
+			/>
+		
+		<property
+				name="aso"
+				column="aso"
+				type="java.util.Date"
+				not-null="false" 
+			/>
+		
+		<property
+				name="contract"
+				column="contract"
+				type="java.util.Date"
+				not-null="false" 
+			/>
+		
+		<property
+				name="cadastroDPA"
+				column="cadastroDPA"
+				type="java.lang.String"
+				not-null="false" 
+			/>
+			
+		<property
+				name="copyRG"
+				column="copyRG"
+				type="java.lang.String"
+				not-null="false" 
+			/>
+				
+		<property
+				name="copyCPF"
+				column="copyCPF"
+				type="java.lang.String"
+				not-null="false" 
+			/>
+		<property
+				name="copyCNH"
+				column="copyCNH"
+				type="java.lang.String"
+				not-null="false" 
+			/>
+		<property
+				name="compResid"
+				column="compResid"
+				type="java.lang.String"
+				not-null="false" 
+			/>
+		<property
+				name="testPsicologico"
+				column="testPsicologico"
+				type="java.lang.String"
+				not-null="false" 
+			/>
+		<property
+				name="testTheorist"
+				column="testTheorist"
+				type="java.lang.String"
+				not-null="false" 
+			/>
+		<property
+				name="testPractical"
+				column="testPractical"
+				type="java.lang.String"
+				not-null="false" 
+			/>
+					
+		<property
+				name="workoutOfGathering"
+				column="workoutOfGathering"
+				type="java.lang.String"
+				not-null="false" 
+			/>
+		<property
+				name="termoEtilometro"
+				column="termoEtilometro"
+				type="java.lang.String"
+				not-null="false" 
+			/>
+		<property
+				name="prontuarioCNH"
+				column="prontuarioCNH"
+				type="java.lang.String"
+				not-null="false" 
+			/>
+		<property
+				name="operationalTraining"
+				column="operationalTraining"
+				type="java.lang.String"
+				not-null="false" 
+			/>
+		<property
+				name="protocolFM300"
+				column="protocolFM300"
+				type="java.lang.String"
+				not-null="false" 
+			/>
+		
+		<property
+				name="workContract"
+				column="workContract"
+				type="java.lang.String"/>
+		<property
+				name="cepa"
+				column="cepa"
+				type="java.lang.String"/>
+		<property
+				name="cepaComment"
+				column="cepaComment"
+				type="java.lang.String"/>				
+		
+		<set name="course"  cascade="all-delete-orphan">
+			<key column="levelofservicedriver" not-null="true"/>
+			<one-to-many class="LevelOfServiceDriverCourseDPA" />
+		</set>        
+				
+		
+	</class>
+
+</hibernate-mapping>

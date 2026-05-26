@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.driver.tables">
+	<class name="AptitudTest" table="aptitudtests">
+		
+       <composite-id class="AptitudTestPK" name="pk" >
+       		<key-many-to-one
+       			 name="driver"
+       			 column="id"
+       			 class="Driver"
+       	 	/>
+	        <key-property 	name="date"	type="java.util.Date"	column="date" />
+       </composite-id>
+		
+        <property name="apt" type="boolean">
+        	<column name="apt" default="false" />
+        </property>
+
+        <property name="pending" type="boolean">
+		    <column name="pending" default="false"/>
+		</property>
+        <property column="expiry" name="expiry" type="java.util.Date" not-null="true" />
+        <property name="external" type="boolean">
+        	<column name="external" default="false" />
+        </property>
+		
+  	</class>
+</hibernate-mapping>

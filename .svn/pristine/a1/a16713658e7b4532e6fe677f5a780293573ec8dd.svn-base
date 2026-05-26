@@ -1,0 +1,604 @@
+<%@page import="communication.administration.corporation.tables.PointAccountData"%>
+<%@page language="java" 
+	errorPage="exception.jsp" 
+	import="java.util.*"
+	import="business.*"
+	import="business.vehicle.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.activity.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.vehicle.*" 	
+ 	import="communication.administration.user.*" 	
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<%@page import="communication.administration.corporation.tables.CorporationData"%>
+<%@page import="communication.driver.tables.DriverData"%>
+<%@page import="communication.administration.corporation.tables.CountryData"%><html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	 	<title> CEPA International</title>
+		<META http-equiv="Cache-Control" content="no-cache">
+		<META http-equiv="Pragma" content="no-cache">
+<!-- *************************JCalendar***********************************-->
+ <!-- calendar stylesheet -->
+  <link rel="stylesheet" type="text/css" media="all" href="/datacenter/component/jscalendar-1.0/skins/aqua/theme.css" title="win2k-cold-1" />
+
+  <!-- main calendar program -->
+  <script type="text/javascript" src="/datacenter/component/jscalendar-1.0/calendar.js"></script>
+  <script type="text/javascript" src='/datacenter/js/showHide.js' ></script>
+
+  <!-- language for the calendar-->
+	<script type="text/javascript" src="/datacenter/component/jscalendar-1.0/lang/calendar-es.js"></script>
+  <!-- the following script defines the Calendar.setup helper function, which makes
+       adding a calendar a matter of 1 or 2 lines of code. -->
+  <script type="text/javascript" src="/datacenter/component/jscalendar-1.0/calendar-setup.js"></script>
+  
+  <!-- **********************end JCalendar ********************************* -->
+		<style type="text/css">
+<!--	body {
+			margin-left: 0px;
+			margin-top: 0px;
+			margin-right: 0px;
+			margin-bottom: 0px;
+		}
+		.contain {
+			width: 100%; 
+			height: 100%;
+		}
+ -->
+		</style>
+	</head>
+
+<%!
+	Text messages; 
+	SystemAccess sys;
+	String attribute; 
+	String value;
+	UserSessionData userSessionData; 
+	RequestDispatcher dispatcher; String context; String pathMsg;
+%>
+<%
+	sys=(SystemAccess)session.getAttribute("SystemAccess");
+	int corporationId = sys.getCorporationId();
+	userSessionData=sys.getUserSessionData();
+	String check = Util.checkPermission(sys,SecurityConstants.JJ_REPORTER);
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		HashMap mapValues = new HashMap();
+		if(session.getAttribute("Msg") != null) {
+			mapValues = (HashMap)userSessionData.getValue();
+		}
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+
+		session.setAttribute("url","reporter.jsp");
+		messages=sys.getText();
+
+		DriverData driver = userSessionData.getDriverData();
+		if(driver == null) {
+			if(!Util.empty(request.getParameter("id"))) {
+				Hashtable parameters = new Hashtable();
+				parameters.put("id",request.getParameter("id"));
+				Collection drivers = sys.getDriverReportFacade().findDriverReport(parameters,userSessionData);
+				driver = (DriverData)drivers.iterator().next();
+				userSessionData.setDriver(driver);
+			}
+		}
+		
+		if(driver == null) {
+			response.sendRedirect(request.getContextPath()+"/reporterjj/forms.jsp");
+		}else {
+			PointAccountData account = sys.getCorporationReportFacade().getPointAccount(PointAccountData.DRIVER,driver.getId(),userSessionData);
+			Double d = account.getTotal().doubleValue();
+%>	
+	<body>
+	 	<table width="100%" height="90" border="0" cellpadding="0" cellspacing="0">
+		 	<form name="logout" action="../login.jsp" method="post">
+	 		</form>
+		 	<form name="history" action="data.jsp" method="post" target="_blank">
+		 		<input type="hidden" name="backForm" value='1'/>
+	 		</form>
+  			<tr>
+    			<td colspan="2">
+					<table width="100%" border="0" cellspacing="0" cellpadding="0" valign="top">
+      					<tr>
+        					<td><jsp:include  page='<%="../topMenu.jsp?home=true&reporter=true" %>'/></td>
+      					</tr>
+    				</table>	
+    			</td><!--end the topï¿½s table -->
+  			</tr>
+  		</table>
+  		<br>
+  		<br>	
+  		<html:form action="/reporterjj/FeedbackLineManager">
+  			<html:hidden property="activity" value='<%=CEPAActivityConstants.REPORTERJJ_COMMENTARYDRIVE%>' />
+			<table width="90%" border="0" align="center" cellpadding="0" cellspacing="0"  style="font-family: Calibri;">
+				<tr>
+					<td  align="left">
+						<img src="/datacenter/util/imgs/logo-road-safaty.png"  width="85px"/>
+					</td>
+					<td align="right">
+						<img src="/datacenter/util/imgs/logo-bayer.png" width="85px"/>
+					</td>
+				</tr>
+				<tr>
+					<td colspan="2">
+						<img src="/datacenter/util/imgs/faixa-superior.png" width="100%"/>
+					</td>
+				</tr>
+				<tr>
+					<td colspan="2" valign="center" align="center">
+					<table width="98%">
+					<tr>
+					<td>	
+						<table width="100%" style="background-color:rgb(231,231,230);">
+						<tr>
+							<td valign="center" align="right"><strong>FORMATO DE FEEDBACK</strong> </td> <td valign="center" align="left"> <img src="/datacenter/util/imgs/logo-road.png" height="50px"/></td>
+						</tr>
+						</table>
+					</td>
+					</tr>
+					<tr>
+						<td align="center">
+							<table >
+								<tr>
+									<td align="right">
+										Fecha:&nbsp;
+		       							<jsp:include  page='<%="../component/dateComponent.jsp?index=1&day=date&month=month&year=year&form=FeedbackLineManagerForm"%>' />
+									</td>
+									<td align="left">
+										Nombre del Conductor:
+										&nbsp;<%=driver.getFirstName()+" "+driver.getLastName()%>
+									</td>
+								</tr>
+								<tr>
+									<td align="right">
+										Lugar:&nbsp;
+										<input style="background-color:rgb(231,231,230); width:250px;" type="text" name="city">
+									</td>
+									<td align="left" valign="top">
+										Nivel de Riesgo:&nbsp;
+<%								String level = "";
+								if(d >= 20 && d < 30) { 
+									level = "Medio";
+%>										<img src="/datacenter/util/imgs/risco-medio.png" width="50px">
+<%								} else if(d >= 23 && d < 50) {
+									level = "Alto";
+%>										<img width="50px" src="/datacenter/util/imgs/risco-alto.png">
+<%								} else if(d >= 50) {
+									level = "Muy Alto";
+%>										<img width="50px" src="/datacenter/util/imgs/risco-muy-alto.png">
+<%								}else {
+									level = "Bajo";
+%>										Bajo	
+<%								}
+%>									</td>
+								</tr>
+							</table>
+						</td>			
+					</tr>
+					<tr>
+					<td align="center">
+						<table border="1" style="border-style: none;">
+						<tr>
+							<td  colspan="2" style="background-color:rgb(231,231,230);padding-left:10px;" height="30px" align="left" ><strong>PREPARACI&Oacute;N</strong></td>
+						</tr>
+						<tr>
+							<td align="center">
+							<table>
+							<tr>
+							<td valign="top">
+								<img  width="60px" src="/datacenter/util/imgs/icon-peparacin.png"/>
+							</td>
+							<td>
+								<table>
+									<tr><td colspan="2" algin="left" style="color:rgb(18,107,175);"><strong>CHAMPION & MANAGER</strong></td></tr>
+									<tr>
+										<td>&iquest;Revisaron el documento Gu&iacute;a para Feedback ROAD?</td>
+										<td>
+											<select style="background-color:rgb(231,231,230)" name="item13800" class="input">
+												<option value="1">SI</option> 
+												<option value="2">NO</option>
+											</select>
+										</td>
+									</tr>
+									<tr>
+										<td>&iquest;Entraron al sistema Data Center para revisar la CRC del Conductor?</td>
+										<td>
+											<select style="background-color:rgb(231,231,230)" name="item13801" class="input">
+												<option value="1">SI</option> 
+												<option value="2">NO</option>
+											</select>
+										</td>
+									</tr>
+									<tr>
+										<td>&iquest;Revisaron las Estad&iacute;sticas de Accidentes y RRR(Road Risk Record)?</td>
+										<td>
+											<select style="background-color:rgb(231,231,230)" name="item13802" class="input">
+												<option value="1">SI</option> 
+												<option value="2">NO</option>
+											</select>
+										</td>
+									</tr>
+									<tr><td colspan=2>&nbsp;</td></tr>
+									<tr>
+										<td colspan="2" algin="left" style="color:rgb(18,107,175);"><strong>MANAGER</strong></td>
+									</tr>
+									<tr>
+										<td>&iquest;Realiz&oacute; una lista de los puntos m&aacute;s importantes a tratar en el Feedback ROAD?</td>
+										<td>
+											<select style="background-color:rgb(231,231,230)" name="item13803" class="input">
+												<option value="1">SI</option> 
+												<option value="2">NO</option>
+											</select>
+										</td>
+									</tr>
+								</table>
+							</td>
+							</tr>
+							</table>					
+							</td>
+							<td align="center" valign="top">
+							<table>
+							<tr>
+							<td valign="top">
+								<img  width="60px" src="/datacenter/util/imgs/icon-conductor.png"/>
+							</td>
+							<td>
+								<table>
+									<tr>
+										<td  algin="left" style="color:rgb(152,190,16);"><strong>CONDUCTOR</strong></td>
+									</tr>
+									<tr>
+										<td>&iquest;El conductor revis&oacute; en el sistema Data Center su CRC previo a la reuni&oacute;n de Feedback Road?</td>
+									</tr>
+									<tr>
+										<td>
+											<select style="background-color:rgb(231,231,230)" name="item13804" class="input">
+												<option value="1">SI</option> 
+												<option value="2">NO</option>
+											</select>
+										</td>
+									</tr>
+								</table>
+							</td>
+							</tr>
+							</table>		
+							</td>
+						</tr>
+						</table>
+		
+					</td>			
+					</tr>
+					<tr>
+					<td align="center">
+						<table border="1" style="border-style: none;">
+						<tr>
+							<td  colspan="2" style="background-color:rgb(231,231,230);padding-left:10px;" height="30px" align="left" ><strong>SESI&Oacute;N DE RETROALIMENTACI&Oacute;N</strong></td>
+						</tr>
+						<tr>
+							<td align="center">
+							<table>
+							<tr>
+							<td valign="top">
+								<img  width="60px" src="/datacenter/util/imgs/icon-3.png"/>
+							</td>
+							<td>
+								<table>
+									<tr><td algin="left" style="color:rgb(18,107,175);"><strong>CHAMPION, MANAGER & <label style="color:rgb(152,190,16);">CONDUCTOR</label></strong></td></tr>
+									<tr><td ><strong>INICIO</strong><img src="/datacenter/util/imgs/titulo.png" width="100%" height="2px"/></td></tr>
+									<tr>
+										<td >
+											<table width="100%">
+												<tr>
+													<td>&iquest;Se coment&oacute; el motivo y objetivos de la reuni&oacute;n al Conductor?</td>
+													<td>
+														<select style="background-color:rgb(231,231,230)" name="item13805" class="input">
+															<option value="1">SI</option> 
+															<option value="2">NO</option>
+														</select>
+													</td>
+													<td>&iquest;Se explic&oacute; la importancia del programa Road Safety para Bayer y sus empleados?</td>
+													<td>
+														<select style="background-color:rgb(231,231,230)" name="item13806" class="input">
+															<option value="1">SI</option> 
+															<option value="2">NO</option>
+														</select>
+													</td>
+												</tr>
+											</table>
+										</td>
+									</tr>
+									<tr><td>&nbsp;</td></tr>
+									<tr><td ><strong>CONTEXTO</strong><img src="/datacenter/util/imgs/titulo.png" width="100%" height="2px"/></td></tr>
+									<tr>
+										<td>
+											<table width="100%">
+												<tr>
+													<td>&iquest;Se mostr&oacute; al Conductor las Estad&iacute;sticas de Accidentes y RRR (Road Risk Record) de Bayer y de la Divisi&oacute;n? </td>
+													<td>
+														<select style="background-color:rgb(231,231,230)" name="item13807" class="input">
+															<option value="1">SI</option> 
+															<option value="2">NO</option>
+														</select>
+													</td>
+													<td>&iquest;Se realizaron preguntas abiertas para identificar el nivel de comprensi&oacute;n del Conductor sobre seguridad vial?</td>
+													<td>
+														<select style="background-color:rgb(231,231,230)" name="item13808" class="input">
+															<option value="1">SI</option> 
+															<option value="2">NO</option>
+														</select>
+													</td>
+													<td>&iquest;Se revis&oacute; con el Conductor su CRC y los puntos por los que obtuvo su nivel de riesgo ?</td>
+													<td>
+														<select style="background-color:rgb(231,231,230)" name="item13809" class="input">
+															<option value="1">SI</option> 
+															<option value="2">NO</option>
+														</select>
+													</td>
+												</tr>
+											</table>
+										</td>
+									</tr>
+									<tr><td>&nbsp;</td></tr>
+									<tr><td ><strong>RETROALIMENTACI&Oacute;N</strong><img src="/datacenter/util/imgs/titulo.png" width="100%" height="2px"/></td></tr>
+									<tr>
+										<td>
+											<table width="100%">
+												<tr>
+													<td><strong>Ejemplo</strong>&iquest;Se revis&oacute; con el Conductor su CRC identificando el por qu&eacute; de su comportamiento de riesgo? </td>
+													<td>
+														<select style="background-color:rgb(231,231,230)" name="item13810" class="input">
+															<option value="1">SI</option> 
+															<option value="2">NO</option>
+														</select>
+													</td>
+													<td><strong>Efecto</strong>&iquest;Se coment&oacute; al  conductor las consecuencias de su nivel de riesgo seg&uacute;n el programa Road Safety?</td>
+													<td>
+														<select style="background-color:rgb(231,231,230)" name="item13811" class="input">
+															<option value="1">SI</option> 
+															<option value="2">NO</option>
+														</select>
+													</td>
+													<td><strong>Cambio</strong>&iquest;Se le explic&oacute; al Conductor el plan de mitigaci&oacute;n de su nivel y los cambios de comportamiento que necesita modificar ?</td>
+													<td>
+														<select style="background-color:rgb(231,231,230)" name="item13812" class="input">
+															<option value="1">SI</option> 
+															<option value="2">NO</option>
+														</select>
+													</td>
+												</tr>
+											</table>
+										</td>
+									</tr>
+									<tr><td>&nbsp;</td></tr>
+									<tr><td ><strong>ACUERDO</strong> <img src="/datacenter/util/imgs/titulo.png" width="100%" height="2px"/></td></tr>
+									<tr>
+										<td>
+										<table width="100%">
+										<tr><td>
+											<table width="100%">
+											<tr>
+												<td colspan="2"><strong>Comportamientos a modificar(ROAD)</strong></td>
+											</tr>
+											<tr>									
+												<td><strong>1.</strong></td>
+												<td>
+													<textarea rows="2" cols="50" style="background-color:rgb(231,231,230)"  name="point3373" type="text"></textarea>
+												</td>
+											</tr>
+											<tr>									
+												<td><strong>2.</strong></td>
+												<td>
+													<textarea rows="2" cols="50" style="background-color:rgb(231,231,230)"  name="point3374" type="text"></textarea>
+												</td>
+											</tr>
+											<tr>									
+												<td><strong>3.</strong></td>
+												<td>
+													<textarea rows="2" cols="50" style="background-color:rgb(231,231,230)"  name="point3375" type="text"></textarea>
+												</td>
+											</tr>
+											</table>
+										</td>
+										<td>
+											<table width="100%">
+											<tr>
+												<td colspan="2"><strong>Objetivos con el conductor(SMART)</strong></td>
+											</tr>
+											<tr>									
+												<td><strong>1.</strong></td>
+												<td>
+													<textarea rows="2" cols="50" style="background-color:rgb(231,231,230)"  name="point3376" type="text"></textarea>
+												</td>
+											</tr>
+											<tr>									
+												<td><strong>2.</strong></td>
+												<td>
+													<textarea rows="2" cols="50" style="background-color:rgb(231,231,230)"  name="point3377" type="text"></textarea>
+												</td>
+											</tr>
+											<tr>									
+												<td><strong>3.</strong></td>
+												<td>
+													<textarea rows="2" cols="50" style="background-color:rgb(231,231,230)"  name="point3378" type="text"></textarea>
+												</td>
+											</tr>
+											</table>
+										</td>
+										</tr>
+										</table>
+									</tr>
+									<tr><td>&nbsp;</td></tr>
+									<tr><td ><strong style="color:red;">Importante: A partir del mes de junio 2016, de acuerdo con los lineamientos del programa Road Safety, los conductores que se conviertan en alto (rojo) o muy alto (negro) deberán cursar y aprobar los cursos del plan de mitigación y estos costos correrán por cuenta del empeleado, <b>con excepción del conductores con menos de 3 años en la compañía.</b></strong></td></tr>
+									<tr><td>&nbsp;</td></tr>
+									<tr>
+										<td>
+											<table width="100%" cellpadding="5" cellspacing="5">
+												<tr>
+													<td width="50%">
+														<table width="100%">
+															<tr>
+																<td colspan="2" valign="top">Conductores <strong>Muy Alto Riesgo</strong> Si existe un acuerdo (por &uacute;nica ocasi&oacute;n) para reducci&oacute;n de puntos adicionales al plan de mitigaci&oacute;n indicar acuerdo: </td>
+															</tr>
+														</table>
+													</td>
+													<td width="50%">
+														<table width="100%">
+															<tr>
+																<td colspan="3"><strong>Actividad  (-Reducci&oacute;n de Puntos)</strong></td>
+															</tr>
+															<tr>									
+																<td><strong>1.</strong></td>
+																<td>
+																	<textarea rows="2" cols="50" style="background-color:rgb(231,231,230)" name="point3379" type="text"></textarea>
+																</td>
+																<td>
+																	<select style="background-color:rgb(231,231,230)" name="item13818" >
+<%												for(int i = 0; i < 101; i = i + 5) {		
+%>																		<option value='<%=String.valueOf(i)%>'><%=String.valueOf(i)%></option> 
+<%												}
+%>																	</select>
+																	&nbsp;puntos
+																</td>
+															</tr>
+															<tr>									
+																<td><strong>2.</strong></td>
+																<td>
+																	<textarea rows="2" cols="50" style="background-color:rgb(231,231,230)" name="point3380" type="text"></textarea>
+																</td>
+																<td>
+																	<select style="background-color:rgb(231,231,230)" name="item13819" >
+<%												for(int i = 0; i < 101; i = i + 5) {		
+%>																		<option value='<%=String.valueOf(i)%>'><%=String.valueOf(i)%></option> 
+<%												}
+%>																	</select>
+																	&nbsp;puntos
+																</td>
+															</tr>
+															<tr>									
+																<td><strong>3.</strong></td>
+																<td>
+																	<textarea rows="2" cols="50" style="background-color:rgb(231,231,230)" name="point3381" type="text"></textarea>
+																</td>
+																<td>
+																	<select style="background-color:rgb(231,231,230)" name="item13820" >
+<%												for(int i = 0; i < 101; i = i + 5) {		
+%>																		<option value='<%=String.valueOf(i)%>'><%=String.valueOf(i)%></option> 
+<%												}
+%>																	</select>
+																	&nbsp;puntos
+																</td>
+															</tr>
+														</table>
+													</td>
+												</tr>
+											</table>
+									</tr>
+									<tr><td>&nbsp;</td></tr>
+									<tr><td ><strong style="color:red;">Nota: El Conductor entiende que esta reducci&oacute;n de puntos es por &uacute;nica ocasi&oacute;n, de reincidir convertirse en Muy Alto Riesgo pierde el derecho de conducir el veh&iacute;culo de la empresa, pudiendo causar p&eacute;rdida del empleo. </strong></td></tr>
+								</table>
+							</td>
+							</tr>
+							</table>					
+							</td>
+						</tr>
+						<tr>
+						<td align="center">
+							<table border="1" style="border-style: none;">
+							<tr>
+								<td  colspan="2" style="background-color:rgb(231,231,230);padding-left:10px;" height="30px" align="left" ><strong>PREPARACI&Oacute;N</strong><img src="/datacenter/util/imgs/titulo.png" width="100%" height="2px" style="visibility:hidden;"/></td>
+							</tr>
+							<tr>
+								<td align="center">
+									<table>
+										<tr>
+											<td valign="top">
+												<img  height="60px" src="/datacenter/util/imgs/icon-4.png"/>
+											</td>
+											<td>
+												<table>
+													<tr><td colspan="2" algin="left" style="color:rgb(18,107,175);"><strong>CHAMPION & MANAGER</strong></td></tr>
+													<tr>
+														<td>&iquest;Se reunieron al final del Feedback para comentar sobre el Feedback realizado? </td>
+														<td>
+															<select style="background-color:rgb(231,231,230)" name="item13813" class="input">
+																<option value="1">SI</option> 
+																<option value="2">NO</option>
+															</select>
+														</td>
+													</tr>
+													<tr>
+														<td>&iquest;Consideran que se cumpli&oacute; el objetivo del Feedback ROAD con el Conductor?</td>
+														<td>
+															<select style="background-color:rgb(231,231,230)" name="item13814" class="input">
+																<option value="1">SI</option> 
+																<option value="2">NO</option>
+															</select>
+														</td>
+													</tr>
+												</table>
+											</td>
+										</tr>
+									</table>					
+								</td>
+							</tr>
+							</table>
+											</td>			
+										</tr>
+									</table>
+								</td>
+							</tr>
+							<tr>
+								<td align="center">
+									<table border="1" style="border-style: none;">
+										<tr>
+											<td  colspan="2" style="background-color:rgb(231,231,230);padding-left:10px;" height="30px" align="left" ><strong>OBSERVACIONES</strong><img src="/datacenter/util/imgs/titulo.png" width="100%" height="2px" style="visibility:hidden;"/></td>
+										</tr>
+										<tr>
+											<td>
+												<table>
+													<tr>
+														<td colspan="2" align="left">
+															<html:textarea property="obs" rows="3" cols="150"></html:textarea>
+														</td>
+													</tr>
+													<tr>
+														<td colspan="2" align="right">
+															<html:submit value="Enviar" styleClass="input"></html:submit>
+															<html:cancel value="Volver" styleClass="input"></html:cancel>
+														</td>
+													</tr>
+												</table>
+											</td>
+										</tr>
+									</table>	
+								</td>
+							</tr>
+						</table>	
+					</td>
+				</tr>
+				<tr>
+					<td colspan="2">
+						<img src="/datacenter/util/imgs/faixa-inferior.png" width="100%"/>
+					</td>
+				</tr>
+			</table>		
+			<html:hidden property="level" value="<%=level%>"/>
+		</html:form>
+	</body>
+<%		}
+	}
+%>		
+</html>

@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.log.corporation" >
+	<class name="DivOrgLog" table="divorglog">
+		
+       	<composite-id class="persistence.log.IdLogPK" name="pk" >
+	        <key-property	name="id"	type="java.lang.Integer"	column="id"/>
+	        <key-property	name="loginUser"	type="java.lang.String"	column="loginuser"/>
+	        <key-property	name="date"	type="java.util.Date"	column="date"/>
+       	</composite-id>
+		
+		<many-to-one name="corporation" not-null="true">
+					<column name="corporationDivOrg" /> 
+					<column name="loginDivOrg" /> 
+					<column name="dateDivOrg" />
+		</many-to-one>
+		
+        <property column="resourcekey" name="resourceKey" type="java.lang.String" not-null="true" />
+
+		<set inverse="true" name="itemLevel1Set" cascade="all-delete-orphan">
+			<key>			
+				<column name="idDivOrg" /> 
+				<column name="loginUserDivOrg" /> 
+				<column name="dateDivOrg" />
+			</key>
+			<one-to-many class="DivOrgItemLevel1Log"/>	
+		</set>
+
+		<set inverse="true" name="levelLabelSet" cascade="all-delete-orphan">
+			<key>			
+				<column name="idDivOrg" /> 
+				<column name="loginUserDivOrg" /> 
+				<column name="dateDivOrg" />
+			</key>
+			<one-to-many class="LevelLabelLog"/>	
+		</set>
+		
+  	</class>
+</hibernate-mapping>

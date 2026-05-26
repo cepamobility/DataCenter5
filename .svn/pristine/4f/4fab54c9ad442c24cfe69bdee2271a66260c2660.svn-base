@@ -1,0 +1,247 @@
+<%@page import="org.apache.struts.action.DynaActionForm"%>
+<%@page language="java" 
+	errorPage="../exception.jsp"
+	import="java.util.*"
+	import="business.*"
+	import="business.fleet.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.fleet.tables.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.driver.*"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<html:html>
+<%!
+	RequestDispatcher dispatcher; 
+	String pathLanguage; Text messages; SystemAccess sys;
+	Integer pageNum; boolean all; int pageSize; 
+	String checkboxParamList; String target;
+%>
+<%
+	String action;
+	sys=(SystemAccess)session.getAttribute("SystemAccess");
+	String check = Util.checkPermission(sys,SecurityConstants.DELETE_FLEET);
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+	
+		dispatcher=request.getRequestDispatcher("/util/jsp/language.jsp");
+		dispatcher.include(request,response);
+
+		messages=sys.getText();
+	
+		session.setAttribute("target","fleet/FleetExclusion");
+
+		if(request.getParameter("checkboxParamList") != null) {
+			checkboxParamList = request.getParameter("checkboxParamList");
+			action = request.getParameter("action");
+			target = request.getParameter("target");
+		}else {
+		    org.apache.struts.action.DynaActionForm form = 
+		    	(org.apache.struts.action.DynaActionForm)session.getAttribute("FleetDeleteForm");
+			checkboxParamList = (String)form.get("checkboxParamList");
+			action = (String)form.get("action");
+			target = (String)form.get("target");
+		}
+		session.setAttribute("url","fleet/FleetExclusion.jsp?checkboxParamList="+checkboxParamList+"&action="+action);
+		List list = sys.getFleetReportFacade().getFleets(checkboxParamList.replaceAll("<",","),sys.getUserSessionData());
+		if(list.size() > 0) {
+			session.setAttribute("List_fleets",list);
+%>
+
+
+<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+<head>
+	<META http-equiv="Cache-Control" content="no-cache">
+	<META http-equiv="Pragma" content="no-cache">
+	<META http-equiv="Expires" content="-1">		
+</head>
+
+<script language="JavaScript" type="text/javascript">
+
+function onSelectFine(calendar, date) {
+		var date2 = calendar.date;
+		var time = date2.getTime();
+  		var input_day = document.getElementById("dayIdFleetEx");
+  		var input_month = document.getElementById("monthIdFleetEx");
+  		var input_year = document.getElementById("yearIdFleetEx");
+  		var date3 = new Date(time);
+  		input_day.value = date3.print("%d");
+  		input_month.value = date3.print("%m");
+  		input_year.value= parseInt(date3.print("%Y"),10);
+  	}
+
+// Valida que el Comentario no sea vacío.
+function validarComentario(){
+	form1 = document.forms['fleetExclusion'];
+	form2 = document.forms["FleetDeleteForm"];	
+	if (form1.comment.value != "")
+	{
+		// Hago el submit del form de Struts:
+		form2.comment.value = form1.comment.value;
+		form2.checkboxParamList.value = form1.checkboxParamList.value;
+		form2.action.value = form1.action.value;
+		<% if(action.equals("exclude")) {%>      	
+		form2.exclusionDate.value = form1.exclusionDate.value;
+		form2.exclusionMonth.value = form1.exclusionMonth.value 
+		form2.exclusionYear.value = form1.exclusionYear.value
+		<%	} %>
+		form2.submit();
+	}
+	else
+	{
+		alert('<%=messages.getText("generic.event.comment.empty")%>')
+	}
+}
+</script>
+
+
+
+<body bgcolor="#FFFFFF">
+	<form name="fleetExclusion">
+		<input type="hidden" name="checkboxParamList" value='<%=checkboxParamList%>'/>
+		<input type="hidden" name="action" value='<%=action%>'/>
+		<table width="600" border="0" align="center" cellpadding="0" cellspacing="0">
+			<tr class="guide1">
+				<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText("web.fleet."+action)%>' />
+	  		</tr>
+    	  	<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+	      	</tr>
+<%		if(action.equals("exclude")) {
+%>      	<tr  class="linetwo">
+				<th align="left">&nbsp;&nbsp;<%=messages.getText("generic.driver.driverdata.exclusiondate")%></th>
+				<td align="left">
+			    	<input type="text" name="exclusionDate" style="width:20;" styleClass="input" maxlength="2" styleId="dayIdFleetEx"/>&nbsp;&nbsp;
+			        <input type="text" name="exclusionMonth" style="width:20;" styleClass="input" maxlength="2" styleId="monthIdFleetEx"/>&nbsp;&nbsp;
+		    	    <input type="text" name="exclusionYear" style="width:40;" styleClass="input" maxlength="4" styleId="yearIdFleetEx"/>
+		    	    <html:img page="/component/jscalendar-1.0/img.gif" styleId="calendar_buttonFleetEx" style="cursor: pointer; border: 1px solid red;"
+     				onmouseover="this.style.background='red';" style="width:20;" align="middle" onmouseout="this.style.background=''"/>				
+			    </td>
+			    <script type="text/javascript">
+					Calendar.setup({
+        				inputArea     :    "yearIdFleetEx",
+        				ifFormat       :    "%d/%m/%Y",
+        				showsTime      :    true,
+        				timeFormat     :    "24",
+        				button         :    "calendar_buttonFleetEx",
+        				step           :    1,
+        				onSelect       :    onSelectEvent,
+        				singleClick    :    true
+    				});
+				</script>
+				<td><%=" ( "+messages.getText("generic.messages.dateformat")+" )"%></td>
+			</tr>
+	      	<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+      		</tr>
+<%		}
+%>        	<tr>
+    	    	<td colspan="3">
+					<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("web.vehicle.vehiclelist.systemvehicles")%>' />
+					<table width='100%' border="0" align='center' cellpadding="0" cellspacing="0">
+      					<tr>
+        					<td width="100%">
+<%!		Iterator iter; 
+		FleetMainAttributes fleet;
+		int i;
+		String uid; int pageMax; int contIter; int total;
+%>		    					<table width="100%" border="0">
+              						<tr align="center">
+              						    <td width='20%' class="guide2"><%=messages.getText("generic.fleet.fleetdata.name")%></td>
+						                <td width='40%'	class="guide2"><%=messages.getText("generic.fleet.fleetdata.description")%></td>
+					    	            <td width='20%'	class="guide2"><%=messages.getText("generic.fleet.fleetdata.type")%></td>
+					    	            <td width='15%'	class="guide2"><%=messages.getText("generic.driver.driverdata.exclusiondate")%></td>              											    	            
+              						</tr>
+<%		iter=list.iterator();
+		contIter=0;
+		while(iter.hasNext()){
+			contIter++;
+			fleet = (FleetMainAttributes)iter.next();
+%>	         						<tr align=center align="right" class='<%=((contIter % 2)==0) ? "lineone" : "linetwo"%>'>               
+    	      							<td width='20%' ><%=fleet.getName()%></td>
+							            <td width='40%'	><%=fleet.getDescription()%></td>
+							            <%
+							            switch(fleet.getType().intValue()) {
+									    case FleetData.COLECTIVE:
+				%>							                <td width='20%' ><%=messages.getText("generic.fleet.colective")%> </td>
+				<%					        break;
+									    case FleetData.INDIVIDUAL:
+				%>							                <td width='20%'><%=messages.getText("generic.fleet.individual")%> </td>
+				<%					        break;
+										}
+							            %>      
+							            
+							            <td width='15%'	><%= (fleet.getExclusionDate()== null) ? "-" :  Util.formatDate(fleet.getExclusionDate())%></td>
+              					
+              						
+               						</tr>
+<%		}
+%>		   						</table>
+          					</td>
+	      				</tr>
+					</table>
+   					<jsp:include page="../component/utilityboxbottom.jsp"/>	
+				</td>
+	      	</tr>
+    	  	<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+	      	</tr>
+			<tr>
+				<td width="100%" colspan="3">
+					<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.comment")+"*"%>' />
+					<table width="100%" cellpadding="0" cellspacing="0">
+						<tr>
+							<td width="9" background="/datacenter/util/imgs/left_gray.gif">&nbsp;</td>
+      						<td><textarea name="comment" style="width:100%" rows="4"></textarea></td>
+	   						<td width="9" background="/datacenter/util/imgs/right_gray.gif">&nbsp;</td>    
+						</tr>
+					</table>
+					<jsp:include  page="../component/utilityboxbottom.jsp" />
+				</td>
+			</tr>
+			<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+ 			</tr>
+			<tr  class="linetwo">
+				<td colspan="2">&nbsp;</td>
+				<td align="right">
+					<input name="btnAction" type="button" value='<%=messages.getText("web.driver.message."+action)%>'
+					 onClick="javascript:validarComentario();" class="input"/>	 		                             
+					<input name="btnCancel" type="button" value='<%=messages.getText("generic.messages.cancel")%>'
+					 onClick="history.back(-1);" class="input"/>
+				</td>
+			</tr>
+	    </table>
+	</form>    
+	<html:form action="/Fleetdelete">
+		<html:hidden property="checkboxParamList" value='<%=checkboxParamList%>'/>
+		<html:hidden property="action" value='<%=action%>'/>
+		<html:hidden property="comment" value="comment" />
+<%
+		if(action.equals("exclude")) {
+%>      	<html:hidden property="exclusionDate" value="exclusionDate"/>
+			<html:hidden property="exclusionMonth" value="exclusionMonth"/>
+			<html:hidden property="exclusionYear" value="exclusionYear"/>
+<%	
+		}
+%>
+	</html:form>
+</body>
+<%		}else {
+%>	<jsp:include  page='<%="/util/allowedData.jsp?message=fleet.error.access.fleet" %>'/>
+<%		}
+	}	
+%></html:html>

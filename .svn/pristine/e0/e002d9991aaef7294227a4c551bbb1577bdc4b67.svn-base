@@ -1,0 +1,1063 @@
+<%@page language="java"
+	errorPage="../exception.jsp"
+	import="java.util.*"
+	import="java.util.LinkedList"
+	import="business.*"
+	import="business.driver.*" 
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.util.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.administration.corporation.tables.ItemData"
+	import="communication.administration.user.tables.*"
+	import="communication.administration.user.UserSessionData"
+	import="communication.driver.tables.*"
+	import="communication.event.tables.*"
+	import="communication.activity.tables.*"
+	import="communication.vehicle.tables.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.driver.*"
+ 	import="communication.util.DateValue"
+ 	import="communication.administration.RoleData"	
+	import="communication.driver.tables.UnconformityData"
+	import="ws.assessment.datacenter.AssessmentWSEJBService" 
+	import="ws.assessment.datacenter.AssessmentWSEJB"
+	import="javax.xml.ws.BindingProvider"
+	import="ws.assessment.datacenter.CourseData"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+
+<html:html>
+
+<%! 
+	RequestDispatcher dispatcher; String context;String pathView; 
+	String pathMsg; String pathSearch; 
+	Text messages; String pathLanguage;
+	SystemAccess sys; 
+	DriverData data; 
+	DriverData dataTemporal; 
+	UserSessionData userSessionData;
+	String id; String idTemporalDriver;
+	String idActivity;
+%>
+<%
+	try{
+
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	userSessionData = sys.getUserSessionData(); 
+	
+	String check = null;
+    check = Util.checkPermission(sys,SecurityConstants.EDIT_DRIVER);
+	
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		messages=sys.getText();
+
+		pathLanguage="/util/jsp/language.jsp";	
+
+		dispatcher=request.getRequestDispatcher(pathLanguage);
+		dispatcher.include(request,response);
+	
+		context=request.getContextPath();
+		pathMsg="/util/jsp/message.jsp";
+	
+		dispatcher=request.getRequestDispatcher(pathMsg);
+		dispatcher.include(request,response);
+
+		id = (String)request.getParameter("id");
+		data = sys.getDriverReportFacade().findDriverByPrimaryKey(
+				new Integer(id), sys.getUserSessionData());
+		
+		idTemporalDriver = (String)request.getParameter("idTemporalDriver");
+		dataTemporal = sys.getDriverReportFacade().getDriver(new Integer(idTemporalDriver), sys.getUserSessionData());
+		
+		idActivity = (String)request.getParameter("idActivity");
+				
+		pathView="./view.jsp?id="+id;
+		
+		String temporalPathView="./view.jsp?id="+idTemporalDriver;
+		
+		userSessionData.setUrl("driver/TemporalDriverView.jsp?id="+
+				id+"&idTemporalDriver="+idTemporalDriver+"&idActivity="+idActivity);
+			
+		if(data!=null){
+			
+			DriverForm driverForm = DriverUtil.createDriverForm(
+					data, DriverUtil.VIEW, messages);
+			DriverForm temporalDriverForm = DriverUtil.createDriverForm(
+					dataTemporal, DriverUtil.VIEW, messages);
+			
+			session.setAttribute("DriverCreateForm",driverForm);
+%>
+<head>
+<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+
+<script  language="javascript"  type='text/javascript' >
+
+	function setAction(form,action){
+			if (action == "link" && confirm('<%= 	messages.getText("generic.driver.temporal.areyousuretolink") %>')){ 
+				form.action.value = action;
+				form.submit();
+			}else if (action == 'accept'){
+				form.action.value = action;
+				form.submit(); 
+			}
+	}
+	
+</script>
+</head>
+<body bgcolor="#FFFFFF">
+	
+	<!--  Form para vincular conductor temporal y existente, manteniendo datos
+		del conductor existente o aceptar el conductor temporal como fijo
+		formName: TemporalDriverForm 
+		el action puedes ser link o accept
+		-->
+	<html:form action="/TemporalDriver"  method="post" >
+		<html:hidden property="target"  value="TemporalDriverView"/>
+		<html:hidden property="idDriver" value="<%=id %>" />
+		<html:hidden property="idTemporalDriver" value="<%= idTemporalDriver %>"  />
+		<html:hidden property="idActivity" value="<%=idActivity %>" />
+		<html:hidden property="action" value="" />
+	</html:form>
+
+	<table width="700" align='center' cellpadding="0" cellspacing="0">
+		<tr class="guide1">
+			<jsp:include  page='<%="../component/titlecomponent.jsp?colspan=5&title="+messages.getText("generic.driver.linkdriver")%>' />
+		</tr>
+   		<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>  		  			
+	  	<tr>
+			<td width="49%" valign="top" colspan="2">
+				<table width="100%" cellpadding="0" cellspacing="0">
+				<%	if(data.getExclusionDate() != null) {
+				%>
+					<tr>
+						<td colspan="1">
+							<span class="red"><%=messages.getText("generic.driver.excluded") %></span>
+						</td>
+			  		</tr>
+					<tr>
+						<td colspan="1">
+							<span class="red"><%=messages.getText("generic.driver.excludeddate")+":"+Util.formatDate(data.getExclusionDate())%>
+							</span>				
+						</td>
+			  		</tr>
+					<tr>
+			 			<td align="left" colspan="1">
+			 				<span class="red"><%="( "+messages.getText("generic.supportmaterial.reports.format")+": "+messages.getText("generic.messages.dateformat")+" )"%>
+			 				</span>
+			    		</td>
+					</tr>
+					<%				} // fin if exclusion date != null para el conductor existente
+					%> 
+				</table>
+			</td>
+			<td width="2%" valign="top"></td>
+			<td width="49%" valign="top">
+				<table width="100%" cellpadding="0" cellspacing="0">
+				<%	if(dataTemporal.isTemporal()) {  %>
+					<tr>
+						<td colspan="1">
+							<span class="red"><%=messages.getText("generic.driver.temporalDriver") %></span>
+						</td>
+	  				</tr>			
+	  			<%} %>
+				</table>
+			</td>
+		</tr>
+   		<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+
+
+<!--  Datos Personales -->
+
+
+		<tr>
+			
+			<!--  Datos del Conductor Existente -->
+			<td width="49%" valign="top">
+				<table width="100%" cellpadding="0" cellspacing="0">
+					<tr>
+						<td valign="top">
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.personaldata")%>' />
+							<jsp:include page='<%=pathView %>' />
+			   				<jsp:include page="../component/utilityboxbottom.jsp"/>	
+						</td>
+			   		</tr>
+					<tr>
+						<td ><img src="../util/imgs/tranp.jpg" width="1" height="1"></td>
+					</tr>
+					<tr>
+						<td valign="top">
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.divgeo")%>' />
+<%				if(data.getCountry() != null) {
+	    				GeoItemData geoItem1 = (GeoItemData)data.getCountry().getItemIterator().next();
+%>
+							<table width="100%"  cellpadding="0" cellspacing="0">
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(data.getCountry().getResourceKey())%> </th>
+									<td align="right">
+										<%=(geoItem1.getSubItems() != null) ? geoItem1.getName() : messages.getText(geoItem1.getName()) %>
+									</td>
+								</tr>
+<%			    	if(geoItem1.getSubItems() != null) {
+				    	GeoItemData geoItem2 = (GeoItemData)geoItem1.getSubItems().getItemIterator().next();
+%>									
+								<tr  class="space"><td align="right">&nbsp;</td><td align="right">&nbsp;</td></tr>
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(geoItem1.getSubItems().getResourceKey())%> </th>
+									<td align="right">
+										<%=(geoItem2.getSubItems() != null) ? geoItem2.getName() : messages.getText(geoItem2.getName()) %>
+									</td>
+								</tr>
+						
+<%
+				    	if(geoItem2.getSubItems() != null) {
+					    	GeoItemData geoItem3 = (GeoItemData)geoItem2.getSubItems().getItemIterator().next();
+%>								<tr  class="space"><td align="right">&nbsp;</td><td align="right">&nbsp;</td></tr>
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(geoItem2.getSubItems().getResourceKey())%> </th>
+									<td align="right">
+										<%=messages.getText(geoItem3.getName())%>
+									</td>
+								</tr>
+<%						}
+					}
+				}
+%>							</table>	
+			   				<jsp:include page="../component/utilityboxbottom.jsp"/>	
+			   			</td>
+		   			</tr>
+		   			
+		   			<tr><td ><img src="../util/imgs/tranp.jpg" width="1" height="1">
+		   			</td></tr>
+			   	
+			   	<!-- Divisiones del Conductor Preexistente -->
+<%			
+				Iterator it = data.getDivOrgsIterator();
+				while(it.hasNext()) {		
+					DivOrgData divOrgData = (DivOrgData)it.next();
+					if(divOrgData.getDivOrgLevels() != null) {
+						ItemData item1 = (ItemData)divOrgData.getDivOrgLevels().getItemIterator().next();
+%>					<tr>
+						<td valign="top" width="50%">	
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText(divOrgData.getName())%>' />
+							<table width="100%"  cellpadding="0" cellspacing="0">
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(divOrgData.getDivOrgLevels().getName())%> </th>
+									<td align="right"><%=item1.getName()%></td>
+								</tr>
+<%	    		
+			    		if(item1.getSubItems() != null) {
+							ItemData item2 = (ItemData)item1.getSubItems().getItemIterator().next();
+%>								<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(item1.getSubItems().getName())%> </th>
+									<td align="right"><%=item2.getName()%></td>
+								</tr>
+<%				    
+				    		if(item2.getSubItems() != null) {
+								ItemData item3 = (ItemData)item2.getSubItems().getItemIterator().next();
+%>								<tr  class="space"><td align="right">&nbsp;</td><td align="right">&nbsp;</td></tr>
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(item2.getSubItems().getName())%> </th>
+									<td align="right"><%=item3.getName()%></td>
+								</tr>
+<%							}
+						}
+%>
+							</table>
+   							<jsp:include page="../component/utilityboxbottom.jsp"/>	
+	   					</td>
+	   				</tr>
+	   				<tr><td ><img src="../util/imgs/tranp.jpg" width="1" height="1"></td></tr>
+	   	<%					}
+				}
+%>
+				<tr>
+					<td>
+				
+				<!-- Informacion ocupacional -->
+				<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.workinfo")%>' />
+				<table width="100%" align='center' cellpadding="0" cellspacing="0">
+<%			if(sys.getCorporationId() == CorporationData.CIMSA) {
+%>	      			<tr class="linetwo">
+	        			<th align="left" > <%=messages.getText("generic.driver.driverdata.points")%></th>
+	        			<td align="right">
+	        				<%=(data.getPoints() == null) ? "--" : String.valueOf(data.getPoints().intValue() - sys.getEventReportFacade().getEventsPoints(data.getId(),sys.getUserSessionData()).intValue())%>
+	        			</td>
+	      			</tr>
+	      			
+<%			}
+			if(sys.getCorporationId() == CorporationData.MONSANTO) {
+%>	      			
+					<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr class="linetwo">
+		        		<th align="left" > <%=messages.getText("generic.driver.driverdata.superviser")%></th>
+	        			<td align="right">
+		        			<%=(data.getSuperviser() == null) ? "--" : data.getSuperviser()%>
+		        		</td>
+   					</tr>
+	      			<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+   					<tr class="linetwo">
+       					<th align="left" > <%=messages.getText("generic.driver.driverdata.manager")%></th>
+	        			<td align="right">
+		        			<%=(data.getManager() == null) ? "--" : data.getManager()%>
+		        		</td>
+		      		</tr>
+				    
+<%			}
+%>				
+					<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>	
+					<tr  class="linetwo">
+						<th align="left" > <%=messages.getText("generic.driver.driverdata.corporationid")%></th>
+						<td align="right"><%=(driverForm.getCorporationId()!=null)?driverForm.getCorporationId():"----"%></td>
+					</tr>
+					
+<%			if (sys.getCorporationId() == CorporationData.PEPSICO){   
+				
+%>
+					<!--  Pespisco: Puesto del condctor dentro de la empresa-->
+					<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left" > <%=messages.getText("generic.driver.driverdata.puestopepsico")%></th>
+						<td align="right"><%=(driverForm.getPuestoPepsico()!=null)?driverForm.getPuestoPepsico():"----"%></td>
+					</tr>
+
+<%    		} %>
+					
+					
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left" > <%=messages.getText("generic.driver.driverdata.startdate")%></th>
+						<td align="right"><%=(driverForm.getInclusionDate() == null) ? "" : driverForm.getStartDate()+"-"+driverForm.getStartMonth()+"-"+driverForm.getStartYear() %></td>
+					</tr>
+			      	<tr  class="linetwo">
+	        			<td align="right" colspan="2">
+	        				<%="( "+messages.getText("generic.supportmaterial.reports.format")+": "+messages.getText("generic.messages.dateformat")+" )"%>
+            			</td>
+	      			</tr>
+<%			if(sys.getCorporationId() != CorporationData.CIMSA) {
+%>					
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left" > <%=messages.getText("generic.driver.driverdata.email")%></th>
+						<td align="right"><%=(driverForm.getEmail()!=null)?driverForm.getEmail():"----"%></td>
+					</tr>
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left" > <%=messages.getText("generic.driver.driverdata.phonenumber")%></th>
+						<td align="right"><%=(driverForm.getPhoneNumber()!=null) ? driverForm.getPhoneNumber():"----"%></td>
+					</tr>
+					
+<%					if (sys.getCorporationId() != CorporationData.PEPSICO){
+%>
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left"> <%=messages.getText("generic.driver.driverdata.officeaddress")%></th>
+						<td align="left">
+							<div align="right"><%=(driverForm.getOfficeAddress()!=null)?driverForm.getOfficeAddress():"----"%></div>
+						</td>
+					</tr>
+<% 					} 
+%>
+<%			}
+
+				if (sys.getCorporationId() != CorporationData.PEPSICO){
+%>
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left"> <%=messages.getText("generic.driver.driverdata.drives")%></th>
+						<td align="left">
+							<div align="right"><%=(Boolean.parseBoolean(driverForm.getDrives())) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no")%></div>
+						</td>
+					</tr>
+<%			} 
+%>
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left"> <%=messages.getText("generic.driver.driverdata.employee")%></th>
+						<td align="left">
+							<div align="right"><%=(Boolean.parseBoolean(driverForm.getEmployee())) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no")%></div>
+						</td>
+					</tr>
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left"> <%=messages.getText("generic.driver.driverdata.contact")%></th>
+						<td align="left">
+							<div align="right"><%=(Util.empty(driverForm.getContract())) ? "" : messages.getText(driverForm.getContract())%></div>
+						</td>
+					</tr>
+					
+<%            
+              if(sys.getCorporationId() == CorporationData.PEPSICO) {
+            	  // Si es Pepsico uso OfficeAddess como Nombre de la persona que genera el vinculo
+            	  // del conductor a la empresa. "Nombre del Vínculo"
+%>              
+              <tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+              <tr  class="linetwo">
+                <th align="left"> <%=messages.getText("generic.driver.driverdata.officeaddress")%></th>
+                <td align="right"><%= (Util.empty(driverForm.getOfficeAddress()))?"":driverForm.getOfficeAddress() %>
+                </td>
+              </tr>   
+              
+              <!-- Quien autoriza la Alta y fecha en que fue solicitada -->
+				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+              <tr  class="linetwo">
+                <th align="left"> <%=messages.getText("generic.driver.driverdata.authorizatewho")%></th>
+                <td align="right"><%= (Util.empty(driverForm.getAuthorizateWho()))?"":driverForm.getAuthorizateWho()%>
+                </td>
+              </tr>
+              <tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+              <tr  class="linetwo">
+                <th align="left"> <%=messages.getText("generic.driver.driverdata.authorizatedate")%></th>
+                <td align="right"><%=(driverForm.getAuthorizateDate() == null) ? "" : 
+                		driverForm.getAuthorizateDateDay()+"-"+driverForm.getAuthorizateDateMonth()+"-"+driverForm.getAuthorizateDateYear() %></td>
+              </tr>      
+                   
+              
+<%		 }
+ %>     
+					
+					
+<%		if(sys.getCorporationId() == CorporationData.MONSANTO) {
+%>					<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left"> <%=messages.getText("corporation.monsanto.assignedvehicles")%></th>
+						<td align="left">
+							<div align="right"><%=(Util.empty(driverForm.getAssignedVehicle())) ? "" : messages.getText(driverForm.getAssignedVehicle())%></div>
+						</td>
+					</tr>
+<%		} %>
+
+
+	<% if (sys.getCorporationId() == CorporationData.MONSANTO ||
+			sys.getCorporationId() == CorporationData.ANGLO){ %>
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left"> <%=messages.getText("generic.driver.driverdata.iddallas")%></th>
+						<td align="right"><%=(Util.empty(driverForm.getIdDallas())) ? "" : messages.getText(driverForm.getIdDallas())%></td>
+					</tr>
+	<% } %>
+
+
+<%		if(sys.getUserSessionData().isForest()) {
+%>					<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+      				<tr class="linetwo">
+        				<th align="left"> <%=messages.getText("generic.driver.driverdata.bpsregistry")%></th>
+        				<td align="right">
+							<div align="right"><%=(Util.empty(driverForm.getBpsregistry())) ? "" : driverForm.getBpsregistry()%></div>
+        				</td>
+      				</tr>
+<%		}
+
+		if (sys.getCorporationId() == CorporationData.ASTRAZENECA){
+			// bpsregistry -> Astrazeneca: Centro de costo del conductor
+%>					<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+				<tr class="linetwo">
+				<th align="left"> <%=messages.getText("generic.driver.driverdata.bpsregistry")%></th>
+				<td align="right">
+					<div align="right"><%=(Util.empty(driverForm.getBpsregistry())) ? "" : driverForm.getBpsregistry()%></div>
+				</td>
+				</tr>	
+			
+<%		}
+		if(sys.getCorporationId() == CorporationData.LOSPIQUES || sys.getCorporationId() == CorporationData.PACIFICRUBIALES) {
+%>					<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+      				<tr class="linetwo">
+        				<th align="left"> <%=messages.getText("generic.driver.driverdata.healthExpiry")%></th>
+						<td align="right"><%=(driverForm.getHealth() == null) ? "" : driverForm.getHealthExpiryDate()+"-"+driverForm.getHealthExpiryMonth()+"-"+driverForm.getHealthExpiryYear() %></td>
+      				</tr>
+<%		}
+%>        		
+					<tr><td ><img src="../util/imgs/tranp.jpg" width="1" height="1"></td></tr>
+				</table>
+				<jsp:include  page="../component/utilityboxbottom.jsp" />	
+
+				</td>
+				</tr>
+				<tr>
+					<td>
+						<!--  Informacion de la Licencia del Conducir -->
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.licenseinfo")%>' />
+						<table width="100%" align='center' cellpadding="0" cellspacing="0">
+<%		if(sys.getCorporationId() == CorporationData.CIMSA) {
+%>					<tr class="linetwo">
+	        		<th align="left" > <%=messages.getText("generic.driver.driverdata.externlicense")%></th>
+	        			<td align="right">
+	        				<%=messages.getText(driverForm.getOfficeAddress())%>
+	        			</td>
+	      			</tr>
+      				<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+	      			<tr class="linetwo">
+	      				<td colspan="2">
+							<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.driver.internlicense")%>' />
+							<table width="100%">
+<%			String checks = driverForm.getLicenseCategory();
+			for(int j = 1; j <= 7; j++) {
+				if(checks.charAt(j-1) == '1') {
+%>								<tr>
+									<td class="input"><%=messages.getText("driver.internlicense.option"+j) %></td>		
+								</tr>
+<%				}
+			}
+%>							</table>
+							<jsp:include  page="../component/utilitybox2bottom.jsp" />
+	      				</td>
+	      			</tr>
+      				<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+ 					<tr class="linetwo">
+    					<th align="left"> <%=messages.getText("generic.driver.driverdata.healthExpiry")%></th>
+						<td align="right"><%=(driverForm.getHealth() == null) ? "" : driverForm.getHealthExpiryDate()+"-"+driverForm.getHealthExpiryMonth()+"-"+driverForm.getHealthExpiryYear() %></td>
+    	  			</tr>
+					<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+<%		}
+%>
+					<tr  class="linetwo">
+						<th align="left" > <%=messages.getText("generic.driver.driverdata.licensenumber")%></th>
+						<td align="right"><%=driverForm.getLicenseNumber()%></td>
+					</tr>
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left" > <%=messages.getText("generic.driver.driverdata.licenseget")%></th>
+						<td align="right"><%=(driverForm.getLicenseGet() == null) ? "" : driverForm.getLicenseGetDate()+"-"+driverForm.getLicenseGetMonth()+"-"+driverForm.getLicenseGetYear() %></td>
+					</tr>
+			      	<tr  class="linetwo">
+	        			<td align="right" colspan="2">
+	        				<%="( "+messages.getText("generic.supportmaterial.reports.format")+": "+messages.getText("generic.messages.dateformat")+" )"%>
+	           			</td>
+	      			</tr>
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					
+<%		if (driverForm.getLicenseNotExpiry() != null && driverForm.getLicenseNotExpiry().equalsIgnoreCase("on")){ 
+%>
+					<tr  class="linetwo">
+						<th align="left" > <%=messages.getText("generic.driver.driverdata.licenseexpiry")%></th>
+						<td align="right">
+							<%=messages.getText("generic.driver.driverdata.licensenotexpiry")%>
+						</td>
+					</tr>
+<%		}else if (driverForm.getLicenseExpiry() != null){ %>
+					<tr  class="linetwo">
+						<th align="left" > <%=messages.getText("generic.driver.driverdata.licenseexpiry")%></th>
+						<td align="right">
+							<%=driverForm.getLicenseExpiryDate()+"-"+driverForm.getLicenseExpiryMonth()+"-"+driverForm.getLicenseExpiryYear() %>
+						</td>
+					</tr>
+			      	<tr  class="linetwo">
+	        			<td align="right" colspan="2">
+	        				<%="( "+messages.getText("generic.supportmaterial.reports.format")+": "+messages.getText("generic.messages.dateformat")+" )"%>
+            			</td>
+	      			</tr>
+<%		}
+		if(sys.getCorporationId() != CorporationData.CIMSA) {
+%>				
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left"> <%=messages.getText("generic.driver.driverdata.licensecategory")%></th>
+						<td align="right"><%=(driverForm.getLicenseCategory() == null) ? "" : driverForm.getLicenseCategory()%></td>
+					</tr>
+<%					if (sys.getCorporationId() == CorporationData.PEPSICO){ %>
+					<!-- Entidad Federativa, PESPSICO -->
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left"> <%=messages.getText("generic.driver.driverdata.federativeentity")%></th>
+						<td align="right"><%=(driverForm.getFederativeEntity() == null) ? "" : 	driverForm.getFederativeEntity()%></td>
+					</tr>
+					<!-- Cobertura de la Licencia, PEPSICO -->
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left"> <%=messages.getText("generic.driver.driverdata.licensecoverage")%></th>
+						<td align="right"><%=(driverForm.getLicenseCoverage() == null) ? "" : messages.getText(driverForm.getLicenseCoverage())%></td>
+					</tr>
+<%					} %>
+	
+					
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left"> <%=messages.getText("generic.driver.driverdata.vehicleallowed")%></th>
+						<td align="right"><%=(Util.empty(driverForm.getVehicleAllowed())) ? "" : messages.getText(driverForm.getVehicleAllowed())%></td>
+					</tr>
+					<tr><td ><img src="../util/imgs/tranp.jpg" width="1" height="1"></td></tr>
+					
+<%		}
+%>				</table>
+				<jsp:include  page="../component/utilityboxbottom.jsp" />
+						</td>
+						</tr>
+				</table>
+			</td>
+			
+			<td width="2%" valign="top">
+					<img src="../util/imgs/tranp.jpg" width="1" height="1">
+			</td>
+			
+<!-- -------------------------------------------------------------------------------------------------------------- -->
+<!-- Datos del Conductor Temporal -->
+			<td width="49%" valign="top" colspan="2">
+			
+				<table width="100%" cellpadding="0" cellspacing="0">
+					<tr>
+						<td valign="top">
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.personaldata")%>' />
+							<jsp:include page='<%=temporalPathView %>' />
+			   				<jsp:include page="../component/utilityboxbottom.jsp"/>	
+						</td>
+			   		</tr>
+					<tr>
+						<td ><img src="../util/imgs/tranp.jpg" width="1" height="1"></td>
+					</tr>
+					<tr>
+						<td width="100%" valign="top">
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.divgeo")%>' />
+<%				if(dataTemporal.getCountry() != null) {
+	    			GeoItemData geoItem1 = (GeoItemData)dataTemporal.getCountry().getItemIterator().next();
+%>
+							<table width="100%" cellpadding="0" cellspacing="0">
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(dataTemporal.getCountry().getResourceKey())%> </th>
+									<td align="right">
+										<%=(geoItem1.getSubItems() != null) ? geoItem1.getName() : messages.getText(geoItem1.getName()) %>
+									</td>
+								</tr>
+<%			    	if(geoItem1.getSubItems() != null) {
+				    	GeoItemData geoItem2 = (GeoItemData)geoItem1.getSubItems().getItemIterator().next();
+%>									
+								<tr  class="space"><td align="right">&nbsp;</td><td align="right">&nbsp;</td></tr>
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(geoItem1.getSubItems().getResourceKey())%> </th>
+									<td align="right">
+										<%=(geoItem2.getSubItems() != null) ? geoItem2.getName() : messages.getText(geoItem2.getName()) %>
+									</td>
+								</tr>
+						
+<%
+				    	if(geoItem2.getSubItems() != null) {
+					    	GeoItemData geoItem3 = (GeoItemData)geoItem2.getSubItems().getItemIterator().next();
+%>								<tr  class="space"><td align="right">&nbsp;</td><td align="right">&nbsp;</td></tr>
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(geoItem2.getSubItems().getResourceKey())%> </th>
+									<td align="right">
+										<%=messages.getText(geoItem3.getName())%>
+									</td>
+								</tr>
+<%						}
+					}
+				}
+%>							</table>	
+			   				<jsp:include page="../component/utilityboxbottom.jsp"/>	
+			   			</td>
+		   			</tr>
+		   			<tr><td ><img src="../util/imgs/tranp.jpg" width="1" height="1"></td></tr>
+			   	
+			   	<!-- Divisiones del Conductor Temporal -->
+<%			
+				Iterator it2 = dataTemporal.getDivOrgsIterator();
+				while(it2.hasNext()) {		
+					DivOrgData divOrgData = (DivOrgData)it2.next();
+					if(divOrgData.getDivOrgLevels() != null) {
+						ItemData item1 = (ItemData)divOrgData.getDivOrgLevels().getItemIterator().next();
+%>					<tr>
+						<td valign="top" width="100%">	
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText(divOrgData.getName())%>' />
+							<table width="100%"  cellpadding="0" cellspacing="0">
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(divOrgData.getDivOrgLevels().getName())%> </th>
+									<td align="right"><%=item1.getName()%></td>
+								</tr>
+<%	    		
+			    		if(item1.getSubItems() != null) {
+							ItemData item2 = (ItemData)item1.getSubItems().getItemIterator().next();
+%>								<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(item1.getSubItems().getName())%> </th>
+									<td align="right"><%=item2.getName()%></td>
+								</tr>
+<%				    
+				    		if(item2.getSubItems() != null) {
+								ItemData item3 = (ItemData)item2.getSubItems().getItemIterator().next();
+%>								<tr  class="space"><td align="right">&nbsp;</td><td align="right">&nbsp;</td></tr>
+								<tr class="linetwo">
+									<th align="left"> <%=messages.getText(item2.getSubItems().getName())%> </th>
+									<td align="right"><%=item3.getName()%></td>
+								</tr>
+<%							}
+						}
+%>
+							</table>
+   							<jsp:include page="../component/utilityboxbottom.jsp"/>	
+	   					</td>
+	   				</tr>
+	   				<tr><td ><img src="../util/imgs/tranp.jpg" width="1" height="1"></td></tr>
+	   	<%					}
+				}
+%>
+			<tr><td>
+				
+				<!-- Informacion ocupacional -->
+				<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.workinfo")%>' />
+				<table width="100%" align='center' cellpadding="0" cellspacing="0">
+<%			if(sys.getCorporationId() == CorporationData.CIMSA) {
+%>	      			<tr class="linetwo">
+	        			<th align="left" > <%=messages.getText("generic.driver.driverdata.points")%></th>
+	        			<td align="right">
+	        				<%=(dataTemporal.getPoints() == null) ? "--" : String.valueOf(dataTemporal.getPoints().intValue() - sys.getEventReportFacade().getEventsPoints(dataTemporal.getId(),sys.getUserSessionData()).intValue())%>
+	        			</td>
+	      			</tr>
+	      			
+<%			}
+			if(sys.getCorporationId() == CorporationData.MONSANTO) {
+%>	      			
+					<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr class="linetwo">
+		        		<th align="left" > <%=messages.getText("generic.driver.driverdata.superviser")%></th>
+	        			<td align="right">
+		        			<%=(dataTemporal.getSuperviser() == null) ? "--" : dataTemporal.getSuperviser()%>
+		        		</td>
+   					</tr>
+	      			<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+   					<tr class="linetwo">
+       					<th align="left" > <%=messages.getText("generic.driver.driverdata.manager")%></th>
+	        			<td align="right">
+		        			<%=(dataTemporal.getManager() == null) ? "--" :dataTemporal.getManager()%>
+		        		</td>
+		      		</tr>
+				    
+<%			}
+%>				
+					<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>	
+					<tr  class="linetwo">
+						<th align="left" > <%=messages.getText("generic.driver.driverdata.corporationid")%></th>
+						<td align="right"><%=(temporalDriverForm.getCorporationId()!=null)?temporalDriverForm.getCorporationId():"----"%></td>
+					</tr>
+					
+<%			if (sys.getCorporationId() == CorporationData.PEPSICO){   
+					
+%>
+					<!--  Pespisco: Puesto del condctor dentro de la empresa-->
+					<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left" > <%=messages.getText("generic.driver.driverdata.puestopepsico")%></th>
+						<td align="right"><%=(temporalDriverForm.getPuestoPepsico()!=null)?temporalDriverForm.getPuestoPepsico():"----"%></td>
+					</tr>
+
+<%    		} %>
+					
+					
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left" > <%=messages.getText("generic.driver.driverdata.startdate")%></th>
+						<td align="right"><%=(temporalDriverForm.getInclusionDate() == null) ? "" : temporalDriverForm.getStartDate()+"-"+
+								temporalDriverForm.getStartMonth()+"-"+temporalDriverForm.getStartYear() %></td>
+					</tr>
+			      	<tr  class="linetwo">
+	        			<td align="right" colspan="2">
+	        				<%="( "+messages.getText("generic.supportmaterial.reports.format")+": "+messages.getText("generic.messages.dateformat")+" )"%>
+            			</td>
+	      			</tr>
+<%			if(sys.getCorporationId() != CorporationData.CIMSA) {
+%>					
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left" > <%=messages.getText("generic.driver.driverdata.email")%></th>
+						<td align="right"><%=(temporalDriverForm.getEmail()!=null)?temporalDriverForm.getEmail():"----"%></td>
+					</tr>
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left" > <%=messages.getText("generic.driver.driverdata.phonenumber")%></th>
+						<td align="right"><%=(temporalDriverForm.getPhoneNumber()!=null) ? temporalDriverForm.getPhoneNumber():"----"%></td>
+					</tr>
+					
+<%					if (sys.getCorporationId() != CorporationData.PEPSICO){
+%>
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left"> <%=messages.getText("generic.driver.driverdata.officeaddress")%></th>
+						<td align="left">
+							<div align="right"><%=(temporalDriverForm.getOfficeAddress()!=null)?temporalDriverForm.getOfficeAddress():"----"%></div>
+						</td>
+					</tr>
+<% 					} 
+%>
+<%			}
+
+				if (sys.getCorporationId() != CorporationData.PEPSICO){
+%>
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left"> <%=messages.getText("generic.driver.driverdata.drives")%></th>
+						<td align="left">
+							<div align="right"><%=(Boolean.parseBoolean(temporalDriverForm.getDrives())) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no")%></div>
+						</td>
+					</tr>
+<%			} 
+%>
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left"> <%=messages.getText("generic.driver.driverdata.employee")%></th>
+						<td align="left">
+							<div align="right"><%=(Boolean.parseBoolean(temporalDriverForm.getEmployee())) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no")%></div>
+						</td>
+					</tr>
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left"> <%=messages.getText("generic.driver.driverdata.contact")%></th>
+						<td align="left">
+							<div align="right"><%=(Util.empty(temporalDriverForm.getContract())) ? "" : messages.getText(driverForm.getContract())%></div>
+						</td>
+					</tr>
+					
+<%            
+              if(sys.getCorporationId() == CorporationData.PEPSICO) {
+            	  // Si es Pepsico uso OfficeAddess como Nombre de la persona que genera el vinculo
+            	  // del conductor a la empresa. "Nombre del Vínculo"
+%>              
+              <tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+              <tr  class="linetwo">
+                <th align="left"> <%=messages.getText("generic.driver.driverdata.officeaddress")%></th>
+                <td align="right"><%= (Util.empty(temporalDriverForm.getOfficeAddress()))?"":driverForm.getOfficeAddress() %>
+                </td>
+              </tr>   
+              
+              <!-- Quien autoriza la Alta y fecha en que fue solicitada -->
+				<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+              <tr  class="linetwo">
+                <th align="left"> <%=messages.getText("generic.driver.driverdata.authorizatewho")%></th>
+                <td align="right"><%= (Util.empty(temporalDriverForm.getAuthorizateWho()))?"":temporalDriverForm.getAuthorizateWho()%>
+                </td>
+              </tr>
+              <tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+              <tr  class="linetwo">
+                <th align="left"> <%=messages.getText("generic.driver.driverdata.authorizatedate")%></th>
+                <td align="right"><%=(temporalDriverForm.getAuthorizateDate() == null) ? "" : 
+                		temporalDriverForm.getAuthorizateDateDay()+"-"+temporalDriverForm.getAuthorizateDateMonth()+"-"+temporalDriverForm.getAuthorizateDateYear() %></td>
+              </tr>      
+                   
+              
+<%		 }
+ %>     
+					
+					
+<%		if(sys.getCorporationId() == CorporationData.MONSANTO) {
+%>					<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left"> <%=messages.getText("corporation.monsanto.assignedvehicles")%></th>
+						<td align="left">
+							<div align="right"><%=(Util.empty(temporalDriverForm.getAssignedVehicle())) ? "" : messages.getText(temporalDriverForm.getAssignedVehicle())%></div>
+						</td>
+					</tr>
+<%		} %>
+
+
+	<% if (sys.getCorporationId() == CorporationData.MONSANTO ||
+			sys.getCorporationId() == CorporationData.ANGLO){ %>
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left"> <%=messages.getText("generic.driver.driverdata.iddallas")%></th>
+						<td align="right"><%=(Util.empty(temporalDriverForm.getIdDallas())) ? "" : messages.getText(temporalDriverForm.getIdDallas())%></td>
+					</tr>
+	<% } %>
+
+
+<%		if(sys.getUserSessionData().isForest()) {
+%>					<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+      				<tr class="linetwo">
+        				<th align="left"> <%=messages.getText("generic.driver.driverdata.bpsregistry")%></th>
+        				<td align="right">
+							<div align="right"><%=(Util.empty(temporalDriverForm.getBpsregistry())) ? "" : temporalDriverForm.getBpsregistry()%></div>
+        				</td>
+      				</tr>
+<%		}
+
+		if (sys.getCorporationId() == CorporationData.ASTRAZENECA){
+			// bpsregistry -> Astrazeneca: Centro de costo del conductor
+%>					<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+				<tr class="linetwo">
+				<th align="left"> <%=messages.getText("generic.driver.driverdata.bpsregistry")%></th>
+				<td align="right">
+					<div align="right"><%=(Util.empty(temporalDriverForm.getBpsregistry())) ? "" : temporalDriverForm.getBpsregistry()%></div>
+				</td>
+				</tr>	
+			
+<%		}
+		if(sys.getCorporationId() == CorporationData.LOSPIQUES || sys.getCorporationId() == CorporationData.PACIFICRUBIALES) {
+%>					<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+      				<tr class="linetwo">
+        				<th align="left"> <%=messages.getText("generic.driver.driverdata.healthExpiry")%></th>
+						<td align="right"><%=(temporalDriverForm.getHealth() == null) ? "" : temporalDriverForm.getHealthExpiryDate()+"-"+temporalDriverForm.getHealthExpiryMonth()+"-"+temporalDriverForm.getHealthExpiryYear() %></td>
+      				</tr>
+<%		}
+%>        		
+					<tr><td><img src="../util/" width="1px" height="1px"></tr>
+				</table>
+
+				<jsp:include  page="../component/utilityboxbottom.jsp" />	
+				</td></tr>
+				<tr><td>
+				
+				<!--  Informacion de la Licencia del Conducir -->
+				<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.licenseinfo")%>' />
+				<table width="100%" align='center' cellpadding="0" cellspacing="0">
+<%		if(sys.getCorporationId() == CorporationData.CIMSA) {
+%>					<tr class="linetwo">
+	        		<th align="left" > <%=messages.getText("generic.driver.driverdata.externlicense")%></th>
+	        			<td align="right">
+	        				<%=messages.getText(temporalDriverForm.getOfficeAddress())%>
+	        			</td>
+	      			</tr>
+      				<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+	      			<tr class="linetwo">
+	      				<td colspan="2">
+							<jsp:include  page='<%="../component/utilitybox2top.jsp?title="+messages.getText("generic.driver.internlicense")%>' />
+							<table width="100%">
+<%			String checksTemporal = temporalDriverForm.getLicenseCategory();
+			for(int j = 1; j <= 7; j++) {
+				if(checksTemporal.charAt(j-1) == '1') {
+%>								<tr>
+									<td class="input"><%=messages.getText("driver.internlicense.option"+j) %></td>		
+								</tr>
+<%				}
+			}
+%>							</table>
+							<jsp:include  page="../component/utilitybox2bottom.jsp" />
+	      				</td>
+	      			</tr>
+      				<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+ 					<tr class="linetwo">
+    					<th align="left"> <%=messages.getText("generic.driver.driverdata.healthExpiry")%></th>
+						<td align="right"><%=(temporalDriverForm.getHealth() == null) ? "" : temporalDriverForm.getHealthExpiryDate()+"-"+temporalDriverForm.getHealthExpiryMonth()+"-"+temporalDriverForm.getHealthExpiryYear() %></td>
+    	  			</tr>
+					<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+<%		}
+%>
+					<tr  class="linetwo">
+						<th align="left" > <%=messages.getText("generic.driver.driverdata.licensenumber")%></th>
+						<td align="right"><%=temporalDriverForm.getLicenseNumber()%></td>
+					</tr>
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left" > <%=messages.getText("generic.driver.driverdata.licenseget")%></th>
+						<td align="right"><%=(temporalDriverForm.getLicenseGet() == null) ? "" : temporalDriverForm.getLicenseGetDate()+"-"+temporalDriverForm.getLicenseGetMonth()+"-"+temporalDriverForm.getLicenseGetYear() %></td>
+					</tr>
+			      	<tr  class="linetwo">
+	        			<td align="right" colspan="2">
+	        				<%="( "+messages.getText("generic.supportmaterial.reports.format")+": "+messages.getText("generic.messages.dateformat")+" )"%>
+	           			</td>
+	      			</tr>
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					
+<%		if (temporalDriverForm.getLicenseNotExpiry() != null && temporalDriverForm.getLicenseNotExpiry().equalsIgnoreCase("on")){ 
+%>
+					<tr  class="linetwo">
+						<th align="left" > <%=messages.getText("generic.driver.driverdata.licenseexpiry")%></th>
+						<td align="right">
+							<%=messages.getText("generic.driver.driverdata.licensenotexpiry")%>
+						</td>
+					</tr>
+<%		}else if (temporalDriverForm.getLicenseExpiry() != null){ %>
+					<tr  class="linetwo">
+						<th align="left" > <%=messages.getText("generic.driver.driverdata.licenseexpiry")%></th>
+						<td align="right">
+							<%=temporalDriverForm.getLicenseExpiryDate()+"-"+temporalDriverForm.getLicenseExpiryMonth()+"-"+temporalDriverForm.getLicenseExpiryYear() %>
+						</td>
+					</tr>
+			      	<tr  class="linetwo">
+	        			<td align="right" colspan="2">
+	        				<%="( "+messages.getText("generic.supportmaterial.reports.format")+": "+messages.getText("generic.messages.dateformat")+" )"%>
+            			</td>
+	      			</tr>
+<%		}
+		if(sys.getCorporationId() != CorporationData.CIMSA) {
+%>				
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left"> <%=messages.getText("generic.driver.driverdata.licensecategory")%></th>
+						<td align="right"><%=(temporalDriverForm.getLicenseCategory() == null) ? "" : 
+							temporalDriverForm.getLicenseCategory()%></td>
+					</tr>
+<%					if (sys.getCorporationId() == CorporationData.PEPSICO){ %>
+					<!-- Entidad Federativa, PESPSICO -->
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left"> <%=messages.getText("generic.driver.driverdata.federativeentity")%></th>
+						<td align="right"><%=(temporalDriverForm.getFederativeEntity() == null) ? "" : 	
+							temporalDriverForm.getFederativeEntity()%></td>
+					</tr>
+					<!-- Cobertura de la Licencia, PEPSICO -->
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left"> <%=messages.getText("generic.driver.driverdata.licensecoverage")%></th>
+						<td align="right"><%=(temporalDriverForm.getLicenseCoverage() == null) ? "" : 
+							messages.getText(temporalDriverForm.getLicenseCoverage())%></td>
+					</tr>
+<%					} %>
+	
+					
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+					<tr  class="linetwo">
+						<th align="left"> <%=messages.getText("generic.driver.driverdata.vehicleallowed")%></th>
+						<td align="right"><%=(Util.empty(temporalDriverForm.getVehicleAllowed())) ? "" : messages.getText(temporalDriverForm.getVehicleAllowed())%></td>
+					</tr>
+					<tr><td><img src="../util/imgs/tranp.jpg" width="1" height="1"></td></tr>
+					
+<%		}
+%>				</table>
+				<jsp:include  page="../component/utilityboxbottom.jsp" />
+			
+			</td></tr>
+			</table>
+			
+			</td>
+				
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+  		
+		
+   		<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+  		
+  		<tr>
+        	<td class="linetwo" colspan="5" align="right">
+<%	
+			if(sys.getUserSessionData().checkPermission(SecurityConstants.MODIFY_DRIVER)) {	%>
+                    		<!-- <input name="button2" type="button" 
+                    		onClick="setAction(document.TemporalDriverForm,'accept');"
+                    		value='<%=messages.getText("generic.driver.accepttemporal")%>' class="input"/> -->
+                    		<input name="button2" type="button" 
+                    		onClick="setAction(document.TemporalDriverForm,'link');" 
+                    		value='<%=messages.getText("generic.messages.linktemporal")%>' class="input"/>
+                    		<input name="button2" type="button" 
+                    		onClick="javascript:history.back(1);" 
+                    		value='<%=messages.getText("generic.messages.cancel")%>' class="input"/>
+<%		}															
+%>	        
+    		</td>
+		</tr>
+	
+					
+		</table>
+		<br>
+		<br>
+		
+<%		}else {
+%>		
+			<jsp:include  page='<%="/util/allowedData.jsp?message=driver.error.access.driver" %>'/>
+<%		}
+	}
+%>
+	</body>
+<%
+	}catch(Exception e){
+		e.printStackTrace();
+	}
+%>
+</html:html>

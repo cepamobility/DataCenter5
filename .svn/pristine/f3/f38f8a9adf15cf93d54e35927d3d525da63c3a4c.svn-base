@@ -1,0 +1,18 @@
+<ion-view view-title="{{f}}">
+    <loading></loading> 
+	  <ion-content class="padding">
+	    <div class="list card">
+	      <div class="item item-divider">Activities</div>
+	      <div class="item item-body" ng-repeat="c in activities" ng-click="open(c.id)" style="cursor:pointer;">
+	        <div>
+	          <p>{{c.name}}-({{c.participants.length}})</p>
+	          <p>{{c.date}}</p>
+	          <p>{{c.countryName}}</p>
+	          <p>{{c.divOrg1Name}}</p>
+	          <p>{{c.divOrg2Name}}</p>
+	          <p>{{c.divOrg3Name}}</p>
+	        </div>
+	      </div>
+	    </div>
+	  </ion-content>
+</ion-view>

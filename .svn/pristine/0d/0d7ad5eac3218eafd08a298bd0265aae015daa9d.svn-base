@@ -1,0 +1,481 @@
+<%@page language="java" 
+	errorPage="../exception.jsp" 
+	import="business.*"
+	import="business.activity.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.activity.schedule.*" 	
+ 	import="communication.administration.user.*" 	
+ 	import="communication.datatype.tables.ActivityTypeDataType"
+	import="business.vehicle.VehicleReportFacade"
+	import="java.util.*"	
+	import ="org.apache.struts.action.DynaActionForm"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<script language="JavaScript" type="text/javascript">
+
+function preparedCheckboxRadioParameters(form){
+
+		var elements=form.elements;
+		var length=elements.length;
+		var i;
+		var valueCheckboxParamList="";
+		var separator="<";
+		
+		for(i=0;i<length;i++){
+			var element=elements[i];
+			if((element.type.toLowerCase()=="checkbox") || (element.type.toLowerCase()=="radio")) {
+				if (element.checked) {	
+					if(valueCheckboxParamList==""){
+						valueCheckboxParamList=element.value;
+					}
+					else{
+						valueCheckboxParamList=element.value+"<"+valueCheckboxParamList;
+					}	
+				}	
+			} 
+		
+		}
+		form.checkboxParamList.value=valueCheckboxParamList;
+		return true;
+
+}
+
+function setAction(form){
+	var elements=form.elements;
+	var length=elements.length;
+	var i;
+	var valueCheckboxParamList="";
+	var separator="<";
+	
+	for(i=0;i<length;i++){
+		var element=elements[i];
+		if(((element.type.toLowerCase()=="checkbox") || (element.type.toLowerCase()=="radio")) && element.name!="permanente") {
+			if (element.checked) {	
+				if(valueCheckboxParamList==""){
+					valueCheckboxParamList=element.value;
+				} else {
+					valueCheckboxParamList=element.value+"<"+valueCheckboxParamList;
+				}	
+			}	
+		} 
+	
+	}
+	form.checkboxParamList.value=valueCheckboxParamList;
+	form.submit();
+}
+
+</script>
+<html:html>
+<%!
+	RequestDispatcher dispatcher; 
+	String context;String pathView; String pathMsg; 
+	String pathSearch;
+	String pathLanguage; Text messages; SystemAccess sys;
+	Integer pageNum; boolean all; int pageSize; 
+	String attribute; String value;
+	UserSessionData userSessionData; 
+	ActivityReportFacade activityReport;
+	String str1, str2, str3,col, idCheck, idVehicle;
+	int columns;
+//	DynaActionForm vehicleCheckForm; 
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	userSessionData=sys.getUserSessionData();	
+
+	String check = Util.checkPermission(sys,SecurityConstants.EDIT_VEHICLE);
+	String check1 = Util.checkPermission(sys,SecurityConstants.MODIFY_VEHICLE);	
+	String check2 = Util.checkPermission(sys,SecurityConstants.CREATE_CD_ACTIVITY);
+		
+	if ((check!=null) && (check1!=null) && (check2!=null))  {
+		response.sendRedirect(request.getContextPath()+check);	
+	}else {
+		messages=sys.getText();
+		pathLanguage="/util/jsp/language.jsp";	
+		dispatcher=request.getRequestDispatcher(pathLanguage);
+		dispatcher.include(request,response);
+	
+		context=request.getContextPath();
+		pathMsg="/util/jsp/message.jsp";
+	
+		idVehicle = (String)request.getParameter("vehicle");
+		idCheck = (String)request.getParameter("check");
+		session.setAttribute("id",idVehicle);
+
+		session.setAttribute("url","vehicle/VehicleCheckView.jsp?check="+idCheck);
+		
+		dispatcher=request.getRequestDispatcher(pathMsg);
+		dispatcher.include(request,response);
+		
+		String obsStr = "";
+		String nameStr = "";	
+		String tradeStr = "";			
+		String modelStr = "";					
+		String plateStr = "";					
+		String serieStr = "";			
+		String vehicleKmStr = "";					
+		String day = "";		
+		String month = "";		
+		String year = "";	
+		
+		String dayLicenseExpiry = "";		
+		String monthLicenseExpiry = "";		
+		String yearLicenseExpiry = "";			
+		
+		String licenseNumberStr ="";
+	
+		
+		VehicleReportFacade vehicleReport = null;
+		VehicleCheckData  vehicleCheck = null;
+		if (idCheck!=null) {
+	vehicleReport = sys.getVehicleReportFacade(); 
+	vehicleCheck = vehicleReport.findVehicleCheck(new Integer(idCheck),userSessionData);
+	if (vehicleCheck != null) {
+		if (vehicleCheck.getVehicle().getTrade() != null) {
+	tradeStr = messages.getText(vehicleCheck.getVehicle().getTrade().getResourceBundleId());
+		}
+		if (vehicleCheck.getVehicle().getModel() != null) {
+	modelStr = vehicleCheck.getVehicle().getModel();						
+		}
+		if (vehicleCheck.getVehicle().getMatricula() != null) {				
+	plateStr = vehicleCheck.getVehicle().getMatricula();				
+		}
+		if (vehicleCheck.getSerie() != null) {	
+	serieStr = messages.getText(vehicleCheck.getSerie());					
+		}
+		if (vehicleCheck.getVehicleKm()!=null) {
+	vehicleKmStr = vehicleCheck.getVehicleKm().toString();				
+		}	
+		if (vehicleCheck.getObs() != null) {
+	obsStr = vehicleCheck.getObs();					
+		}
+		if (vehicleCheck.getName() != null) {
+	nameStr = vehicleCheck.getName();
+		}	
+		
+		if (vehicleCheck.getLicenseNumber() != null) {
+	licenseNumberStr = vehicleCheck.getLicenseNumber();
+		}					
+		
+		if (vehicleCheck.getDate() != null) {
+	Calendar date = Calendar.getInstance();					
+	date.setTime(vehicleCheck.getDate());
+	day=String.valueOf(date.get(Calendar.DATE));
+	month=String.valueOf(date.get(Calendar.MONTH)+1);				
+	year=String.valueOf(date.get(Calendar.YEAR));					
+		}
+		
+		if (vehicleCheck.getDateLicenseExpiry() != null) {
+	Calendar date = Calendar.getInstance();					
+	date.setTime(vehicleCheck.getDateLicenseExpiry());
+	dayLicenseExpiry=String.valueOf(date.get(Calendar.DATE));
+	monthLicenseExpiry=String.valueOf(date.get(Calendar.MONTH)+1);				
+	yearLicenseExpiry=String.valueOf(date.get(Calendar.YEAR));					
+		}				
+
+	}	
+	
+	session.setAttribute("vehicleCheck",vehicleCheck);
+		}	
+		
+		col = request.getParameter("columns");		
+		if (!Util.empty(col))
+	columns	 = (Integer.parseInt(col));
+		else
+	columns = 1;
+		
+		String action = "layout.jsp?refer=/vehicle/VehicleView.jsp?id=" + idVehicle;
+%>	
+<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+
+<body>
+	<div align="center">
+		<html:form action="/VehicleCheckUpdate" method="post">
+			<html:hidden property="vehicle" value="<%=idVehicle%>" />
+			<html:hidden property="check" value="<%=idCheck%>" />
+			<table width="600" border="0" cellspacing="5" cellpadding="5">
+				<tr>
+					<td height="40" colspan="5" valign="middle">
+						<table width="100%" border="0" cellpadding="0" cellspacing="0">
+							<tr>
+								<td width="9"><img
+									src="/datacenter/util/imgs/titulo_left.gif" width="9"
+									height="40"></td>
+								<td width="600" background="/datacenter/util/imgs/bg2.gif">
+									<div align="center">
+										<font color="#FFFFFF" size="4"
+											face="Arial, Helvetica, sans-serif"> <strong>
+												<%=messages.getText("generic.activity.form.formulario")%>:
+												&nbsp; Vehicle Checklist
+										</strong>
+										</font>
+									</div>
+								</td>
+								<td width="9"><img
+									src="/datacenter/util/imgs/titulo_right.gif" width="9"
+									height="40"></td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+				<tr>
+					<td colspan="5">
+						<table width="100%" border="0" cellpadding="0" cellspacing="0">
+							<tr>
+								<td width="9" valign="top"><img
+									src="/datacenter/util/imgs/left_form.gif"></td>
+								<td colspan="2"
+									background="/datacenter/util/imgs/center_form.gif" valign="top"
+									align="center"><font color="#FFFFFF" size="1"
+									face="Arial, Helvetica, sans-serif"> <strong> <%=messages.getText("generic.activity.form.tranningonthejob.proofdata")%>
+									</strong>
+								</font></td>
+								<td width="9" valign="top"><img
+									src="/datacenter/util/imgs/right_form.gif"></td>
+							</tr>
+							<tr>
+								<td width="9" background="/datacenter/util/imgs/line_left.gif">&nbsp;</td>
+								<td width="50%" align="left"><font size="1"
+									face="Arial, Helvetica, sans-serif"> <strong> <%=messages.getText("generic.activity.date")%>
+									</strong>
+								</font></td>
+								<td width="50%" align="right"><font size="1"
+									face="Arial, Helvetica, sans-serif">
+									<html:hidden property="day" value="<%=day%>" />
+								<html:hidden property="month" value="<%=month%>" />
+								<html:hidden property="year" value="<%=year%>" />
+								<%=day%>&nbsp;/&nbsp;<%=month%>&nbsp;/&nbsp;<%=year%>
+								</font></td>
+								<td width="9" background="/datacenter/util/imgs/line_right.gif">&nbsp;</td>
+							</tr>
+							<tr>
+								<td width="9" background="/datacenter/util/imgs/line_left.gif">&nbsp;</td>
+								<td width="50%" align="left"><font size="1"
+									face="Arial, Helvetica, sans-serif"> <strong> <%=messages.getText("generic.driver.name")%>
+									</strong>
+								</font></td>
+								<td width="50%" align="right">
+									<font size="1" face="Arial, Helvetica, sans-serif">
+										<html:text property="name" styleClass="input" value='<%=nameStr%>'/>                                     
+									 </font>
+								</td>
+								<td width="9" background="/datacenter/util/imgs/line_right.gif">&nbsp;</td>
+							</tr>
+							<tr>
+								<td width="9" background="/datacenter/util/imgs/line_left.gif">&nbsp;</td>
+								<td width="50%" align="left"><font size="1"
+									face="Arial, Helvetica, sans-serif"> <strong> <%=messages.getText("generic.driver.licenseNumber")%>
+									</strong>
+								</font></td>
+								<td width="50%" align="right"><font size="1"
+									face="Arial, Helvetica, sans-serif">
+									<html:text property="licenseNumber" styleClass="input" value = '<%=licenseNumberStr%>' />  
+								</font></td>
+								<td width="9" background="/datacenter/util/imgs/line_right.gif">&nbsp;</td>
+							</tr>
+
+							<tr>
+
+								<td width="9" background="/datacenter/util/imgs/line_left.gif">&nbsp;
+								</td>
+
+								<td width="50%" align="left"><font size="1"
+									face="Arial, Helvetica, sans-serif"> <strong> <%= messages.getText("generic.activity.date")%>
+									</strong>
+								</font></td>
+
+								<td width="50%" align="right"><font size="1"
+									face="Arial, Helvetica, sans-serif">
+									<html:hidden property="dayLicenseExpiry" value="<%=dayLicenseExpiry%>" />
+								<html:hidden property="monthLicenseExpiry" value="<%=monthLicenseExpiry%>" />
+								<html:hidden property="yearLicenseExpiry" value="<%=yearLicenseExpiry%>" />
+																	 <%= dayLicenseExpiry%>
+										&nbsp;/&nbsp; <%= monthLicenseExpiry%> &nbsp;/&nbsp; <%= yearLicenseExpiry%>
+								</font></td>
+
+								<td width="9" background="/datacenter/util/imgs/line_right.gif">&nbsp;
+								</td>
+
+							</tr>
+
+
+							<tr>
+								<td width="9" background="/datacenter/util/imgs/line_left.gif">&nbsp;
+								</td>
+								<td width="50%" align="left"><font size="1"
+									face="Arial, Helvetica, sans-serif"> <strong> <%= messages.getText("generic.activity.form.tranningonthejob.trade")%>
+									</strong>
+								</font></td>
+								<td width="50%" align="right"><font size="1"
+									face="Arial, Helvetica, sans-serif"> <%= tradeStr%>
+								</font></td>
+								<td width="9" background="/datacenter/util/imgs/line_right.gif">&nbsp;
+								</td>
+							</tr>
+
+							<tr>
+								<td width="9" background="/datacenter/util/imgs/line_left.gif">&nbsp;
+								</td>
+								<td width="50%" align="left"><font size="1"
+									face="Arial, Helvetica, sans-serif"> <strong> <%= messages.getText("generic.vehicle.model")%>
+									</strong>
+								</font></td>
+								<td width="50%" align="right"><font size="1"
+									face="Arial, Helvetica, sans-serif"> <%= modelStr%>
+								</font></td>
+								<td width="9" background="/datacenter/util/imgs/line_right.gif">&nbsp;
+								</td>
+							</tr>
+
+							<tr>
+								<td width="9" background="/datacenter/util/imgs/line_left.gif">&nbsp;
+								</td>
+								<td width="50%" align="left"><font size="1"
+									face="Arial, Helvetica, sans-serif"> <strong> <%= messages.getText("generic.activity.form.vehiclecheck.plate")%>
+									</strong>
+								</font></td>
+								<td width="50%" align="right"><font size="1"
+									face="Arial, Helvetica, sans-serif"> <%= plateStr%>
+								</font></td>
+								<td width="9" background="/datacenter/util/imgs/line_right.gif">&nbsp;
+								</td>
+							</tr>
+
+							<tr>
+								<td width="9" background="/datacenter/util/imgs/line_left.gif">&nbsp;
+								</td>
+								<td width="50%" align="left"><font size="1"
+									face="Arial, Helvetica, sans-serif"> <strong> <%= messages.getText("generic.vehicle.serie")%>
+									</strong>
+								</font></td>
+								<td width="50%" align="right"><font size="1"
+									face="Arial, Helvetica, sans-serif">
+									<html:text property="serie" styleClass="input" value = '<%= serieStr%>'/>   
+								</font></td>
+								<td width="9" background="/datacenter/util/imgs/line_right.gif">&nbsp;
+								</td>
+							</tr>
+
+							<tr>
+								<td width="9" background="/datacenter/util/imgs/line_left.gif">&nbsp;
+								</td>
+								<td width="50%" align="left"><font size="1"
+									face="Arial, Helvetica, sans-serif"> <strong> <%= messages.getText("generic.vehiclecheck.form.vehicleKm")%>
+									</strong>
+								</font></td>
+								<td width="50%" align="right"><font size="1"
+									face="Arial, Helvetica, sans-serif"> <html:text property="vehicleKm" styleClass="input" value = '<%= vehicleKmStr%>'/> 
+								</font></td>
+								<td width="9" background="/datacenter/util/imgs/line_right.gif">&nbsp;
+								</td>
+							</tr>
+
+							<!--  Dibujo linea inferior de los cuadrantes -->
+							<tr>
+								<td width="9" valign="top"><img
+									src="/datacenter/util/imgs/left_base_form.gif" width="9"
+									height="11"></td>
+								<td colspan="2"
+									background="/datacenter/util/imgs/center_base.gif">&nbsp;</td>
+								<td width="9" valign="top"><img
+									src="/datacenter/util/imgs/right_base_form.gif" width="9"
+									height="11"></td>
+							</tr>
+
+						</table> <!-- Fin de Datos Básicos de la Prueba -->
+					</td>
+				</tr>
+
+				<tr>
+					<td>
+						<% sys.getUserSessionData().setValue(vehicleCheck); %> <jsp:include
+							page='<%="NColumnsForm.jsp?cantCol=1" %>' /> <% sys.getUserSessionData().setValue(null); %>
+					</td>
+				</tr>
+				<tr>
+					<td colspan="5">
+
+						<table width="100%" border="0" cellpadding="0" cellspacing="0">
+							<tr>
+								<td valign="top"><img
+									src="/datacenter/util/imgs/left_top_gray.gif" width="9"
+									height="11"></td>
+								<td background="/datacenter/util/imgs/center_top_gray.gif">
+									<div align="left">
+										<strong><img
+											src="/datacenter/util/imgs/center_base_gray.gif" width="1"
+											height="11"></strong>
+									</div>
+								</td>
+								<td valign="top"><strong><img
+										src="/datacenter/util/imgs/right_top_gray.gif" width="9"
+										height="11"></strong></td>
+							</tr>
+							<tr>
+								<td width="9" background="/datacenter/util/imgs/left_gray.gif">&nbsp;</td>
+								<td bgcolor="#f9f9f9"><font size="1"
+									face="Arial, Helvetica, sans-serif"><strong><%= messages.getText("generic.activity.observations") %></strong></font></td>
+								<td width="10" background="/datacenter/util/imgs/right_gray.gif"
+									bgcolor="#f9f9f9">&nbsp;</td>
+							</tr>
+							<tr>
+								<td width="9" height="88"
+									background="/datacenter/util/imgs/left_gray.gif">&nbsp;</td>
+								<td bgcolor="#f9f9f9"><strong><font size="1"
+										face="Arial, Helvetica, sans-serif"><html:textarea property="obs" cols="100" rows="5" value='<%= obsStr%>'/> 
+									</font></strong></td>
+								<td width="10" background="/datacenter/util/imgs/right_gray.gif">&nbsp;</td>
+							</tr>
+							<tr>
+								<td width="9" height="11" valign="top"><img
+									src="/datacenter/util/imgs/left_base_gray.gif" width="9"
+									height="11"></td>
+								<td valign="top"
+									background="/datacenter/util/imgs/center_base_gray.gif"><img
+									src="/datacenter/util/imgs/center_base_gray.gif" width="1"
+									height="11"></td>
+								<td width="10" valign="top"><img
+									src="/datacenter/util/imgs/right_base_gray.gif" width="9"
+									height="11"></td>
+							</tr>
+						</table>
+					</td>
+				</tr>
+
+				<tr>
+					<td align="right">
+						<input type="hidden" name="checkboxParamList" /> <input name="button2" type="button"
+						value='<%=messages.getText("generic.messages.accept")%>'
+						onClick="javascript:setAction(document.forms['VehicleCheckForm']);"
+						class="input" />
+						<html:cancel styleClass="input" value='<%=messages.getText("generic.messages.cancel") %>'></html:cancel> 
+					</td>
+
+				</tr>
+			</table>
+
+		</html:form>
+
+
+	</div>
+</body>
+
+<%
+	}	
+%>	
+
+</html:html>

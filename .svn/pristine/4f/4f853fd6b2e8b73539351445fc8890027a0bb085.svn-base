@@ -1,0 +1,13 @@
+<ion-view view-title="{{f}}">
+    <loading></loading> 
+	  <ion-content class="padding">
+	    <div class="list card">
+	      <div class="item item-divider"> {{txt.titCorp}}</div>
+	      <div class="item item-body" ng-repeat="c in corps" ng-click="open(c.id)" style="cursor: pointer;">
+	        <div>
+	          <p>{{c.name}}-({{c.activities.length}})</p>
+	        </div>
+	      </div>
+	    </div>
+	  </ion-content>
+</ion-view>

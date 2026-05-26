@@ -1,0 +1,201 @@
+<%@page import="communication.administration.corporation.tables.PointAccountData"%>
+<%@page import="communication.administration.corporation.tables.PointMoveData"%>
+<%@page import="presentation.translator.web.util.Util"%>
+<%@page import="communication.administration.user.UserSessionData"%>
+<%@page language="java"
+	errorPage="../exception.jsp"
+	import="java.util.*"
+	import="java.util.LinkedList"
+	import="business.*"
+	import="business.driver.*" 
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.util.*"
+	import="communication.driver.tables.*"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+
+<html:html>
+
+<%! 
+	Text messages;
+	SystemAccess sys; 
+	UserSessionData userSessionData;
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	userSessionData = sys.getUserSessionData(); 
+	DriverReportFacade driverReport = sys.getDriverReportFacade();
+	String check = null;
+	
+	if(userSessionData.isDriver()) {
+	    check = Util.checkPermission(sys,SecurityConstants.DRIVER_VIEW_OWN_DATA);
+	}else {
+	    check = Util.checkPermission(sys,SecurityConstants.EDIT_DRIVER);
+	}
+	
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		messages=sys.getText();
+
+		RequestDispatcher dispatcher = request.getRequestDispatcher("/util/jsp/language.jsp");
+		dispatcher.include(request,response);
+	
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+
+	    String id = request.getParameter("id");
+		DriverData data = driverReport.findDriverByPrimaryKey(new Integer(id), sys.getUserSessionData());
+		
+		PointAccountData account = sys.getCorporationReportFacade().getPointAccount(PointAccountData.DRIVER,data.getId(), userSessionData);
+			
+			
+%>
+
+	<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	<script type="text/javascript" src="./menu/js/jquery-1.10.2.min.js"></script>
+	<script type="text/javascript" src="./menu/js/html2canvas.min.js"></script>
+	
+	<head>
+	</head>
+	<body bgcolor="#FFFFFF" >
+		<table width="700" align='center' cellpadding="0" cellspacing="0" id="bdriver">
+			<tr class="guide1">
+				<jsp:include  page='<%="../component/titlecomponent.jsp?colspan=5&title="+messages.getText("web.driver.editing")+"  "+data.getLastName()+","+data.getFirstName()%>' />
+			</tr>
+   			<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+  			</tr>
+			<tr>
+				<td valign="top">
+					<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.personaldata")%>' />
+					<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="default">
+						<tr  class="linetwo">
+							<th align="left"> <%=messages.getText("generic.driver.driverdata.firstname")%> </th>
+							<td align="right"><%=data.getFirstName() %></td>
+						</tr>
+   						<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+						<tr  class="linetwo">
+							<th align="left"><%=messages.getText("generic.driver.driverdata.lastname")%></th>
+							<td align="right"><%=data.getLastName() %></td>
+						</tr>
+					</table>
+	   				<jsp:include page="../component/utilityboxbottom.jsp"/>	
+				</td>
+	   		</tr>
+			<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+	  		</tr>
+			<tr>	
+				<td width="100%" valign="top" colspan="3">
+					<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.points")%>' />
+					<table width="100%" height="100%" cellpadding="0" cellspacing="0">
+						<tr  class="linetwo"> 
+							<th align="left"> <%= messages.getText("generic.driver.points")%></th>
+							<td align="right"><%=String.valueOf(account.getTotal())+" "+account.getEval(messages,sys.getCorporationId())%></td>
+						</tr>
+						<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+<%		Collection<PointMoveData> moves = sys.getCorporationReportFacade().getPointMoves(account.getId(), userSessionData);
+		if(moves != null && moves.size() > 0) {
+			Collections.sort((List)moves);
+%>						<tr>
+							<td valign="top" colspan="3">
+								<table width="100%" cellpadding="0" cellspacing="0">
+									<tr>
+					    	            <td width='50%' class="guide2" align="center"><%=messages.getText("tipo")%></td>
+					        	        <td width='25%'	class="guide2" align="center"><%=messages.getText("fecha")%></td>
+						                <td width='25%'	class="guide2" align="center"><%=messages.getText("puntos")%></td>
+						           	</tr>
+<%			Iterator<PointMoveData> itMoves = moves.iterator();
+			String line = "linetwo";
+			while(itMoves.hasNext()) {
+				PointMoveData move = itMoves.next();
+				String link = move.getLink();
+%>									<tr class="<%=line%>">
+                						<td width='50%' align="center">
+<%				if(link != null) {
+%>											<a href="<%=link%>"><%=move.getDefitionTxt(messages)%></a>
+<%				} else {
+%>                					<%=move.getDefitionTxt(messages)%>
+<%				} 
+%>
+                						</td>
+                						<td width='25%'	align="center"><%=Util.formatDate(move.getDate().getTime())%></td>
+                						<td width='25%'	align="center"><%=String.valueOf(move.getAmount())%></td>
+           							</tr>
+<% 				line = (line.equals("linetwo")) ? "lineone" : "linetwo";
+			}
+%>								</table>
+							</td>
+						</tr>
+<%		}else {
+%>						<tr  class="linetwo"> 
+							<th align="left"> <%= messages.getText("driver.points.nopoints")%></th>
+						</tr>
+			
+<%		}
+%>
+					</table>	
+					<jsp:include page="../component/utilityboxbottom.jsp"/>
+				</td>
+			</tr>	
+			<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+	  		</tr>
+			<tr>	
+				<td width="100%" valign="top" colspan="3">
+					<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.points")%>' />
+					<table width="100%" height="100%" cellpadding="0" cellspacing="0">
+<%		Integer[][] history = driverReport.getDriverPointHistory(data.getId(), userSessionData);
+		if(history != null && history.length > 0) {
+%>						<tr>
+		    	            <td width='30%' class="guide2" align="center"><%=messages.getText("Período")%></td>
+		        	        <td width='35%'	class="guide2" align="center"><%=messages.getText("Puntos")%></td>
+			                <td width='35%'	class="guide2" align="center"><%=messages.getText("Risk")%></td>
+			           	</tr>
+<%			String line = "linetwo";
+			for(int i = 0; i < history.length; i++) {
+%>						<tr class="<%=line%>">
+		    	            <td align="center"><%=messages.getText("generic.month."+history[i][0])+"/"+history[i][1]%></td>
+		    	            <td align="center"><%=history[i][2].toString()%></td>
+		    	            <td align="center" class='<%="risklevel"+history[i][3]%>'><%=account.getEval(messages, sys.getCorporationId(), history[i][3]) %></td>
+			           	</tr>
+<%				line = (line.equals("linetwo")) ? "lineone" : "linetwo";
+			}
+		}
+%>
+					</table>	
+					<jsp:include page="../component/utilityboxbottom.jsp"/>
+				</td>
+			</tr>	
+			<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+	  		</tr>
+			<tr>	
+				<td width="100%" valign="top" colspan="3">
+					<jsp:include page="../component/utilitybox4top.jsp" />
+					<table width="100%" class="texts1" border="0" cellpadding="0" cellspacing="0">
+						<tr class="lineone">
+							<td align="right" class="lineone" width="100%">
+								<form action="layout.jsp?refer=/driver/DriverView.jsp" name="back" method="post">
+									<input type="hidden" name="id" value='<%=String.valueOf(data.getId())%>' />
+									<input type="submit" class="input" value='<%=messages.getText("generic.messages.back")%>'>
+								</form>
+							</td>
+						</tr>
+					</table>
+					<jsp:include page="../component/utilitybox4bottom.jsp"/>
+				</td>
+			</tr>	
+		</table>
+		<br>
+		<br>
+	</body>
+<%	}
+%>
+</html:html>

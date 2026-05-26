@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.log.fleet">
+    <class name="VehicleFleetLog" table="vehiclefleetslog">
+
+       <composite-id class="VehicleFleetLogPK" name="pk" >
+	        <key-property	name="fleetId"	type="java.lang.Integer"	column="fleet"/>
+	        <key-property	name="userId"	type="java.lang.String"	column="userid"/>
+	        <key-property	name="date"	type="java.util.Date"	column="date"/>
+       </composite-id>        
+        <property	name="vehicleId" type="java.lang.Integer" column="vehicleidset"	not-null="true" />
+        
+    </class>
+</hibernate-mapping>

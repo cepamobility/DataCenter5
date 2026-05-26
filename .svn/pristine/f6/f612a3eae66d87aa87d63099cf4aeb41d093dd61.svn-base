@@ -1,0 +1,246 @@
+package business.datatype;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
+import javax.ejb.CreateException;
+import javax.ejb.SessionBean;
+
+import org.hibernate.Query;
+import org.hibernate.Transaction;
+import org.hibernate.classic.Session;
+
+import persistence.datatype.DataTypeReport;
+import persistence.datatype.DataTypeReportHome;
+import persistence.datatype.DataTypeReportUtil;
+import persistence.datatype.tables.GeneralDataType;
+import persistence.hibernate.HibernateUtil;
+import business.driver.DriverABMFacadeBean;
+import business.util.ExceptionHandler;
+import communication.administration.user.UserSessionData;
+import communication.datatype.DataTypeConstants;
+import communication.exception.CommunicationProblemException;
+import communication.exception.DeslogedException;
+import communication.exception.InvalidDataException;
+
+/**
+ * @ejb.bean name = "DataTypeReportFacade" jndi-name = "ejb/DataTypeReportFacade" type =
+ *           "Stateless" transaction-type = "Container"
+ * 
+ * @ejb.ejb-ref ejb-name = "DataTypeReport" ref-name = "ejb/DataTypeReport" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/DataTypeReport" ref-name = "DataTypeReport"
+ *
+ * @ejb.util generate="physical"
+ *   
+ */
+public abstract class DataTypeReportFacadeBean implements SessionBean {
+
+    private ExceptionHandler handler = new ExceptionHandler(DriverABMFacadeBean.class);
+
+    /**
+	 * Default create method
+	 * 
+	 * @throws CreateException
+	 * @ejb.create-method
+     * @ejb.permission role-name = "systemaccess,administrator,resetpassword"
+	 */
+	public void ejbCreate() throws CreateException {
+/*		if (userSessionData == null) {
+			throw new CreateBeanException("Class business.datatype.DataTypeReportFacade(ejbCreate), session data is empty","generic.error.deslogued");
+		}
+
+		this.userSessionData = userSessionData;
+*/
+	}
+
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "systemaccess,administrator,resetpassword"
+	 * @param attribute
+	 * @param attrValue
+	 * @return Collection of DataTypeData
+	 * @throws CommunicationProblemException
+	 * @throws DeslogedException
+	 * @throws InvalidDataException
+	 */
+	public Collection findAll(int attribute,UserSessionData userSessionData) throws Exception {
+
+		try {
+			DataTypeReportHome dtHome = DataTypeReportUtil.getHome();
+			DataTypeReport dtReport = dtHome.create();
+
+			switch(attribute) {
+				case DataTypeConstants.SEX:
+				case DataTypeConstants.CONSEQUENCE:
+				case DataTypeConstants.CONDITIONROUT:
+				case DataTypeConstants.CLIMATE:
+				case DataTypeConstants.CRPONPRIMARYCLASIFICATION:
+				case DataTypeConstants.LIGHTING:
+				case DataTypeConstants.STATEOFEMPLOYEE:
+				case DataTypeConstants.ZONE:
+				case DataTypeConstants.CIRCULATIONDIRECTION:
+				case DataTypeConstants.TYPEUSE:
+				case DataTypeConstants.TYPECENTERCOST:
+				case DataTypeConstants.TYPEENGINE:
+				case DataTypeConstants.TYPEFUEL:
+				case DataTypeConstants.TYPEVEHICLE:
+				case DataTypeConstants.TYPEVOLUMEUNIT:
+				case DataTypeConstants.TYPEDISTANCEUNIT:
+				case DataTypeConstants.TYPETRADE:
+                case DataTypeConstants.TYPECOVER:
+				case DataTypeConstants.TYPECEPAACTIVITY:
+				case DataTypeConstants.TYPECEPAACTIVITYNOTE:
+				case DataTypeConstants.TYPECEPAACTIVITYSCHEDULESTATE:
+                case DataTypeConstants.WAY:
+                case DataTypeConstants.TRAFFIC_CONTROLS:
+                case DataTypeConstants.PAVEMENT:
+                case DataTypeConstants.ACCIDENT_FACTORS:
+                case DataTypeConstants.VEHICLE_BEHAVIOUR:
+                case DataTypeConstants.NEW_ACCIDENT_FACTORS:
+                case DataTypeConstants.NEW_VEHICLE_BEHAVIOUR:
+                case DataTypeConstants.CONTRACT:
+                case DataTypeConstants.COLLISION_CLASIFICATION:
+                case DataTypeConstants.ACCIDENT_CLASIFICATION:
+                case DataTypeConstants.INCIDENT_CLASIFICATION:
+                case DataTypeConstants.NEW_JJ_COLLISION_CLASIFICATION:
+                case DataTypeConstants.NEW_JJ_ACCIDENT_CLASIFICATION:
+                case DataTypeConstants.NEW_JJ_INCIDENT_CLASIFICATION:
+                case DataTypeConstants.FLEET_CONSEQUENCE:
+                case DataTypeConstants.OLD_ACCIDENT_CLASIFICATION:
+                case DataTypeConstants.OLD_INCIDENT_CLASIFICATION:
+                case DataTypeConstants.OLD_FINE_QUALIFY:	
+                case DataTypeConstants.FINE_TYPE:
+                case DataTypeConstants.FINE_QUALIFY:
+                case DataTypeConstants.TYPEPLATFORM:
+                case DataTypeConstants.ENSURANCE_TYPE:
+                case DataTypeConstants.ALL_ACCIDENT_CLASIFICATION:
+                case DataTypeConstants.ALL_INCIDENT_CLASIFICATION:
+                case DataTypeConstants.ALL_FINE_QUALIFY:
+                case DataTypeConstants.MONITORING_SYSTEM:
+                case DataTypeConstants.POPULATION_GROUP:
+                case DataTypeConstants.ACTION_ORGANIZATION:
+                case DataTypeConstants.EDUCATION:
+                case DataTypeConstants.ALERT_TYPE:
+                case DataTypeConstants.ALERT_PRIORITY:
+                case DataTypeConstants.ALERT_FRECUENCY:
+                case DataTypeConstants.UNCONFORMITY_TYPE:
+                case DataTypeConstants.ASSIGNED_VEHICLE:
+                case DataTypeConstants.MARITAL_STATUS:
+                case DataTypeConstants.EDUCATION_LEVEL:
+                case DataTypeConstants.PUESTO_PEPSICO:
+                case DataTypeConstants.COMPLAINT_CALL:
+                case DataTypeConstants.BRASIL_STATE:
+                case DataTypeConstants.DPA_UNCONFORMITY_ITEM_TYPE:
+                case DataTypeConstants.DPA_UNCONFORMITY_TYPE:
+                case DataTypeConstants.DPA_COURSES:
+                case DataTypeConstants.DPA_INSTRUCTOR_REGISTRY:
+                    return dtReport.findAll(userSessionData,attribute);                 
+				default:
+					throw new InvalidDataException("DataTypeReportFacadeBean:  findAll","wrongType");
+			}
+		} catch (Exception e) {
+			Object[] parameters = new Object[1];
+			parameters[0] = attribute;
+            handler.handleException("DataTypeReportFacadeBean: findAll",e, userSessionData, parameters);
+		}
+        return null;
+	}
+	
+	 /**
+     * @throws DeslogedException
+     * @throws CommunicationProblemException
+     * @ejb.interface-method
+     * @ejb.permission role-name = "systemaccess,administrator,resetpassword"
+     */      
+    public Collection findAllClasificationLevel(UserSessionData userRequest, int attribute, String parent) throws Exception {
+        
+    	try {
+			DataTypeReportHome dtHome = DataTypeReportUtil.getHome();
+			DataTypeReport dtReport = dtHome.create();
+
+			switch(attribute) {
+				case DataTypeConstants.ACCIDENT_CLASIFICATION_LEVEL1:
+				case DataTypeConstants.ACCIDENT_CLASIFICATION_LEVEL2:
+				case DataTypeConstants.ACCIDENT_CLASIFICATION_LEVEL3:
+				case DataTypeConstants.ACCIDENT_CLASIFICATION_LEVEL4:
+			        return dtReport.findAllClasificationLevel(userRequest, attribute, parent);                 
+				default:
+					throw new InvalidDataException("DataTypeReportFacadeBean:  findAllClasificationLevel","wrongType");
+			}
+		} catch (Exception e) {
+			Object[] parameters = new Object[1];
+			parameters[0] = attribute;
+            handler.handleException("DataTypeReportFacadeBean: findAllClasificationLevel",e, userRequest, parameters);
+		}
+        return null;
+
+        
+    }
+	
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "systemaccess,administrator,resetpassword"
+     * @param attribute
+     * @param attrValue
+     * @return Collection of DataTypeData
+     * @throws CommunicationProblemException
+     * @throws DeslogedException
+     * @throws InvalidDataException
+     */
+    public Collection findAllCEPA(int attribute,UserSessionData userSessionData) throws Exception {
+
+        try {
+            DataTypeReportHome dtHome = DataTypeReportUtil.getHome();
+            DataTypeReport dtReport = dtHome.create();
+
+            switch(attribute) {
+                case DataTypeConstants.COLLISION_CLASIFICATION:
+                case DataTypeConstants.ACCIDENT_CLASIFICATION:
+                case DataTypeConstants.INCIDENT_CLASIFICATION:
+                    return dtReport.findAllCEPA(userSessionData,attribute);                 
+                default:
+                    throw new InvalidDataException("DataTypeReportFacadeBean: findAllCEPA","wrongType");
+            }
+        } catch (Exception e) {
+        	Object[] parameters = new Object[1];
+        	parameters[0] = attribute;
+            handler.handleException("DataTypeReportFacadeBean: findAllCEPA",e, userSessionData, parameters);
+        }
+        return null;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "systemaccess,administrator,resetpassword"
+     */
+    public Collection getActivityWithExpiry(UserSessionData userSessionData,Integer[][] divOrgs,Integer[] divGeos,Date from, Date to,int status,String firstName,String lastName,String vehicleAllowed) throws Exception {
+        try {
+            return DataTypeReportUtil.getHome().create().getActivityWithExpiry(userSessionData,divOrgs,divGeos,from, to,status,firstName,lastName,vehicleAllowed);
+        } catch (Exception e) {
+        	Object[] parameters = new Object[0];
+            handler.handleException("getActivityWithExpiry",e, userSessionData, parameters);
+        }
+        return new LinkedList();
+    }
+
+    /**
+     * @throws DeslogedException
+     * @throws CommunicationProblemException
+     * @ejb.interface-method
+     * @ejb.permission role-name = "systemaccess,administrator,resetpassword"
+     *      
+    public String[] getAvailableAddress(Integer corporation, UserSessionData userSessionData) throws Exception {
+        try {
+            return DataTypeReportUtil.getHome().create().getAvailableAddress(corporation,userSessionData);
+        } catch (Exception e) {
+        	Object[] parameters = new Object[0];
+            handler.handleException("getAvailableAddress",e, userSessionData, parameters);
+        }
+        return null;
+    }*/
+}

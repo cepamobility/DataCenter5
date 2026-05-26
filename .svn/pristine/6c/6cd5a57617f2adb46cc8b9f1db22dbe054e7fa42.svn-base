@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.administration.corporation.tables"  default-cascade="all">
+    <class
+        name="GeoLevel1"
+        table="geolevel1s"
+    >
+
+        <id
+            name="id"
+            column="id"
+            type="java.lang.Integer"
+        >
+            <generator class="native">
+            </generator>
+        </id>
+
+        <property column="resourcekey" name="resourceKey" type="java.lang.String" not-null="true" />
+
+		<many-to-one 
+			name="geoLevel2"
+			class="GeoLevel2"
+			not-null="false"
+		/>         
+        
+    </class>
+
+</hibernate-mapping>

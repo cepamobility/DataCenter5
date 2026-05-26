@@ -1,0 +1,2735 @@
+/*
+ * Created on 28-oct-2005
+ */
+package business.fleet;
+
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.StringTokenizer;
+
+import javax.ejb.CreateException;
+import javax.ejb.SessionBean;
+
+import persistence.driver.DriverReport;
+import persistence.driver.DriverReportUtil;
+import persistence.event.EventReport;
+import persistence.event.EventReportHome;
+import persistence.event.EventReportUtil;
+import persistence.fleet.FleetReport;
+import persistence.fleet.FleetReportHome;
+import persistence.fleet.FleetReportLocal;
+import persistence.fleet.FleetReportLocalHome;
+import persistence.fleet.FleetReportUtil;
+import persistence.util.Util;
+import business.util.ExceptionHandler;
+import business.util.MemoryLog;
+
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.GeoItemData;
+import communication.administration.corporation.tables.GeoLabelData;
+import communication.administration.group.tables.GroupLineData;
+import communication.administration.user.UserSessionData;
+import communication.alert.AlertConstants;
+import communication.driver.tables.DriverData;
+import communication.exception.DeslogedException;
+import communication.exception.InvalidDataException;
+import communication.fleet.ApmkData;
+import communication.fleet.tables.FleetBayerData;
+import communication.fleet.tables.FleetData;
+import communication.fleet.tables.InsertedOdometer;
+import communication.fleet.tables.KmByTradeDataType;
+import communication.fleet.tables.OdometerFileData;
+import communication.fleet.util.APMMAcumulatedData;
+import communication.fleet.util.APMMByDivisionData;
+import communication.fleet.util.APMMData;
+import communication.fleet.util.APMMDataPeriod;
+import communication.fleet.util.EventCostData;
+import communication.fleet.util.EventInjuriesData;
+import communication.fleet.util.FleetMileage;
+import communication.fleet.util.FleetMileageTotal;
+import communication.fleet.util.IndividualConsumedFuelData;
+import communication.fleet.util.KmLtrFuelData;
+import communication.language.Text;
+import communication.queries.report.ReportAPMMByDivisionData;
+import communication.queries.report.ReportAPMMByPeriodData;
+import communication.queries.report.ReportAPMMData;
+import communication.queries.report.ReportAccidentCountData;
+import communication.queries.report.ReportIndividualConsumedFuelData;
+import communication.queries.report.ReportKmLtrData;
+import communication.queries.report.ReportMileageData;
+import communication.queries.report.ReportNewAPMMByPeriodData;
+import communication.util.ListResult;
+import communication.util.MailSender;
+import communication.vehicle.tables.VehicleData;
+ 
+/**
+ * @ejb.bean name = "FleetReportFacade" jndi-name = "ejb/FleetReportFacade" type =
+ *           "Stateless" transaction-type = "Container"
+ * 
+ * @ejb.ejb-ref ejb-name = "FleetReport" 
+ * 				ref-name = "ejb/FleetReport" 
+ * 				view-type = "remote"
+ * 
+ * @ejb.ejb-ref ejb-name = "FleetReport" 
+ * 				ref-name = "ejb/FleetReportLocal" 
+ * 				view-type = "local"
+ * 				link = "FleetReport" 
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/FleetReport" 
+ * 						ref-name = "FleetReport"
+ *  
+ * @ejb.ejb-ref ejb-name = "EventReport" 
+ * 				ref-name = "ejb/EventReport" 
+ * 				view-type = "remote"
+ * 				link = "EventReport"
+ * 
+ * @ejb.ejb-ref ejb-name = "EventReport" 
+ * 				ref-name = "ejb/EventReportLocal" 
+ * 				view-type = "local"
+ * 				link = "EventReport"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/EventReport" 
+ * 				ref-name = "EventReport"
+ *  
+ * @ejb.ejb-ref ejb-name = "DriverReport" 
+ * 				ref-name = "ejb/DriverReport" 
+ * 				view-type = "remote"
+ * 				link = "DriverReport"
+ * 
+ * @ejb.ejb-ref ejb-name = "DriverReport" 
+ * 				ref-name = "ejb/DriverReportLocal" 
+ * 				view-type = "local"
+ * 				link = "DriverReport"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/DriverReport" 
+ * 				ref-name = "DriverReport"
+ * @ejb.util generate="physical"
+ *  
+ */
+public abstract class FleetReportFacadeBean implements SessionBean {
+
+    private ExceptionHandler handler = new ExceptionHandler(FleetReportFacadeBean.class);
+    public static final double KMS_TO_MILES = 1.609344;
+	
+	/**
+	 * Default create method
+	 * @throws CreateException
+	 * @ejb.create-method
+     * @ejb.permission role-name = "fleetview,driverodometer,fleetedit,administrator,query,driverfleetinsertdata,fleetinsertdata"
+	 */
+	public void ejbCreate() throws CreateException {	}
+
+	
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetview,driverfleetinsertdata,fleetinsertdata"
+	 * @return Collection of UserData
+	 * @throws Exception
+	 */
+	public ListResult findFleetList(String name,int type,int first,int count,	
+			UserSessionData userSessionData,int status) throws Exception {
+        MemoryLog.getInstance().log(MemoryLog.START,"findFleetList",getClass());
+        ListResult listResult = null;
+    	try{
+    		FleetReportHome fleetHome = FleetReportUtil.getHome();
+    		FleetReport fleetReport = fleetHome.create();
+            listResult = fleetReport.findList(name,type,first,count,userSessionData,status);
+    	}catch (Exception e) {
+    		Object[] p = new Object[5];
+    		p[0] = name;
+    		p[1] = type;
+    		p[2] = first;
+    		p[3] = count;
+    		p[4] = status;
+            handler.handleException("findFleetList",e,userSessionData,p);
+    	}
+        MemoryLog.getInstance().log(MemoryLog.END,"findFleetList",getClass());
+    	return listResult;
+	}
+	
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetview,driverfleetinsertdata,fleetinsertdata"
+	 * @return Integer Object
+	 * @throws Exception
+	 */
+	public Integer countFleetsWithVehicle(Integer vehicleId, UserSessionData userSessionData) throws Exception {
+    	try{
+    		FleetReportHome fleetHome = FleetReportUtil.getHome();
+    		FleetReport fleetReport = fleetHome.create();
+            return fleetReport.countFleetsWithVehicle(vehicleId,userSessionData);
+    	}catch (Exception e) {
+    		Object[] p = new Object[1];
+    		p[0] = vehicleId;
+            handler.handleException("countFleetsWithVehicle",e,userSessionData,p);
+    	}
+    	return null;
+	}
+
+
+	/**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "fleetupdate,administrator"
+     */
+    public List getFleets(String fleets,UserSessionData userSessionData) throws Exception
+    {
+        try
+        {            
+           	FleetReportHome home = FleetReportUtil.getHome();
+        	FleetReport fleetReport = home.create();
+            List list = fleetReport.getFleets(fleets,userSessionData);
+            return list;            
+        } 
+        catch(Exception e)
+        {
+        	Object[] p = new Object[1];
+    		p[0] = fleets;
+        	 handler.handleException("getFleets",e,userSessionData,p);        	
+        }
+        return null;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "fleetupdate,administrator,fleetinsertdata"
+     */
+    public List getFleetDivisions(String fleetDivisions,UserSessionData userSessionData) throws Exception
+    {
+        try
+        {            
+           	FleetReportHome home = FleetReportUtil.getHome();
+        	FleetReport fleetReport = home.create();
+            List list = fleetReport.getFleetDivisions(fleetDivisions,userSessionData);
+            return list;            
+        } 
+        catch(Exception e)
+        {
+        	Object[] p = new Object[1];
+    		p[0] = fleetDivisions;
+        	 handler.handleException("getFleets",e,userSessionData,p);        	
+        }
+        return null;
+    }
+    
+    /**
+     * @throws Exception
+     * @ejb.interface-method
+     * @ejb.permission role-name = "fleetupdate,administrator"
+     */
+    public boolean fleetDivisionHasDetails(Integer fleetDivisionDataId, UserSessionData userSessionData) throws Exception
+    {
+    	try
+    	{
+    		FleetReportHome home = FleetReportUtil.getHome();
+        	FleetReport fleetReport = home.create();
+            return  fleetReport.fleetDivisionHasDetails(fleetDivisionDataId,userSessionData);
+    	}
+    	catch (Exception e)
+    	{
+    		Object[] p = new Object[1];
+    		p[0] = fleetDivisionDataId;
+    		 handler.handleException("fleetDivisionHasDetails",e,userSessionData,p);     
+    	}
+    	return false;
+    	
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetedit,driverfleetinsertdata,fleetinsertdata,fleetblockdata"
+     */
+    public Collection findFleetsByRegion(Integer regionId, UserSessionData userSessionData) throws Exception{
+    	 try{
+             if (regionId == null) {
+                 throw new InvalidDataException("findFleetsByRegion","id = null");
+             }
+             FleetReportLocalHome local = FleetReportUtil.getLocalHome();
+             FleetReportLocal fleetReport = local.create();
+             return fleetReport.findFleetsByRegion(regionId, userSessionData);
+         } catch(Exception e){
+        	 Object[] p = new Object[1];
+     		p[0] = regionId;
+             handler.handleException("findFleetsByRegion",e,userSessionData,p);
+         }
+         return null;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetedit,driverfleetinsertdata,fleetinsertdata,fleetblockdata"
+     */
+    public Collection getBlockPeriods(UserSessionData userSessionData) throws Exception {
+    	LinkedList regions;
+    	HashSet regionsNames;
+    	GroupLineData groupLineData;
+    	GeoLabelData lid;
+    	GeoItemData item;
+    	Iterator it;
+    	try{
+   			/* Get Corporation's Regions: */
+     	   	/* We asumm that the corporation has two levels */
+     	   	/* and the first one is the region and the second one is the country */
+     	   	/* we iterate on the groups to create the corporation's regions collection*/
+     	   	regions = new LinkedList();
+     	    regionsNames = new HashSet(); // Is used to avoid repeated regions 
+     	    it = userSessionData.getFilter().getGroupLines().iterator();	    
+     	    while (it.hasNext()) 
+     	    {
+             	groupLineData = (GroupLineData)it.next();  
+     	        lid = groupLineData.getCountry();
+     	        item = (GeoItemData)lid.getItemIterator().next();	        
+     	        if (!regionsNames.contains(item.getName())){
+     		        regionsNames.add(item.getName());
+     		        regions.add(item); // LinkedList con los ids de las regiones	        
+     	        }
+     	    }  
+            FleetReportLocalHome local = FleetReportUtil.getLocalHome();
+            FleetReportLocal fleetReportLocal = local.create();
+            return fleetReportLocal.getBlockPeriods(userSessionData, regions);
+         } catch(Exception e){
+             handler.handleException("getBlockPeriods",e,userSessionData,null);
+         }
+         return null;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetedit,driverfleetinsertdata,fleetinsertdata"
+     * 
+     */
+    public FleetData findFleetByPrimaryKey(Integer id,UserSessionData userSessionData) throws Exception{
+        try{
+            if (id == null) {
+                throw new InvalidDataException("findFleetByPrimaryKey","id = null");
+            }
+            FleetReportHome home = FleetReportUtil.getHome();
+            FleetReport fleetReport = home.create();
+            return fleetReport.findFleetByPrimaryKey(id,userSessionData);
+        } catch(Exception e){
+        	Object[] p = new Object[1];
+    		p[0] = id;
+            handler.handleException("findFleetByPrimaryKey",e,userSessionData,p);
+        }
+        return null;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetedit,fleetinsertdata"
+     */
+    public Hashtable findFleetDetail(Integer fleetId,Integer period,Integer year,UserSessionData userSessionData) throws Exception{
+        if (fleetId == null) {
+            throw new InvalidDataException("findFleetDetail","fleetId = null");
+        }
+        if (period == null) {
+            throw new InvalidDataException("findFleetDetail","period = null");
+        }
+        if (year == null) {
+            throw new InvalidDataException("findFleetDetail","year = null");
+        }
+        if (userSessionData == null) {
+            throw new DeslogedException("findFleetDetail","userSessionData = null");
+        }
+        try{            
+            FleetReportHome home = FleetReportUtil.getHome();
+            FleetReport fleetReport = home.create();
+            return fleetReport.findFleetDetail(fleetId,period,year,userSessionData);
+        } catch(Exception e){
+        	Object[] p = new Object[3];
+    		p[0] =  fleetId;
+    		p[1] = period;
+    		p[2] = year;
+            handler.handleException("findFleetDetail",e,userSessionData,p);
+        }
+        return null;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetedit,fleetinsertdata"
+     */
+    public Collection findFleetAccidents(Integer fleetId,Integer period,Integer year,UserSessionData userSessionData) throws Exception{
+        if (fleetId == null) {
+            throw new InvalidDataException("findFleetAccidents","fleetId = null");
+        }
+        if (period == null) {
+            throw new InvalidDataException("findFleetAccidents","period = null");
+        }
+        if (year == null) {
+            throw new InvalidDataException("findFleetAccidents","year = null");
+        }
+        if (userSessionData == null) {
+            throw new DeslogedException("findFleetAccidents","userSessionData = null");
+        }
+        try{            
+            FleetReportHome home = FleetReportUtil.getHome();
+            FleetReport fleetReport = home.create();
+            return fleetReport.findFleetAccidents(fleetId,period,year,userSessionData);
+        } catch(Exception e){
+        	Object[] p = new Object[3];
+    		p[0] = fleetId;
+    		p[1] = period;
+    		p[2] = year;
+            handler.handleException("findFleetAccidents",e,userSessionData,p);
+        }
+        return null;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetedit,fleetinsertdata"
+     */
+    public Collection findFleetIncidents(Integer fleetId,Integer period,Integer year,UserSessionData userSessionData) throws Exception{
+        if (fleetId == null) {
+            throw new InvalidDataException("findFleetIncidents","fleetId = null");
+        }
+        if (period == null) {
+            throw new InvalidDataException("findFleetIncidents","period = null");
+        }
+        if (year == null) {
+            throw new InvalidDataException("findFleetIncidents","year = null");
+        }
+        if (userSessionData == null) {
+            throw new DeslogedException("findFleetIncidents","userSessionData = null");
+        }
+        try{            
+            FleetReportHome home = FleetReportUtil.getHome();
+            FleetReport fleetReport = home.create();
+            return fleetReport.findFleetIncidents(fleetId,period,year,userSessionData);
+        } catch(Exception e){
+        	Object[] p = new Object[3];
+    		p[0] = fleetId;
+    		p[1] = period;
+    		p[2] = year;
+            handler.handleException("findFleetIncidents",e,userSessionData,p);
+        }
+        return null;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetedit,driverfleetinsertdata,fleetinsertdata"
+     */
+    public Hashtable findOdometers(Integer fleet,Integer currentPeriod,Integer currentYear,
+    		Integer year,Integer vehicle,UserSessionData userSessionData) throws Exception {
+        if (fleet == null) {
+            throw new InvalidDataException("findOdometers","fleetId = null");
+        }
+        if (currentPeriod == null) {
+            throw new InvalidDataException("findOdometers","period = null");
+        }
+        if (currentYear == null) {
+            throw new InvalidDataException("findOdometers","year = null");
+        }
+        if (userSessionData == null) {
+            throw new DeslogedException("findOdometers","userSessionData = null");
+        }
+        try{            
+            FleetReportHome home = FleetReportUtil.getHome();
+            FleetReport fleetReport = home.create();
+            return fleetReport.findOdometers(fleet,currentPeriod,currentYear,year,vehicle,userSessionData);
+        } catch(Exception e){
+        	Object[] p = new Object[5];
+    		p[0] = fleet;
+    		p[1] = currentPeriod;
+    		p[2] = currentYear;
+    		p[3] = year;
+    		p[4] = vehicle;
+    		
+            handler.handleException("findOdometers",e,userSessionData,p);
+        }
+        return null;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public ReportAPMMData getReportAPMM(String periodFrom, Integer yearFrom, String periodTo, 
+    		Integer yearTo, Integer[][] divOrgs, Integer[] divGeos, int order1, 
+    		int order2, int order3, int order4, int fleets, UserSessionData userSessionData,Text messages) throws Exception {
+        try{            
+            FleetReportHome home = FleetReportUtil.getHome();
+            FleetReport fleetReport = home.create();
+            
+            Collection data = new LinkedList();
+            
+        	Integer monthCount = new Integer((12 - Integer.parseInt(periodFrom) + 1) + 
+        			((yearTo.intValue() - yearFrom.intValue() - 1) * 12) + Integer.parseInt(periodTo));
+            if(fleets == 0 || fleets == 1) {
+            	data = fleetReport.getReportAPMM(periodFrom, yearFrom, periodTo, yearTo,  divOrgs, 
+            			divGeos, order1, order2, order3, order4, userSessionData, messages);
+            }
+           
+            boolean isMiles = true; 
+            if(fleets == 0 || fleets == 2) {
+	            Hashtable periods = fleetReport.getReportIndividualAPMMByDivision(periodFrom,yearFrom,periodTo,
+	            		yearTo,divOrgs,divGeos,userSessionData);
+	           
+	            // Solo para J&J:
+	            if (userSessionData.getFilter().getCorporationId()==CorporationData.JJ){
+	            	EventReportHome eventHome = EventReportUtil.getHome();
+	            	EventReport eventReport = eventHome.create();
+	            	Iterator itInjuries = eventReport.getInjuriesCount(periodFrom,yearFrom,periodTo,yearTo,order1, order2,
+	            			order3, order4, divOrgs, divGeos , userSessionData).iterator();                    
+	            	while(itInjuries.hasNext()) {
+	            		EventInjuriesData injuryData = (EventInjuriesData)itInjuries.next();
+	            		Iterator it = data.iterator();
+	            		while(it.hasNext()) {
+	            			APMMByDivisionData element = (APMMByDivisionData)it.next();
+	            			if(element.equalDivisions(injuryData)) {
+	            				element.setInjuries(injuryData.getInjuriesCount());
+	            			}
+	            		}
+	            	}
+	            } // fin if J&J
+            
+	            Enumeration en = periods.keys();
+	            String prePeriod = getPreviousPeriod(new Integer(periodFrom),yearFrom);
+               // Hashtable preVehicles = (Hashtable)periods.get(prePeriod); 
+	            /*if(periods.size() > 0 && !periods.containsKey(prePeriod)) {
+	                throw new InvalidDataException("getReportMileage","invalid_month");
+	            }*/
+	            
+	            int[][] principal = userSessionData.getFilter().getPrincipalDivOrgs();
+                Hashtable fleetDivisions = fleetReport.getFleetDivisionsData(null, userSessionData);
+	            while(en.hasMoreElements()) {
+	                String key = (String)en.nextElement();
+	                if(!key.equals(prePeriod)) {
+	                    Hashtable vehicles = (Hashtable)periods.get(key); 
+	                    Enumeration en2 = vehicles.elements();
+	                    
+	                    while(en2.hasMoreElements()) {
+	                        Object[] dataV = (Object[])en2.nextElement();
+	                        VehicleData vehicle = (VehicleData)dataV[0];
+	                       // if(preVehicles.containsKey(vehicle.getId())) {
+		                        String divOrg1Name = null;
+		                        Integer divOrg1Id = null;
+		                        switch(order1) {
+		                            case 3:
+		                                divOrg1Name = messages.getText(vehicle.getCountryName());
+		                                divOrg1Id = vehicle.getCountryId();
+		                                break;
+		                            case 0:case 1:case 2:
+		                                divOrg1Name = vehicle.getData(principal[order1][0],principal[order1][1]);    
+		                                divOrg1Id = vehicle.getIdData(principal[order1][0],principal[order1][1]);    
+		                                break;
+		                        }
+		                        String divOrg2Name = null;
+		                        Integer divOrg2Id = null;
+		                        switch(order2) {
+		                            case 3:
+		                                divOrg2Name = messages.getText(vehicle.getCountryName());
+		                                divOrg2Id = vehicle.getCountryId();
+		                                break;
+		                            case 0:case 1:case 2:
+		                                divOrg2Name = vehicle.getData(principal[order2][0],principal[order2][1]);    
+		                                divOrg2Id = vehicle.getIdData(principal[order2][0],principal[order2][1]);    
+		                                break;
+		                        }
+		                        String divOrg3Name = null;
+		                        Integer divOrg3Id = null;
+		                        switch(order3) {
+		                            case 3:
+		                                divOrg3Name = messages.getText(vehicle.getCountryName());
+		                                divOrg3Id = vehicle.getCountryId();
+		                                break;
+		                            case 0:case 1:case 2:
+		                                divOrg3Name = vehicle.getData(principal[order3][0],principal[order3][1]);    
+		                                divOrg3Id = vehicle.getIdData(principal[order3][0],principal[order3][1]);    
+		                                break;
+		                        }
+		                        String divOrg4Name = null;
+		                        Integer divOrg4Id = null;
+		                        switch(order4) {
+		                            case 3:
+		                                divOrg4Name = messages.getText(vehicle.getCountryName());
+		                                divOrg4Id = vehicle.getCountryId();
+		                                break;
+		                            case 0:case 1:case 2:
+		                                divOrg4Name = vehicle.getData(principal[order4][0],principal[order4][1]);    
+		                                divOrg4Id = vehicle.getIdData(principal[order4][0],principal[order4][1]);    
+		                                break;
+		                        }
+		                    	
+	
+		                        int miles = (((Integer)dataV[2]).intValue() == 0 || ((Integer)dataV[1]).intValue() == 0) ? 0 : 
+		                        			((Integer)dataV[2]).intValue() - ((Integer)dataV[1]).intValue();
+		                        
+		                        
+		                        isMiles = !(fleetDivisions.containsKey(dataV[5]) && fleetDivisions.get(dataV[5]).equals("datatype.distanceunit.kilometers"));
+		                        
+		                    	// Si la flota tiene como unidad de distancia kilometros, paso sus valors a millas:
+		                    	/*if(fleetDivisions.containsKey(dataV[5]) && fleetDivisions.get(dataV[5]).equals("datatype.distanceunit.kilometers")) {
+		                    		miles = Integer.parseInt(String.valueOf(Math.round(Double.parseDouble(String.valueOf(miles)) / Util.KMS_TO_MILES)));
+		                    	}*/
+		                    	
+		                    	System.out.println(miles);
+		                        // TODO GUS
+		                    	APMMByDivisionData apmm = new APMMByDivisionData(divOrg1Id,divOrg1Name,
+			                        		divOrg2Id,divOrg2Name,divOrg3Id,divOrg3Name,divOrg4Id,divOrg4Name,
+			                        		new Integer(miles),(Integer)dataV[3],(Integer)dataV[4],(Integer)dataV[6],monthCount.intValue()); 
+		                       // Este apmm siempre tiene 1 vehiculo que es el que traigo en el registro dataV:
+		                    	apmm.setTotalVehicles(1,FleetData.MONTHLY);
+		                    	apmm.setMonthCount(key);
+		                    	/*
+		                    	if (data.isEmpty()){
+		                        	// Seteo el numero de vehiculos en 1 la primera vez
+		                        	// porque el primer vehiculo no pasa por el while siguiente
+		                        	// si el data esta vacio.                        	
+		                        	apmm.setTotalVehicles(1,FleetData.MONTHLY);
+		                        }	
+		                        */                        
+		                      
+		                        Iterator it = data.iterator();	                        
+	
+		                        boolean find = false;
+		                        while(it.hasNext() && !find) {
+		                            APMMByDivisionData element = (APMMByDivisionData)it.next();
+		                            if(element.equalsData(apmm)) {
+		                            	// Si apmm tiene las mismas divisiones que el elemento del data
+		                            	// agrego al data el vehiculo nuevo
+		                                element.addData(apmm,vehicle.getId());
+		                                element.setMonthCount(key);
+		                                find = true;
+		                            }
+		                        }
+		                        
+		                        /*
+		                         * Si no encontre este vehicuo en data, entonces lo agrego.
+		                         * Si data es vacio, find es false y agrego el vehiculo que esta en el apmm (que si no paso por el while es 1)
+		                         */
+		                        if(!find) {                        	
+		                            data.add(apmm);
+		                        }
+	                    //    }
+	                    }
+	                }
+	            }
+            }
+            
+            
+            return new ReportAPMMData(data,monthCount,order1,order2,order3,order4, isMiles);
+            
+        } catch(Exception e){
+        	
+        	e.printStackTrace();
+        	Object[] p = new Object[11];
+    		p[0] = periodFrom;
+    		p[1] = yearFrom;
+    		p[2] = periodTo;
+    		p[3] = yearTo;
+    		p[4] = divOrgs;
+    		p[5] = divGeos;
+    		p[6] = order1;
+    		p[7] = order2;
+    		p[8] = order3;
+    		p[9] = order4;
+    		p[10] = messages;
+            handler.handleException("getReportAPMM",e,userSessionData,p);
+        }
+        return null;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public ReportAPMMByDivisionData getReportAPMMByDivision(String periodFrom,Integer yearFrom,
+    		String periodTo,Integer yearTo,Integer[][] divOrgs,Integer[] divGeos,
+    		int order1, int order2, int order3, int order4,Text messages,
+    		UserSessionData userSessionData) throws Exception {
+        
+    	try{            
+            
+    		FleetReportHome home = FleetReportUtil.getHome();
+            FleetReport fleetReport = home.create();
+            //Integer monthCount = new Integer((12 - Integer.parseInt(periodFrom) + 1) + ((yearTo.intValue() - yearFrom.intValue() - 1) * 12) + Integer.parseInt(periodTo));
+            return new ReportAPMMByDivisionData(fleetReport.getReportAPMMByDivision(periodFrom,yearFrom,periodTo,yearTo,divOrgs,divGeos,order1,order2,order3,order4,messages,userSessionData));
+        
+    	} catch(Exception e){
+    		Object[] p = new Object[11];
+    		p[0] = periodFrom;
+    		p[1] = yearFrom;
+    		p[2] = periodTo;
+    		p[3] = yearTo;
+    		p[4] = divOrgs;
+    		p[5] = divGeos;
+    		p[6] = order1;
+    		p[7] = order2;
+    		p[8] = order3;
+    		p[9] = order4;
+    		p[10] = messages;
+            handler.handleException("getReportAPMMByDivision",e,userSessionData,p);
+        }
+        return null;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public ReportAPMMByPeriodData getReportAPMMByPeriod(String periodFrom, Integer yearFrom, 
+    		String periodTo, Integer yearTo, Integer[][] divOrgs, Integer[][] divGeos, 
+    		int first, int count, Text messages, UserSessionData userSessionData) throws Exception {
+        try{            
+            FleetReportHome home = FleetReportUtil.getHome();
+            FleetReport fleetReport = home.create();
+            Collection list = fleetReport.getReportAPMMByPeriod(periodFrom, yearFrom, periodTo, yearTo,  divOrgs, divGeos, first, count, userSessionData);
+            Iterator it = list.iterator();
+
+            Hashtable unitChart = new Hashtable(); 
+            Hashtable divisionChart = new Hashtable(); 
+            Hashtable subdivisionChart = new Hashtable(); 
+
+            Hashtable units = new Hashtable();
+            while(it.hasNext()) {
+                Object[] data = (Object[])it.next();
+                String key1 = (data[2] == null || data.equals("")) ? "0" : String.valueOf(data[2]);
+                String key2 = String.valueOf(data[4]);
+                Object[] row = {data[3],data[5],data[7],data[0],data[1]};
+                if(units.containsKey(key1)) {
+                    Hashtable divisions = (Hashtable)units.get(key1);
+                    if(divisions.containsKey(key2)) {
+                        Collection rows = (Collection)divisions.get(key2);
+                        rows.add(row);
+                    }else {
+                        Collection rows = new LinkedList();
+                        rows.add(row);
+                        divisions.put(key2,rows);
+                    }
+                }else {
+                    Hashtable divisions = new Hashtable();
+                    Collection rows = new LinkedList();
+                    rows.add(row);
+                    divisions.put(key2,rows);
+                    units.put(key1,divisions);
+                }
+                if(unitChart.containsKey(key1)) {
+                    Object[] column = (Object[])unitChart.get(key1);
+                    column[1] = new Integer(((Integer)data[0]).intValue() + ((Integer)column[1]).intValue()); 
+                    column[2] = new Integer(((Integer)data[1]).intValue() + ((Integer)column[2]).intValue()); 
+                }else {
+                    Object[] column = {data[3],data[0],data[1]};
+                    unitChart.put(key1,column);
+                }
+                if(divisionChart.containsKey(key2)) {
+                    Object[] column = (Object[])divisionChart.get(key2);
+                    column[1] = new Integer(((Integer)data[0]).intValue() + ((Integer)column[1]).intValue()); 
+                    column[2] = new Integer(((Integer)data[1]).intValue() + ((Integer)column[2]).intValue()); 
+                }else {
+                    Object[] column = {data[5],data[0],data[1]};
+                    divisionChart.put(key2,column);
+                }
+                if(subdivisionChart.containsKey(data[6])) {
+                    Object[] column = (Object[])subdivisionChart.get(data[6]);
+                    column[1] = new Integer(((Integer)data[0]).intValue() + ((Integer)column[1]).intValue()); 
+                    column[2] = new Integer(((Integer)data[1]).intValue() + ((Integer)column[2]).intValue()); 
+                }else {
+                    Object[] column = {data[7],data[0],data[1]};
+                    subdivisionChart.put(data[6],column);
+                }
+            }
+            Object[][] result = new Object[list.size()][5];
+            Enumeration en = units.keys();
+            int index = 0;
+            while(en.hasMoreElements()) {
+                Hashtable divisions = (Hashtable)units.get(en.nextElement());
+                Enumeration en2 = divisions.elements();
+                while(en2.hasMoreElements()) {
+                    Iterator rows = ((Collection)en2.nextElement()).iterator();
+                    while(rows.hasNext()) {
+                        result[index] = (Object[])rows.next();
+                        index++;
+                    }
+                }
+            }
+            return new ReportAPMMByPeriodData(result,unitChart,divisionChart,subdivisionChart);
+       
+        } catch(Exception e){
+        	Object[] p = new Object[9];
+        	p[0] = periodFrom;
+        	p[1] = yearFrom;
+        	p[2] = periodTo;
+        	p[3] = yearTo;
+        	p[4] = divOrgs;
+        	p[5] = divGeos;
+        	p[6] = first;
+        	p[7] = count;
+        	p[8] = messages;
+            handler.handleException("getReportAPMMByPeriod",e,userSessionData,p);
+        }
+        return null;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public Collection getReportAccidentType(String frommonth, Integer fromyear, 
+    		String tomonth, Integer toyear, Integer[][] divOrgs, Integer[] divGeos, 
+    		String accidents, UserSessionData userSessionData,int order1,
+    		int order2,int order3,int order4,Text messages) throws Exception {
+    	
+    	try{
+    		
+	        FleetReportHome home = FleetReportUtil.getHome();
+	        FleetReport fleetReport = home.create();
+	        return fleetReport.getReportAccidentType(frommonth,fromyear,tomonth,toyear,divOrgs,divGeos,accidents,userSessionData,order1,order2,order3,order4,messages);
+
+    	}catch(Exception e){
+    		Object[] p = new Object[12];
+        	p[0] = frommonth;
+        	p[1] = fromyear;
+        	p[2] = tomonth;
+        	p[3] = toyear;
+        	p[4] = divOrgs;
+        	p[5] = divGeos;
+        	p[6] = accidents;
+        	p[7] = order1;
+        	p[8] = order2;
+        	p[9] = order3;
+        	p[10] = order4;
+        	p[11] = messages;
+            handler.handleException("getReportAccidentType",e,userSessionData,p);
+    	}
+    	return null;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public Collection getReportIncidentType(String frommonth, Integer fromyear,
+    		String tomonth, Integer toyear, Integer[][] divOrgs, 
+    		Integer[] divGeos, String incidents, UserSessionData userSessionData,
+    		int order1, int order2, int order3, int order4, Text messages) throws Exception {
+    	
+    	try{
+	        FleetReportHome home = FleetReportUtil.getHome();
+	        FleetReport fleetReport = home.create();
+	        return fleetReport.getReportIncidentType(frommonth,fromyear,tomonth,toyear,divOrgs,divGeos,incidents,userSessionData,order1,order2,order3,order4,messages);
+    	}catch(Exception e){
+    		Object[] p = new Object[12];
+        	p[0] = frommonth;
+        	p[1] = fromyear;
+        	p[2] = tomonth;
+        	p[3] = toyear;
+        	p[4] = divOrgs;
+        	p[5] = divGeos;
+        	p[6] = incidents;
+        	p[7] = order1;
+        	p[8] = order2;
+        	p[9] = order3;
+        	p[10] = order4;
+        	p[11] = messages;
+            handler.handleException("getReportIncidentType",e,userSessionData,p);
+    	}
+    	return null;
+    }
+
+    /**
+     * 
+     * @param row
+     * @param result
+     */
+    @SuppressWarnings("unused")
+	private void updateDataAccident(Object[] row, Object[] result) {
+        String consequence = (String) result[3];
+        if(consequence.equals("datatype.fleetconsequences.materialdamage")) {
+            row[1] = new Integer(((Integer)row[1]).intValue() + ((Integer)result[0]).intValue());
+        }else if(consequence.equals("datatype.fleetconsequences.injuredemployee")) {
+            row[2] = new Integer(((Integer)row[2]).intValue() + ((Integer)result[0]).intValue());
+        }else if(consequence.equals("datatype.fleetconsequences.injuredothers")) {
+            row[4] = new Integer(((Integer)row[4]).intValue() + ((Integer)result[0]).intValue());
+        }else if(consequence.equals("datatype.fleetconsequences.deceasedemployee")) {
+            row[5] = new Integer(((Integer)row[5]).intValue() + ((Integer)result[0]).intValue());
+        }else if(consequence.equals("datatype.fleetconsequences.injuredall")) {
+            row[2] = new Integer(((Integer)row[2]).intValue() + ((Integer)result[0]).intValue());
+            row[4] = new Integer(((Integer)row[4]).intValue() + ((Integer)result[0]).intValue());
+        }else if(consequence.equals("datatype.fleetconsequences.deceasedothers")) {
+            row[7] = new Integer(((Integer)row[7]).intValue() + ((Integer)result[0]).intValue());
+        }else if(consequence.equals("datatype.fleetconsequences.decesaedall")) {
+            row[5] = new Integer(((Integer)row[5]).intValue() + ((Integer)result[0]).intValue());
+            row[7] = new Integer(((Integer)row[7]).intValue() + ((Integer)result[0]).intValue());
+        }
+        row[8] = new Integer(((Integer)row[8]).intValue() + ((Integer)result[0]).intValue());
+        row[9] = new Integer(((Integer)row[9]).intValue() + ((Integer)result[1]).intValue());
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetdelete"
+     * @param id Fleet that will be delete
+     * @param userSessionData User logged
+     */
+    public boolean validateDelete(Integer fleetId, UserSessionData userSessionData) throws Exception {
+        try{            
+            FleetReportHome home = FleetReportUtil.getHome();
+            FleetReport fleetReport = home.create();
+            return fleetReport.validateDelete(fleetId,userSessionData);
+        } catch(Exception e){
+        	Object[] p = new Object[1];
+        	p[0] = fleetId;
+            handler.handleException("validateDelete",e,userSessionData,p);
+        }
+        return false;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public ReportMileageData getReportMileage(String fromMonth, Integer fromYear, 
+    		String toMonth, Integer toYear, String fleets, 
+    		UserSessionData userSessionData,int monthCount) throws Exception {
+        
+    	try{            
+            FleetReportHome home = FleetReportUtil.getHome();
+            FleetReport fleetReport = home.create();
+            Collection list = (Collection) fleetReport.getReportMileage(fromMonth,fromYear,toMonth,toYear,fleets,userSessionData);
+            Iterator it = list.iterator();
+            Collection data = new LinkedList();
+            while(it.hasNext()) {
+                data.add(new FleetMileage((Object[])it.next()));
+            }
+            Hashtable periods = fleetReport.getReportIndividualMileage(fromMonth,fromYear,toMonth,toYear,fleets,userSessionData);
+            if(periods.size() > 0) {
+            	Hashtable fleetDivisions = fleetReport.getFleetDivisionsData(fleets, userSessionData);
+	            Enumeration en = periods.keys();
+	            while(en.hasMoreElements()) {
+	                String key = (String)en.nextElement();
+	                if(inRange(key,Integer.parseInt(fromMonth),fromYear.intValue(),Integer.parseInt(toMonth),toYear.intValue())) {
+	                    Hashtable vehicles = (Hashtable)periods.get(key);
+	                    Enumeration en2 = vehicles.elements();
+	                    while(en2.hasMoreElements()) {
+	                        Object[] dataV = (Object[])en2.nextElement();
+	                        FleetMileage mileage = new FleetMileage(key,(VehicleData)dataV[0],(Integer)dataV[1],(Integer)dataV[2],(Integer)dataV[3],(Integer)dataV[4],(Integer)dataV[6], fleetDivisions,(Integer)dataV[5], userSessionData);
+	                        it = data.iterator();
+	                        boolean find = false;
+	                        while(it.hasNext() && !find) {
+	                            FleetMileage element = (FleetMileage)it.next();
+	                            if(element.equalsData(mileage)) {
+	                                element.addData(mileage);
+	                                find = true;
+	                            }
+	                        }
+	                        if(!find) {
+	                            data.add(mileage);
+	                        }
+	                    }
+	                }
+	            }
+            }
+            
+            EventReportHome eventHome = EventReportUtil.getHome();
+            EventReport eventReport = eventHome.create();
+            it = eventReport.getEventCost(fromMonth,fromYear,toMonth,toYear,fleets,userSessionData).iterator();
+            while(it.hasNext()) {
+                EventCostData costData = (EventCostData)it.next();
+                Iterator mileageIt = data.iterator();
+                while(mileageIt.hasNext()) {
+                    FleetMileage element = (FleetMileage)mileageIt.next();
+                    if(element.equalDivisions(costData)) {
+                        element.setAccidentCost(new Integer(element.getAccidentCost().intValue()+costData.getAccidentCost().intValue()));
+                        element.setIncidentCost(new Integer(element.getIncidentCost().intValue()+costData.getIncidentCost().intValue()));
+                        element.setNearmissCost(new Integer(element.getNearmissCost().intValue()+costData.getNearmissCost().intValue()));
+                    }
+                }
+            }
+            ReportMileageData report = new ReportMileageData(data,monthCount,userSessionData); 
+            return report;
+        } catch(Exception e){
+        	
+        	e.printStackTrace();
+    		Object [] p = new Object[6];
+        	p[0] = fromMonth;
+        	p[1] = fromYear;
+        	p[2] = toMonth;
+        	p[3] = toYear;
+        	p[4] = fleets;
+        	p[5] = monthCount;
+            handler.handleException("getReportMileage",e,userSessionData,p);
+        }
+        return null;
+    }
+    
+    private boolean inRange(String key, int fromMonth, int fromYear, int toMonth, int toYear) {
+    	StringTokenizer tokenizer = new StringTokenizer(key,"/");
+    	int month = Integer.parseInt(tokenizer.nextToken());
+    	int year = Integer.parseInt(tokenizer.nextToken());
+    	if(year > toYear || (year == toYear && month > toMonth)) {
+        	return false;
+    	}
+    	if(year < fromYear || (year == fromYear && month < fromMonth)) {
+        	return false;
+    	}
+    	return true;
+	}
+
+
+	/**
+     * 
+     * @param period
+     * @param year
+     * @return
+     */
+    private String getPreviousPeriod(Integer period, Integer year) {
+        if(String.valueOf(period).equals("1")) {
+            period = new Integer(12);
+            year = new Integer(year.intValue() - 1);
+        }else {
+            period = new Integer(period.intValue() - 1);
+        }
+        return String.valueOf(period)+"/"+String.valueOf(year);
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public ReportMileageData getReportMileageTotal(String fromMonth, Integer fromYear, 
+    		String toMonth, Integer toYear, String fleets, 
+    		UserSessionData userSessionData, int monthCount) throws Exception {
+    	
+        try{            
+            FleetReportHome home = FleetReportUtil.getHome();
+            FleetReport fleetReport = home.create();
+            Iterator it = fleetReport.getReportMileageTotal(fromMonth,fromYear,toMonth,toYear,fleets,userSessionData).iterator();
+            Collection data = new LinkedList();
+            int months = (12 - Integer.parseInt(fromMonth) + 1) + ((toYear.intValue() - fromYear.intValue() - 1) * 12) + Integer.parseInt(toMonth);
+            while(it.hasNext()) {
+                FleetMileageTotal total = new FleetMileageTotal((Object[])it.next(),months);
+                Iterator it2 = data.iterator();
+                boolean find = false;
+                while(it2.hasNext() && !find) {
+                    FleetMileageTotal element = (FleetMileageTotal)it2.next();
+                    if(element.equalsData(total)) {
+                        element.addData(total);
+                        find = true;
+                    }
+                }
+                if(!find) {
+                    data.add(total);
+                }
+            }
+            Hashtable periods = fleetReport.getReportIndividualMileage(fromMonth,fromYear,toMonth,toYear,fleets,userSessionData);
+            if(periods.size() > 0) {
+	        	Hashtable fleetDivisions = fleetReport.getFleetDivisionsData(fleets, userSessionData);
+	            Enumeration en = periods.keys();
+	            String prePeriod = getPreviousPeriod(new Integer(fromMonth),fromYear);
+	            while(en.hasMoreElements()) {
+	                String key = (String)en.nextElement();
+	                if(!key.equals(prePeriod)) {
+	                    Hashtable vehicles = (Hashtable)periods.get(key);
+	                    Enumeration en2 = vehicles.elements();
+	                    while(en2.hasMoreElements()) {
+	                        Object[] dataV = (Object[])en2.nextElement();
+	                        FleetMileageTotal total = new FleetMileageTotal(key,(VehicleData)dataV[0],(Integer)dataV[1],(Integer)dataV[2],(Integer)dataV[3],(Integer)dataV[4],(Integer)dataV[6],months, fleetDivisions,(Integer)dataV[5],userSessionData);
+	                        it = data.iterator();
+	                        boolean find = false;
+	                        while(it.hasNext() && !find) {
+	                            FleetMileageTotal element = (FleetMileageTotal)it.next();
+	                            if(element.equalsData(total)) {
+	                                element.addData(total);
+	                                find = true;
+	                            }
+	                        }
+	                        if(!find) {
+	                            data.add(total);
+	                        }
+	                    }
+	                }
+	            }
+            }
+            EventReportHome eventHome = EventReportUtil.getHome();
+            EventReport eventReport = eventHome.create();
+            it = eventReport.getEventTotalCost(fromMonth,fromYear,toMonth,toYear,fleets,userSessionData).iterator();
+            while(it.hasNext()) {
+                EventCostData costData = (EventCostData)it.next();
+                Iterator mileageIt = data.iterator();
+                while(mileageIt.hasNext()) {
+                    FleetMileage element = (FleetMileage)mileageIt.next();
+                    if(element.equalDivisions(costData)) {
+                        element.setAccidentCost(new Integer(element.getAccidentCost().intValue()+costData.getAccidentCost().intValue()));
+                        element.setIncidentCost(new Integer(element.getIncidentCost().intValue()+costData.getIncidentCost().intValue()));
+                        element.setNearmissCost(new Integer(element.getNearmissCost().intValue()+costData.getNearmissCost().intValue()));
+                    }
+                }
+            }
+            return new ReportMileageData(data,monthCount,userSessionData);
+        
+        } catch(Exception e){
+        	e.printStackTrace();
+            Object[] p = new Object[6];
+            p[0] = fromMonth;
+            p[1] = fromYear;
+            p[2] = toMonth;
+            p[3] = toYear;
+            p[4] = fleets;
+            p[5] = monthCount;
+            handler.handleException("getReportMileageTotal",e,userSessionData,p);
+        }
+        return null;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public ReportAccidentCountData getReportAccidentCount(String frommonth, Integer integer, String tomonth, Integer integer2, Integer[][] divOrgs, Integer[][] divGeos, Integer unit, String vehicleType, int i, int j, UserSessionData userSessionData) {
+        return null;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverfleetinsertdata,fleetinsertdata"
+     * @throws Exception
+     */
+    public Calendar getLastPeriod(Integer fleetId,UserSessionData userSessionData,int type) throws Exception {
+        try{            
+            FleetReportHome home = FleetReportUtil.getHome();
+            FleetReport fleetReport = home.create();
+            return fleetReport.getLastPeriod(fleetId,userSessionData,type);
+        } catch(Exception e){
+        	Object[] p = new Object[2];
+        	p[0] = fleetId;
+        	p[1] = type;
+            handler.handleException("getLastPeriod",e,userSessionData,p);
+        }
+        return null;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public ReportNewAPMMByPeriodData getNewReportAPMMByPeriod(String periodFrom, 
+    		Integer yearFrom, String periodTo, Integer yearTo, Integer[][] divOrgs, 
+    		Integer[] divGeos, int type, int order1, int order2, int order3, 
+    		int order4, Text messages, int includes, UserSessionData userSessionData) throws Exception {
+        try{     
+            
+            FleetReportHome home = FleetReportUtil.getHome();
+            FleetReport fleetReport = home.create();
+            Collection apmms = new LinkedList();
+            
+            if(includes == 0 || includes == 1) {
+	            Collection list = fleetReport.getNewReportAPMMByPeriod(periodFrom, yearFrom, periodTo, yearTo,  divOrgs, divGeos, type, order1, order2, order3, order4, userSessionData);
+	            if (list != null){
+		            Iterator it = list.iterator();
+		            while(it.hasNext()) {
+		                Object[] dataObj = (Object[])it.next();
+		                APMMData apmm = new APMMData(dataObj,Integer.parseInt(periodFrom), yearFrom.intValue(), Integer.parseInt(periodTo), yearTo.intValue(), order1, order2, order3, order4, messages);
+		                Iterator itAPMM = apmms.iterator();
+		                boolean find = false;
+		                while(itAPMM.hasNext() && !find) {
+		                    APMMData data = (APMMData)itAPMM.next();
+		                    if(data.equalDivisions(apmm)) {
+		                        find = true;
+		                        data.addData(new APMMDataPeriod(dataObj));
+		                    }
+		                }
+		                if(!find) {
+		                    apmms.add(apmm);
+		                }
+		            }
+	            }
+            }
+
+            if(includes == 0 || includes == 2) {
+	            Hashtable periods = fleetReport.getNewReportAPMMByPeriodIndividual(periodFrom, yearFrom, periodTo, yearTo,  divOrgs, divGeos, type, userSessionData);
+	            String prePeriod = getPreviousPeriod(new Integer(periodFrom),yearFrom);
+	            if(periods.size() > 0 && !periods.containsKey(prePeriod)) {
+	                throw new InvalidDataException("getReportMileage","invalid_month");
+	            }
+	            Enumeration en = periods.keys();
+	            while(en.hasMoreElements()) {
+	                String key = (String)en.nextElement();
+	                if(!key.equals(prePeriod)) {
+	                    Hashtable vehicles = (Hashtable)periods.get(key);
+	                    Enumeration en2 = vehicles.elements();
+	                    while(en2.hasMoreElements()) {
+	                        Object[] dataV = (Object[])en2.nextElement();
+	                        Integer miles = new Integer(((Integer)dataV[2]).intValue() - ((Integer)dataV[1]).intValue());
+	                        APMMData apmmData = new APMMData(key,(VehicleData)dataV[0],miles,(Integer)dataV[3],Integer.parseInt(periodFrom), yearFrom.intValue(), Integer.parseInt(periodTo), yearTo.intValue(), userSessionData, order1, order2, order3, order4, messages);
+	                        Iterator it = apmms.iterator();
+	                        boolean find = false;
+	                        while(it.hasNext() && !find) {
+	                            APMMData element = (APMMData)it.next();
+	                            if(element.equalDivisions(apmmData)) {
+	                                StringTokenizer token = new StringTokenizer(key,"/");
+	                                APMMDataPeriod period = new APMMDataPeriod(new Integer(token.nextToken()),new Integer(token.nextToken()),miles,(Integer)dataV[3]);
+	                                element.addData(period);
+	                                find = true;
+	                            }
+	                        }
+	                        if(!find) {
+	                            apmms.add(apmmData);
+	                        }
+	                    }
+	                }
+	            }
+            }
+            
+            int periodCount = (yearTo.intValue() < yearFrom.intValue()) ? 0 : (12 - Integer.parseInt(periodFrom) + 1) + ((yearTo.intValue() - yearFrom.intValue() - 1) * 12) + Integer.parseInt(periodTo);
+            return new ReportNewAPMMByPeriodData(apmms,periodCount);
+        } catch(Exception e){
+        	
+        	Object[] p = new Object[12];
+        	p[0] = periodFrom;
+        	p[1] = yearFrom;
+        	p[2] = periodTo;
+        	p[3] = yearTo;
+        	p[4] = divOrgs;
+        	p[5] = divGeos;
+        	p[6] = type;
+        	p[7] = order1;
+        	p[8] = order2;
+        	p[9] = order3;
+        	p[10] = order4;
+        	p[11] = messages;      	
+        	
+            handler.handleException("getNewReportAPMMByPeriod",e,userSessionData,p);
+        }
+        return null;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public ReportNewAPMMByPeriodData getAcumulatedReportAPMMByPeriod(String periodFrom, 
+    		Integer yearFrom, String periodTo, Integer yearTo, Integer[][] divOrgs, 
+    		Integer[] divGeos, int type, int order1, int order2, 
+    		int order3, int order4, Text messages, int includes, UserSessionData userSessionData) throws Exception {
+        try{     
+            
+            Collection apmms = new LinkedList();
+            FleetReportHome home = FleetReportUtil.getHome();
+            FleetReport fleetReport = home.create();
+
+            if(includes == 0 || includes == 1) {
+	            Collection list = fleetReport.getNewReportAPMMByPeriod(periodFrom, yearFrom, periodTo, yearTo,  divOrgs, divGeos, type, order1, order2, order3, order4, userSessionData);
+	            Iterator it = list.iterator();
+	            while(it.hasNext()) {
+	                Object[] dataObj = (Object[])it.next();
+	                APMMAcumulatedData apmm = new APMMAcumulatedData(dataObj,Integer.parseInt(periodFrom), yearFrom.intValue(), Integer.parseInt(periodTo), yearTo.intValue(), order1, order2, order3, order4, messages);
+	                Iterator itAPMM = apmms.iterator();
+	                boolean find = false;
+	                while(itAPMM.hasNext() && !find) {
+	                    APMMAcumulatedData data = (APMMAcumulatedData)itAPMM.next();
+	                    if(data.equalDivisions(apmm)) {
+	                        find = true;
+	                        data.addData(new APMMDataPeriod(dataObj));
+	                    }
+	                }
+	                if(!find) {
+	                    apmms.add(apmm);
+	                }
+	            }
+            }
+            
+            if(includes == 0 || includes == 2) {
+	            Hashtable periods = fleetReport.getNewReportAPMMByPeriodIndividual(periodFrom, yearFrom, periodTo, yearTo,  divOrgs, divGeos, type, userSessionData);
+	            String prePeriod = getPreviousPeriod(new Integer(periodFrom),yearFrom);
+	            if(periods.size() > 0 && !periods.containsKey(prePeriod)) {
+	                throw new InvalidDataException("getAcumulatedReportAPMMByPeriod","invalid_month");
+	            }
+	            Enumeration en = periods.keys();
+	            while(en.hasMoreElements()) {
+	                String key = (String)en.nextElement();
+	                if(!key.equals(prePeriod)) {
+	                    Hashtable vehicles = (Hashtable)periods.get(key);
+	                    Enumeration en2 = vehicles.elements();
+	                    while(en2.hasMoreElements()) {
+	                        Object[] dataV = (Object[])en2.nextElement();
+	                        Integer miles = new Integer(((Integer)dataV[2]).intValue() - ((Integer)dataV[1]).intValue());
+	                        APMMAcumulatedData apmmData = new APMMAcumulatedData(key,(VehicleData)dataV[0],miles,(Integer)dataV[3],Integer.parseInt(periodFrom), yearFrom.intValue(), Integer.parseInt(periodTo), yearTo.intValue(),userSessionData,order1,order2,order3,order4,messages);
+	                        Iterator it = apmms.iterator();
+	                        boolean find = false;
+	                        while(it.hasNext() && !find) {
+	                            APMMAcumulatedData element = (APMMAcumulatedData)it.next();
+	                            if(element.equalDivisions(apmmData)) {
+	                                StringTokenizer token = new StringTokenizer(key,"/");
+	                                APMMDataPeriod period = new APMMDataPeriod(new Integer(token.nextToken()),new Integer(token.nextToken()),miles,(Integer)dataV[3]);
+	                                element.addData(period);
+	                                find = true;
+	                            }
+	                        }
+	                        if(!find) {
+	                            apmms.add(apmmData);
+	                        }
+	                    }
+	                }
+	            }
+            }
+            
+            int periodCount = (yearTo.intValue() < yearFrom.intValue()) ? 0 : (12 - Integer.parseInt(periodFrom) + 1) + ((yearTo.intValue() - yearFrom.intValue() - 1) * 12) + Integer.parseInt(periodTo);
+            return new ReportNewAPMMByPeriodData(apmms,periodCount);
+        } catch(Exception e){
+        	Object[] p = new Object[11];
+        	p[0] = periodFrom;
+        	p[1] = yearFrom;
+        	p[2] = periodTo;
+        	p[3] = yearTo;
+        	p[4] = divOrgs;
+        	p[5] = divGeos;
+        	p[6] = type;
+        	p[7] = order1;
+        	p[8] = order2;
+        	p[9] = order3;
+        	p[10] = order4;
+        	
+            handler.handleException("getAcumulatedReportAPMMByPeriod",e,userSessionData,p);
+        }
+        return null;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public String[] getFleetDescriptions(String fleet, UserSessionData userSessionData) throws Exception {
+        try{            
+            FleetReportHome home = FleetReportUtil.getHome();
+            FleetReport fleetReport = home.create();
+            return fleetReport.getFleetDescriptions(fleet,userSessionData);
+        } catch(Exception e){
+        	Object[] p = new Object[1];
+        	p[0] = fleet;
+            handler.handleException("getFleetDescriptions",e,userSessionData,p);
+        }
+        return null;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "fleetview,administrator"
+     */
+    public Collection getObservations(Integer fleetId,UserSessionData userSessionData)throws Exception 
+    {
+        try
+        {                
+           	FleetReportHome home = FleetReportUtil.getHome();
+        	FleetReport fleetReport = home.create();
+            return fleetReport.getObservations(fleetId,userSessionData);
+            
+        } catch(Exception e){
+        	Object[] p = new Object[1];
+        	p[0] = fleetId;
+            handler.handleException("getObservations",e,userSessionData,p);
+        }
+        return null;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetedit,fleetinsertdata"
+     */
+    public Collection findConsumedFuel(Integer fleetId,Integer period,Integer year,UserSessionData userSessionData) throws Exception{
+        if (fleetId == null) {
+            throw new InvalidDataException("findConsumedFuel","fleetId = null");
+        }
+        if (period == null) {
+            throw new InvalidDataException("findConsumedFuel","period = null");
+        }
+        if (year == null) {
+            throw new InvalidDataException("findConsumedFuel","year = null");
+        }
+        if (userSessionData == null) {
+            throw new DeslogedException("findConsumedFuel","userSessionData = null");
+        }
+        try{            
+            FleetReportHome home = FleetReportUtil.getHome();
+            FleetReport fleetReport = home.create();
+            return fleetReport.findConsumedFuel(fleetId,period,year,userSessionData);
+        } catch(Exception e){
+        	Object[] p = new Object[3];
+        	p[0] = fleetId;
+        	p[1] = period;
+        	p[2] = year;
+            handler.handleException("findConsumedFuel",e,userSessionData,p);
+        }
+        return null;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public Collection findConsumedFuelReport(String periodFrom,Integer yearFrom, 
+    		String periodTo, Integer yearTo, Integer[][] divOrgs, 
+    		Integer[][] divGeos, int order1, int order2, int order3, 
+    		int order4, UserSessionData userSessionData, Text messages) throws Exception {
+        try{            
+            FleetReportHome home = FleetReportUtil.getHome();
+            FleetReport fleetReport = home.create();
+            return fleetReport.findConsumedFuelReport(periodFrom,yearFrom,periodTo,yearTo,divOrgs,divGeos,order1,order2,order3,order4,userSessionData,messages);
+        } catch(Exception e){
+        	Object[] p = new Object[11];
+        	p[0] = periodFrom;
+        	p[1] = yearFrom;
+        	p[2] = periodTo;
+        	p[3] = yearTo;
+        	p[4] = divOrgs;
+        	p[5] = divGeos;
+        	p[6] = order1;
+        	p[7] = order2;
+        	p[8] = order3;
+        	p[9] = order4;
+        	p[10] = messages;
+            handler.handleException("findConsumedFuelReport",e,userSessionData,p);
+        }
+        return null;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public ReportIndividualConsumedFuelData getIndividualConsumedFuel(String periodFrom, 
+    		Integer yearFrom, String periodTo, Integer yearTo, Integer[][] divOrgs, 
+    		Integer[] divGeos, int order1, int order2, int order3, int order4,
+    		UserSessionData userSessionData,Text messages) throws Exception {
+        try{            
+            FleetReportHome home = FleetReportUtil.getHome();
+            FleetReport fleetReport = home.create();
+            Collection data = new LinkedList();
+
+            Hashtable periods = fleetReport.getReportIndividualFuel(periodFrom,yearFrom,periodTo,yearTo,divOrgs,divGeos,userSessionData);
+            Enumeration en = periods.keys();
+            String prePeriod = getPreviousPeriod(new Integer(periodFrom),yearFrom);
+            int[][] principal = userSessionData.getFilter().getPrincipalDivOrgs();
+            while(en.hasMoreElements()) {
+                String key = (String)en.nextElement();
+                if(!key.equals(prePeriod)) {
+                    Hashtable vehicles = (Hashtable)periods.get(key);
+                    Enumeration en2 = vehicles.elements();
+                    while(en2.hasMoreElements()) {
+                        Object[] dataV = (Object[])en2.nextElement();
+                        VehicleData vehicle = (VehicleData)dataV[0];
+                        String divOrg1Name = null;
+                        Integer divOrg1Id = null;
+                        switch(order1) {
+                            case 3:
+                                divOrg1Name = messages.getText(vehicle.getCountryName());
+                                divOrg1Id = vehicle.getCountryId();
+                                break;
+                            case 0:case 1:case 2:
+                                divOrg1Name = vehicle.getData(principal[order1][0],principal[order1][1]);    
+                                divOrg1Id = vehicle.getIdData(principal[order1][0],principal[order1][1]);    
+                                break;
+                        }
+                        String divOrg2Name = null;
+                        Integer divOrg2Id = null;
+                        switch(order2) {
+                            case 3:
+                                divOrg2Name = messages.getText(vehicle.getCountryName());
+                                divOrg2Id = vehicle.getCountryId();
+                                break;
+                            case 0:case 1:case 2:
+                                divOrg2Name = vehicle.getData(principal[order2][0],principal[order2][1]);    
+                                divOrg2Id = vehicle.getIdData(principal[order2][0],principal[order2][1]);    
+                                break;
+                        }
+                        String divOrg3Name = null;
+                        Integer divOrg3Id = null;
+                        switch(order3) {
+                            case 3:
+                                divOrg3Name = messages.getText(vehicle.getCountryName());
+                                divOrg3Id = vehicle.getCountryId();
+                                break;
+                            case 0:case 1:case 2:
+                                divOrg3Name = vehicle.getData(principal[order3][0],principal[order3][1]);    
+                                divOrg3Id = vehicle.getIdData(principal[order3][0],principal[order3][1]);    
+                                break;
+                        }
+                        String divOrg4Name = null;
+                        Integer divOrg4Id = null;
+                        switch(order4) {
+                            case 3:
+                                divOrg4Name = messages.getText(vehicle.getCountryName());
+                                divOrg4Id = vehicle.getCountryId();
+                                break;
+                            case 0:case 1:case 2:
+                                divOrg4Name = vehicle.getData(principal[order4][0],principal[order4][1]);    
+                                divOrg4Id = vehicle.getIdData(principal[order4][0],principal[order4][1]);    
+                                break;
+                        }
+                        int miles = (((Integer)dataV[2]).intValue() == 0 || 
+                                ((Integer)dataV[1]).intValue() == 0) ? 0 : 
+                                    ((Integer)dataV[2]).intValue() - ((Integer)dataV[1]).intValue();
+                        IndividualConsumedFuelData apmm = new IndividualConsumedFuelData(divOrg1Id,divOrg1Name,
+                                divOrg2Id,divOrg2Name,divOrg3Id,divOrg3Name,divOrg4Id,divOrg4Name,
+                                new Integer(miles),(Integer)dataV[3],(String)dataV[4],vehicle.getType().getResourceBundleId(),vehicle.getId()); 
+                        Iterator it = data.iterator();
+                        boolean find = false;
+                        while(it.hasNext() && !find) {
+                            IndividualConsumedFuelData element = (IndividualConsumedFuelData)it.next();
+                            if(element.equalsData(apmm)) {
+                                element.addData(apmm,vehicle.getId());
+                                find = true;
+                            }
+                        }
+                        if(!find) {
+                            data.add(apmm);
+                        }
+                    }
+                }
+            }
+
+            return new ReportIndividualConsumedFuelData(data,messages);
+            
+        } catch(Exception e){
+        	
+        	Object[] p = new Object[11];
+        	p[0] = periodFrom;
+        	p[1] = yearFrom;
+        	p[2] = periodTo;
+        	p[3] = yearTo;
+        	p[4] = divOrgs;
+        	p[5] = divGeos;
+        	p[6] = order1;
+        	p[7] = order2;
+        	p[8] = order3;
+        	p[9] = order4;
+        	p[10] = messages;
+            handler.handleException("getIndividualConsumedFuel",e,userSessionData,p);
+        }
+        return null;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public ReportKmLtrData getKmLtrReport(String periodFrom, Integer yearFrom, 
+    		String periodTo, Integer yearTo, Integer[][] divOrgs, 
+    		Integer[] divGeos, UserSessionData userSessionData,Text messages) throws Exception {
+        try{            
+            FleetReportHome home = FleetReportUtil.getHome();
+            FleetReport fleetReport = home.create();
+            Collection data = new LinkedList();
+
+            Hashtable periods = fleetReport.getReportIndividualFuel(periodFrom,yearFrom,periodTo,yearTo,divOrgs,divGeos,userSessionData);
+            Enumeration en = periods.keys();
+            String prePeriod = getPreviousPeriod(new Integer(periodFrom),yearFrom);
+            int[][] principal = userSessionData.getFilter().getPrincipalDivOrgs();
+            while(en.hasMoreElements()) {
+                String key = (String)en.nextElement();
+                if(!key.equals(prePeriod)) {
+                    Hashtable vehicles = (Hashtable)periods.get(key);
+                    Enumeration en2 = vehicles.elements();
+                    while(en2.hasMoreElements()) {
+                        Object[] dataV = (Object[])en2.nextElement();
+                        VehicleData vehicle = (VehicleData)dataV[0];
+                        String divOrg1Name = null;
+                        Integer divOrg1Id = null;
+                        if(principal[0][0] != 0) {
+                            divOrg1Name = vehicle.getData(principal[0][0],principal[0][1]);    
+                            divOrg1Id = vehicle.getIdData(principal[0][0],principal[0][1]);
+                        }
+                        String divOrg2Name = null;
+                        Integer divOrg2Id = null;
+                        if(principal[1][0] != 0) {
+                            divOrg2Name = vehicle.getData(principal[1][0],principal[1][1]);    
+                            divOrg2Id = vehicle.getIdData(principal[1][0],principal[1][1]);
+                        }
+                        String divOrg3Name = null;
+                        Integer divOrg3Id = null;
+                        if(principal[2][0] != 0) {
+                            divOrg3Name = vehicle.getData(principal[2][0],principal[2][1]);    
+                            divOrg3Id = vehicle.getIdData(principal[2][0],principal[2][1]);
+                        }
+                        String divOrg4Name = messages.getText(vehicle.getCountryName());
+                        Integer divOrg4Id = vehicle.getCountryId();
+                        int miles = (((Integer)dataV[2]).intValue() == 0 || ((Integer)dataV[1]).intValue() == 0) ? 0 : ((Integer)dataV[2]).intValue() - ((Integer)dataV[1]).intValue();
+                        KmLtrFuelData klData = new KmLtrFuelData(vehicle.getId(),divOrg1Id,divOrg1Name,divOrg2Id,divOrg2Name,divOrg3Id,divOrg3Name,divOrg4Id,divOrg4Name,new Integer(miles),(Integer)dataV[3],(String)dataV[4],vehicle.getType().getResourceBundleId(),vehicle.getMatricula(),vehicle.getTrade().getResourceBundleId(),vehicle.getModel()); 
+                        Iterator it = data.iterator();
+                        boolean find = false;
+                        while(it.hasNext() && !find) {
+                            KmLtrFuelData element = (KmLtrFuelData)it.next();
+                            if(element.equalsData(klData)) {
+                                element.addData(klData);
+                                find = true;
+                            }
+                        }
+                        if(!find) {
+                            data.add(klData);
+                        }
+                    }
+                }
+            }
+
+            return new ReportKmLtrData(data,messages);
+            
+        } catch(Exception e){
+        	Object[] p = new Object[7];
+        	p[0] = periodFrom;
+        	p[1] = yearFrom;
+        	p[2] = periodTo;
+        	p[3] = yearTo;
+        	p[4] = divOrgs;
+        	p[5] = divGeos;
+        	p[6] = messages;
+            handler.handleException("getKmLtrReport",e,userSessionData,p);
+        }
+        return null;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "driverodometer"
+     */
+    public int findFleetPeriodType(Integer vehicleId,UserSessionData userSessionData) throws Exception {
+        MemoryLog.getInstance().log(MemoryLog.START,"findFleetPeriodType",this.getClass());
+        int type = 0;
+        try {
+            type = FleetReportUtil.getHome().create().findFleetPeriodType(vehicleId,userSessionData);
+        }catch(Exception e) {
+        	Object[] p = new Object[1];
+        	p[0] = vehicleId;
+            handler.handleException("findFleetPeriodType",e,userSessionData,p);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"findFleetPeriodType",this.getClass());
+        return type;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "driverodometer"
+     */
+    public Calendar findNextOdometer(Integer vehicleId,UserSessionData userSessionData) throws Exception {
+        MemoryLog.getInstance().log(MemoryLog.START,"findNextOdometer",this.getClass());
+        Calendar calendar = null;
+        try {
+            calendar = FleetReportUtil.getHome().create().findNextOdometer(vehicleId,userSessionData);
+        }catch(Exception e) {
+        	Object[] p = new Object[1];
+        	p[0] = vehicleId;
+            handler.handleException("findNextOdometer",e,userSessionData,p);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"findNextOdometer",this.getClass());
+        return calendar;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "driverodometer"
+     */
+    public Calendar findLastOdometer(Integer vehicleId,UserSessionData userSessionData) throws Exception {
+        MemoryLog.getInstance().log(MemoryLog.START,"findLastOdometer",this.getClass());
+        Calendar calendar = null;
+        try {
+            calendar = FleetReportUtil.getHome().create().findLastOdometer(vehicleId,userSessionData);
+        }catch(Exception e) {
+        	Object[] p = new Object[1];
+        	p[0] = vehicleId;
+            handler.handleException("findLastOdometer",e,userSessionData,p);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"findLastOdometer",this.getClass());
+        return calendar;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverodometer,fleetedit"
+     */
+    public Collection findVehicleOdometers(Integer vehicle,UserSessionData userSessionData) throws Exception {
+    	Collection odometers = new LinkedList();
+        try {
+        	FleetReport fleetReport = FleetReportUtil.getHome().create(); 
+        	odometers = fleetReport.findVehicleOdometers(String.valueOf(vehicle),userSessionData);
+        }catch(Exception e) {
+    		Object[] p = {vehicle};
+            handler.handleException("findVehicleOdometers",e,userSessionData,p);
+        }
+        return odometers;
+    }
+    
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverodometer"
+     */
+    public String[] findVehicleOdometerValues(VehicleData data,String period,
+    		String year,UserSessionData userSessionData) throws Exception {
+        
+    	MemoryLog.getInstance().log(MemoryLog.START,"findVehicleOdometerValues",this.getClass());
+        String[] result = {"","","","","","","","","",""};
+        
+        try {
+            
+        	FleetReport fleetReport = FleetReportUtil.getHome().create(); 
+            Collection lastValues = fleetReport.findVehicleOdometers(String.valueOf(data.getId()),period,year,userSessionData);
+            Iterator it = lastValues.iterator();
+            boolean next = true;
+            String type = "";
+            if(it.hasNext() && next) {
+                Object[] odometerData = (Object[])it.next();
+                Hashtable hash = fleetReport.getVehicleOdometerType(data.getId(),userSessionData);  
+                String key = data.getCountryId()+"-"+data.getDivOrgId(0)+"-"+data.getDivOrgId(1)+"-"+data.getDivOrgId(2);
+                type = (hash.containsKey(key)) ? (String)hash.get(key) : (String)hash.elements().nextElement();
+                if(((Integer)odometerData[1]).intValue() == Integer.parseInt(period) && ((Integer)odometerData[2]).intValue() == Integer.parseInt(year)) {
+                    result[0] = String.valueOf(odometerData[0]);
+                    result[1] = String.valueOf(odometerData[3]);
+                    result[2] = String.valueOf(odometerData[4]);
+                    result[8] = (String) odometerData[6];
+                    result[9] = (odometerData[5] == null) ? null : String.valueOf(odometerData[5]);
+                    if(it.hasNext()) {
+                        odometerData = (Object[])it.next();
+                        result[3] = String.valueOf(odometerData[0]);
+                        result[4] = String.valueOf(odometerData[1]);
+                        result[5] = String.valueOf(odometerData[2]);
+                    }
+                }else {
+                    result[3] = String.valueOf(odometerData[0]);
+                    result[4] = String.valueOf(odometerData[1]);
+                    result[5] = String.valueOf(odometerData[2]);
+                    next = false;
+                }
+            }
+            if(result[0] != null && result[0].length() > 0 && result[3] != null && result[3].length() > 0) {
+            	if(type.equals("datatype.distanceunit.miles")) {
+            		result[6] = String.valueOf(Integer.parseInt(result[0]) - Integer.parseInt(result[3]));
+            		result[7] = String.valueOf((int)(Integer.parseInt(result[6]) * Util.KMS_TO_MILES));
+            	}else {
+            		result[7] = String.valueOf(Integer.parseInt(result[0]) - Integer.parseInt(result[3]));
+            		result[6] = String.valueOf((int)(Integer.parseInt(result[7]) / Util.KMS_TO_MILES));
+            	}
+            }
+        }catch(Exception e) {
+        	
+    		Object[] p = new Object[3];
+        	p[0] = data;
+        	p[1] = period;
+        	p[2] = year;
+            handler.handleException("findVehicleOdometerValues",e,userSessionData,p);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"findVehicleOdometerValues",this.getClass());
+        return result;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "driverodometer"
+     */
+    public FleetData findFleetVehicle(Integer vehicleId,UserSessionData userSessionData) throws Exception {
+        MemoryLog.getInstance().log(MemoryLog.START,"findFleetVehicle",this.getClass());
+        FleetData data = null;
+        try {
+            data = FleetReportUtil.getHome().create().findFleetVehicle(vehicleId,userSessionData);
+        }catch(Exception e) {
+        	Object[] p = new Object[1];
+        	p[0] = vehicleId;
+            handler.handleException("findFleetVehicle",e,userSessionData,p);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"findFleetVehicle",this.getClass());
+        return data;
+    }
+
+    /**
+     * Trae los vehículos asociados a una flota
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetview,driverodometer"
+     */
+    public Collection findFleetVehicles(Integer fleetId,UserSessionData userSessionData) throws Exception {
+        MemoryLog.getInstance().log(MemoryLog.START,"findFleetVehicles",this.getClass());
+        Collection data = null;
+        try {
+            data = FleetReportUtil.getHome().create().findFleetVehicles(fleetId,userSessionData);
+        }catch(Exception e) {
+        	Object[] p = new Object[1];
+        	p[0] = fleetId;
+        	
+            handler.handleException("findFleetVehicle",e,userSessionData,p);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"findFleetVehicles",this.getClass());
+        return data;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public Object[][] getOdometersLog(Date start,Date end,String fromMonth, 
+    		String fromYear, String toMonth, String toYear, 
+    		String plate, int status, String use, String type, 
+    		String fleets, UserSessionData userSessionData) throws Exception {
+        MemoryLog.getInstance().log(MemoryLog.START,"getOdometersLog",this.getClass());
+        Object[][] data = null;
+        try {
+            data = FleetReportUtil.getHome().create().getOdometersLog(start,end,fromMonth,fromYear,toMonth, toYear,plate,status,use,type,fleets,userSessionData);
+        }catch(Exception e) {
+        	Object[] p = new Object[11];        	 
+    		p[0] = start;
+        	p[1] = end;
+        	p[2] = fromMonth;
+        	p[3] = fromYear;
+        	p[4] = toMonth;
+        	p[5] = toYear;
+        	p[6] = plate;
+        	p[7] = status;
+        	p[8] = use;
+        	p[9] = type;
+        	p[10] = fleets;
+            handler.handleException("getOdometersLog",e,userSessionData,p);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getOdometersLog",this.getClass());
+        return data;
+    }
+        
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetinsertdata"
+     */
+    public Object[] findFleetData(Integer fleet,UserSessionData userSessionData) throws Exception {
+        MemoryLog.getInstance().log(MemoryLog.START,"findFleetData",this.getClass());
+        Object[] data = null;
+        try {
+            data = FleetReportUtil.getHome().create().findFleetData(fleet,userSessionData);
+        }catch(Exception e) {
+        	Object[] p = new Object[1];
+        	p[0] = fleet;
+            handler.handleException("findFleetData",e,userSessionData,p);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"findFleetData",this.getClass());
+        return data;
+    }
+
+    /**
+     * @throws Exception
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetinsertdata"
+     */
+    public Collection getFleetDivisions(Integer fleet, UserSessionData userSessionData) throws Exception {
+        MemoryLog.getInstance().log(MemoryLog.START,"getFleetDivisions",this.getClass());
+        Collection data = new LinkedList();
+        try {
+            data = FleetReportUtil.getHome().create().getFleetDivisions(fleet,userSessionData);
+        }catch(Exception e) {
+        	Object[] p = new Object[1];
+        	p[0] = fleet;
+            handler.handleException("getFleetDivisions",e,userSessionData,p);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getFleetDivisions",this.getClass());
+        return data;
+    }
+    
+    /**
+     * @throws Exception
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetinsertdata"
+     */
+    public Collection getVehiclesByFleet(Integer fleet,UserSessionData userSessionData) throws Exception {
+        MemoryLog.getInstance().log(MemoryLog.START,"getVehiclesByFleet",this.getClass());
+        Collection data = new LinkedList();
+        try {
+            data = FleetReportUtil.getHome().create().getVehiclesByFleet(fleet,userSessionData);
+        }catch(Exception e) {
+        	Object[] p = new Object[1];
+        	p[0] = fleet;
+            handler.handleException("getVehiclesByFleet",e,userSessionData,p);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getVehiclesByFleet",this.getClass());
+        return data;
+    }
+
+    /**
+     * @throws Exception
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetinsertdata"
+     */
+    public Hashtable getOdometerType(Integer fleet,UserSessionData userSessionData) throws Exception {
+        MemoryLog.getInstance().log(MemoryLog.START,"getOdometerType",this.getClass());
+        Hashtable data = new Hashtable();
+        try {
+            data = FleetReportUtil.getHome().create().getOdometerType(fleet,userSessionData);
+        }catch(Exception e) {
+        	Object[] p = new Object[1];
+        	p[0] = fleet;
+            handler.handleException("getOdometerType",e,userSessionData,p);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getOdometerType",this.getClass());
+        return data;
+    }
+
+    /**
+     * @throws Exception
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetinsertdata"
+     */
+    public Collection getExcludedOdometer(Integer fleet,Integer period,Integer year,
+    		Integer country,Integer divorg1,Integer divorg2,Integer divorg3,
+    		UserSessionData userSessionData) throws Exception {
+        MemoryLog.getInstance().log(MemoryLog.START,"getExcludedOdometer",this.getClass());
+        Collection data = new LinkedList();
+        try {
+            data = FleetReportUtil.getHome().create().getExcludedOdometer(fleet,period,year,country,divorg1,divorg2,divorg3,userSessionData);
+        }catch(Exception e) {
+        	Object[] p = new Object[7];
+        	p[0] = fleet;
+        	p[1] = period;
+        	p[2] = year;
+        	p[3] = country;
+        	p[4] = divorg1;
+        	p[5] = divorg2;
+        	p[6] = divorg3;
+        	
+            handler.handleException("getExcludedOdometer",e,userSessionData,p);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getExcludedOdometer",this.getClass());
+        return data;
+    }
+
+    /**
+     * @throws Exception
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetview"
+     */
+    public Collection getFleetDivisionData(Integer fleet,UserSessionData userSessionData) throws Exception {
+        MemoryLog.getInstance().log(MemoryLog.START,"getFleetDivisionData",this.getClass());
+        Collection list = new LinkedList();
+        try {
+            list = FleetReportUtil.getHome().create().getFleetDivisionData(fleet,userSessionData);
+        }catch(Exception e) {
+        	Object[] p = new Object[1];
+        	p[0] = fleet;
+            handler.handleException("getFleetDivisionData",e,userSessionData,p);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getFleetDivisionData",this.getClass());
+        return list;
+    }
+
+    /**
+     * @throws Exception
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetview"
+     */
+    public int getFleetType(Integer fleet,UserSessionData userSessionData) throws Exception {
+        MemoryLog.getInstance().log(MemoryLog.START,"getFleetType",this.getClass());
+        int value = 0;
+        try {
+            value = FleetReportUtil.getHome().create().getFleetType(fleet,userSessionData);
+        }catch(Exception e) {
+        	Object[] p = new Object[1];
+        	p[0] = fleet;
+            handler.handleException("getFleetType",e,userSessionData,p);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getFleetType",this.getClass());
+        return value;
+    }
+
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query" 
+     */
+    public Collection kmByTrade(String frommonth, String fromyear, String tomonth, 
+    		String toyear, String plate, int i, Integer[][] divOrgs, 
+    		Integer[][] divGeos, UserSessionData userSessionData) throws Exception {
+        try {
+            if (userSessionData == null) {
+                throw new DeslogedException("kmByTrade","userSessionData = null");
+            }
+            
+            Collection list = FleetReportUtil.getHome().create().kmByTradeNew(frommonth,fromyear,tomonth,toyear,plate,i,divOrgs,divGeos,userSessionData);
+            Iterator it = list.iterator();
+            Hashtable values = new Hashtable();
+            while(it.hasNext()) {
+            	Object[] data = (Object[])it.next();
+            	if(values.containsKey(data[12])) {
+            		((KmByTradeDataType)values.get(data[12])).sumData(data);
+            	}else {
+            		values.put(data[12], new KmByTradeDataType(data,Integer.parseInt(frommonth),Integer.parseInt(fromyear)));
+            	}
+            }
+            
+            list = FleetReportUtil.getHome().create().kmByTradeInstitutional(frommonth,fromyear,tomonth,toyear,plate,i,divOrgs,divGeos,userSessionData);
+            it = list.iterator();
+            while(it.hasNext()) {
+            	Object[] data = (Object[])it.next();
+            	try {
+                	if(values.containsKey(data[8])) {
+                		((KmByTradeDataType)values.get(data[8])).sumData2(data);
+                	}else {
+                		values.put(data[8], new KmByTradeDataType(Integer.parseInt(frommonth),Integer.parseInt(fromyear),data));
+                	}
+            	}catch (Exception e) {
+					e.printStackTrace();
+				}
+            }
+            
+            Collection valueList = new LinkedList();
+            Enumeration enumeration = values.elements();
+            while(enumeration.hasMoreElements()) {
+            	valueList.add(enumeration.nextElement());
+            }
+            return valueList;
+        } catch (Exception e) {
+        	Object[] p = new Object[8];
+        	p[0] = frommonth;
+        	p[1] = fromyear;
+        	p[2] = tomonth;
+        	p[3] = toyear;
+        	p[4] = plate;
+        	p[5] = i;
+        	p[6] = divOrgs;
+        	p[7] = divGeos;
+        	
+            handler.handleException("kmByTrade", e, userSessionData, p);
+        }
+        return null;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query" 
+     */
+    public Collection getMissingOdometers(String period,String year,
+    		Integer[][] divOrgs,Integer[] divGeos,String plate,
+    		int status,String fleets,UserSessionData userSessionData) throws Exception {
+    	try {
+            if (userSessionData == null) {
+                throw new DeslogedException("getMissingOdometers","userSessionData = null");
+            }
+            return FleetReportUtil.getHome().create().getMissingOdometers(period,year,divOrgs,divGeos,plate,status,fleets,userSessionData);
+        } catch (Exception e) {
+        	Object[] p = new Object[7];
+        	p[0]= period;
+        	p[1] = year;
+        	p[2] = divOrgs;
+        	p[3] = divGeos;
+        	p[4] = plate;
+        	p[5] = status;
+        	p[6] = fleets;
+            handler.handleException("getMissingOdometers", e, userSessionData, p);
+        }
+        return new LinkedList();
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverodometer"
+     */
+    public Integer[][] getLastTwoOdometerValues(Integer vehicle, Integer period,
+    		Integer year,UserSessionData userSessionData) throws Exception {
+    	try {
+            if (userSessionData == null) {
+                throw new DeslogedException("getLastTwoOdometerValues","userSessionData = null");
+            }
+            return FleetReportUtil.getHome().create().getLastOdometers(vehicle,period,year,userSessionData);
+        } catch (Exception e) {
+        	Object[] p = new Object[3];
+        	p[0] = vehicle;
+        	p[1] = period;
+        	p[2] = year;
+            handler.handleException("getLastTwoOdometerValues", e, userSessionData, p);
+        }
+        return null;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverodometer"
+     */
+    public Hashtable getFleetLastTwoOdometerValues(String fleet,String period,String year,UserSessionData userSessionData) throws Exception {
+    	Hashtable result = new Hashtable();
+    	Hashtable hash = new Hashtable();
+    	try {
+    		FleetReport fleetReport = FleetReportUtil.getHome().create();
+    		Collection vehicles = fleetReport.getVehiclesByFleet(new Integer(fleet), userSessionData);
+    		if(vehicles != null && vehicles.size() > 0) {
+    			Iterator it = vehicles.iterator();
+    			while(it.hasNext()) {
+    				Object[] data = (Object[])it.next();
+    				Object[] newData = {data[0],data[1],null,null,null,null,null,null};
+    				hash.put(data[0], newData);
+    			}
+    			
+    			Collection periodOdometers = fleetReport.getOdometers(fleet, period, year, 0, userSessionData);
+        		if(periodOdometers != null && periodOdometers.size() > 0) {
+        			it = periodOdometers.iterator();
+        			while(it.hasNext()) {
+        				Object[] data = (Object[])it.next();
+        				if(hash.containsKey(data[0])) {
+        					Object[] odometerData = (Object[])hash.get(data[0]);
+        					odometerData[2] = data[1];
+        					odometerData[4] = data[4];
+        					odometerData[5] = data[5];
+        				}
+        			}
+        		}
+        		
+        		Collection lastOdometers = fleetReport.getOdometers(fleet, period, year, -1, userSessionData);
+        		if(lastOdometers != null && lastOdometers.size() > 0) {
+        			it = lastOdometers.iterator();
+        			while(it.hasNext()) {
+        				Object[] data = (Object[])it.next();
+        				if(hash.containsKey(data[0])) {
+        					Object[] odometerData = (Object[])hash.get(data[0]);
+        					odometerData[3] = data[1];
+        					odometerData[6] = data[2];
+        					odometerData[7] = data[3];
+        				}
+        			}
+        		}
+    		}
+    		
+    		Enumeration elements = hash.elements();
+    		while(elements.hasMoreElements()) {
+    			Object[] data = (Object[])elements.nextElement();
+    			result.put(data[1], data);
+    		}
+    	}catch (Exception e) {
+        	Object[] p = {fleet,period,year};
+            handler.handleException("getFleetLastTwoOdometerValues", e, userSessionData, p);
+		}
+    	return result;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverodometer"
+     */
+    public Collection getFleetDrivers(Integer fleet,UserSessionData userSessionData) throws Exception {
+        Hashtable hash = FleetReportUtil.getHome().create().getFleetDrivers(fleet,userSessionData);
+        Collection sended = new LinkedList();
+        
+        int i = 1; 
+        while(sended.size() < hash.size()) {
+	        Enumeration enumeration = hash.keys();
+	
+	        MailSender sender = new MailSender();
+	        while(enumeration.hasMoreElements()) {
+	        	String email = (String)enumeration.nextElement();
+	        	try {
+	            	if(email != null && !sended.contains(email)) {
+//            			sender.send(email,"smtp.cepasafedrive.com","CEPA Data Center","datacenter@cepasafedrive.com","$Dc&28a$","Aten��o Novo Ingresso de Quilometragem - Data Center",getMail((String)hash.get(email)));
+//            			sender.send("jrodriguez@cepasafedrive.com","smtp.cepasafedrive.com","CEPA Data Center","datacenter@cepasafedrive.com","$Dc&28a$","Aten��o Ingressar Quilometragem - Data Center",getMail((String)hash.get(email)));
+           			sender.send(email,"smtp.cepasafedrive.com","CEPA Data Center","datacenter@cepasafedrive.com","$Dc&28a$",
+            					"Comunicado Importante - Ingresso de Quilometragem Abril 2010",
+            					getMail((String)hash.get(email)),AlertConstants.BCC);
+            			
+            			// Mail por error:
+	            		// email = "gbenaderet@cepasafedrive.com";
+	            		//sender.send(email,"smtp.cepasafedrive.com","CEPA Data Center","datacenter@cepasafedrive.com","$Dc&28a$",
+	            		//		"Comunicado Importante - Ingresso de Quilometragem Março 2010",
+	            		//		getMailError((String)hash.get(email)));
+	            		
+	            		System.out.println("ENVIADO "+i+" "+email);
+	            		i++;
+			            sended.add(email);
+	            	}
+	            } catch (Exception e) {
+            		System.out.println("EXCEPCION "+email);
+            		// e.printStackTrace();
+	            }
+	        }
+        }
+            
+        return sended;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverodometer"
+     */
+    public Collection getFleetDrivers(Integer fleet,String period, String year, UserSessionData userSessionData) throws Exception {
+        Hashtable hash = FleetReportUtil.getHome().create().getFleetDriversWithoutOdometer(fleet, period, year, userSessionData);
+        Collection sended = new LinkedList();
+        
+        int i = 1; 
+        while(sended.size() < hash.size()) {
+	        Enumeration enumeration = hash.keys();
+	
+	        MailSender sender = new MailSender();
+	        while(enumeration.hasMoreElements()) {
+	        	String email = (String)enumeration.nextElement();
+	        	try {
+	            	if(email != null && !sended.contains(email)) {
+			
+	            	 sender.send(email,"smtp.cepasafedrive.com","CEPA Data Center","datacenter@cepasafedrive.com","$Dc&28a$","Aten��o Novo Ingresso de Quilometragem - Data Center",getMail((String)hash.get(email)),AlertConstants.BCC);
+//            		 sender.send("jrodriguez@cepasafedrive.com","smtp.cepasafedrive.com","CEPA Data Center","datacenter@cepasafedrive.com","$Dc&28a$","Aten��o Novo Ingresso de Quilometragem - Data Center",getMail((String)hash.get(email)));
+	            			            		
+	            		System.out.println("ENVIADO "+i+" "+email);
+			            i++;
+			            sended.add(email);
+	            	}
+	            } catch (Exception e) {
+            		System.out.println("EXCEPCION "+email);
+            		// e.printStackTrace();
+	            }
+        	}
+        }
+            
+        return sended;
+    }
+
+    
+    /**
+     * 
+     * @param login
+     * @return
+     */
+    private String getMailError(String login){
+    	String mail = "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'>"+
+        "<span style='font-family:Arial;'>"+
+    	"Prezados Usu&aacute;rios,<br/><br/>"+
+    	"Informamos a todos que o e-mail com link enviado no dia 26/03/2010 j&aacute; est&aacute; corrigido e funcionando normalmente.<br/><br/>"+
+    	"Pedimos, por favor, para acessar o link enviado anteriormente e ser&aacute; direcionado ao Data Center.<br/><br/>"+
+    	"O site CEPA Data Center exibir&aacute; uma tela, conforme abaixo:<br/><br/>"+
+    	
+    	"<img src='http://www.cepasafedrive.com/images/moz-screenshot-16.png' /><br/><br/>"+
+    	
+    	"Por favor, ao clicar sobre a placa do ve&iacute;culo poder&aacute; ingressar o od&ocirc;metro e efetuar o preenchimento dos dados.<br/><br/>"+
+    	"Desculpe-nos o transtorno ocorrido e agradecemos a compreens&atilde;o de todos.<br/><br/>"+
+    	"Muito Obrigada,<br/><br/>"+
+    	"Atenciosamente,"+     	
+    	
+    	 "</span> "+
+         "</p> "+
+         "<br> "+
+         "<br> "+
+         "<span style='font-size:10.0pt;font-family:Arial;color:navy'>.................................................</span> "+
+         "<br> "+
+         "<em><b><span style='font-size:10.0pt;font-family:Verdana;color:navy'>Cepa Data Center Brasil</span></b></em> "+
+         "<br> "+
+         "<em><b><span style='font-size:10.0pt;font-family:Verdana;color:navy'>Dpto. Data Center</span></b></em> "+
+         "<br> "+
+         "<em><b><span lang=EN-US style='font-size:10.0pt;font-family:Verdana;color:blue;mso-ansi-language: "+
+         "EN-US'>CEPA BR</span></b></em> "+
+         "<br> "+
+         "<strong> "+
+         "<span lang=EN-US style='font-size:7.5pt;font-family:Verdana;color:navy;mso-ansi-language: "+
+         "EN-US'>Telefone:</span></strong><span class=grame><b><span lang=EN-US "+
+         "style='font-size:7.5pt;font-family:Verdana;color:navy;mso-ansi-language:EN-US'>&nbsp; "+
+         "(</span></b></span> "+
+         "<strong> "+
+         "<span lang=EN-US style='font-size:7.5pt;font-family: Verdana;color:navy;mso-ansi-language:EN-US'>55 12<span class=GramE>)&nbsp;&nbsp;2139 1979</span><br> "+
+         "<span lang=EN-US style='font-size:7.5pt;font-family: Verdana;color:navy;mso-ansi-language:EN-US'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1960</span> "+
+         "</strong> "+
+         "<span lang=EN-US style='mso-ansi-language:EN-US'></span> "+
+         "<br> "+
+         "<strong><span "+
+         "lang=EN-US style='font-size:7.5pt;font-family:Verdana;mso-ansi-language:EN-US; "+
+         "font-weight:normal'><a href='mailto:"+ AlertConstants.FROM_MONSANTO_BR+"'>"+AlertConstants.FROM_MONSANTO_BR+"</a></span></strong><span "+
+         "lang=EN-US style='font-size:10.0pt;font-family:Arial;mso-ansi-language:EN-US'> </span><span "+
+         "lang=EN-US style='mso-ansi-language:EN-US'></span> "+
+
+         "<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=823 "+
+          "style='width:617.25pt;mso-cellspacing:0cm;mso-padding-alt:0cm 0cm 0cm 0cm'> "+
+          "<tr style='mso-yfti-irow:0;mso-yfti-lastrow:yes;mso-yfti-firstrow: yes'> "+
+           "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+           "<p class=MsoNormal align=center style='mso-margin-top-alt:auto;mso-margin-bottom-alt: "+
+           "auto;text-align:center'><span lang=EN-US style='mso-ansi-language:EN-US'>&nbsp;<o:p></o:p></span></p> "+
+           "</td> "+
+           "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+           "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'><span "+
+           "lang=EN-US style='mso-ansi-language:EN-US'>&nbsp;<o:p></o:p></span></p> "+
+           "</td> "+
+           "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+           "<div class=MsoNormal align=center style='text-align:center'><span "+
+           "style='font-size:7.5pt'> "+
+           "<hr size=2 width='100%' align=center> "+
+           "</span></div> "+
+           "<div align=center> "+
+           "<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=827 "+
+           " style='width:620.25pt;mso-cellspacing:0cm;mso-padding-alt:0cm 0cm 0cm 0cm'> "+
+            "<tr style='mso-yfti-irow:0;mso-yfti-lastrow:yes;mso-yfti-firstrow: yes'> "+
+            "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+             "<p class=MsoNormal align=center style='mso-margin-top-alt:auto;mso-margin-bottom-alt: "+
+             "auto;text-align:center'><span lang=EN-GB style='font-size:7.5pt;color:navy; "+
+             "mso-ansi-language:EN-GB'>&nbsp; *Confidentiality Notice*<br> "+
+             "The information contained in this e-mail and any accompanying documents is "+
+             "confidential, may be privileged. It is intended solely for the person "+
+             "and/or entity to whom it is addressed (i.e. those identified in the "+
+             "&quot;To&quot; and &quot;cc&quot; box). The message and any attachments are "+
+             "the property of CEPA International LLC, its group companies, or clients. "+
+             "Unauthorized review, use, disclosure, or copying of this communication, or "+
+             "any part thereof, is strictly prohibited and may be unlawful. If you have "+
+             "received this e-mail in error, please return it and any attachment to the "+
+             "sender and delete the e-mail and attachments and any copy from your system. "+
+             "</span><span style='font-size:7.5pt;color:navy'>CEPA <span class=SpellE>International</span> "+
+             "<span class=SpellE><span class=spelle>thanks</span></span> <span "+
+             "class=SpellE><span class=spelle>you</span></span> <span class=SpellE><span "+
+             "class=spelle>for</span></span> <span class=SpellE><span class=spelle>your</span></span> "+
+             "<span class=SpellE><span class=spelle>cooperation</span></span>. </span></p> "+
+             "<p align=center style='text-align:center'>&nbsp;</p> "+
+             "</td> "+
+            "</tr> "+
+           "</table> "+
+           "</div> "+
+           "<p class=MsoNormal align=center style='text-align:center'><o:p></o:p></p> "+
+           "</td> "+
+          "</tr> "+
+         "</table> ";
+    	
+    	
+    	return mail;
+    }
+    
+    /**
+     * 
+     * @param login
+     * @return
+     */
+    private String getMail(String login) {
+		String mail = "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'>"+
+        "<span style='font-size:10.0pt;font-family:Verdana;'> "+
+        "Caro Usu&aacute;rio: "+
+        "</span> "+
+        "</p> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<span style='font-size:10.0pt;font-family:Verdana;'> "+
+        "Atrav&eacute;s do CEPA Data Center voc&ecirc; j&aacute; reporta os eventos com os "+
+        "ve&iacute;culos e agora tamb&eacute;m ingressar&aacute; sua quilometragem mensalmente com facilidade. "+
+        "</span> "+
+        "</p> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<span style='font-size:10.0pt;font-family:Verdana;'> "+
+        "O sistema estar&aacute; dispon&iacute;vel para ingressar a quilometragem at&eacute; o dia 08."+
+        "</span> "+
+        "</p> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<span style='font-size:10.0pt;font-family:Verdana;'> "+
+        "Lembrando, caso o ve&iacute;culo esteja parado seja qual for o motivo deve-se ingressar "+"" +
+        "o mesmo od&ocirc;metro do m&ecirc;s anterior.  Seja qual for o motivo (revis&atilde;o, "+
+        "manuten&ccedil;&atilde;o ou f&eacute;rias) deve ser ingressada a quilometragem no Data Center."+
+        "</span> "+
+        "</p> "+        
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<b>Por favor, para isso basta clicar no link:</b>  "+
+        "<a href='https://"+AlertConstants.DC_DOMAIN+"/datacenter/home.jsp?login="+login+"'>aqui</a> "+
+        "<span style='font-size:10.0pt;font-family:Verdana;'> "+
+        "</span> "+
+        "</p> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "</p> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<span style='font-size:10.0pt;font-family:Verdana;'> "+
+        "Ap&oacute;s clicar sobre o link, voc&ecirc; ser&aacute; direcionado ao Data Center para "+
+        "ingressar os dados da sua quilometragem."+
+        "</span> "+
+        "</p> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<span style='font-size:10.0pt;font-family:Verdana;'> "+
+        "Siga os passos abaixo:"+
+        "</span> "+
+        "</p> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<span style='font-size:10.0pt;font-family:Verdana;'> "+
+        "- No Data Center clicar sobre a placa do seu ve&iacute;culo;"+
+        "</span> "+
+        "</p> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<span style='font-size:10.0pt;font-family:Verdana;'> "+
+        "- No campo \"Od&ocirc;metro Atual\"  ingressar o od&ocirc;metro atual do seu "+
+        "ve&iacute;culo (neste campo ingressar os dados da quilometragem acumulada "+
+        "percorrida pelo ve&iacute;culo) sem pontos e virgulas;"+
+        "</span> "+
+        "</p> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<span style='font-size:10.0pt;font-family:Verdana;'> "+
+        "- No campo \"N&ordm; de Acidentes\" ingressar o n&uacute;mero total de acidentes ocorridos no m&ecirc;s;"+
+        "</span> "+
+        "</p> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<span style='font-size:10.0pt;font-family:Verdana;'> "+
+        "- No campo \"N&ordm; de Incidentes\" ingressar o n&uacute;mero total de incidentes ocorridos no m&ecirc;s;"+
+        "</span> "+
+        "</p> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<span style='font-size:10.0pt;font-family:Verdana;'> "+
+        "- Para finalizar clicar em \"Aceitar\""+
+        "</span> "+
+        "</p> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<span style='font-size:10.0pt;font-family:Verdana;'> "+
+        "- O Data Center exibir&aacute; uma mensagem confirmando o ingresso dos dados."+
+        "</span> "+
+        "</p> "+
+        "<br> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<span style='font-size:10.0pt;font-family:Verdana;'> "+
+        "Caso ocorra algum problema, por favor, entrar em contato com o CEPA Data Center das 8h00 &agrave;s 17h00: "+
+        "</span> "+
+        "</p> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<span style='font-size:10.0pt;font-family:Verdana;'> "+
+        "Simone ou Let&iacute;cia  "+
+        "</span> "+
+        "</p> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<span style='font-size:10.0pt;font-family:Verdana;'> "+
+        "e-mail: "+ AlertConstants.FROM_MONSANTO_BR +
+        "</span> "+
+        "</p> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<span style='font-size:10.0pt;font-family:Verdana;'> "+
+        "Telefone: (12) 2139-1965"+
+        "</span> "+
+        "</p> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<span style='font-size:10.0pt;font-family:Verdana;'> "+
+        "Atenciosamente, "+
+        "</span> "+
+        "</p> "+
+        "<br> "+
+        "<br> "+
+        "<span style='font-size:10.0pt;font-family:Arial;color:navy'>......................"+
+        "...........................</span> "+
+        "<br> "+
+        "<em><b><span style='font-size:10.0pt;font-family:Verdana;color:navy'>Cepa Data "+
+        "Center Brasil</span></b></em> "+
+        "<br> "+
+        "<em><b><span style='font-size:10.0pt;font-family:Verdana;color:navy'>Dpto. Data Center</span></b></em> "+
+        "<br> "+
+        "<em><b><span lang=EN-US style='font-size:10.0pt;font-family:Verdana;color:blue;mso-ansi-language: "+
+        "EN-US'>CEPA BR</span></b></em> "+
+        "<br> "+
+        "<strong> "+
+        "<span lang=EN-US style='font-size:7.5pt;font-family:Verdana;color:navy;mso-ansi-language: "+
+        "EN-US'>Telefone:</span></strong><span class=grame><b><span lang=EN-US "+
+        "style='font-size:7.5pt;font-family:Verdana;color:navy;mso-ansi-language:EN-US'>&nbsp; "+
+        "(</span></b></span> "+
+        "<strong> "+
+        "<span lang=EN-US style='font-size:7.5pt;font-family: Verdana;color:navy;"+
+        "mso-ansi-language:EN-US'>55 12<span class=GramE>)&nbsp;&nbsp;2139 1979</span><br> "+
+        "<span lang=EN-US style='font-size:7.5pt;font-family: Verdana;color:navy;mso-"+
+        "ansi-language:EN-US'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+
+        "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"+
+        "&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;1960</span> "+
+        "</strong> "+
+        "<span lang=EN-US style='mso-ansi-language:EN-US'></span> "+
+        "<br> "+
+        "<strong><span "+
+        "lang=EN-US style='font-size:7.5pt;font-family:Verdana;mso-ansi-language:EN-US; "+
+        "font-weight:normal'><a href='mailto:monsantodcbr@cepasafedrive.com'>"+
+        "monsantodcbr@cepasafedrive.com</a></span></strong><span "+
+        "lang=EN-US style='font-size:10.0pt;font-family:Arial;mso-ansi-language:EN-US'> </span><span "+
+        "lang=EN-US style='mso-ansi-language:EN-US'></span> "+
+
+        "<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=823 "+
+         "style='width:617.25pt;mso-cellspacing:0cm;mso-padding-alt:0cm 0cm 0cm 0cm'> "+
+         "<tr style='mso-yfti-irow:0;mso-yfti-lastrow:yes;mso-yfti-firstrow: yes'> "+
+          "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+          "<p class=MsoNormal align=center style='mso-margin-top-alt:auto;mso-margin-bottom-alt: "+
+          "auto;text-align:center'><span lang=EN-US style='mso-ansi-language:EN-US'>&nbsp;<o:p></o:p></span></p> "+
+          "</td> "+
+          "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+          "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'><span "+
+          "lang=EN-US style='mso-ansi-language:EN-US'>&nbsp;<o:p></o:p></span></p> "+
+          "</td> "+
+          "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+          "<div class=MsoNormal align=center style='text-align:center'><span "+
+          "style='font-size:7.5pt'> "+
+          "<hr size=2 width='100%' align=center> "+
+          "</span></div> "+
+          "<div align=center> "+
+          "<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=827 "+
+          " style='width:620.25pt;mso-cellspacing:0cm;mso-padding-alt:0cm 0cm 0cm 0cm'> "+
+           "<tr style='mso-yfti-irow:0;mso-yfti-lastrow:yes;mso-yfti-firstrow: yes'> "+
+           "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+            "<p class=MsoNormal align=center style='mso-margin-top-alt:auto;mso-margin-bottom-alt: "+
+            "auto;text-align:center'><span lang=EN-GB style='font-size:7.5pt;color:navy; "+
+            "mso-ansi-language:EN-GB'>&nbsp; *Confidentiality Notice*<br> "+
+            "The information contained in this e-mail and any accompanying documents is "+
+            "confidential, may be privileged. It is intended solely for the person "+
+            "and/or entity to whom it is addressed (i.e. those identified in the "+
+            "&quot;To&quot; and &quot;cc&quot; box). The message and any attachments are "+
+            "the property of CEPA International LLC, its group companies, or clients. "+
+            "Unauthorized review, use, disclosure, or copying of this communication, or "+
+            "any part thereof, is strictly prohibited and may be unlawful. If you have "+
+            "received this e-mail in error, please return it and any attachment to the "+
+            "sender and delete the e-mail and attachments and any copy from your system. "+
+            "</span><span style='font-size:7.5pt;color:navy'>CEPA <span class=SpellE>International</span> "+
+            "<span class=SpellE><span class=spelle>thanks</span></span> <span "+
+            "class=SpellE><span class=spelle>you</span></span> <span class=SpellE><span "+
+            "class=spelle>for</span></span> <span class=SpellE><span class=spelle>your</span></span> "+
+            "<span class=SpellE><span class=spelle>cooperation</span></span>. </span></p> "+
+            "<p align=center style='text-align:center'>&nbsp;</p> "+
+            "</td> "+
+           "</tr> "+
+          "</table> "+
+          "</div> "+
+          "<p class=MsoNormal align=center style='text-align:center'><o:p></o:p></p> "+
+          "</td> "+
+         "</tr> "+
+        "</table> ";
+		return mail;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverodometer"
+     */
+    public Collection checkUploadOdometers(Collection values, String fleet, int period, int year, UserSessionData userSessionData) throws Exception {
+    	Collection result = new LinkedList();
+    	try {
+    		FleetReport fleetReport = FleetReportUtil.getHome().create();
+    		
+    		Iterator valuesIt = values.iterator();
+    		while(valuesIt.hasNext()) {
+    			String[] newOdometer = (String[])valuesIt.next();
+    			String idDallas = newOdometer[0];
+    			String plate = newOdometer[1];
+    			int newOdometerValue = Integer.parseInt(newOdometer[2]);
+    			OdometerFileData odometerData = new OdometerFileData(idDallas,plate,newOdometerValue);
+    			Object[] vehicle = fleetReport.getFleetVehicle(plate,fleet,userSessionData);
+    			if(vehicle == null) {
+					odometerData.setError(OdometerFileData.NOT_EXISTS);
+    			}else {
+    				odometerData.setDriverData(vehicle);
+    				if(!((String)vehicle[4]).trim().equalsIgnoreCase(idDallas.trim())) {
+    					DriverReport driverReport = DriverReportUtil.getHome().create();
+    					DriverData newDriver = driverReport.findDriverByIdDallas(idDallas, userSessionData);
+    					odometerData.setNewDriverId(newDriver.getId());
+    					odometerData.setNewDriverName(newDriver);
+    				}
+    	    		Collection odometers = fleetReport.getOdometerValues((Integer)vehicle[0],fleet,userSessionData);
+    	    		Iterator odometersIt = odometers.iterator();
+    	    		boolean cont = true;
+	    			while(odometersIt.hasNext() && cont) {
+	    				Object[] data = (Object[])odometersIt.next();
+	    				int insertedOdometer = ((Integer)data[0]).intValue();
+	    				int insertedPeriod = ((Integer)data[1]).intValue();
+	    				int insertedYear = ((Integer)data[2]).intValue();
+	    				int comparation = comparePeriod(period,year,insertedPeriod,insertedYear);
+	    				switch(comparation) {
+	    					case -1:
+    							odometerData.setLastData(insertedOdometer,insertedPeriod,insertedYear);
+	    						if(insertedOdometer > newOdometerValue) {
+	    							odometerData.setError(OdometerFileData.ERROR_PREV);
+	    							odometerData.setInsertedData(insertedOdometer,insertedPeriod,insertedYear);
+	    							cont = false;
+	    						}
+	    						break;
+	    					case 0:
+	    						if(insertedOdometer != newOdometerValue) {
+	    							odometerData.setError(OdometerFileData.WARNING);
+	    							odometerData.setInsertedData(insertedOdometer,insertedPeriod,insertedYear);
+	    						}else {
+	    							cont = false;
+	    						}
+	    						break;
+	    					case 1:
+	    						if(insertedOdometer < newOdometerValue) {
+	    							odometerData.setError(OdometerFileData.ERROR_POST);
+	    							odometerData.setInsertedData(insertedOdometer,insertedPeriod,insertedYear);
+	    						}
+    							cont = false;
+	    						break;
+	    				}
+    				}
+    			}
+    			result.add(odometerData);
+    		}
+    	} catch (Exception e) {
+        	Object[] p = {values,fleet,period,year};
+            handler.handleException("checkUploadOdometers",e,userSessionData,p);
+    	}
+    	return result;
+    }
+
+
+	private int comparePeriod(int period1, int year1, int period2,int year2) {
+		if(year1 < year2) {
+			return -1;
+		}else if(year1 > year2) {
+			return 1;
+		}else {
+			if(period1 < period2) {
+				return -1;
+			}else if(period1 > period2) {
+				return 1;
+			}else {
+				return 0;
+			}			
+		}
+	}
+
+    /**
+     * @throws Exception
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverodometer"
+     */
+    public String getVehicleOdometerType(Integer vehicle,UserSessionData userSessionData) throws Exception {
+    	try {
+	    	FleetReport fleetReport = FleetReportUtil.getHome().create();
+	    	Hashtable hash = fleetReport.getVehicleOdometerType(vehicle, userSessionData);
+	    	Enumeration elements = hash.elements();
+	    	while(elements.hasMoreElements()) {
+	    		String value = (String)elements.nextElement();
+	    		if(value != null && value.length() > 0) {
+	    			return value;
+	    		}
+	    	}
+    	}catch (Exception e) {
+        	Object[] p = {vehicle};
+            handler.handleException("getVehicleOdometerType",e,userSessionData,p);
+    	}
+    	return "datatype.distanceunit.kilometers";
+    }
+
+    /**
+     * @throws Exception
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetinsertdata"
+     */
+    public HashMap<String, String> findFleetKeys(Integer fleetId, UserSessionData userSessionData) throws Exception {
+    	HashMap<String, String> values = new HashMap<String, String>();
+    	try {
+	    	values = FleetReportUtil.getHome().create().findFleetKeys(fleetId, userSessionData);
+    	}catch (Exception e) {
+        	Object[] p = {fleetId};
+            handler.handleException("findFleetKeys",e,userSessionData,p);
+    	}
+    	return values;
+    } 
+
+    /**
+     * @throws Exception
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetinsertdata"
+     */
+    public HashMap<String, Integer> getIndividualMiles(Integer fleetId, Integer period, Integer year,UserSessionData userSessionData) throws Exception {
+    	HashMap<String,  Integer> values = new HashMap<String, Integer>();
+    	try {
+    		Integer prePeriod = period-1;
+    		Integer preYear = year;
+    		if(prePeriod == 0) {
+    			prePeriod = 12;
+    			preYear--;
+    		}
+	    	values = FleetReportUtil.getHome().create().getIndividualMiles(fleetId, prePeriod, preYear, period, year, userSessionData);
+    	}catch (Exception e) {
+        	Object[] p = {fleetId,period,year};
+            handler.handleException("getIndividualMiles",e,userSessionData,p);
+    	}
+    	return values;
+    } 
+
+    /**
+     * @throws Exception
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetinsertdata"
+     */
+    public HashMap<String, Integer> getIndividualMilesByQuarter(Integer fleetId, Integer quarter, Integer year,UserSessionData userSessionData) throws Exception {
+    	HashMap<String,  Integer> values = new HashMap<String, Integer>();
+    	try {
+    		for(int i =  0; i < 3; i++) {
+    			Integer period = quarter - i;
+	    		Integer prePeriod = period-1;
+	    		Integer preYear = year;
+	    		if(prePeriod == 0) {
+	    			prePeriod = 12;
+	    			preYear--;
+	    		}
+	    		HashMap<String,  Integer> periodValues = FleetReportUtil.getHome().create().getIndividualMiles(fleetId, prePeriod, preYear, period, year, userSessionData);
+	    		Iterator keyIt = periodValues.keySet().iterator();
+	    		while(keyIt.hasNext()) {
+	    			String key = (String)keyIt.next();
+	    			if(values.containsKey(key)) {
+    					values.put(key, new Integer(values.get(key).intValue() + periodValues.get(key).intValue()));
+	    			}else {
+	    				values.put(key, periodValues.get(key));
+	    			}
+	    		}
+    		}
+    	}catch (Exception e) {
+        	Object[] p = {fleetId,quarter,year};
+            handler.handleException("getIndividualMilesByQuarter",e,userSessionData,p);
+    	}
+    	return values;
+    } 
+
+    /**
+     * @throws Exception
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public FleetBayerData getFleetBayerReport(Calendar start, Calendar end, UserSessionData userSessionData) throws Exception {
+    	try {
+	    	return FleetReportUtil.getHome().create().getFleetBayerReport(start, end, userSessionData);
+    	}catch (Exception e) {
+        	Object[] p = {start,end};
+            handler.handleException("getFleetBayerReport",e,userSessionData,p);
+    	}
+    	return null;
+    }
+
+    /**
+     * @throws Exception
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public Collection<InsertedOdometer> getInsertedOdometers(Integer fleet, Integer periodFrom, Integer periodTo, Integer yearFrom, Integer yearTo, UserSessionData userSessionData) throws Exception {
+    	try {
+	    	return FleetReportUtil.getHome().create().getInsertedOdometers(fleet,periodFrom,periodTo,yearFrom,yearTo,userSessionData);
+    	}catch (Exception e) {
+        	Object[] p = {fleet,periodFrom,periodTo,yearFrom,yearTo};
+            handler.handleException("getInsertedOdometers",e,userSessionData,p);
+    	}
+    	return null;
+    }
+    
+    /**
+     * @throws Exception
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public HashMap<String,Object[]> getInsertedOdometerLogs(Integer fleet, Integer periodFrom, Integer periodTo, Integer yearFrom, Integer yearTo, UserSessionData userSessionData) throws Exception {
+    	try {
+	    	return FleetReportUtil.getHome().create().getInsertedOdometerLogs(fleet,periodFrom,periodTo,yearFrom,yearTo,userSessionData);
+    	}catch (Exception e) {
+        	Object[] p = {fleet,periodFrom,periodTo,yearFrom,yearTo};
+            handler.handleException("getInsertedOdometerLogs",e,userSessionData,p);
+    	}
+    	return null;
+    }
+
+    /**
+     * @throws Exception
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetinsertdata"
+     */
+    public Collection<String[]> getDriverLinks(String fleets, UserSessionData userSessionData) throws Exception {
+    	try {
+	    	return FleetReportUtil.getHome().create().getDriverLinks(fleets,userSessionData);
+    	}catch (Exception e) {
+        	Object[] p = {fleets};
+            handler.handleException("getDriverLinks",e,userSessionData,p);
+    	}
+    	return null;
+    }
+    
+    /**
+     * @throws Exception
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public ApmkData getOdometerValues(int[] orders, int[] from, int[] to, Integer[][] divOrgs, Integer[] divGeos, UserSessionData userSessionData) throws Exception {
+    	ApmkData data = new ApmkData();
+    	try {
+	    	Collection list = FleetReportUtil.getHome().create().getOdometerValues(orders, from, to, divOrgs, divGeos, userSessionData);
+	    	Iterator it = list.iterator();
+	    	while(it.hasNext()) {
+	    		data.addLine((Object[]) it.next(),0);
+	    	}
+    	}catch (Exception e) {
+        	Object[] p = {};
+            handler.handleException("getDriverLinks",e,userSessionData,p);
+    	}
+    	return data;
+    }
+}

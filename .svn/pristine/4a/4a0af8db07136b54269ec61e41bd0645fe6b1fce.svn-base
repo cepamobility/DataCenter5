@@ -1,0 +1,209 @@
+package communication.vehicle.tables;
+
+import java.util.Date;
+
+import communication.driver.tables.DriverData;
+
+import persistence.vehicle.tables.Vehicle;
+import presentation.translator.web.util.Util;
+
+public class VehicleMaintenanceData {
+
+	public static final int RUTINA = 1;
+	public static final int REPARATION = 2;
+	public static final int INC_ACC = 3;
+
+	private Integer id;
+	
+	protected VehicleData vehicle;
+	
+	protected Date date;
+	protected Integer cost;
+	protected Integer type;
+
+	protected boolean item1;
+	protected boolean item2;
+	protected boolean item3;
+	protected boolean item4;
+	protected boolean item5;
+	protected boolean item6;
+	protected boolean item7;
+	protected boolean item8;
+	protected boolean item9;
+	
+	protected Integer kms;
+	private DriverData driver;
+	private String description;
+
+	public VehicleMaintenanceData(Integer id, VehicleData vehicle, Date date,
+			Integer cost, Integer type, boolean item1, boolean item2,
+			boolean item3, boolean item4, boolean item5, boolean item6,
+			boolean item7, boolean item8, boolean item9, Integer kms, String description) {
+		this.id = id;
+		this.vehicle = vehicle;
+		this.date = date;
+		this.cost = cost;
+		this.type = type;
+		this.item1 = item1;
+		this.item2 = item2;
+		this.item3 = item3;
+		this.item4 = item4;
+		this.item5 = item5;
+		this.item6 = item6;
+		this.item7 = item7;
+		this.item8 = item8;
+		this.item9 = item9;
+		this.kms = kms;
+		this.description = description;
+	}
+
+	public VehicleMaintenanceData(Object[] data, Integer vehicleId) {
+		this.id = (Integer)data[0];
+		this.vehicle = new VehicleData(vehicleId);
+		this.date = (Date)data[1];
+		this.cost = (Integer)data[2];
+		this.type = (Integer)data[3];
+		this.description = (String)data[4];
+	}
+
+	public VehicleMaintenanceData() {
+		// TODO Auto-generated constructor stub
+	}
+
+	public Integer getId() {
+		return id;
+	}
+
+	public void setId(Integer id) {
+		this.id = id;
+	}
+
+	public VehicleData getVehicle() {
+		return vehicle;
+	}
+
+	public void setVehicle(VehicleData vehicle) {
+		this.vehicle = vehicle;
+	}
+
+	public Date getDate() {
+		return date;
+	}
+
+	public void setDate(Date date) {
+		this.date = date;
+	}
+
+	public Integer getCost() {
+		return cost;
+	}
+
+	public void setCost(Integer cost) {
+		this.cost = cost;
+	}
+
+	public Integer getType() {
+		return type;
+	}
+
+	public void setType(Integer type) {
+		this.type = type;
+	}
+
+	public boolean isItem1() {
+		return item1;
+	}
+
+	public void setItem1(boolean item1) {
+		this.item1 = item1;
+	}
+
+	public boolean isItem2() {
+		return item2;
+	}
+
+	public void setItem2(boolean item2) {
+		this.item2 = item2;
+	}
+
+	public boolean isItem3() {
+		return item3;
+	}
+
+	public void setItem3(boolean item3) {
+		this.item3 = item3;
+	}
+
+	public boolean isItem4() {
+		return item4;
+	}
+
+	public void setItem4(boolean item4) {
+		this.item4 = item4;
+	}
+
+	public boolean isItem5() {
+		return item5;
+	}
+
+	public void setItem5(boolean item5) {
+		this.item5 = item5;
+	}
+
+	public boolean isItem6() {
+		return item6;
+	}
+
+	public void setItem6(boolean item6) {
+		this.item6 = item6;
+	}
+
+	public boolean isItem7() {
+		return item7;
+	}
+
+	public void setItem7(boolean item7) {
+		this.item7 = item7;
+	}
+
+	public boolean isItem8() {
+		return item8;
+	}
+
+	public void setItem8(boolean item8) {
+		this.item8 = item8;
+	}
+
+	public boolean isItem9() {
+		return item9;
+	}
+
+	public void setItem9(boolean item9) {
+		this.item9 = item9;
+	}
+
+	public Integer getKms() {
+		return kms;
+	}
+
+	public void setKms(Integer kms) {
+		this.kms = kms;
+	}
+
+	public void setDriver(DriverData driver) {
+		this.driver = driver;
+	}
+
+	public DriverData getDriver() {
+		return driver;
+	}
+
+	public String getDescription() {
+		return description;
+	}
+
+	public void setDescription(String description) {
+		this.description = description;
+	}
+	
+}

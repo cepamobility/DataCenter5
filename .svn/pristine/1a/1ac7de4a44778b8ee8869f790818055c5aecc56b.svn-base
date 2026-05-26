@@ -1,0 +1,217 @@
+/*
+ * Created on 27-oct-2005
+ *
+ * TODO To change the template for this generated file go to
+ * Window - Preferences - Java - Code Style - Code Templates
+ */
+package presentation.translator.web.driver;
+
+import java.util.Date;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.action.DynaActionForm;
+
+import presentation.translator.web.util.AbstractAction;
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+import business.driver.DriverABMFacade;
+
+import communication.driver.tables.DriverData;
+import communication.driver.tables.TelematicControlData;
+import communication.language.Text;
+import communication.vehicle.tables.VehicleData;
+
+/**
+ * @author jrodriguez
+ */
+public class AddTelematicControlAction extends AbstractAction {
+
+	public ActionForward action(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response) throws Throwable {
+
+        HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        Text messages = sys.getText();
+
+        DynaActionForm telematicControlData = (DynaActionForm)form;
+        
+        Integer driverId = new Integer(telematicControlData.getString("driver"));
+        
+		String message = validate(telematicControlData);
+		if(message != null) {
+		    session.setAttribute("Msg", messages.getText(message));
+            String url = "/driver/telematicControl.jsp";
+            if(!Util.empty(telematicControlData.getString("id"))) {
+            	url += "?id="+telematicControlData.getString("id");
+            }else {
+            	url += "?driver="+telematicControlData.getString("driver");            	
+            }
+            
+            session.setAttribute("TelematicControlForm", telematicControlData); // recargo lo que ya haya puesto
+            sys.getUserSessionData().setUrl(url);
+            
+            return mapping.findForward("next");
+		}else {
+			session.removeAttribute("TelematicControlForm");
+			
+            TelematicControlData data = new TelematicControlData();
+            
+            int colour = Integer.parseInt(telematicControlData.getString("color"));
+            
+            /**
+             *CHEQUEO SI ES VERDE, AMARILLO Y ROJO EL COLOR DEL CONTROL PARA SABER QUE DATOS ALMACENO
+             */
+            if(colour > 1){
+            	data.setDate(Util.getDate(telematicControlData.getString("date_green"),
+                		telematicControlData.getString("month_green"),
+                		telematicControlData.getString("year_green")));
+                data.setRecomendation(TelematicControlData.RECOMENDATION_EMPTY);
+                if(colour == 2){
+                	data.setType(TelematicControlData.TYPE_HRD);
+                }else {
+                	data.setType(TelematicControlData.TYPE_EMPTY);
+                }
+                	
+            }else{
+            	
+            	data.setDate(Util.getDate(telematicControlData.getString("date"),
+            		telematicControlData.getString("month"),
+            		telematicControlData.getString("year")));
+            
+            	data.setType(new Integer(telematicControlData.getString("type")));
+            
+	            String recomendation = telematicControlData.getString("recomendation");
+	            data.setRecomendation(
+	            		(!Util.empty(recomendation) && Util.isNumber(recomendation) ) ?
+	            				new Integer(recomendation): TelematicControlData.RECOMENDATION_EMPTY );
+	            
+	            data.setObservations(telematicControlData.getString("observations"));
+	            
+	            String occurrences = telematicControlData.getString("occurrences");
+	            data.setOccurrences(
+	            		(!Util.empty(occurrences) && Util.isNumber(occurrences))?
+	            				new Integer (occurrences):0);
+	            
+	            String speed = telematicControlData.getString("speed");
+	            data.setSpeed(
+	            		(!Util.empty(speed) && Util.isNumber(speed))?
+	            				new Integer(speed):0);
+	            				
+	            String limitExceeded = telematicControlData.getString("limitExceeded");
+	            data.setLimitExceeded(
+	            		(!Util.empty(limitExceeded) && Util.isNumber(limitExceeded))?
+	            				new Integer(limitExceeded) : 0);
+	            
+	            String limitExceededRain = telematicControlData.getString("limitExceededRain");
+	            data.setLimitExceededRain(
+	            		(!Util.empty(limitExceededRain) && Util.isNumber(limitExceededRain))?
+	            		new Integer(limitExceededRain):0);
+	            
+	            data.setTime(telematicControlData.getString("time"));
+	            data.setDuration(telematicControlData.getString("duration"));
+	            data.setTotalDuration(telematicControlData.getString("totalDuration"));
+	            
+	            String distance = telematicControlData.getString("distance");
+	            data.setDistance(
+	            		( !Util.empty(distance) && Util.isFloat(distance)) ?
+	            		new Float(distance) : 0 );
+	            String average = telematicControlData.getString("averageVelocity");
+	            data.setAverageVelocity(
+	            		(!Util.empty(average) && Util.isFloat(average) ) ?
+	            				new Float(average):0);
+            }	            
+	            
+            data.setDriver(new DriverData(driverId));
+            data.setVehicle(new VehicleData(new Integer (telematicControlData.getString("vehicle"))));
+
+            DriverABMFacade driverABM = sys.getDriverABMFacade();            
+            if(Util.empty(telematicControlData.getString("id"))) {
+            	driverABM.addTelematicControl(data,sys.getUserSessionData());
+            }else {
+            	data.setId(new Integer(telematicControlData.getString("id")));
+            	driverABM.updateTelematicControl(data,sys.getUserSessionData());
+            }
+
+            sys.getUserSessionData().setUrl("/driver/DriverView.jsp?id="+driverId);
+            session.removeAttribute("TelematicControlForm");
+			return mapping.findForward("next");
+        }	
+	}
+
+    private String validate(DynaActionForm controlData) {
+        
+        int colour = Integer.parseInt(controlData.getString("color"));
+        
+        /**
+         *CHEQUEO SI ES VERDE, AMARILLO Y ROJO EL COLOR DEL CONTROL PARA SABER QUE DATOS ALMACENO
+         */
+        if(colour > 1) {
+	    	//fecha
+	        Date date = Util.getDate(controlData.getString("date_green"),controlData.getString("month_green"),controlData.getString("year_green"));
+	        if(date == null) {
+	        	return "driver.telematiccontrol.emptydate";
+	        }
+
+        }else {
+	        // Ocurrencias
+	        try{
+	        	String occurrences = controlData.getString("occurrences");
+	        	if (!Util.empty(occurrences)) occurrences = occurrences.trim();
+	        	if (Util.isNumber(occurrences)){        		
+	        		if (Integer.parseInt(occurrences) == 0){
+	        			return "driver.telematiccontrol.emptyocurrences";
+	        		}
+	        	}else
+	        		return "driver.telematiccontrol.occurrencesisnotnumber";
+	        }catch(Throwable e){
+	        	e.printStackTrace();
+	        	return "driver.telematiccontrol.occurrencesisnotnumber";
+	        }
+	        
+	        
+	        // Velocidad maxima alcanzada
+	        try{
+	        	if (Integer.parseInt(controlData.getString("speed")) == 0){
+	        		return "driver.telematiccontrol.emptyspeed";
+	        	}
+	        }catch(Throwable e){
+	        	
+	        	return "driver.telematiccontrol.speedisnotnumber";
+	        }
+	        
+	        // Limite excedido
+	    	String limit = controlData.getString("limitExceeded");
+	    	if (!Util.empty(limit) && !Util.isNumber(limit)){
+	    		return "driver.telematiccontrol.limitExceededisnotnumber";
+	    	}
+	    
+	        // Limite excedido bajo lluvia
+	    	limit = controlData.getString("limitExceededRain");
+	    	if (!Util.empty(limit) && !Util.isNumber(limit)){
+	    		return "driver.telematiccontrol.limitExceededrainisnotnumber";
+	    	}
+	    	
+	    	//fecha
+	        Date date = Util.getDate(controlData.getString("date"),controlData.getString("month"),controlData.getString("year"));
+	        if(date == null) {
+	        	return "driver.telematiccontrol.emptydate";
+	        }
+	        
+        }        
+        
+        return null;
+    }
+
+    public ActionForward cancel(HttpSession session,ActionMapping mapping, ActionForm form) {
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        DynaActionForm telematicControlData = (DynaActionForm)form;
+        session.removeAttribute("TelematicControlForm");
+        sys.getUserSessionData().setUrl("/driver/DriverView.jsp?id="+telematicControlData.getString("driver"));
+        return mapping.findForward("next");
+    }
+}

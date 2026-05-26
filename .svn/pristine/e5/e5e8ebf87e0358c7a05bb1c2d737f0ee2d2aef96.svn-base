@@ -1,0 +1,10 @@
+UserABMFacade.java
+UserABMFacadeHome.java
+UserABMFacadeLocal.java
+UserABMFacadeLocalHome.java
+UserABMFacadeSession.java
+UserABMFacadeUtil.java
+UserReportFacade.java
+UserReportFacadeHome.java
+UserReportFacadeSession.java
+UserReportFacadeUtil.java

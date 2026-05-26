@@ -1,0 +1,1457 @@
+<%@page import="com.arjuna.ats.arjuna.tools.report"%>
+<%@page import="com.sun.org.apache.xalan.internal.xsltc.runtime.Hashtable"%>
+<%@page import="communication.datatype.tables.EcolabFineData"%>
+<%@page import="communication.datatype.tables.EcolabDriverData"%>
+<%@page import="communication.driver.tables.TelematicControlData"%>
+<%@page import="communication.datatype.tables.EcolabReportData"%>
+<%@page import="communication.security.SecurityConstants"%>
+<%@page import="communication.language.Text"%>
+<%@page import="communication.administration.user.UserSessionData"%>
+<%@page language="java"	import="business.SystemAccess"%>
+
+<%@page import="java.util.Iterator"%>
+<%@page import="java.util.Collection"%>
+<%@page import="java.util.LinkedList"%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+<html:html>
+
+<%
+	SystemAccess sys = (SystemAccess)session.getAttribute("SystemAccess");
+	UserSessionData userSessionData = sys.getUserSessionData();
+	Text messages = sys.getText();
+
+	String dpto = request.getParameter("dpto");
+	//Cambio ecolab	int monthValue = Integer.parseInt(request.getParameter("month"));
+/*cambio ecolab*/ int monthValue = Integer.parseInt(request.getParameter("month"))-1;
+	String monthStr = messages.getText("generic.month."+request.getParameter("month"));
+//Cambio ecolab	if(monthValue == 12) {
+//Cambio ecolab		monthValue = 0;
+//Cambio ecolab	}
+
+	//int monthIndex = Integer.parseInt(monthValue)-1;
+	String year = request.getParameter("year");
+
+	if(userSessionData.isGerente() || userSessionData.isAdministrator()) {
+%>
+		<head>
+		<meta charset="iso-8859-1">
+		<meta http-equiv="X-UA-Compatible" content="IE=9; IE=EDGE" />
+		<meta name="apple-mobile-web-app-capable" content="yes" />
+		<link rel="apple-touch-icon-precomposed" sizes="57x57" href="images/apple-touch-icon-57x57-precomposed.png" />
+		<link rel="apple-touch-icon-precomposed" sizes="72x72" href="images/apple-touch-icon-72x72-precomposed.png" />
+		<link rel="apple-touch-icon-precomposed" sizes="114x114" href="images/apple-touch-icon-114x114-precomposed.png" />
+		<link rel="apple-touch-icon-precomposed" sizes="144x144" href="images/apple-touch-icon-144x144-precomposed.png" />
+		<meta name="viewport" content="user-scalable=no, width=980" />
+		<meta name="description" content="">
+		<meta name="keywords" content="">
+		<title>Ecolab - Report DC</title>
+		<link rel="shortcut icon" type="image/ico" href="images/favicon.ico">
+		<link rel="stylesheet" href="styles/fonts/pontano_sans.css">
+		<link rel="stylesheet" href="styles/base.css">
+		<link rel="stylesheet" href="styles/jquery-ui-1.10.3.custom.min.css">
+		<!--[if lt IE 9]>
+			<script type="text/javascript" src="scripts/html5shiv.min.js"></script>
+		<![endif]-->
+
+		<style type="text/css">
+			#speeds {
+			}
+		</style>
+		<script type="text/javascript" src="./js/jquery.min.js"></script>
+		<script type="text/javascript" src="./js/cepaglobal.js"></script>
+		<script type="text/javascript" src="./js/angular.min.js"></script>
+		<script type="text/javascript" src="./js/angular-route.js"></script>
+		<script type="text/javascript" src="./js/angular-sanitize.min.js"></script>
+		<script type="text/javascript" src="./js/plugins.js"></script>
+		<script type="text/javascript" src="./js/jsapi.js"></script>
+		<script type="text/javascript" src="./js/controllers.js"></script>	
+
+    <!--Load the AJAX API-->
+	    <script type="text/javascript" src="https://www.google.com/jsapi"></script>
+    	<script type="text/javascript">
+
+      // Load the Visualization API and the piechart package.
+      google.load('visualization', '1.0', {'packages':['corechart','table']});
+
+      // Set a callback to run when the Google Visualization API is loaded.
+      google.setOnLoadCallback(startDraws);
+
+      function startDraws() {
+    	  drawSpeeds();
+    	  drawNights();
+    	  drawFineMonth();
+    	  drawFineYear();
+    	  drawSpeedChart();
+    	  drawFineMonthChart();
+    	  drawFineYearChart();
+    	  drawFineGravityChart();
+    	  drawParametricMonthChart();
+    	  drawParametricYearChart();
+    	  drawFineSpeedChart();
+    	  drawGPSPie();
+    	  drawGeneralPie();
+    	  drawGeneralChart();
+    	  drawGeneralLine();
+    	  drawTotalPerformacePie();
+    	  tabChange('generalSheet');
+      }
+      
+		var divHide = 'nightSheet';
+ 	 	function tabChange(show){
+			$("#"+divHide).hide("slide", { direction: "right" }, "slow");
+		 	$("#"+show).show("slide", { direction: "up" }, "slow");
+		 	divHide = show;
+	 	}
+
+<%		EcolabReportData reportData = sys.getDriverReportFacade().getEcolabReportData(new Integer(monthValue+1), new Integer(year), new Integer(dpto), null, userSessionData);
+		Collection<TelematicControlData> speedsCollection = reportData.getSpeeds();	
+		Iterator<TelematicControlData> itSpeeds = speedsCollection.iterator();	
+		String[][] values = reportData.getFineSpeedLine(messages);
+		int driversWithSpeed = Integer.parseInt(values[monthValue][5]);
+		int driversWithFine = Integer.parseInt(values[monthValue][4]);
+		Object[] gpsVehicles = reportData.getGPSVehicles(monthValue);
+		double withGPS = Math.round(((Integer)gpsVehicles[0]) * 100.0 / (((Integer)gpsVehicles[0]) + ((Collection)gpsVehicles[1]).size()));
+		double withOutGPS = 100 - withGPS;
+		
+		double[] avg = reportData.getAveragePoints(monthValue);
+		String parametricYear = reportData.getParametricYear(monthValue);
+		int[] totalPerformanceValues = reportData.totalPerformanceValues();
+		String speedChart = reportData.getSpeedChart();
+%>
+		function drawSpeeds() {
+          var data = new google.visualization.DataTable();
+          data.addColumn('string', 'Motorista');
+          data.addColumn('string', 'Placa');
+          data.addColumn('date', 'Data');
+          data.addColumn('timeofday', 'Hora');
+          data.addColumn('string', 'Localização');
+          data.addColumn('number', 'Velocidade');
+          data.addRows(<%=String.valueOf(speedsCollection.size())%>);
+<%		
+		int index = 0;
+		while(itSpeeds.hasNext()) {
+%>			<%=itSpeeds.next().getEcolabLine(index, TelematicControlData.TYPE_EXCESSIVE_SPEED)%>
+<%				index++;
+		}
+%>
+			var cssClassNames = {
+				'headerRow': 'header-cell',
+				'tableRow': 'cell-background',
+				'oddTableRow': 'cell-background',
+				'selectedTableRow': 'cell-background'};
+	
+		 	var options = {'title':'',
+	    		'width':1000,
+	    		'allowHtml': true,
+	    		'cssClassNames': cssClassNames
+	    	};
+		 	var table = new google.visualization.Table(document.getElementById('speeds'));
+          	table.draw(data, options);
+        }
+		
+<%		Collection<TelematicControlData> nigthCollection = reportData.getNigths();
+		Iterator<TelematicControlData> itNights = nigthCollection.iterator();	
+		
+%>
+		function drawNights() {
+  			var data = new google.visualization.DataTable();
+  			data.addColumn('string', 'Motorista');
+  			data.addColumn('string', 'Placa');
+  			data.addColumn('date', 'Data');
+  			data.addColumn('timeofday', 'Hora');
+  		  	data.addColumn('string', 'Duração');
+  		  	data.addColumn('string', 'Localização');
+  			data.addColumn('number', 'Velocidade');
+  			data.addRows(<%=String.valueOf(nigthCollection.size())%>);
+<%		index = 0;
+		while(itNights.hasNext()) {
+%>			<%=itNights.next().getEcolabLine(index, TelematicControlData.TYPE_NIGTH_DRIVE)%>
+<%			index++;
+		}
+%>
+			var cssClassNames = {
+				'headerRow': 'header-cell',
+				'tableRow': 'cell-background',
+				'oddTableRow': 'cell-background',
+				'selectedTableRow': 'cell-background'};
+		
+		 	var options = {'title':'',
+				'width':1000,
+				'allowHtml': true,
+				'cssClassNames': cssClassNames
+			};
+		 	var table = new google.visualization.Table(document.getElementById('nights'));
+		  	table.draw(data, options);
+		}
+<%		Collection<EcolabFineData> fines = reportData.getFines(monthValue, false);
+		Iterator<EcolabFineData> itFines = fines.iterator();
+%>
+		function drawFineMonth() {
+	    	var data = new google.visualization.DataTable();
+	        data.addColumn('string', 'Motorista');
+	        data.addColumn('string', 'Placa');
+	        data.addColumn('date', 'Data');
+	        data.addColumn('timeofday', 'Hora');
+	        data.addColumn('string', 'Gravidade');
+	        data.addColumn('string', 'Classificação');
+	        data.addRows(<%=String.valueOf(fines.size())%>);
+	
+<%		index = 0;
+		while(itFines.hasNext()) {
+%>			<%=itFines.next().getEcolabLine(index,messages)%>
+<%				index++;
+		}
+%>
+				var cssClassNames = {
+					'headerRow': 'header-cell',
+					'tableRow': 'cell-background',
+					'oddTableRow': 'cell-background',
+					'selectedTableRow': 'cell-background'};
+			
+			 	var options = {'title':'',
+					'width':1000,
+					'allowHtml': true,
+					'cssClassNames': cssClassNames
+				};
+			 	var table = new google.visualization.Table(document.getElementById('fineMonth'));
+	          	table.draw(data, options);
+	        }
+<%
+		Collection<EcolabFineData> finesY = reportData.getFines(monthValue, true);
+		Iterator<EcolabFineData> itFinesY = finesY.iterator();
+%>
+		function drawFineYear() {
+	    	var data = new google.visualization.DataTable();
+	        data.addColumn('string', 'Motorista');
+	        data.addColumn('string', 'Placa');
+	        data.addColumn('date', 'Data');
+	        data.addColumn('timeofday', 'Hora');
+	        data.addColumn('string', 'Gravidade');
+	        data.addColumn('string', 'Classificação');
+	        data.addRows(<%=String.valueOf(finesY.size())%>);
+	
+<%		index = 0;
+		while(itFinesY.hasNext()) {
+%>			<%=itFinesY.next().getEcolabLine(index,messages)%>
+<%				index++;
+		}
+%>
+				var cssClassNames = {
+					'headerRow': 'header-cell',
+					'tableRow': 'cell-background',
+					'oddTableRow': 'cell-background',
+					'selectedTableRow': 'cell-background'};
+			
+			 	var options = {'title':'',
+					'width':1000,
+					'allowHtml': true,
+					'cssClassNames': cssClassNames
+				};
+			 	var table = new google.visualization.Table(document.getElementById('fineYear'));
+	          	table.draw(data, options);
+	        }
+
+		function drawSpeedChart() {
+<%			if(speedChart != null) {
+%>
+			var data = google.visualization.arrayToDataTable(<%=speedChart%>);
+            var view = new google.visualization.DataView(data);
+            view.setColumns([0, 1,
+                             { calc: "stringify",
+                               sourceColumn: 1,
+                               type: "string",
+                               role: "annotation" },
+                             2]);
+
+            var options = {
+              title: "",
+              width: 1000,
+              chartArea:{left:350,top:50,width:'60%',height:'80%'},
+              fontSize:10,
+              fontName: 'Verdana',
+              backgroundColor: 'transparent',
+              height: <%=String.valueOf(Math.max(500,driversWithSpeed*50))%>,
+              bars: 'horizontal',
+              bar: {groupWidth: "50%"},
+              legend: { position: "none" },
+            };
+            var chart = new google.visualization.BarChart(document.getElementById("speedchart"));
+            chart.draw(view, options);
+<%			}        
+%>		}
+		function drawFineMonthChart() {
+<%			if(fines.size() > 0) {
+%>
+				var data = google.visualization.arrayToDataTable(<%=reportData.getFineChart(monthValue, false)%>);
+	            var view = new google.visualization.DataView(data);
+	            view.setColumns([0, 1,
+	                             { calc: "stringify",
+	                               sourceColumn: 1,
+	                               type: "string",
+	                               role: "annotation" },
+	                             2]);
+
+	            var options = {
+	              title: "",
+	              width: 1000,
+	              chartArea:{left:350,top:50,width:'60%',height:'80%'},
+	              fontSize:10,
+	              fontName: 'Verdana',
+	              backgroundColor: 'transparent',
+	              height: <%=String.valueOf(Math.max(500,reportData.getMonthDriverFines()*50))%>,
+	              bars: 'horizontal',
+	              bar: {groupWidth: "50%"},
+	              legend: { position: "none" },
+	            };
+	            var chart = new google.visualization.BarChart(document.getElementById("fineChart1"));
+	            chart.draw(view, options);
+<%			}        
+%>		}
+		function drawFineYearChart() {
+<%			if(finesY.size() > 0) {
+%>
+			var data = google.visualization.arrayToDataTable(<%=reportData.getFineChart(monthValue, true)%>);
+            var view = new google.visualization.DataView(data);
+            view.setColumns([0, 1,
+                             { calc: "stringify",
+                               sourceColumn: 1,
+                               type: "string",
+                               role: "annotation" },
+                             2]);
+
+            var options = {
+              title: "",
+              width: 1000,
+              chartArea:{left:350,top:50,width:'60%',height:'80%'},
+              fontSize:10,
+              fontName: 'Verdana',
+              backgroundColor: 'transparent',
+              height: <%=String.valueOf(Math.max(500,reportData.getYearDriverFines()*50))%>,
+              bars: 'horizontal',
+              bar: {groupWidth: "50%"},
+              legend: { position: "none" },
+            };
+            var chart = new google.visualization.BarChart(document.getElementById("fineChart2"));
+            chart.draw(view, options);
+<%			}        
+%>		}
+		function drawFineGravityChart() {
+			var data = google.visualization.arrayToDataTable(<%=reportData.getFineGravity(messages)%>);
+			var view = new google.visualization.DataView(data);
+			view.setColumns([0, 1,
+				{ calc: "stringify",
+			    	sourceColumn: 1,
+			        type: "string",
+			        role: "annotation" },
+			        2]);
+
+	            var options = {
+  	              title: "",
+  	              width: 1000,
+  	              chartArea:{left:100,top:10,width:'90%',height:'60%'},
+  	              fontSize:10,
+  	              fontName: 'Verdana',
+  	              backgroundColor: 'transparent',
+  	              height: 400,
+  	              bar: {groupWidth: "50%"},
+  	              legend: { position: "none" },
+  	            };
+	            var chart = new google.visualization.ColumnChart(document.getElementById("fineChart3"));
+	            chart.draw(view, options);
+		}
+		function drawParametricMonthChart() {
+			var data = google.visualization.arrayToDataTable(<%=reportData.getParametricMonthChart(monthValue)%>);
+            var view = new google.visualization.DataView(data);
+            view.setColumns([0, 1,
+                             { calc: "stringify",
+                               sourceColumn: 1,
+                               type: "string",
+                               role: "annotation" },
+                             2]);
+
+            var options = {
+              title: "",
+              width: 1000,
+              chartArea:{left:350,top:10,width:'60%',height:'80%'},
+              fontSize:10,
+              fontName: 'Verdana',
+              backgroundColor: 'transparent',
+              height: <%=String.valueOf(reportData.getDrivers().size()*50)%>,
+              bars: 'horizontal',
+              bar: {groupWidth: "50%"},
+              hAxis: { viewWindow: { min: 0, max: 100 }},
+              legend: { position: "none" },
+            };
+            var chart = new google.visualization.BarChart(document.getElementById("parametricMonthChart"));
+            chart.draw(view, options);
+		}
+		function drawParametricYearChart() {
+			var data = google.visualization.arrayToDataTable(<%=reportData.getParametricYearChart()%>);
+            var view = new google.visualization.DataView(data);
+            view.setColumns([0, 1,
+                             { calc: "stringify",
+                               sourceColumn: 1,
+                               type: "string",
+                               role: "annotation" },
+                             2]);
+
+            var options = {
+              title: "",
+              width: 1000,
+              chartArea:{left:350,top:10,width:'60%',height:'80%'},
+              fontSize:10,
+              fontName: 'Verdana',
+              backgroundColor: 'transparent',
+              height: <%=String.valueOf(reportData.getDrivers().size()*50)%>,
+              bars: 'horizontal',
+              bar: {groupWidth: "50%"},
+              hAxis: { viewWindow: { min: 0, max: 100 }},
+              legend: { position: "none" },
+            };
+            var chart = new google.visualization.BarChart(document.getElementById("parametricYearChart"));
+            chart.draw(view, options);
+		}
+		function drawFineSpeed() {
+  			var data = new google.visualization.DataTable();
+  			data.addColumn('string', 'MÊS');
+  			data.addColumn('number', 'MULTAS');
+  			data.addColumn('number', 'INFRAÇÕES');
+  			data.addColumn('number', 'TOTAL');
+  			data.addRows(12);
+<%			for(int i = 0; i < values.length; i++) {
+%>				data.setCell(<%=String.valueOf(i)%>, 0, '<%=values[i][0]%>', '<%=values[i][0]%>', {style: 'color:black;'});
+				data.setCell(<%=String.valueOf(i)%>, 1, <%=values[i][1]%>, '<%=values[i][1]%>', {style: 'color:black;'});
+				data.setCell(<%=String.valueOf(i)%>, 2, <%=values[i][2]%>, '<%=values[i][2]%>', {style: 'color:black;'});
+				data.setCell(<%=String.valueOf(i)%>, 3, <%=values[i][3]%>, '<%=values[i][3]%>', {style: 'color:black;'});
+<%			}
+%>			var cssClassNames = {
+				'headerRow': 'header-cell',
+				'tableRow': 'cell-background',
+				'oddTableRow': 'cell-background',
+				'selectedTableRow': 'cell-background'};
+		
+		 	var options = {'title':'',
+				'width':1000,
+				'allowHtml': true,
+				'cssClassNames': cssClassNames
+			};
+		 	var table = new google.visualization.Table(document.getElementById('fineSpeed'));
+		  	table.draw(data, options);
+		}
+		function drawFineSpeedChart() {
+		      var data = new google.visualization.DataTable();
+		      data.addColumn('string', 'Mes');
+		      data.addColumn('number', 'Multas');
+ 			  data.addColumn({type: 'string', role: 'annotation'});
+		      data.addColumn('number', 'Velocidades');
+ 			  data.addColumn({type: 'string', role: 'annotation'});
+
+		      data.addRows([
+<%			for(int i = 0; i <= monthValue; i++) {
+%>				['<%=values[i][0].substring(0,3)%>', <%=values[i][1]%>, '<%=values[i][1]%>', <%=values[i][2]%>, '<%=values[i][2]%>'],
+<%			}
+%>		     
+		      ]);
+
+		      var options = {
+		        title: '',
+		        'width':500,
+		        'height':350,
+                legend:{position: 'none'},
+                backgroundColor: 'transparent',
+		        colors: ['#4572A7','#93A9CF'],
+		        annotations: {
+			          alwaysOutside: true,
+			          textStyle: {
+			            fontSize: 10,
+			            fontName: 'Verdana',
+			            color: '#000',
+			            auraColor: 'none'
+			          }
+		  		},
+		        hAxis: {
+		          title: 'MÊS',
+		        },
+		        vAxis: {
+		          title: ''
+		        }
+		      };
+
+		      var chart = new google.visualization.ColumnChart(document.getElementById('fineSpeedChart'));
+		      chart.draw(data, options);
+		}
+		function drawGPSPie() {
+	        // Create the data table.
+	        var data = new google.visualization.DataTable();
+	        data.addColumn('string', 'Topping');
+	        data.addColumn('number', 'Slices');
+	        data.addRows([
+	          ['Veículos com Informação', <%=String.valueOf(withGPS)%>],
+	          ['Veículos sem Informação', <%=String.valueOf(withOutGPS)%>]
+	        ]);
+	        // Set chart options
+	        var options = {'width':500,
+	                       'colors':['#4572A7','#93A9CF'],
+	                       chartArea:{left:30,top:0,width:'90%',height:'100%'},
+	                       legend:{position: 'right', textStyle: {color: '#333333', fontName: 'Verdana', fontSize: '12'}, alignment: 'center'},
+	                       backgroundColor: 'transparent',
+	                       'height':350};
+
+	        // Instantiate and draw our chart, passing in some options.
+	        var chart = new google.visualization.PieChart(document.getElementById('gpsPie'));
+	        chart.draw(data, options);
+	      }
+<%			int[] driverMonthPoints = reportData.getDriverMonthPoints(monthValue);
+			long value1 = Math.round(driverMonthPoints[2] * 100.0 / (driverMonthPoints[0] + driverMonthPoints[1] + driverMonthPoints[2]));
+			long value2 = Math.round(driverMonthPoints[1] * 100.0 / (driverMonthPoints[0] + driverMonthPoints[1] + driverMonthPoints[2]));
+			long value3 = 100 - (value1 + value2);
+%>
+		function drawGeneralPie() {
+	        // Create the data table.
+	        var data = new google.visualization.DataTable();
+	        data.addColumn('string', 'Topping');
+	        data.addColumn('number', 'Slices');
+	        data.addRows([
+	          ['Alto Risco', <%=String.valueOf(value1)%>],
+	          ['Risco Moderado', <%=String.valueOf(value2)%>],
+	          ['Condução Não Perigosa', <%=String.valueOf(value3)%>]
+	        ]);
+
+	        // Set chart options
+	        var options = {'width':500,
+	        		  	  'height':200,
+	                'colors':['red','yellow','#00CC00'],
+	                chartArea:{left:0,bottom:10,width:"80%",height:"100%"},
+	                pieSliceTextStyle: { color: 'black', fontName: 'Verdana', fontSize: '10' },
+	                legend:{position: 'right', textStyle: {color: '#333', fontName: 'Verdana', fontSize: '12'}, alignment: 'center'},
+	                backgroundColor: 'transparent'};
+
+	        // Instantiate and draw our chart, passing in some options.
+	        var chart = new google.visualization.PieChart(document.getElementById('generalPie'));
+	        chart.draw(data, options);
+	      }
+	      function drawGeneralChart() {
+	    	  var data = google.visualization.arrayToDataTable([
+	    	  	['Mes','Performance','Risco',   { role: 'annotation' } ],
+<%		double performanceValue = Math.round(avg[0] * 100.0) / 100.0; 	
+	  	for(int i = 1; i <= monthValue+1; i++) {
+			performanceValue = Math.round(avg[i-1] * 100.0) / 100.0;
+%>				<%="['"+messages.getText("generic.month."+i).substring(0, 3)+"',"+performanceValue+","+String.valueOf(100-performanceValue)+",'']"%>
+				<%=(i < 11) ? "," : ""%>
+<%			}
+%>	      	  			]);	 
+	    	  	
+	          	var view = new google.visualization.DataView(data);
+		        var options = {
+		  	            title: '',
+		        		width: 500,
+		                height: 250,
+		                legend: { position: 'none' },
+		                bar: { groupWidth: '75%' },
+				        colors: ['#00CC00', 'red'],
+			         	backgroundColor: 'transparent',
+		                isStacked: true,
+		              };
+
+	            var columnchart = new google.visualization.ColumnChart(document.getElementById("generalChart"));
+	            columnchart.draw(view, options);
+	      }
+	      function drawGeneralLine() {
+	          var data = google.visualization.arrayToDataTable([
+	            ['Mes', 'Performance'],
+	            <%  	for(int i = 1; i <= monthValue+1; i++) {
+	            %>				<%="['"+messages.getText("generic.month."+i).substring(0, 3)+"',"+avg[i-1]+"]"%>
+	            				<%=(i < 11) ? "," : ""%>
+	            <%			}
+	            %>	          ]);
+
+	          var options = {
+	        		title:'EVOLUÇÃO PERFORMANCE DE SEGURANÇA VEICULAR ',
+	     			titleTextStyle: {color: '#555', fontName: 'Verdana', fontSize: '12', fontWidth: 'normal'},
+		            width: 500,
+		            height: 350,
+		            vAxis: { viewWindow: { min: 0, max: 100 }},
+		         	backgroundColor: 'transparent',
+		            legend: { position: 'none' }
+	          };
+
+	          var chart = new google.visualization.LineChart(document.getElementById('generalLine'));
+
+	          chart.draw(data, options);
+	        }
+			function drawTotalPerformacePie() {
+			    // Create the data table.
+			    var data = new google.visualization.DataTable();
+			    data.addColumn('string', 'Risco');
+			    data.addColumn('number', 'Valor');
+			    data.addRows([
+			      ['Alto Risco', <%=String.valueOf(totalPerformanceValues[2])%>],
+			      ['Risco Moderado', <%=String.valueOf(totalPerformanceValues[1])%>],
+			      ['Condução Não Perigosa', <%=String.valueOf(totalPerformanceValues[0])%>]
+			    ]);
+			
+		        // Set chart options
+		        var options = {'width':200,
+		                       'colors':['red','yellow','#00CC00'],
+		                       chartArea:{left:20,top:20,width:'90%',height:'80%'},
+		                       legend:{position: 'none', textStyle: {color: '#333', fontName: 'Verdana', fontSize: '10'}, alignment: 'center'},
+   		   	                   pieSliceTextStyle: { color: 'black', fontName: 'Verdana', fontSize: '10' },
+		                       backgroundColor: 'transparent',
+		                       'height':200};
+			
+			    // Instantiate and draw our chart, passing in some options.
+			    var chart = new google.visualization.PieChart(document.getElementById('totalperformancePie'));
+			    chart.draw(data, options);
+			    
+			    var pie_text = jQuery('#all-receivers-pie-chart g text');
+                var chrome_fix = jQuery(pie_text[1]).attr('x') - 30; //it's the second one causing the problem, move it to the left 30px
+                jQuery(pie_text[1]).attr('x',chrome_fix); 
+			  }
+	</script>
+	</head>
+	<body>
+      	<header id="header">
+         	<section class="grid_container">
+				<h1 class="customer_logo" style="background-image: url('images/main_logo_large.png');">Ecolab</h1>
+            	<div class="toolbar">
+               		<span class="username"><%=userSessionData.getFullName()%></span>
+               		<span class="exit">
+               			<a href="ecolabParameters.jsp">Voltar</a>
+               			<a href="login.jsp"><%=messages.getText("generic.messages.logout")%></a>
+               		</span>
+            	</div>
+         	</section>
+      	</header>
+
+		<form name="logout" action="./login.jsp" method="post"></form>
+    	<section id="content" ng-app="app" >
+			<section class="grid_container">
+				<form name="assessments" action="./report_assessment.jsp" method="post">
+					<fieldset id="username_block" class="active">
+						 <div class="titleReport" align="left">
+						 	<div id="name"><h1 class="customer_logo" >Ecolab - <%=userSessionData.getFilter().getDivOrgItem(0, 1, new Integer(dpto)).getName() %></h1></div>
+						 </div>
+						 <div class="titleReport" align="left">
+						 	<div id="name"><h2 class="customer_logo" ><%=monthStr+" - "+year%></h2></div>
+						 </div>
+						 <div class="tabs" align="center">
+							  <button type="button" onclick="tabChange('generalSheet')" class="btn btn-default"><%="INFORMAÇÕES GERAIS"%></button>
+							  <button type="button" onclick="tabChange('analizeSheet')" class="btn btn-default"><%="ANÁLISES"%></button>
+							  <button type="button" onclick="tabChange('gpsSheet')" class="btn btn-default"><%="FUNCIONALIDADE APARELHOS"%></button>
+							  <button type="button" onclick="tabChange('fineSpeedSheet')" class="btn btn-default"><%="INFRAÇÕES/MULTAS"%></button>
+							  <button type="button" onclick="tabChange('parametricMonthSheet')" class="btn btn-default"><%="PARAMÉTRICO MENSAL"%></button>
+							  <button type="button" onclick="tabChange('parametricMonthChartSheet')" class="btn btn-default"><%="GRÁFICO PARAMÉTRICO MENSAL"%></button>
+							  <button type="button" onclick="tabChange('parametricYearSheet')" class="btn btn-default"><%="PARAMÉTRICO ANUAL"%></button>
+							  <button type="button" onclick="tabChange('parametricYearChartSheet')" class="btn btn-default"><%="GRÁFICO PARAMÉTRICO ANUAL"%></button>
+							  <button type="button" onclick="tabChange('fineChartSheet')" class="btn btn-default"><%="GRÁFICO DE MULTAS"%></button>
+							  <button type="button" onclick="tabChange('fineMonthSheet')" class="btn btn-default"><%="MULTAS/MENSAL"%></button>
+							  <button type="button" onclick="tabChange('fineYearSheet')" class="btn btn-default"><%="MULTAS/ANUAL"%></button>
+							  <button type="button" onclick="tabChange('speedChartSheet')" class="btn btn-default"><%="GRÁFICO DE INFRAÇÕES"%></button>
+							  <button type="button" onclick="tabChange('odometerSheet')" class="btn btn-default"><%="QUILOMETRAGEM"%></button>
+							  <button type="button" onclick="tabChange('speedSheet')" class="btn btn-default"><%="INFRAÇÕES/MENSAL"%></button>
+							  <button type="button" onclick="tabChange('nightSheet')" class="btn btn-default"><%="DIREÇÃO NOTURNA"%></button>
+						</div>
+	    				<div id="speedSheet" style="display: none;">
+	    					<div>
+		    					<div id="titlePage" style="height: 130px;">
+		    						<h1>DETALHE DAS INFRAÇÕES DE VELOCIDADE</h1>
+		    						<p class="subtitleEcolab">(Maior de 120 km/h)</p>
+		    						<p class="subtitleEcolab"><%="Total de Eventos:" + speedsCollection.size()%></p>
+		    					</div>
+		    				</div>
+		    				<div id="speeds"></div>
+	    				</div>
+	    				<div id="nightSheet" style="display: none;">
+	    					<div>
+		    					<div id="titlePage" style="height: 130px;">
+		    						<h1>DIREÇÃO NOTURNA</h1>
+		    						<p class="subtitleEcolab">Entre 20:00 e 05:00</p>
+		    						<p class="subtitleEcolab"><%="Total de Eventos:" + nigthCollection.size()%></p>
+		    					</div>
+		    				</div>
+		    				<div id="nights"></div>
+	    				</div>
+	    				<div id="fineMonthSheet" style="display: none;">
+	    					<div>
+		    					<div id="titlePage" style="height: 100px;">
+		    						<h1>DETALHE DAS MULTAS MENSAL</h1>
+		    						<p class="subtitleEcolab"><%="Total Eventos: "+fines.size()%></p>
+		    					</div>
+		    				</div>
+		    				<div id="fineMonth"></div>
+	    				</div>
+	    				<div id="fineYearSheet" style="display: none;">
+	    					<div>
+		    					<div id="titlePage" style="height: 100px;">
+		    						<h1>DETALHE DAS MULTAS ANUAL</h1>
+		    						<p class="subtitleEcolab"><%="Total Eventos: "+finesY.size()%></p>
+		    					</div>
+		    				</div>
+		    				<div id="fineYear"></div>
+	    				</div>
+	    				<div id="fineChartSheet" style="display: none;">
+	    					<div>
+		    					<div id="titlePage" style="height: 50px;">
+		    						<h1>GRÁFICO DAS MULTAS</h1>
+		    					</div>
+		    				</div>
+	    					<div>
+		    					<div id="titlePage" style="height: 50px;">
+		    						<h4>MENSAL</h4>
+<%					if(reportData.getMonthDriverFines() == 0) {
+%>		    						<p class="subtitleEcolab"><%="Não ocorreram multas para o mês "+monthStr%></p>
+									<br>
+<%					}
+%>		    					</div>
+		    				</div>
+		    				<div id="fineChart1"></div>
+	    					<div>
+		    					<div id="titlePage" style="height: 50px;">
+		    						<h4>ANUAL</h4>
+<%					if(reportData.getYearDriverFines() == 0) { 
+%>		    						<p class="subtitleEcolab"><%="Não ocorreram multas este ano"%></p>
+<%					}
+%>		    					</div>
+		    				</div>
+		    				<div id="fineChart2"></div>
+	    					<div>
+		    					<div id="titlePage" style="height: 50px;">
+		    						<h4>GRAVIDADE</h4>
+		    					</div>
+		    				</div>
+		    				<div id="fineChart3" style="height: 600px;"></div>
+	    				</div>
+	    				<div id="odometerSheet" style="display: none;">
+	    					<div>
+		    					<div id="titlePage" style="height: 130px;">
+		    						<h1>TABELA DE QUILOMETRAGEM</h1>
+		    						<p class="subtitleEcolab">Total de Veículos: <%=String.valueOf(reportData.getVehicleCount()) %></p>
+		    						<p class="subtitleEcolab">Total de Condutores:  <%=String.valueOf(reportData.getDrivers().size()) %></p>
+		    					</div>
+		    				</div>
+		    				<div id="general" style="width:1800px;">
+		    					<div id="contenidos">
+		    						<div id="columnaFines" style="width: 80px; text-align: center;">
+  										Placa
+  									</div>
+  									&nbsp;
+		    						<div id="columnaFines" style="width: 250px; text-align: center;">
+  										Condutor Responsável
+  									</div>
+  									&nbsp;
+<%  	for(int i = 1; i <= 12; i++) {
+%>  								&nbsp;
+		    						<div id="columnaFines" style="width: 80px; text-align: center;">
+  										<%=messages.getText("generic.month."+i).toUpperCase()%>
+  									</div>
+<%		}
+%> 									&nbsp;
+		    						<div id="columnaFines" style="width: 80px; text-align: center;">
+		    						Total
+  									</div>
+	    						</div>		  
+								<%=reportData.getOdometers(monthValue)%>
+		    				</div>
+		    				<br>
+		    				<div class="borderPointed" style="width: 550px;">
+	    						<p style="text-align: center;">Legenda</p>
+	  							<div id="contenedor"  style="width: 550px;">
+									<div id="contenidos">
+										&nbsp;
+										<div id="columna2" style="background-color:orange;">
+											-
+										</div>
+										&nbsp;
+										<div id="columna" style="width: 480px; text-align: left; vertical-align: middle;">
+	  										Quilometragem reportada menor que 0 ou maior que 10.000
+	  									</div>
+									</div>
+									<br>
+									<div id="contenidos">
+										&nbsp;
+										<div id="columna2" style="background-color:red; ">
+											0
+										</div>
+										&nbsp;
+										<div id="columna" style="width: 480px; text-align: left; vertical-align: middle;">
+	  										Mesma quilometragem anterior
+	  									</div>
+									</div>
+									<br>
+									<div id="contenidos">
+										&nbsp;
+										<div id="columna2" style="background-color:white;">
+												0
+										</div>
+										&nbsp;
+										<div id="columna" style="width: 480px; text-align: left; vertical-align: middle;">
+	  										Reporte de Quilometragem igual a Zero
+	  									</div>
+									</div>
+									<br>
+									<div id="contenidos">
+											&nbsp;
+										<div id="columna2" style="background-color:#00CC00;">
+										&nbsp;
+										</div>
+											&nbsp;
+										<div id="columna" style="width: 480px; text-align: left; vertical-align: middle;">
+	  										Quilometragem válida
+	  									</div>
+									</div>
+									<br>
+									<div id="contenidos">
+											&nbsp;
+										<div id="columna2" style="background-color:white;">
+												-
+											</div>
+											&nbsp;
+										<div id="columna" style="width: 480px; text-align: left; vertical-align: middle;">
+	  										Não está na WEB
+	  									</div>
+									</div>
+									<br>
+								</div>
+		    				</div>
+	    				</div>
+	    				<div id="speedChartSheet" style="display: none;">
+	    					<div>
+		    					<div id="titlePage" style="height: 100px; width: 1000px;">
+		    						<h1>GRÁFICO DE INFRAÇÕES DE VELOCIDADE </h1>
+		    						<p class="subtitleEcolab">(Maior de 120 km/h)</p>
+		    					</div>
+		    				</div>
+		    				<div id="speedchart"></div>
+	    				</div>
+	    				<div id="parametricYearChartSheet" style="display: none;">
+	    					<div>
+		    					<div id="titlePage">
+		    						<h1>GRÁFICO PARAMÉTRICO - ANUAL</h1>
+		    					</div>
+		    				</div>
+		    				<div id="parametricYearChart">
+		    				</div>
+	    				</div>
+	    				<div id="parametricYearSheet" style="display: none;">
+	    					<div>
+		    					<div id="titlePage" style="height: 100px;">
+		    						<h1>PARAMÉTRICO - ANUAL</h1>
+		    						<p class="subtitleEcolab"><%="JAN-"+monthStr.toUpperCase().substring(0,3)%></p>
+		    					</div>
+		    				</div>
+		    				<div id="general" style="width:1500px;">
+		    					<div id="contenidos">
+		    						<div id="columnaFines" style="width: 250px; text-align: center;">
+  										NOME COMPLETO
+  									</div>
+  									&nbsp;
+<%  	for(int i = 1; i <= 12; i++) {
+%>  								&nbsp;
+		    						<div id="columnaFines" style="width: 80px; text-align: center;">
+  										<%=messages.getText("generic.month."+i).toUpperCase()%>
+  									</div>
+<%		}
+%> 									&nbsp;
+		    						<div id="columnaFines" style="width: 80px; text-align: center;">
+		    						MÉDIA
+  									</div>
+	    						</div>		  
+	    						<%=parametricYear%>
+		    				</div>
+	    				</div>
+	    				<div id="parametricMonthChartSheet" style="display: none;">
+	    					<div>
+		    					<div id="titlePage" style="height: 100px;">
+		    						<h1>GRÁFICO PARAMÉTRICO - MENSAL</h1>
+		    						<p class="subtitleEcolab"><%=monthStr.toUpperCase()+" - "+year%></p>
+		    					</div>
+		    				</div>
+		    				<div id="parametricMonthChart">
+		    				</div>
+	    				</div>
+	    				<div id="parametricMonthSheet" style="display: none;">
+	    					<div>
+		    					<div id="titlePage" style="height: 100px;">
+		    						<h1>PARAMÉTRICO - MENSAL</h1>
+		    						<p class="subtitleEcolab"><%=monthStr.toUpperCase()+" - "+year%></p>
+		    					</div>
+		    				</div>
+		    				<div id="general" style="width: 1400px;">
+		    					<div id="contenidos">
+		    						<div id="columnaFines" style="width: 250px; text-align: center;">
+  										Nome
+  									</div>
+  									&nbsp;
+		    						<div id="columnaFines" style="width: 50px; text-align: center;">
+  										Placa
+  									</div>
+  									&nbsp;
+		    						<div id="columnaFines" style="width: 50px; text-align: center;">
+  										Kms
+  									</div>
+  									&nbsp;
+		    						<div id="columnaFines" style="width: 90px; text-align: center;">
+  										Infração de Velocidade
+  									</div>
+  									&nbsp;
+		    						<div id="columnaFines" style="width: 90px; text-align: center;">
+  										Multa
+  									</div>
+  									&nbsp;
+		    						<div id="columnaFines" style="width: 90px; text-align: center;">
+  										Infrações + Multas
+  									</div>
+  									&nbsp;
+		    						<div id="columnaFines" style="width: 90px; text-align: center;">
+  										Acidentes
+  									</div>
+  									&nbsp;
+		    						<div id="columnaFines" style="width: 90px; text-align: center;">
+  										Diminuição da Pontuação
+  									</div>
+  									&nbsp;
+		    						<div id="columnaFines" style="width: 90px; text-align: center;">
+  										Pontuação Restante
+  									</div>
+  									&nbsp;
+		    						<div id="columnaFines" style="width: 90px; text-align: center;">
+  										Pontuação Total
+  									</div>
+	    						</div>		  
+	    						<%=reportData.getParametricMonth(monthValue)%>
+								<div id="contenedor">
+									<div id="contenidos">
+										<div id="columna1">
+											<b>I+M = Infrações + Multas;</b>
+										</div>
+									</div>
+									<div id="contenidos">
+										<div id="columna1">
+											<ul>
+												<li>
+													I+M = Infrações + Multas;
+													<ul>
+														<li>(I+M) for menor ou igual a 5 = 100 + (I+M)*(-5);</li>
+														<li>(I+M) está entre 6 e 16 = 100 + (I+M)*(-5,56);</li>
+														<li>(I+M) for maior ou igual a 17 : 10</li>
+													</ul>
+												</li>
+												<li>O valor mínimo de pontuação é 10;</li>
+												<li>Acidentes evitáveis reduzem 30 pontos;</li>
+												<li>Multas gravíssimas reduzem 25 pontos;</li>
+												<li>Multas de 'Tolerância 0' reduzem 50 pontos;</li>
+												<li>Multas de rodizio não são contabilizadas neste informe.</li>
+											</ul>
+										</div>
+									</div>
+								</div>
+		    				</div>
+	    				</div>
+	    				<div id="fineSpeedSheet" style="display: none;">
+	    					<div>
+		    					<div id="titlePage">
+		    						<h1>INFRAÇÕES DE VELOCIDADE / MULTAS</h1>
+		    					</div>
+		    				</div>
+	    					<div id="general">
+	    						<div id="contenidos">
+		    						<div id="columnaGral">
+					    				<div id="contenedor">
+					    					<div id="contenidos">
+						    					<div id="columnaFines" style="width: 225px; text-align: center;">
+						    						MÊS
+						    					</div>
+						    					&nbsp;
+						    					<div id="columnaFines" style="width: 85px; text-align: center;">
+						    						MULTAS
+						    					</div>
+						    					&nbsp;
+						    					<div id="columnaFines" style="width: 85px; text-align: center;">
+						    						INFRAÇÕES
+						    					</div>
+						    					&nbsp;
+						    					<div id="columnaFines" style="width: 85px; text-align: center;">
+						    						TOTAL
+						    					</div>
+					    					</div>	
+					    				</div>				    					
+<%			int totalFines = 0;
+			int totalSpeeds = 0;
+			for(int i = 0; i <= monthValue; i++) {
+				totalFines += Integer.parseInt(values[i][1]);
+				totalSpeeds += Integer.parseInt(values[i][2]);
+%>										<br>
+					    				<div id="contenedor">
+					    					<div id="contenidos">
+						    					<div id="columnaFinesCell" style="width: 120px;">
+						    						<%=values[i][0]%>
+						    					</div>
+						    					&nbsp;
+						    					<div id="columnaFinesCell" style="width: 50px; text-align: center;">
+						    						<%=year%>
+						    					</div>
+						    					&nbsp;
+						    					<div id="columnaFinesCell" style="width: 80px; text-align: center;">
+						    						<%=values[i][1]%>
+						    					</div>
+						    					&nbsp;
+						    					<div id="columnaFinesCell" style="width: 80px; text-align: center;">
+						    						<%=values[i][2]%>
+						    					</div>
+						    					&nbsp;
+						    					<div id="columnaFinesCell" style="width: 80px; text-align: center;">
+						    						<%=values[i][3]%>
+						    					</div>
+					    					</div>					    					
+				    					</div>					    					
+<%			}
+%>										<br>		     					    				
+					    				<div id="contenedor">
+					    					<div id="contenidos">
+						    					<div id="columnaFines" style="width: 225px; text-align: center;">
+						    						TOTAL
+						    					</div>
+						    					&nbsp;
+						    					<div id="columnaFines" style="width: 85px; text-align: center;">
+						    						<%=String.valueOf(totalFines)%>
+						    					</div>
+						    					&nbsp;
+						    					<div id="columnaFines" style="width: 85px; text-align: center;">
+						    						<%=String.valueOf(totalSpeeds)%>
+						    					</div>
+						    					&nbsp;
+						    					<div id="columnaFines" style="width: 85px; text-align: center;">
+						    						<%=String.valueOf(totalFines+totalSpeeds)%>
+						    					</div>
+					    					</div>	
+					    				</div>				    					
+					    			</div>
+		    						<div id="columnaGral">
+					    				<div id="fineSpeedChart"></div>
+					    			</div>
+					    		</div>
+					    	</div>
+	    				</div>
+	    				<div id="gpsSheet" style="display: none;">
+	    					<div id="sheet">
+		    					<div id="titlePage">
+		    						<h1>FUNCIONALIDADE DOS APARELHOS DE MONITORAMENTO</h1>
+		    					</div>
+		    					<div id="general">
+		    						<div id="contenidos">
+			    						<div id="columnaGral">
+				    						<div class="borderLine" style="height: 30px; vertical-align: middle;">
+				    							<div id="contenedor" style="vertical-align: middle;">
+					    							<div id="contenidos" style="vertical-align: middle;">
+						    							<div id="columna1" style="vertical-align: middle;">
+						    								VEÍCULO COM INFORMAÇÃO DE MONITORAMENTO
+						    							</div>
+						    							<div id="columna" style="width: 50px; font-family: Verdana,Arial; font-size: 10pt; text-align: center; vertical-align: middle;">
+						    								<%=String.valueOf(gpsVehicles[0])%>
+						    							</div>
+					    							</div>
+				    							</div>
+				    						</div>
+<%					Collection<String[]> gps1 = (Collection<String[]>)gpsVehicles[1];
+%>											<br>	
+				    						<div class="borderLine" style="height: 30px;">
+				    							<div id="contenedor">
+					    							<div id="contenidos">
+						    							<div id="columna1">
+						    								VEÍCULO SEM INFORMAÇÃO DE MONITORAMENTO
+						    							</div>
+						    							<div id="columna" style="width: 50px; font-family: Verdana,Arial; font-size: 10pt; text-align: center; vertical-align: middle;">
+						    								<%=String.valueOf(gps1.size())%>
+						    							</div>
+					    							</div>
+				    							</div>
+				    						</div>
+<%					if(gps1.size() > 0) {
+						Iterator<String[]> gpsIt = gps1.iterator();
+						while(gpsIt.hasNext()) {
+							String[] gpsValues = gpsIt.next();
+%>
+			    							<div id="contenedor">
+				    							<div id="contenidos">
+					    							<div id="columna1">
+					    								<%=gpsValues[0]%>
+					    							</div>
+					    							<div id="columna" style="width: 50px; font-family: Verdana,Arial; font-size: 10pt; text-align: center; vertical-align: middle;">
+					    								<%=gpsValues[1]%>
+					    							</div>
+				    							</div>
+			    							</div>
+<%						}
+					}
+					Collection<String[]> gps2 = (Collection<String[]>)gpsVehicles[2];
+%>											<br>		
+				    						<div class="borderLine" style="height: 30px;">
+				    							<div id="contenedor">
+					    							<div id="contenidos">
+						    							<div id="columna1">
+						    								VEÍCULOS INSTALADOS EM <%=monthStr.toUpperCase()%>
+						    							</div>
+						    							<div id="columna" style="width: 50px; font-family: Verdana,Arial; font-size: 10pt; text-align: center; vertical-align: middle;">
+						    								<%=String.valueOf(gps2.size())%>
+						    							</div>
+					    							</div>
+				    							</div>
+				    						</div>
+<%					if(gps2.size() > 0) {
+						Iterator<String[]> gpsIt = gps2.iterator();
+						while(gpsIt.hasNext()) {
+							String[] gpsValues = gpsIt.next();
+%>
+			    							<div id="contenedor">
+				    							<div id="contenidos">
+					    							<div id="columna1">
+					    								<%=gpsValues[0]%>
+					    							</div>
+					    							<div id="columna" style="width: 50px; font-family: Verdana,Arial; font-size: 10pt; text-align: center; vertical-align: middle;">
+					    								<%=gpsValues[1]%>
+					    							</div>
+				    							</div>
+			    							</div>
+<%						}
+					}
+					Collection<String[]> gps3 = (Collection<String[]>)gpsVehicles[3];
+%>											<br>
+				    						<div class="borderLine" style="height: 30px;">
+				    							<div id="contenedor">
+					    							<div id="contenidos">
+						    							<div id="columna1">
+						    								VEÍCULOS  COM ERRO DE EQUIPAMENTO - Quilometragem
+						    							</div>
+						    							<div id="columna" style="width: 50px; font-family: Verdana,Arial; font-size: 10pt; text-align: center; vertical-align: middle;">
+						    								<%=String.valueOf(gps3.size())%>
+						    							</div>
+					    							</div>
+				    							</div>
+				    						</div>
+<%					if(gps3.size() > 0) {
+						Iterator<String[]> gpsIt = gps3.iterator();
+						while(gpsIt.hasNext()) {
+							String[] gpsValues = gpsIt.next();
+%>
+			    							<div id="contenedor">
+				    							<div id="contenidos">
+					    							<div id="columna1">
+					    								<%=gpsValues[0]%>
+					    							</div>
+					    							<div id="columna" style="width: 50px; font-family: Verdana,Arial; font-size: 10pt; text-align: center; vertical-align: middle;">
+					    								<%=gpsValues[1]%>
+					    							</div>
+				    							</div>
+			    							</div>
+<%						}
+					}
+%>			    						</div>
+			    						<div id="columnaGral">
+			    							<br>
+			    							<br>
+						    				<div id="gpsPie"></div>
+				    					</div>
+			    					</div>
+		    					</div>
+		    				</div>
+	    				</div>
+	    				<div id="analizeSheet" style="display: none; width: 1000px;">
+	    					<div id="titlePage">
+	    						<h1>ANÁLISES DE GESTÃO</h1>
+	    					</div>
+	    					<div id="general">
+		    					<div id="contenidos">
+			    					<div id="columnaGral">
+				    					<div style="width: 500px;">
+											<div class="borderLine" style="height: 600px">
+												<br>
+						    					<div class="generalSubtitle" style="text-align:center;">
+							    					MENSAIS
+						    					</div>							
+					  							<div id="contenedor">
+													<div id="contenidos">
+														<div id="columna1">
+															- <%=value3%>% dos condutores não estiveram envolvidos em condução perigosa em <%=monthStr%> de <%=year%>.
+														</div>				
+													</div>
+													<div id="contenidos">
+														<div id="columna1">
+															- <%=value2%>% dos condutores foram considerados condutores de risco moderado em <%=monthStr%> <%=year%>.
+														</div>							
+													</div>
+													<div id="contenidos">
+														<div id="columna1">
+															- <%=value1%>% dos condutores foram considerados condutores de alto risco em <%=monthStr%> <%=year%>.
+														</div>
+													</div>
+												</div>							
+												<br>
+						    					<div class="generalSubtitle" style="text-align:center;">
+													 INFRAÇÕES DE VELOCIDADE				
+												</div>							
+<%					String msg = "- No mês de "+monthStr+" "+year+" ";
+					switch(Integer.parseInt(values[monthValue][2])) {
+						case 0:
+							msg += "não ocorreu Infrações de Velocidade.";
+							break;
+						case 1:
+							msg += "ocorreu uma Infracção de Velocidade.";
+							break;
+						default:
+							msg += "ocorreram "+values[monthValue][2]+" Infrações de Velocidade, com ";
+							msg += (driversWithSpeed == 1) ? "1 motorista envolvido." : driversWithSpeed+" motoristas envolvidos.";  
+							break;
+					}
+%>
+					  							<div id="contenedor">
+													<div id="contenidos">
+														<div id="columna1">
+															<%=msg%>				
+														</div>
+													</div>
+												</div>
+												<br>
+						    					<div class="generalSubtitle" style="text-align:center;">
+													COMPARATIVO MENSAL
+												</div>				
+					  							<div id="contenedor">
+													<div id="contenidos">
+														<div id="columna1">
+															<%="- "+withGPS+"% dos veículos ativos da Frota possuem sistema de Monitoramento em funcionamento."%>							
+														</div>
+													</div>
+													<div id="contenidos">
+														<div id="columna1">
+															<%="- "+String.valueOf(100-withGPS)+"% dos veículos ativos não possuem sistema de monitoramento."%>					
+														</div>
+													</div>
+												</div>
+												<br>
+						    					<div class="generalSubtitle" style="text-align:center;">
+													ANÁLISE DAS MULTAS
+												</div>				
+<%					msg = "- No mês de "+monthStr+" "+year+" ";
+					switch(Integer.parseInt(values[monthValue][1])) {
+						case 0:
+							msg += "não ocorreu multa.";
+							break;
+						case 1:
+							msg += "ocorreu uma multa.";
+							break;
+						default:
+							msg += "ocorreram "+values[monthValue][1]+" multas, com ";
+							msg += (driversWithFine == 1) ? "1 motorista envolvido neste departamento." : driversWithFine+" motoristas envolvidos neste departamento.";  
+							break;
+					}
+%>												<div id="contenedor">
+													<div id="contenidos">
+														<div id="columna1">
+															<%=msg%>
+														</div>	
+													</div>
+<%				double variation1 = (monthValue == 0) ? 0.0 : Math.round((avg[monthValue] - avg[monthValue-1]) * 100.0 / avg[monthValue-1] * 100.0) / 100.0;
+				double variation2 = (monthValue == 0) ? 0.0 : Math.round((Double.parseDouble(values[monthValue][1]) - Double.parseDouble(values[monthValue-1][1])) * 100.0 / Double.parseDouble(values[monthValue-1][1]) * 100.0) / 100.0;
+				double variation3 = (monthValue == 0) ? 0.0 : Math.round((Double.parseDouble(values[monthValue][2]) - Double.parseDouble(values[monthValue-1][2])) * 100.0 / Double.parseDouble(values[monthValue-1][2]) * 100.0) / 100.0;
+%>							
+	    										</div>
+	    									</div>
+	    								</div>
+    								</div>
+    								&nbsp;
+			    					<div id="columnaGral">
+	    								<div style="width: 500px;">
+											<div class="borderLine" style="height: 600px">
+												<br>
+	    										<div class="generalSubtitle" style="text-align:center;">
+	    											ANUAIS
+	    										</div>							
+					  							<div id="contenedor">
+													<div id="contenidos">
+														<div id="columna1">
+															<%="Variação da Performance Mensal de Segurança Veicular de "+monthStr+" de "+year+" em relação ao mês anterior :"+variation1+"%."%></p>				
+														</div>	
+													</div>
+													<div id="contenidos">
+														<div id="columna1">
+															<%="Variação Infrações de Velocidade de "+monthStr+" de "+year+" em relação ao mês anterior :"+variation3+"%."%></p>				
+														</div>	
+													</div>
+													<div id="contenidos">
+														<div id="columna1">
+															<%="Variação de Multas de "+monthStr+" de "+year+" em relação ao mês anterior :"+variation2+"%."%></p>				
+														</div>	
+													</div>
+												</div>
+												<br>						
+												<div class="generalSubtitle" style="text-align:center;">
+													STATUS DOS CONDUTORES - MÉDIA ANUAL
+												</div>							
+					  							<div id="contenedor">
+													<div id="contenidos">
+														<div id="columna1">
+								  							<div id="contenedor"  style="width: 250px;">
+																<div id="contenidos">
+																	<div id="columna" style="width: 150px; text-align: left;">
+								  										Condução Não Perigosa:
+								  									</div>
+																	<div id="columna2" style="background-color:#00CC00;">
+			  															<%=String.valueOf(totalPerformanceValues[0])%>
+			  														</div>
+																</div>
+																<div id="contenidos">
+																	<div id="columna" style="width: 150px; text-align: left;">
+								  										Risco Moderado:
+								  									</div>
+																	<div id="columna2" style="background-color:yellow;">
+			  															<%=String.valueOf(totalPerformanceValues[1])%>
+			  														</div>
+																</div>
+																<div id="contenidos">
+																	<div id="columna" style="width: 150px; text-align: left;">
+								  										Alto Risco:
+								  									</div>
+																	<div id="columna2" style="background-color:red;">
+			  															<%=String.valueOf(totalPerformanceValues[2])%>
+			  														</div>
+																</div>
+															</div>
+  														</div>
+  														<div id="columna1">
+															<div id="totalperformancePie"></div>
+														</div>
+													</div>	
+												</div>
+						    				</div>
+					    				</div>
+				    				</div>
+				    			</div>
+				    		</div>
+				    	</div>
+	    				<div id="generalSheet" style="display: none; width: 1000px;">
+	    					<div id="titlePage">
+	    						<h1>TABELA DE COMANDO VEICULAR</h1>
+	    					</div>
+	    					<div class="borderPointed" style="width: 350px;">
+	    						<p style="text-align: center;">Legenda</p>
+	    						<p class="backGreen" style="height: 25px;">100 - 75 pontos = Condução não perigosa</p>
+	    						<p class="backYellow" style="height: 25px;">74,99 - 50 pontos = Ricos Moderado</p>
+	    						<p class="backRed" style="height: 25px;">49,99 - 0 pontos = Alto Risco</p>
+	    					</div>
+	    					<br>
+	    					<div id="general">
+		    					<div id="contenidos">
+			    					<div id="columnaGral">
+				    					<div style="width: 500px;">
+											<div class="borderLine" style="height: 50px;">
+												<br>
+												<span class="generalText" style="height: 30px; vertical-align: middle;">PERFORMANCE DE SEGURANÇA VEICULAR (JAN-<%=monthStr.toUpperCase().substring(0,3)%>):<%=String.valueOf(avg[12]) %></span>
+											</div>
+											<br>
+											<div class="borderLine">
+												<br>
+												<div class="generalSubtitle" style="text-align:center;">
+													VALORES TOTAIS - <%=monthStr.toUpperCase()%>
+												</div>
+												<br>
+												<div id="contenedor">
+													<div id="contenidos">
+														<div id="columna1">Frota com Informação:</div>
+														<div id="columna2"><%=withGPS+"%"%></div>
+														&nbsp;
+													</div>
+													<br>
+													<div id="contenidos">
+														<div id="columna1">Veículos com Informação:</div>
+														<div id="columna2"><%=String.valueOf(gpsVehicles[0])%></div>
+														&nbsp;
+													</div>
+													<br>
+													<div id="contenidos">
+														<div id="columna1">Veículos Analisados:</div>
+														<div id="columna2"><%=String.valueOf( ((Integer)gpsVehicles[0]).intValue() + ((Collection)gpsVehicles[1]).size() )%></div>
+														&nbsp;
+													</div>
+												</div>
+												<br>
+												<div class="generalSubtitle" style="text-align:center;">
+													EVENTOS
+												</div>
+												<br>
+												<div id="contenedor">
+													<div id="contenidos">
+														<div id="columna1">Total de Infrações de Velocidade:</div>
+														<div id="columna2"><%=values[monthValue][2]%></div>
+														&nbsp;
+													</div>
+													<br>
+													<div id="contenidos">
+														<div id="columna1">Total de Multas:</div>
+														<div id="columna2"><%=values[monthValue][1]%></div>
+														&nbsp;
+													</div>
+												</div>
+												<br>
+												<div class="generalSubtitle" style="text-align:center;">
+													CONDUTORES (MENSAL)
+												</div>
+												<br>
+												<div id="contenedor">
+													<div id="contenidos">
+														<div id="columna1">Condução Não Perigosa:</div>
+														<div id="columna2" style="background-color:#00CC00;"><%=String.valueOf(driverMonthPoints[0])%></div>
+														&nbsp;
+													</div>
+													<br>
+													<div id="contenidos">
+														<div id="columna1">Risco Moderado:</div>
+														<div id="columna2" style="background-color:#FFFF00;"><%=String.valueOf(driverMonthPoints[1])%></div>
+														&nbsp;
+													</div>
+													<br>
+													<div id="contenidos">
+														<div id="columna1">Alto Risco:</div>
+														<div id="columna2" style="background-color:#FF0000;"><%=String.valueOf(driverMonthPoints[2])%></div>
+														&nbsp;
+													</div>
+												</div>
+												<br>
+					    					</div>
+				    					</div>
+				    					<br>
+				    					<br>
+					    				<div id="generalPie" style="width: 500px; height: 400px;"></div>
+				    				</div>
+			    					<div id="columnaGral" style="width: 800px;">
+					    				<div id="generalLine"></div>
+					    				<div id="generalChart"></div>
+					    			</div>
+				    			</div>
+		    				</div>
+	    				</div>
+	    			</fieldset>
+	    		</form>
+			</section>
+		</section>
+		<script type="text/javascript" src="scripts/json2.min.js"></script>
+		<!--[if lt IE 9]>
+			<script type="text/javascript" src="scripts/jquery-1.11.1.min.js"></script>
+		<![endif]-->
+		<!--[if gte IE 9]><!-->
+			<script type="text/javascript" src="scripts/jquery-2.0.2.min.js"></script>
+		<!--<![endif]-->
+		<script type="text/javascript" src="scripts/jquery-ui-1.10.3.custom.min.js"></script>
+		<script type="text/javascript" src="scripts/jquery.ui.datepicker-pt.js"></script>
+		<script type="text/javascript" src="scripts/jquery.ui.datepicker-es.js"></script>
+		<script type="text/javascript" src="scripts/jquery.tadeouy.loggable.js"></script>
+		<script type="text/javascript" src="scripts/jquery.tadeouy.assessmentController.js"></script>
+		<script type="text/javascript" src="scripts/jquery.tadeouy.question.js"></script>
+		<script type="text/javascript" src="scripts/jquery.tadeouy.card.js"></script>
+		<script type="text/javascript" src="scripts/jquery.tadeouy.assessment.js"></script>
+		<script type="text/javascript" src="scripts/assessment.js"></script>
+	</body>
+<%		}
+%>
+</html:html>

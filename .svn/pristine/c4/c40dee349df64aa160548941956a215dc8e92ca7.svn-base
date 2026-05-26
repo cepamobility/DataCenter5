@@ -1,0 +1,102 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.vehicle.tables">
+       <class name="Vehicle" table="vehicles">
+        
+        <id	column="id"	name="id"	type="java.lang.Integer">
+            <generator class="native" />
+        </id>
+        <property	name="matricula"	type="java.lang.String"		column="matricula"	not-null="true" />        
+        <property	name="model"	type="java.lang.String"		column="model" not-null="true" />                
+        <many-to-one	name="trade"	class="persistence.datatype.tables.TypeTrade"		column="trade"		not-null="true" />
+        <many-to-one	name="cover"	class="persistence.datatype.tables.TypeCover"		column="cover"/>          
+        <many-to-one    name="type"     class="persistence.datatype.tables.TypeVehicle"	column="type"  not-null="true"/>
+        <property	name="year"	type="java.lang.Integer" column="year"	not-null="true" />
+        <property	name="colour"	type="java.lang.String"		column="colour"/>
+        <property	name="permissionNumber"	 type="java.lang.String" column="permissionNumber"/>        
+		<many-to-one name="use" class="persistence.datatype.tables.TypeUse"	column="use"  not-null="true"/>        
+        <property	name="permissionExpiry"	type="java.util.Date" column="permissionExpiry"/>
+        
+        <many-to-one name="ownership" class="persistence.datatype.tables.TypeCenterCost"	column="centerCost"/>                
+        
+        <many-to-one name="fuel" class="persistence.datatype.tables.TypeFuel"	column="fuel"/>                        
+        
+        <property	name="purchaseDate"	type="java.util.Date" column="purchaseDate"/>        
+        
+        <property	name="chasisNumber"	 type="java.lang.String" column="chasisNumber"/>                
+        <property	name="co2emission"	 type="java.lang.Float" column="co2emission"/>
+        <property	name="consume"	 type="java.lang.Float" column="consume"/>
+        
+        <many-to-one name="engine" class="persistence.datatype.tables.TypeEngine"	column="engine"/>                               
+        
+        <property	name="tankCapacity"	type="java.lang.Integer" column="tankCapacity"/>                        
+        <property 	name="costCenter"	type="java.lang.String"	column="costCenter"/>
+        <property	name="inclusionDate"	type="java.util.Date" 	column="inclusionDate"/>
+        <property	name="exclusionDate"	type="java.util.Date"	column="exclusionDate"/>
+        <many-to-one name="tankUnit" class="persistence.datatype.tables.TypeVolumeUnit"	column="tankUnit"/>                                        
+
+        <property	name="abs"	type="java.lang.Boolean" column="abs"/>                        
+        
+        <property	name="airBag"	type="java.lang.Boolean" column="airBag"/>                                
+        
+        <property	name="aireAcondicionado"	type="java.lang.Boolean" column="aireAcondicionado"/>                                        
+
+        <many-to-one name="odometerUnit" class="persistence.datatype.tables.TypeDistanceUnit"	column="odometerUnit"/>                                        
+             
+        <many-to-one name="driver" class="persistence.driver.tables.Driver" column="driver" not-null="false"/>        	    
+        
+        <many-to-one name="geoLevel1" class="persistence.administration.corporation.tables.GeoLevel1" column="geolevel1" />
+        <many-to-one name="corpCountry" class="persistence.administration.corporation.tables.CorporationCountry" not-null="true">
+	    
+	    	<column name="corporation"></column>
+	        <column name="country"></column>
+	    </many-to-one>
+        
+        <many-to-one name="divOrg1" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="divorg1" />
+        <many-to-one name="divOrg2" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="divorg2" />
+        <many-to-one name="divOrg3" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="divorg3" />
+        
+        <property	name="mtopExpiry"	type="java.util.Date" 	column="mtopExpiry"/>
+        <property	name="suctaExpiry"	type="java.util.Date" 	column="suctaExpiry"/>
+        <property 	name="greenCardExpiry" >
+        	<column name="greenCardExpiry"  default="null" />
+        </property>
+        
+
+        <many-to-one name="ensuranceType"	class="persistence.datatype.tables.EnsuranceType"	column="ensurancetype" />
+        <property 	name="ensurance"	type="java.lang.String"	column="ensurance"/>
+
+        <property	name="ownerCard"	type="java.lang.Boolean" column="ownercard"/>                        
+
+        <property 	name="axisCount"	type="java.lang.Integer"	column="axis"/>
+        <property 	name="hp"	type="java.lang.Integer"	column="hp"/>
+        
+        <property 	 name="observations"	type="java.lang.String"	column="observations" length="4000"/>
+
+        <property 	name="cost"		type="java.lang.Integer"	column="cost"/>
+
+        <many-to-one name="optionalInfo"    class="persistence.vehicle.tables.VehicleOptionalInfo"	column="optionalInfo"  />
+        <many-to-one 	name="assignedVehicle"	class="persistence.datatype.tables.AssignedVehicle"	column="assignedvehicle" />
+        
+        <property	name="suspension"	type="java.lang.Boolean" column="suspension"/>                                
+        
+        <set inverse="true" name="unconformitySet"  cascade="all-delete-orphan">
+			<key column="id" not-null="true"/>
+			<one-to-many class="Unconformity" />
+		</set>
+		
+		
+		<!-- Contratos de Alquiler de los Vehiculos para Allergan -->
+		<set inverse="true" name="contractSet"  cascade="all-delete-orphan" >
+			<key column="id" not-null="true"/>
+			<one-to-many class="VehicleContract" />
+		</set>
+	    
+	    <!--  VEHICLE SMF -->
+	    <many-to-one name="VehicleSMF"    class="persistence.vehicle.tables.VehicleSMF"	column="vehicleSMF"  />
+	    
+    </class>
+</hibernate-mapping>

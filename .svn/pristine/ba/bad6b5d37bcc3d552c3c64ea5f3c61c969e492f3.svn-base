@@ -1,0 +1,155 @@
+<%@page language="java" 
+	errorPage="../exception.jsp"
+	import="java.util.*"
+	import="business.*"
+	import="business.fleet.*"
+	import="business.vehicle.*"
+	import="business.datatype.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.fleet.tables.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.datatype.tables.*"
+	import="communication.datatype.*"
+	import="communication.vehicle.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<html:html>
+	
+<%!
+	RequestDispatcher dispatcher; String context;	
+	Text messages; SystemAccess sys;
+	String period;String year;String vehicle;
+%>
+<%
+	sys=(SystemAccess)session.getAttribute("SystemAccess");
+	messages = sys.getText();
+	String check = Util.checkPermission(sys,SecurityConstants.DRIVER_INSERT_ODOMETER);
+	
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+	
+		String vehicle = request.getParameter("vehicle");
+		String period = request.getParameter("period");
+		String year = request.getParameter("year");
+		String odometer = request.getParameter("odometer");
+		boolean valid = true;
+        if(Util.empty(odometer) || !Util.isNumber(odometer)) {
+            session.setAttribute("Msg",messages.getText("fleet.error.invalid.odometer"));
+            response.sendRedirect("layout.jsp?refer=fleet/OwnOdometers.jsp?vehicle="+vehicle+"&period="+period+"&year="+year);
+            valid = false;
+        }
+		String accidents = request.getParameter("accidents");
+        if(valid && (Util.empty(accidents) || !Util.isNumber(accidents))) {
+            session.setAttribute("Msg",messages.getText("fleet.error.invalid.accidents"));
+            response.sendRedirect("layout.jsp?refer=fleet/OwnOdometers.jsp?vehicle="+vehicle+"&period="+period+"&year="+year);
+            valid = false;
+        }
+		String incidents = request.getParameter("incidents");
+        if(valid && (Util.empty(incidents) || !Util.isNumber(incidents))) {
+            session.setAttribute("Msg",messages.getText("fleet.error.invalid.incidents"));
+            response.sendRedirect("layout.jsp?refer=fleet/OwnOdometers.jsp?vehicle="+vehicle+"&period="+period+"&year="+year);
+            valid = false;
+        }
+        
+        if(valid) {
+	session.setAttribute("url","fleet/odometerConfirmation.jsp?vehicle="+vehicle+"&period="+period+"&odometer="+odometer+"&accidents="+accidents+"&incidents="+incidents+"&year="+year);
+		
+		    VehicleReportFacade vehicleReport = sys.getVehicleReportFacade();
+		    FleetReportFacade fleetReport = sys.getFleetReportFacade();
+	
+	Integer[][] odometerValues = fleetReport.getLastTwoOdometerValues(new Integer(vehicle),new Integer(period),new Integer(year),sys.getUserSessionData());
+	int difference = Integer.parseInt(odometer);
+	int lastDifference = -1;
+	double percent = 0.0;
+	Calendar current = Calendar.getInstance();
+	current.set(Calendar.MONTH,Integer.parseInt(period));
+	current.set(Calendar.YEAR,Integer.parseInt(year));
+	if(odometerValues.length > 0 && odometerValues[0][0] != null) {
+		Calendar last = Calendar.getInstance();
+		last.set(Calendar.MONTH,odometerValues[0][1].intValue()-1);
+		last.set(Calendar.YEAR,odometerValues[0][2].intValue());
+		last.add(Calendar.MONTH,1);
+		difference = Integer.parseInt(odometer) - odometerValues[0][0].intValue(); 
+		if(odometerValues.length > 1 && odometerValues[1][0] != null) {
+	Calendar prelast = Calendar.getInstance();
+	prelast.set(Calendar.MONTH,odometerValues[1][1].intValue()-1);
+	prelast.set(Calendar.YEAR,odometerValues[1][2].intValue());
+	prelast.add(Calendar.MONTH,2);
+	if(prelast.get(Calendar.MONTH) == last.get(Calendar.MONTH) && prelast.get(Calendar.YEAR) == last.get(Calendar.YEAR)
+			&& current.get(Calendar.MONTH) == last.get(Calendar.MONTH) && current.get(Calendar.YEAR) == last.get(Calendar.YEAR)) {
+		lastDifference = odometerValues[0][0].intValue() - odometerValues[1][0].intValue();
+		percent = new Double(Math.abs(lastDifference - difference)).doubleValue() * 100.0 / new Double(lastDifference).doubleValue();
+	}
+		}
+	}
+%>	<html:form action="/FleetOwnodometer">
+		<html:hidden property="vehicle" value='<%=vehicle%>' />
+		<html:hidden property="period" value='<%=String.valueOf(period)%>' />
+		<html:hidden property="year" value='<%=year%>' />
+		<html:hidden property="odometer" value='<%=odometer%>' />
+		<html:hidden property="accidents" value='<%=accidents%>' />
+		<html:hidden property="incidents" value='<%=incidents%>' />
+		<table width="450" border="0" align="center" cellpadding="0" cellspacing="0">
+			<tr class="guide1">
+				<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText("generic.fleet.odometers")+" "+messages.getText("generic.month."+String.valueOf(period))+" - "+year%>' />
+	  		</tr>
+	  		<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+			</tr>
+			<tr>
+				<td colspan="3" width="450">
+					<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("fleet.odometer.insertedvalues")%>' />
+					<table width="100%" cellpadding="0" cellspacing="0" border="0">
+						<tr>
+							<th class="blue" align="left" colspan="2"><%=messages.getText("generic.fleet.pressconfirm")%></th> 
+						</tr>
+						<tr><td>&nbsp;</td></tr>
+						<tr>
+							<th align="left" class="redBig" colspan="2"> <%=messages.getText("generic.fleet.roaded")+" "+String.valueOf(difference)+ " " + messages.getText("generic.fleet.kilometers")+"."%></th> 
+						</tr>
+<%		if(lastDifference > -1) {
+%>						<tr>
+							<th align="left" class="redBig" colspan="2"> <%=messages.getText("generic.fleet.thisrepresents") + " " + String.valueOf(Math.round(percent)) %> % <%=(difference > lastDifference) ? messages.getText("generic.messages.more") : messages.getText("generic.messages.less") %><%=messages.getText("generic.fleet.thanlastperiod")+"." %></th> 
+						</tr>
+<%		}
+%>						<tr><td>&nbsp;</td></tr>						
+						<tr>
+							<th class="linetwo" align="left"><%=messages.getText("generic.fleet.accidentcount")+": "+accidents%></th> 
+						</tr>
+						<tr>
+							<th class="linetwo" align="left"><%=messages.getText("generic.fleet.incidentcount")+": "+incidents%></th> 
+						</tr>
+						<tr><td>&nbsp;</td></tr>
+						<tr>
+							<th class="linetwo" align="center" colspan="2">
+								<html:submit styleClass="input" value='<%=messages.getText("generic.messages.confirm")%>' />
+								<input type="button" class="input" value='<%=messages.getText("generic.messages.cancel")%>' />
+							</th> 
+						</tr>
+					</table>
+					<jsp:include page="../component/utilityboxbottom.jsp"/>	
+				</td>
+			</tr>
+	      	<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+      		</tr>
+	    </table>
+	</html:form>	
+<%		}
+	}
+%>	
+</html:html>

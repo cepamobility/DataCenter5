@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.activity.tables">
+    <class name="ActivityLink" table="activitylinks">
+
+      	<composite-id class="ActivityLinkPK" name="pk" >
+	        <key-property 	name="activity"	type="java.lang.Integer"	column="activity" />
+    	    <key-property 	name="driver"		type="java.lang.Integer"	column="driver" />
+       </composite-id>
+
+        <property name="fosa" type="java.lang.Integer" column="fosa" />
+        <property name="weyerhauser" type="java.lang.Integer" column="weyerhauser" />
+        <property name="mdp" type="java.lang.Integer" column="mdp" />
+        
+    </class>
+</hibernate-mapping>

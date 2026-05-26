@@ -1,0 +1,1845 @@
+package business.vehicle;
+
+import java.rmi.RemoteException;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.StringTokenizer;
+
+import javax.ejb.EJBException;
+import javax.ejb.SessionBean;
+import javax.ejb.SessionContext;
+
+import org.jboss.logging.Logger;
+
+import com.kitfox.svg.pathcmd.Cubic;
+
+import persistence.activity.tables.Item;
+import persistence.activity.tables.ItemValueStr;
+import persistence.administration.corporation.CorporationABM;
+import persistence.administration.corporation.CorporationABMUtil;
+import persistence.administration.corporation.CorporationReport;
+import persistence.administration.corporation.CorporationReportUtil;
+import persistence.administration.user.UserReport;
+import persistence.administration.user.UserReportUtil;
+import persistence.datatype.DataTypeReportUtil;
+import persistence.driver.DriverABM;
+import persistence.driver.DriverABMUtil;
+import persistence.driver.DriverReport;
+import persistence.driver.DriverReportUtil;
+import persistence.log.LoggerFormatting;
+import persistence.vehicle.VehicleABM;
+import persistence.vehicle.VehicleABMHome;
+import persistence.vehicle.VehicleABMUtil;
+import persistence.vehicle.VehicleReport;
+import persistence.vehicle.VehicleReportHome;
+import persistence.vehicle.VehicleReportUtil;
+import business.administration.corporation.CorporationABMFacade;
+import business.administration.corporation.CorporationABMFacadeUtil;
+import business.alert.handler.Util;
+import business.driver.DriverABMFacadeBean;
+import business.util.ExceptionHandler;
+import communication.activity.tables.CheckListData;
+import communication.activity.tables.ItemData;
+import communication.activity.tables.ItemValueStrData;
+import communication.activity.tables.PointData;
+import communication.administration.corporation.tables.CorporationConfigData;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.DivOrgData;
+import communication.administration.dpa.UnconformityDPAData;
+import communication.administration.dpa.UnconformityItemDPAData;
+import communication.administration.dpa.UnconformityTypeDPADataType;
+import communication.administration.user.UserSessionData;
+import communication.alert.AlertConstants;
+import communication.datatype.tables.TypeUseDataType;
+import communication.datatype.tables.VehicleContractDataType;
+import communication.driver.tables.DriverData;
+import communication.exception.DeslogedException;
+import communication.exception.InvalidDataException;
+import communication.language.Text;
+import communication.security.SecurityConstants;
+import communication.util.LogActions;
+import communication.util.MailSender;
+import communication.vehicle.tables.ComplaintData;
+import communication.vehicle.tables.DPAGoalData;
+import communication.vehicle.tables.DPAVehicleActiveData;
+import communication.vehicle.tables.TrailerCheckData;
+import communication.vehicle.tables.TrailerData;
+import communication.vehicle.tables.UnconformityData;
+import communication.vehicle.tables.VehicleCheckData;
+import communication.vehicle.tables.VehicleContractData;
+import communication.vehicle.tables.VehicleData;
+import communication.vehicle.tables.VehicleMaintenanceData;
+import communication.vehicle.tables.VehiclePursuitRouteData;
+
+/**
+ * @ejb.bean name="VehicleABMFacade"
+ *           display-name="Name for VehicleABMFacade"
+ *           description="Description for VehicleABMFacade" 
+ *           jndi-name="ejb/VehicleABMFacade"
+ *           type="Stateless"
+ *           view-type="remote"
+ * 			 transaction-type = "Container"
+ * 
+ * @ejb.ejb-ref ejb-name = "VehicleABM" ref-name = "ejb/VehicleABM" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/VehicleABM" ref-name = "VehicleABM"
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/UserReport" ref-name = "UserReport"
+ *
+ * @ejb.ejb-ref ejb-name = "VehicleReport" ref-name = "ejb/VehicleReport" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/VehicleReport" ref-name = "VehicleReport"
+ *
+ * @ejb.ejb-ref ejb-name = "VehicleReportFacade" ref-name = "ejb/VehicleReportFacade" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/VehicleReportFacade" ref-name = "VehicleReportFacade"
+
+ * @ejb.ejb-ref ejb-name = "DriverABM" ref-name = "ejb/DriverABM" view-type ="remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/DriverABM" ref-name = "DriverABM"
+ *
+ * @ejb.ejb-ref ejb-name = "DriverReport" ref-name = "ejb/DriverReport" view-type ="remote"
+ *              
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/DriverReport" ref-name = "DriverReport"
+ * 														
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/CorporationABM" ref-name = "CorporationABM"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/CorporationABMFacade" ref-name = "CorporationABMFacade"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/CorporationReport" ref-name = "CorporationReport"
+ * 
+ * @ejb.ejb-ref 
+ *          ejb-name ="DataTypeReport"
+ *          ref-name = "ejb/DataTypeReport"
+ *          view-type ="remote"
+ * 
+ * @jboss.ejb-ref-jndi
+ *          jndi-name = "ejb/DataTypeReport" 
+ *          ref-name = "DataTypeReport"
+ * 
+ * 
+ *  * @ejb.util generate="physical"
+ */
+
+public class VehicleABMFacadeBean implements SessionBean {
+
+	private ExceptionHandler handler = new ExceptionHandler(VehicleABMFacadeBean.class);
+
+	/**
+	 * 
+	 */
+	private static final long serialVersionUID = 1L;
+	/**
+	 * Logger for this class
+	 */
+	private Logger logger = Logger.getLogger(DriverABMFacadeBean.class);
+	private LoggerFormatting logFormatting = new LoggerFormatting();
+	
+	public VehicleABMFacadeBean() {
+		super();		
+	}
+
+	/**
+	 * Create method
+	 * 
+	 * @ejb.create-method
+     * @ejb.permission role-name = "administrator,vehiclecreate,vehicleupdate,vehicledelete,drivercreatevehicle,drivervehicleupdate,vehiclechecklist,dpachecklist,jjreporter" 
+	 *  
+	 */
+	public void ejbCreate() throws javax.ejb.CreateException {		
+	}
+
+	
+	public void setSessionContext(SessionContext ctx)throws EJBException,RemoteException {
+	}
+
+
+	public void ejbRemove() throws EJBException, RemoteException {
+	}
+
+	
+	public void ejbActivate() throws EJBException, RemoteException {
+	}
+
+	public void ejbPassivate() throws EJBException, RemoteException {
+	}
+	
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle,dpachecklist"
+	 * @param data
+	 * @throws Exception
+	 */	
+	public Integer vehicleCreate(VehicleData data, String comment,
+			UserSessionData userSessionData) throws Exception {
+
+		VehicleABM vehicleABM = null;
+		try {	
+						
+            if(userSessionData.isDriver() && !data.getDriver().getId().equals(userSessionData.getDriverData().getId())) {
+                throw new InvalidDataException("vehicleCreate","Invalid driver");
+            }
+			VehicleABMHome home = VehicleABMUtil.getHome();
+			vehicleABM = home.create();
+			
+			return vehicleABM.vehicleCreate(data,userSessionData,comment);
+
+		} catch(Exception e){
+			Object[] p = new Object[3];
+        	p[0] = data;
+        	p[1] = comment;
+        	handler.handleException("vehicleCreate",e, userSessionData, p);
+	    }
+		return null;
+	}
+
+
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicledelete"
+	 * @param data
+	 * @throws Exception
+	 */
+	public void vehicleDelete(VehicleData data, String comment,UserSessionData userSessionData)
+		throws Exception {
+		
+		
+		VehicleABM vehicleABM = null;
+		try {
+
+			VehicleABMHome home = VehicleABMUtil.getHome();
+			vehicleABM = home.create();
+
+            vehicleABM.desassociateTrailers(data.getId(),userSessionData);
+			vehicleABM.vehicleDelete(data,userSessionData,comment);
+
+		} catch(Exception e){
+			Object[] p = new Object[3];
+        	p[0] = data;
+        	p[1] = comment;
+        	handler.handleException("vehicleDelete",e, userSessionData, p);
+		}
+	}
+	
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate,drivervehicleupdate,dpachecklist"
+	 * @param data
+	 * @throws Exception 
+	 */
+	public void vehicleUpdate(VehicleData data, String comment,UserSessionData userSessionData) 
+		throws Exception {
+		vehicleUpdate(data,comment,false,userSessionData);
+	}
+		
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate,drivervehicleupdate,dpachecklist"
+	 * @param data
+	 * @throws Exception 
+	 */
+	public void vehicleUpdate(VehicleData data, String comment,boolean asignDriver,UserSessionData userSessionData) 
+		throws Exception {
+		VehicleABM vehicleABM = null; 
+		try {
+			
+			boolean changed = false;
+			Integer[] divOrgs = null;
+			if(!asignDriver) {
+				// Nueva funcionalidad para todas las empresas menos FOSA y WEYERHAEUSER
+				// Si cambian las divisiones organizacionales del vehÃ­culos se cambian las del conductor
+				if(userSessionData.getCorporationId() != CorporationData.WEYERHAEUSER && userSessionData.getCorporationId() != CorporationData.FORESTALORIENTAL) {
+					if(data.getDriver() != null) {
+						VehicleReport vehicleReport = VehicleReportUtil.getHome().create();
+						divOrgs = data.getDivOrgIds();
+						changed = vehicleReport.hasChangedDivisions(data.getId(),divOrgs,userSessionData);
+					}
+				}
+			}
+
+			VehicleABMHome home = VehicleABMUtil.getHome();
+			vehicleABM = home.create();
+			vehicleABM.vehicleUpdate(data,userSessionData,comment,LogActions.UPDATE);
+			
+			if(asignDriver) {
+				DriverReport driverReport = DriverReportUtil.getHome().create();
+				DriverData driverData = driverReport.findDriverByPrimaryKey(data.getDriver().getId(), userSessionData);
+
+				vehicleABM.updateDivisions(data.getId(),driverData.getDivOrgIds(),userSessionData);
+				
+			}else if(changed && (userSessionData.checkPermission(SecurityConstants.MODIFY_DRIVER)
+					|| userSessionData.checkPermission(SecurityConstants.DRIVER_MODIFY_OWN_DATA))) {
+				DriverABM driverABM = DriverABMUtil.getHome().create();
+				driverABM.updateDivisions(data.getDriver().getId(),divOrgs,userSessionData);
+			}
+		} catch(Exception e){
+			Object[] p = new Object[3];
+        	p[0] = data;
+        	p[1] = comment;
+        	handler.handleException("vehicleUpdate",e, userSessionData, p);
+        }
+	}
+
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate,drivervehicleupdate"
+	 * @param data
+	 * @throws Exception
+	 */
+	public void changeVehicleUse(Integer vehicle,Integer driver,String comment,UserSessionData userSessionData)
+		throws Exception {
+
+		try {
+			DriverReport driverReport = DriverReportUtil.getHome().create();
+			DriverData driverData = driverReport.findDriverByPrimaryKey(driver, userSessionData);
+			
+			VehicleData vehicleData = VehicleReportUtil.getHome().create().findVehicleByPrimaryKey(vehicle,userSessionData);
+			vehicleData.setDriver(driverData);
+
+			VehicleABM vehicleABM = VehicleABMUtil.getHome().create();
+			vehicleABM.vehicleUpdate(vehicleData,userSessionData,comment,LogActions.VEHICLE_CHANGE_USE);
+
+			vehicleABM.updateDivisions(vehicle,driverData.getDivOrgIds(),userSessionData);
+
+		} catch (Exception e) {
+			Object[] parameters = {vehicle,driver,comment};
+            handler.handleException("changeVehicleUse", e, userSessionData, parameters);
+        }
+	}
+
+	/**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,vehicleupdate"
+     * 
+     * @param data
+     * @throws Exception
+     */
+    public void vehicleExclude(String vehicles,Date exclusionDate, String comment,
+    		UserSessionData userRequest) throws Exception {
+        
+    	VehicleABM vehicleABM = null; 
+        try{    
+            
+            VehicleReportHome reportHome = VehicleReportUtil.getHome();
+            VehicleReport vehicleReport = reportHome.create();
+
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            vehicleABM = home.create();
+
+            StringTokenizer tokenizer = new StringTokenizer(vehicles,",");
+            while(tokenizer.hasMoreTokens()) {
+                String vehicleId = tokenizer.nextToken();
+                VehicleData vehicleData = vehicleReport.findVehicleByPrimaryKey(new Integer(vehicleId),userRequest);
+                vehicleData.setExclusionDate(exclusionDate);
+                
+                if(userRequest.getCorporationId() != CorporationData.ALLERGAN) {
+	                // Nueva funcionalidad, cuando se desactiva un vehÃ­culo se desasocia de su conductor
+	                vehicleData.setDriver(null);
+	                vehicleData.setUse(new TypeUseDataType(TypeUseDataType.INSTITUTIONAL));
+                }
+                
+                vehicleABM.vehicleUpdate(vehicleData, userRequest, comment, LogActions.EXCLUDE);
+            }
+        } catch (Exception exception) {
+        	Object[] p = new Object[3];
+        	p[0] = vehicles;
+        	p[1] = exclusionDate;
+        	p[2] = comment;
+            handler.handleException("vehicleExclude",exception, userRequest, p);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,vehicleupdate"
+     * 
+     * @param data
+     * @throws Exception
+     */
+    public void vehicleInclude(String vehicles,String comment,
+    		UserSessionData userRequest) throws Exception {
+        VehicleABM vehicleABM = null; 
+        try{    
+            if (userRequest == null) {
+                throw new DeslogedException("Class business.vehicle.VehicleABMFacade(vehicleUpdate), session data is empty","generic.error.deslogued");
+            }
+
+            VehicleReportHome reportHome = VehicleReportUtil.getHome();
+            VehicleReport vehicleReport = reportHome.create();
+
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            vehicleABM = home.create();
+
+            StringTokenizer tokenizer = new StringTokenizer(vehicles,",");
+            while(tokenizer.hasMoreTokens()) {
+                String vehicleId = tokenizer.nextToken();
+                VehicleData vehicleData = vehicleReport.findVehicleByPrimaryKey(new Integer(vehicleId),userRequest);
+                vehicleData.setExclusionDate(null);
+                vehicleABM.vehicleUpdate(vehicleData, userRequest, comment, LogActions.INCLUDE);
+            }
+        } catch (Exception exception) {
+        	Object[] p = new Object[2];
+        	p[0] = vehicles;
+        	p[1] = comment;
+            handler.handleException("vehicleInclude",exception,userRequest,p);
+        }
+    }
+    
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle,vehiclechecklist,dpachecklist,jjreporter"
+	 * @param data
+	 * @throws Exception
+	 */	
+	public Integer createOrUpdateVehicleCheck(VehicleCheckData data, String comment,
+			UserSessionData userSessionData) throws Exception {
+
+		VehicleABM vehicleABM = null;
+		try {		
+			
+			
+			VehicleABMHome home = VehicleABMUtil.getHome();
+			vehicleABM = home.create();
+			
+			Integer vehicleCheckId = vehicleABM.createOrUpdateVehicleCheck(data,comment,userSessionData);
+
+			 
+			
+			return vehicleCheckId;
+
+		} catch (Exception exception) {
+			Object[] p = new Object[2];
+			p[0] = data;
+			p[1] = comment;
+			handler.handleException("createOrUpdateVehicleCheck", exception, userSessionData,p);
+	    }
+		return null;
+
+	}
+	
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle,vehiclechecklist,dpachecklist"
+	 * @param data
+	 * @throws Exception
+	 */	
+	public Integer createOrUpdateVehicleCheckUPMMDP( LinkedList imagesData,VehicleCheckData data, String comment,
+			UserSessionData userSessionData,Text messages) throws Exception {
+		System.out.println("createOrUpdateVehicleCheckUPMMDP");
+		VehicleABM vehicleABM = null;
+		try {		
+						
+			VehicleABMHome home = VehicleABMUtil.getHome();
+			vehicleABM = home.create();
+			//Pasar a mayusculas y quitar punto en matriculas
+			if(data.getName()!=null && (data.getName().equals("80") || data.getName().equals("79"))){
+				Iterator<ItemValueStrData> itemsIter=data.getItemValueSet().iterator();
+				 
+				while(itemsIter.hasNext()) {
+					ItemValueStrData itemData=itemsIter.next();
+					if(itemData.getItem().getId().equals(11477) || itemData.getItem().getId().equals(11478) || itemData.getItem().getId().equals(11479)
+							|| itemData.getItem().getId().equals(11480) || itemData.getItem().getId().equals(11481) || itemData.getItem().getId().equals(11416)){
+						if(itemData.getItemValue()!=null){
+							itemData.setItemValue( itemData.getItemValue().replace(".", "").toUpperCase());	
+						}
+					}
+				}
+			}
+			
+			Integer vehicleCheckId = vehicleABM.createOrUpdateVehicleCheck(data,comment,userSessionData);
+			uploadCheckListImagesBase64(imagesData, vehicleCheckId, userSessionData);
+			
+			if(data.getName()!=null && (data.getName().equals("80") || data.getName().equals("79") || data.getName().equals("84"))){
+				//UPM MDP
+				try{
+					procesarCheckList(vehicleCheckId,messages,userSessionData);
+				}catch(Throwable th){
+					th.printStackTrace();
+					//Se guarda si o si el checklist, si hay error en la notificación
+					
+				}
+			}else 		
+			if(data.getName()!=null && (data.getName().equals("92"))&& userSessionData.getCorporationId()==CorporationData.MONTES_DE_PLATA){
+				//UPM Mercancias peligrosas
+				try{
+					notifyChecklistMP(vehicleCheckId,messages,userSessionData);
+				}catch(Throwable th){
+					th.printStackTrace();
+					//Se guarda si o si el checklist, si hay error en la notificación
+					
+				}
+			}
+			
+			return vehicleCheckId;
+
+		} catch (Exception exception) {
+			Object[] p = new Object[2];
+			p[0] = data;
+			p[1] = comment;
+			handler.handleException("createOrUpdateVehicleCheckUPMMDP", exception, userSessionData,p);
+	    }finally{
+	    	System.out.println("Fin_createOrUpdateVehicleCheckUPMMDP");
+	    }
+		return null;
+
+	}
+	
+	
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle,vehiclechecklist,dpachecklist"
+	 * @param data
+	 * @throws Exception
+	 */	
+	public Integer createOrUpdateVehicleCheckSyngentaBR( LinkedList imagesData,VehicleCheckData data, String comment,
+			UserSessionData userSessionData,Text messages) throws Exception {
+		System.out.println("createOrUpdateVehicleCheckSyngentaBR");
+		VehicleABM vehicleABM = null;
+		try {		
+						
+			VehicleABMHome home = VehicleABMUtil.getHome();
+			vehicleABM = home.create();
+			//Pasar a mayusculas y quitar punto en matriculas
+						
+			Integer vehicleCheckId = vehicleABM.createOrUpdateVehicleCheck(data,comment,userSessionData);
+			uploadCheckListImagesBase64(imagesData, vehicleCheckId, userSessionData);
+			
+			try{
+				notifyChecklistSyngentaBR(vehicleCheckId, messages, userSessionData); 
+			}catch(Throwable th){
+				th.printStackTrace();
+				//Se guarda si o si el checklist, si hay error en la notificación
+				
+			}
+			
+			
+			return vehicleCheckId;
+
+		} catch (Exception exception) {
+			Object[] p = new Object[2];
+			p[0] = data;
+			p[1] = comment;
+			handler.handleException("createOrUpdateVehicleCheckSyngentaBR", exception, userSessionData,p);
+	    }finally{
+	    	System.out.println("createOrUpdateVehicleCheckSyngentaBR");
+	    }
+		return null;
+
+	}
+	
+	private void notifyChecklistSyngentaBR(Integer vehicleCheckId, Text messages,UserSessionData userSys) throws Exception {
+		// TODO Auto-generated method stub
+		VehicleReport vehicleReport=VehicleReportUtil.getHome().create();
+		VehicleReportFacade vehicleReportFacade=VehicleReportFacadeUtil.getHome().create();
+	    CorporationABM corpABM=CorporationABMUtil.getHome().create();
+	    
+		VehicleCheckData data=vehicleReport.findVehicleCheck(vehicleCheckId, userSys); 
+		VehicleData vehicleData=vehicleReport.findVehicleByPrimaryKey(data.getVehicle().getId(), userSys);
+		CheckListData checkList = vehicleReport.getCheckList(new Integer(data.getName()),userSys);
+		
+		String pathReport=vehicleReportFacade.reportChecklistPDFSyngentaBR("checklistSBR.pdf", checkList, data, userSys, messages);
+		 
+			
+        MailSender sender = new MailSender();
+		Collection bcc = new LinkedList();
+		Collection<String> files = new LinkedList();
+		Collection<String> names = new LinkedList();
+		
+		files.add(pathReport);
+		names.add("checklistSBR_"+vehicleData.getMatricula()+".pdf");
+		 
+		String castomerEmail="f.millan@cepasafedrive.com";
+		
+		//bcc.add("fcarriquiry@cepasafedrive.com");
+		
+		Collection addressTo = new LinkedList();
+		boolean test=false;
+		
+		if(data.getSerie()!=null && data.getSerie().contains("@")){
+			addressTo.add(data.getSerie());
+			bcc.add(castomerEmail);
+			bcc.add("iveicular@cepasafedrive.com");
+		}else{
+			addressTo.add(castomerEmail);
+			addressTo.add("iveicular@cepasafedrive.com");
+		}
+		UserReport userReport=UserReportUtil.getHome().create();
+		String mail=userReport.findUserByPrimaryKey(userSys.getFilter().getLoginName(), userSys).getEmail();
+		bcc.add(mail);
+		
+		String body="";
+		body+="Em anexo enviamos o resumo.";
+		String subject= "CEPA - Placa."+vehicleData.getMatricula()+"- Checklist Syngenta";
+		boolean sended = false;
+		int count = 0;
+		while(!sended && count < 10 && (bcc.size()+addressTo.size())>0 ) {
+			try {
+				sended =sender.sendImageMandrill(addressTo, AlertConstants.DIGITAL_SIGNATURE_SYNGENTA_BR, AlertConstants.EMAIL_SYNGENTA_BR, subject, 
+						Util.getCompleteHTMLMail(body,AlertConstants.DIGITAL_SIGNATURE_SYNGENTA_BR, AlertConstants.EMAIL_SYNGENTA_BR), 
+						files, names, AlertConstants.EMAIL_SYNGENTA_BR,
+						AlertConstants.DIGITAL_SIGNATURE_SYNGENTA_BR, bcc, null);
+			}catch (Exception e) {
+				e.printStackTrace();
+			}
+			count++; 
+		}
+
+		 
+	}
+	
+	private void notifyChecklistMP(Integer vehicleCheckId, Text messages,UserSessionData userSys) throws Exception {
+		// TODO Auto-generated method stub
+		VehicleReport vehicleReport=VehicleReportUtil.getHome().create();
+		VehicleReportFacade vehicleReportFacade=VehicleReportFacadeUtil.getHome().create();
+	    CorporationABM corpABM=CorporationABMUtil.getHome().create();
+	    
+		VehicleCheckData data=vehicleReport.findVehicleCheck(vehicleCheckId, userSys); 
+		VehicleData vehicleData=vehicleReport.findVehicleByPrimaryKey(data.getVehicle().getId(), userSys);
+		CheckListData checkList = vehicleReport.getCheckList(new Integer(data.getName()),userSys);
+		
+		String pathReport=vehicleReportFacade.reportChecklistPDFMP("checklistMP.pdf", checkList, data, userSys, messages);
+		boolean negativePoints=false;
+		Iterator<PointData> points = checkList.getSortPoints();
+		while(points.hasNext() && !negativePoints ) {
+			PointData point = (PointData)points.next();
+			Iterator items = point.getSortItems();
+			if(items.hasNext()) {
+				ItemData item = (ItemData)items.next();
+				int value = -1;
+				String pointComment = null;
+				if(data != null) {
+					String checkValue = data.getValueFromItem(item.getId()).trim();
+					value = (checkValue == null || !checkValue.equals("2")) ? -1 : 2;
+				}
+				if(value==2){
+					negativePoints=true;//Si es Seguimiento en ruta, no hay parada y va siempre la notificacion.
+				}
+			}
+		}
+		
+		if(negativePoints){
+			
+	        MailSender sender = new MailSender();
+			Collection bcc = new LinkedList();
+			Collection<String> files = new LinkedList();
+			Collection<String> names = new LinkedList();
+			
+			String guiaName="Guia_No_Conforidades_Contratistas.pdf";
+			String guiaFile=AlertConstants.TEMP_DIRECTORY_DPA+"checklist/Guia_No_Conforidades_Contratistas.pdf";
+		
+			 files.add(pathReport);
+			 names.add("checklistMP_"+vehicleData.getMatricula()+".pdf");
+			
+			 Iterator iter= data.getVehicle().getDivOrgsIterator();
+			 String transportista="";
+			 Integer divId=0;
+			 if(iter.hasNext()){
+				DivOrgData divData=(DivOrgData)iter.next();
+				
+				Collection colAux=divData.getDivOrgLevels().getItems();
+				if(colAux!=null){
+					Iterator iter2=divData.getDivOrgLevels().getItemIterator();
+					if(iter2.hasNext()){
+						communication.administration.corporation.tables.ItemData item=(communication.administration.corporation.tables.ItemData)iter2.next();
+						divId=item.getId();
+						transportista=item.getName();
+					}
+				}
+			 }
+			 
+			String castomerEmail="fcarriquiry@cepasafedrive.com";
+			
+			//bcc.add("fcarriquiry@cepasafedrive.com");
+			
+			Collection addressTo = new LinkedList();
+			boolean test=false;
+			
+			if(SecurityConstants.isProductionServer() || test){
+				
+				castomerEmail="fcarriquiry@cepasafedrive.com";
+			} 
+			 
+			addressTo.add(castomerEmail);
+			
+			String body="";
+			body+="Adjunto le enviamos el &uacute;ltimo checklist de mercanc&iacute;as peligrosas realizado por CEPA el d&iacute;a de hoy.";
+			String subject= "CEPA -"+"Check list MP Notificación"+" "+transportista;
+			boolean sended = false;
+			int count = 0;
+			while(!sended && count < 10 && (bcc.size()+addressTo.size())>0 ) {
+				try {
+					sended =sender.sendImageMandrill(addressTo, AlertConstants.DIGITAL_SIGNATURE_FOSA, AlertConstants.EMAIL_MICA, subject, 
+							Util.getCompleteHTMLMail(body,AlertConstants.DIGITAL_SIGNATURE_FOSA, AlertConstants.EMAIL_MICA), 
+							files, names, AlertConstants.EMAIL_MICA,
+							AlertConstants.DIGITAL_SIGNATURE_FOSA, bcc, null);
+				}catch (Exception e) {
+					e.printStackTrace();
+				}
+				count++; 
+			}
+
+		}	
+	}
+
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle,dpachecklist"
+	 * @param data
+	 * @throws Exception
+	 */	
+	public void procesarCheckList(Integer vehicleCheckId,Text messages,UserSessionData userSys) throws NumberFormatException, Exception {
+		// Checklist 80 Pesados UPM y MDP
+		
+			VehicleReport vehicleReport=VehicleReportUtil.getHome().create();
+			VehicleReportFacade vehicleReportFacade=VehicleReportFacadeUtil.getHome().create();
+		    CorporationABM corpABM=CorporationABMUtil.getHome().create();
+		    CorporationReport corpReport=CorporationReportUtil.getHome().create();
+		    HashMap<String,CorporationConfigData> conf= corpReport.getCorporationConfig(userSys.getCorporationId(), userSys);
+			
+			VehicleCheckData data=vehicleReport.findVehicleCheck(vehicleCheckId, userSys); 
+			VehicleData vehicleData=vehicleReport.findVehicleByPrimaryKey(data.getVehicle().getId(), userSys);
+			
+			boolean mp = data.getName().equals("92");
+			boolean internos = data.getName().equals("84");
+			boolean pesados = data.getName().equals("80") || internos;
+			boolean seguimiento = data.getName().equals("79");
+			
+			boolean sendToSIGMDP=false;
+			
+			CheckListData checkList = vehicleReport.getCheckList(new Integer(data.getName()),userSys);
+			UnconformityDPAData unconf=new UnconformityDPAData();
+			unconf.setComment(data.getObs());
+			unconf.setCheck(vehicleCheckId);
+			unconf.setDate(data.getDate());
+			unconf.setUserId(userSys.getFilter().getLoginName());
+			unconf.setComment(data.getInspectedby());
+			unconf.setStatus(UnconformityDPAData.STATUS_NEW);
+			unconf.setType(new UnconformityTypeDPADataType(UnconformityTypeDPADataType.TYPE_VEHICLE_CHECK));
+			//Se manda notificación solo si tiene puntos o general que indica paraada inmediata, 24 o 48 horas
+			boolean negativePoints=false;
+			boolean war=false;
+			boolean notifItems=false;
+			
+			Iterator<PointData> points = checkList.getSortPoints();
+			String obsNegativePoints="Inspector:"+data.getInspectedby();
+			String lastPoint="";
+			String driver="";
+			while(points.hasNext()) {
+				PointData point = (PointData)points.next();
+				Iterator items = point.getSortItems();
+				if(items.hasNext()) {
+					ItemData item = (ItemData)items.next();
+					if(item.getText().equals("forestales.check2.h1") || item.getText().equals("forestales.checkinternal2.h1")){
+						driver=messages.getText(data.getValueFromItem(item));
+					}
+					int value = -1;
+					String pointComment = null;
+					if(data != null) {
+						String checkValue = data.getValueFromItem(item.getId()).trim();
+						value = (checkValue == null || !checkValue.equals("2")) ? -1 : 2;
+					}//
+					if(value==2){
+						if(conf.containsKey("unconformities_cc_items") && conf.get("unconformities_cc_items").getValue().contains(item.getId().toString())){
+							notifItems=true;
+						}
+						
+						
+						if(obsNegativePoints.length()>0){
+							obsNegativePoints+="-";
+						}
+						if(!lastPoint.equals(messages.getText(point.getText()))){
+							obsNegativePoints+=" Categoría:"+messages.getText(point.getText())+"\n\r";
+							lastPoint=messages.getText(point.getText());
+						}
+						
+						pointComment=data.getValueFromCommentPoint(point.getId());
+						UnconformityItemDPAData itemU=new UnconformityItemDPAData();
+						itemU.setComment(pointComment);
+						itemU.setNotify(true);
+						itemU.setType(item.getText());
+						Calendar cal=Calendar.getInstance();
+						cal.setTime(data.getDate());
+						String tag=data.getValueTagFromItem(item.getId());
+						cal.add( Calendar.DATE, tag!=null?Integer.valueOf(tag):0);
+						itemU.setExpirity(cal.getTime());
+						obsNegativePoints+=" Item:"+messages.getText(item.getText())+",Obs:"+pointComment+",Tiempo Reparación:"+communication.administration.corporation.util.Util.getTiempoReparacion(checkList.getId(), tag!=null?Integer.valueOf(tag):-1)+"\n\r";
+								
+						//if(tag!=null && (Integer.valueOf(tag)>-1 && Integer.valueOf(tag) <3  )){
+						unconf.getItems().add(itemU);//Se guarda siempre
+						negativePoints=true;
+						if(tag!=null && Integer.valueOf(tag)==0){
+							war=true;
+						}
+						//}
+						if(seguimiento){
+							negativePoints=true;//Si es Seguimiento en ruta, no hay parada y va siempre la notificacion.
+							war=false;
+							
+						}
+						
+						if(userSys.isCorporation(CorporationData.MONTES_DE_PLATA)){
+							if(war || conf.get("unconformities_cc_items").getValue().contains(item.getId().toString())){
+								sendToSIGMDP=true;
+							}
+						}
+			
+					}
+				}
+			}
+			
+			if(negativePoints){
+			
+				if(pesados){//Solo checklist pesados genera no conformidad
+					corpABM.createOrUpdateUnconformityDPA(unconf, userSys);
+				}
+				
+		        String fileName=data.getVehicleCheckId()+"_"+vehicleData.getMatricula().replace(" ", "_")+".pdf";
+		        String file = vehicleReportFacade.reportChecklistPDF(fileName, checkList, data, userSys, messages);
+		        
+		        MailSender sender = new MailSender();
+				Collection bcc = new LinkedList();
+				Collection<String> files = new LinkedList();
+				Collection<String> names = new LinkedList();
+				
+				String guiaName="Guia_No_Conforidades_Contratistas.pdf";
+				String guiaFile=AlertConstants.TEMP_DIRECTORY_DPA+"checklist/Guia_No_Conforidades_Contratistas.pdf";
+				
+				files.add(file);
+				names.add(fileName);
+				
+				
+				
+				if(pesados){
+					files.add(guiaFile);
+					names.add(guiaName);
+				}
+				
+				 Iterator iter= data.getVehicle().getDivOrgsIterator();
+				 String transportista="";
+				 Integer divId=0;
+				 if(iter.hasNext()){
+					DivOrgData divData=(DivOrgData)iter.next();
+					if(userSys.getCorporationId()==CorporationData.WEYERHAEUSER){
+						if(iter.hasNext()){
+							 divData=(DivOrgData) iter.next();
+							 if(iter.hasNext()) {
+								 divData=(DivOrgData)iter.next();
+							 }else{
+								 transportista="---";
+							 }
+						}else{
+							transportista="---";
+						}
+				
+					}
+					
+					Collection colAux=divData.getDivOrgLevels().getItems();
+					if(colAux!=null && !transportista.equals("---")){
+						Iterator iter2=divData.getDivOrgLevels().getItemIterator();
+						if(iter2.hasNext()){
+							communication.administration.corporation.tables.ItemData item=(communication.administration.corporation.tables.ItemData)iter2.next();
+							divId=item.getId();
+							transportista=item.getName();
+						}
+					}
+				 }
+				 
+				
+				 //En este campo se carga el ID del contratista en SIG.
+				Integer contractorIDSIG=0;
+				 
+				String contractorMail=vehicleReport.getContractorDataMail(divId, userSys);
+				
+				if(userSys.isCorporation(CorporationData.MONTES_DE_PLATA) && sendToSIGMDP){
+					//Integracion con sistema SIG de Montes del Plata
+					corpABM.saveMDPSIGAsyncCall(contractorIDSIG,transportista,driver,data.getDate(),file, obsNegativePoints, vehicleData.getMatricula(), Integer.valueOf(data.getName()), data.getVehicleCheckId(), userSys);
+			 	}
+				
+				//bcc.add("fcarriquiry@cepasafedrive.com");
+				
+				Collection addressTo = new LinkedList();
+				//
+				boolean test= false;
+				
+				if(SecurityConstants.isProductionServer() || test){
+					UserReport userReport=UserReportUtil.getHome().create();
+					//Copia al instructor que crea el checklist
+					String mail=userReport.findUserByPrimaryKey(userSys.getFilter().getLoginName(), userSys).getEmail();
+					addressTo.add(mail);
+
+					if(!mp || userSys.getCorporationId()!=CorporationData.MONTES_DE_PLATA){
+						if(!test && contractorMail!=null && contractorMail.trim().length()>0){
+							String[] aux=contractorMail.split(",");
+							for(int i =0; i<aux.length;i++){
+								if(aux[i].toLowerCase().contains("montesdelplata")){
+									if(war){
+										addressTo.add(aux[i]);	
+									}
+								}else{
+									addressTo.add(aux[i]);
+								}
+							}
+						}
+						
+					
+						if(!test){
+							
+							if(seguimiento &&  userSys.isCorporation(CorporationData.MONTES_DE_PLATA)){
+								bcc.add("sebastian.sorondo@montesdelplata.com.uy");
+								
+							}
+							if(userSys.isCorporation(CorporationData.FORESTALORIENTAL)){
+								bcc.add("gonzalo.buscio@upm.com");
+								
+							}
+							
+							if(notifItems){
+								//Solo mails a personas en la lista de los que reciben si se marco determinado item
+								//Pero ademas hay que filtrar que sean los responsables del contratista
+								//para eso se pone el correo en el contratista y en la lista de items.
+								if(conf.containsKey("unconformities_email_cc_items")){
+									String[] aux=conf.get("unconformities_email_cc_items").getValue().split(",");
+									for(int i =0; i<aux.length;i++){
+										String[] aux2=contractorMail.split(",");
+										for(int j=0; j < aux2.length; j++){
+											if(aux[i].trim().equalsIgnoreCase(aux2[j])){
+												addressTo.add(mail);		
+											}
+										}
+									}
+								}	
+							}
+							
+							if(conf.containsKey("unconformities_email_cc_all")){
+								String[] aux=conf.get("unconformities_email_cc_all").getValue().split(",");
+								for(int i =0; i<aux.length;i++){
+									addressTo.add(aux[i]);
+								}
+							}
+							if(war){
+								if(conf.containsKey("unconformities_email_cc_detinmediata")){
+									String[] aux=conf.get("unconformities_email_cc_detinmediata").getValue().split(",");
+									for(int i =0; i<aux.length;i++){
+										addressTo.add(aux[i]);
+									}
+								}
+							}
+							
+							/*if(userSys.getCorporationId()==CorporationData.FORESTALORIENTAL){
+								bcc.add("gonzalo.buscio@upm.com");
+								bcc.add("cristian.martinez@upm.com");
+								bcc.add("mauro.realdeazua@upm.com");
+								bcc.add("miguel.otegui@upm.com");
+								if(war){
+									bcc.add("planificacion@upm.com");
+								}
+
+								bcc.add("norberto.lucero@upm.com");
+							}else if(userSys.getCorporationId()==CorporationData.MONTES_DE_PLATA){
+								if(war){
+									addressTo.add("gonzalo.ruiz@montesdelplata.com.uy");
+									addressTo.add("sebastian.sorondo@montesdelplata.com.uy");
+								}
+							}*/
+						}
+					}else{
+						//Es mercancias peligrosas y es montes del plata
+						addressTo.add("gonzalo.montandon@montesdelplata.com.uy");
+						addressTo.add("pablo.acosta@montesdelplata.com.uy");
+					}
+					
+				} 
+				 
+				String body="";
+				if(pesados){//Checklist pesados
+					body= "Estimado Contratista adjunto le enviamos la fallas del veh&iacute;culo "+data.getVehicle().getMatricula()+" verificadas en el chequeo vehicular realizado por CEPA el d&iacute;a de hoy.<br/>"+
+						  "Una vez reparadas las fallas le agradecemos ingresar al Data Center para corregir la NO conformidad.<br/>"+
+						  "Muchas Gracias<br/>";
+				}else if(seguimiento){//Seguiento en ruta
+					body= "Estimado Contratista adjunto le enviamos la faltas/fallas del veh&iacute;culo "+data.getVehicle().getMatricula()+" verificadas en el Seguimiento en Ruta realizado por CEPA el d&iacute;a de hoy.<br/><br/>"+
+						  "Muchas Gracias<br/>";
+				}
+				String corpStr=userSys.getCorporationId()==CorporationData.MONTES_DE_PLATA?"MDP":userSys.getCorporationId()==CorporationData.FORESTALORIENTAL?"UPM":userSys.getCorporationId()==CorporationData.WEYERHAEUSER?"WEYERHAEUSER":userSys.getCorporationId()==CorporationData.COFUSA?"COFUSA":"";		
+				String subject=pesados?"CEPA -"+corpStr+" Check list Notificación"+(internos?" INTERNOS ":""):"CEPA - Seguimiento En Ruta - Notificación";
+				boolean sended = false;
+				int count = 0;
+				while(!sended && count < 10 && (bcc.size()+addressTo.size())>0 ) {
+					try {
+						
+						sended =sender.sendImageMandrill(addressTo,
+								"CEPA DataCenter", AlertConstants.EMAIL_MICA,
+								subject, Util.getCompleteHTMLMail(body,AlertConstants.DIGITAL_SIGNATURE_FOSA,
+										AlertConstants.EMAIL_MICA), files,
+								names, 
+								"", "", bcc,null);
+						
+					}catch (Exception e) {
+						e.printStackTrace();
+					}
+					count++; 
+				}
+				
+				/*while(!sended && count < 10 && (bcc.size()+addressTo.size())>0 ) {
+					try {
+				    	String[] mailAddress = sender.getAvailableMailAddress(CorporationData.REPORTER_JJ); 
+						String mailServer = AlertConstants.MAILSERVER; 
+						if (mailAddress[0] != null && mailAddress[0].contains("cepainternational.com")){
+							mailServer = AlertConstants.MAILSERVER2;
+						}else if (mailAddress[0] != null && mailAddress[0].contains("cepalogistica.com")){
+							mailServer = AlertConstants.MAILSERVER_INMOTION;
+						}
+						
+						sended =sender.sendImage(addressTo,
+								mailServer,
+								"CEPA DataCenter", 
+								mailAddress[0],
+								mailAddress[1], 
+								subject, Util.getCompleteHTMLMail(body,AlertConstants.DIGITAL_SIGNATURE_FOSA,
+										AlertConstants.EMAIL_MICA), files,
+								names, 
+								"", "", bcc,null);
+						
+					}catch (Exception e) {
+						e.printStackTrace();
+					}
+					count++; 
+				}*/
+				
+				if(seguimiento){
+					CorporationABMFacade corpABMFacade=CorporationABMFacadeUtil.getHome().create();
+					corpABMFacade.newSeguimientoRuta(vehicleData, checkList, data, userSys);
+				}
+			//CorporationReportFacade corpReport=CorporationReportFacadeUtil.getHome().create();
+			//corpReport.sendDCMessageObserver(userSys.getFullName()+"_C_"+data.getVehicle().getId()+"_Checklist no aprobado "+data.getVehicle().getMatricula(), userSys);
+			
+		}
+	}
+	
+		
+
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle,vehiclechecklist"
+	 * @param data
+	 * @throws Exception
+	 */	
+	public Integer uploadCheckListImages(List images,Integer checkId, UserSessionData userRequest) throws Exception {
+
+		VehicleABM vehicleABM = null;
+		try {		
+			
+			
+			VehicleABMHome home = VehicleABMUtil.getHome();
+			vehicleABM = home.create();
+			
+			vehicleABM.uploadCheckListImages(images, checkId, userRequest);
+
+		} catch (Exception exception) {
+			Object[] p = {};
+			
+			handler.handleException("uploadCheckListImages", exception, userRequest,p);
+	    }
+		return null;
+
+	}
+	
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,dpachecklist,vehiclecreate,drivercreatevehicle,vehiclechecklist"
+	 * @param data
+	 * @throws Exception
+	 */	
+	public Integer uploadCheckListImagesBase64(List images,Integer checkId, UserSessionData userRequest) throws Exception {
+
+		VehicleABM vehicleABM = null;
+		try {		
+			
+			
+			VehicleABMHome home = VehicleABMUtil.getHome();
+			vehicleABM = home.create();
+			
+			vehicleABM.uploadCheckListImagesBase64(images, checkId, userRequest);
+
+		} catch (Exception exception) {
+			Object[] p = {};
+			
+			handler.handleException("uploadCheckListImages", exception, userRequest,p);
+	    }
+		return null;
+
+	}
+	
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle,vehiclechecklist"
+	 * @param data
+	 * @throws Exception
+	 */	
+	public Integer deleteCheckListImages(List images,Integer checkId, UserSessionData userRequest) throws Exception {
+
+		VehicleABM vehicleABM = null;
+		try {		
+			
+			
+			VehicleABMHome home = VehicleABMUtil.getHome();
+			vehicleABM = home.create();
+			
+			vehicleABM.deleteCheckListImages(images, checkId, userRequest);
+
+		} catch (Exception exception) {
+			Object[] p = {};
+			
+			handler.handleException("deleteCheckListImages", exception, userRequest,p);
+	    }
+		return null;
+
+	}
+	
+	
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle"
+	 * @param data
+	 * @throws Exception
+	 */	
+	public void createCheckLists(Collection list, UserSessionData userSessionData) 
+		throws Exception {
+		
+		VehicleABM vehicleABM = null;
+		try {		
+						
+			VehicleABMHome home = VehicleABMUtil.getHome();
+			vehicleABM = home.create();
+			
+			Iterator it = list.iterator();
+			while(it.hasNext()) {
+				vehicleABM.createOrUpdateVehicleCheck((VehicleCheckData) it.next(),"Inserted by File",userSessionData);
+			}
+
+		} catch (Exception exception) {
+			Object[] p = new Object[1];
+			p[0] = list;
+			handler.handleException("createCheckLists", exception, userSessionData,p);
+	    }
+	}
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle,vehiclechecklist"
+     * @param data
+     * @throws Exception
+     */ 
+    public Integer createOrUpdateTruckCheck(VehicleCheckData data, Collection trailers ,
+    		String comment,UserSessionData userSessionData) throws Exception {
+
+        VehicleABM vehicleABM = null;
+        try {       
+             
+            
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            vehicleABM = home.create();
+            
+            Integer vehicleCheckId = vehicleABM.createOrUpdateVehicleCheck(data,comment,userSessionData);
+            
+            Iterator it = trailers.iterator();
+            while(it.hasNext()) {
+                TrailerCheckData trailerData = (TrailerCheckData)it.next(); 
+                vehicleABM.createOrUpdateTrailerCheck(trailerData,vehicleCheckId,comment,userSessionData);
+            }
+
+            return vehicleCheckId;
+
+        } catch (Exception exception) {
+        	Object[] p = new Object[3];
+        	p[0] = data;
+        	p[1] = trailers;
+        	p[2] = comment;
+            handler.handleException("createOrUpdateTruckCheck", exception,userSessionData,p);
+        }
+        return null;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle,vehiclechecklist"
+     * @param data
+     * @throws Exception
+     */ 
+    public Integer createOrUpdateVehiclePursuitRoute(VehiclePursuitRouteData data, String comment,
+    		UserSessionData userSessionData) throws Exception {
+
+        VehicleABM vehicleABM = null;
+        try {       
+                        
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            vehicleABM = home.create(); 
+            return vehicleABM.createOrUpdateVehiclePursuitRoute(data,comment,userSessionData);
+
+        } catch (Exception exception) {
+        	Object[] p = new Object[2];
+        	p[0] = data;
+        	p[1] = comment;
+            handler.handleException("createOrUpdateVehiclePursuitRoute", exception, userSessionData,p);
+        }
+        return null;
+    }
+    
+	/**
+	 * @ejb.interface-method view-type = "remote"
+	 * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,cepascheduleactivitydelete,cepascheduleactivityregistrydelete,cdactivitydelete,vehiclechecklist"
+	 * @param data
+	 * @throws Exception
+	 */
+	public void deleteVehiclePursuitRoute(Integer id, String comment,
+			UserSessionData userSessionData) throws Exception {
+		try{	
+						
+			VehicleABM vehicleABM=VehicleABMUtil.getHome().create();
+			vehicleABM.deleteVehiclePursuitRoute(id,comment,userSessionData);		
+			
+		} catch (Exception exception) {
+			Object[]p = new Object[2];
+			p[0] = id;
+			p[1] = comment;
+			handler.handleException("deleteVehiclePursuitRoute", exception, userSessionData, p);
+		}
+	}
+	
+	/**
+	 * @ejb.interface-method view-type = "remote"
+	 * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,cepascheduleactivitydelete,cepascheduleactivityregistrydelete,cdactivitydelete"
+	 * @param data
+	 * @throws Exception
+	 */
+	public void deleteVehicleCheck(Integer id, String comment,
+			UserSessionData userSessionData) throws Exception {
+		try{	
+						
+			VehicleABM vehicleABM=VehicleABMUtil.getHome().create();
+			vehicleABM.deleteVehicleCheck(id,comment,userSessionData);
+			
+		} catch (Exception exception) {
+			Object[]p=new Object[2];
+			p[0] = id;
+			p[1] = comment;
+			handler.handleException("deleteVehicleCheck", exception, userSessionData,p);
+		}
+	}
+		
+    /**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,vehiclecreate"
+     * @throws Exception
+     */
+    public void createVehicles(Collection vehicles, String note, UserSessionData userSessionData) throws Exception {
+        VehicleABM vehicleABM = null;
+        try {       
+            
+            Iterator it = vehicles.iterator();
+            CorporationData corp = new CorporationData(userSessionData.getFilter().getCorporationId(),null,null,null,null,null);
+            while(it.hasNext()) {
+                VehicleData data = (VehicleData)it.next();
+                data.setCorporation(corp);
+                String valid = data.validate(userSessionData);
+                if (valid != null) {
+                    throw new InvalidDataException("createVehicles",valid);
+                }
+    
+                VehicleABMHome home = VehicleABMUtil.getHome();
+                vehicleABM = home.create();      
+                try {
+                	String comment = (note == null || note.length() == 0) ? "Inserted by file" : note; 
+                    vehicleABM.vehicleCreate(data, userSessionData,comment);
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+    
+        } catch (Exception exception) {
+        	Object[]p=new Object[1];
+        	p[0] = vehicles;
+            handler.handleException("createVehicles",exception,userSessionData,p);
+        } 
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate,drivervehicleupdate,dpachecklist"
+     * @throws Exception
+     */
+    public void associateTrailer(Integer vehicleId, Collection trailers, 
+    		UserSessionData userSessionData) throws Exception {
+        try{
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            VehicleABM vehicleABM = home.create();      
+            Iterator it = trailers.iterator();
+            while(it.hasNext()) {
+                vehicleABM.associateTrailer(vehicleId, new Integer((String)it.next()), userSessionData);
+            }
+        } catch (Exception e) {
+        	Object[]p = new Object[2];
+        	p[0] = vehicleId;
+        	p[1] = trailers;
+            handler.handleException("associateTrailer",e,userSessionData,p);
+        }   
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate,drivervehicleupdate,dpachecklist"
+     * @throws Exception
+     */
+    public void desassociateTrailer(Integer vehicleId, Collection trailers, 
+    		UserSessionData userSessionData) throws Exception {
+        try{
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            VehicleABM vehicleABM = home.create();      
+            Iterator it = trailers.iterator();
+            while(it.hasNext()) {
+                vehicleABM.desassociateTrailer(vehicleId, new Integer((String)it.next()), userSessionData);
+            }
+        } catch (Exception e) {
+        	Object[] p = new Object[2];
+        	p[0] = vehicleId;
+        	p[1] = trailers;
+            handler.handleException("desassociateTrailer",e,userSessionData,p);
+        }   
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate,drivervehicleupdate,dpachecklist"
+     * @throws Exception
+     */
+    public Integer createTrailer(TrailerData trailer, UserSessionData userSessionData)
+    	throws Exception {
+        try{
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            VehicleABM vehicleABM = home.create();      
+            return vehicleABM.createTrailer(trailer,userSessionData); 
+        } catch (Exception e) {
+        	Object[] p = new Object[1];
+        	p[0] = trailer;
+            handler.handleException("createTrailer",e,userSessionData,p);
+        }   
+        return null;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate,drivervehicleupdate,dpachecklist"
+     * @throws Exception
+     */
+    public void updateTrailer(TrailerData trailer, UserSessionData userSessionData) throws Exception {
+        try{
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            VehicleABM vehicleABM = home.create();      
+            vehicleABM.updateTrailer(trailer,userSessionData); 
+        } catch (Exception e) {
+        	Object[] p = new Object[1];
+        	p[0] = trailer;
+            handler.handleException("updateTrailer",e,userSessionData,p);
+        }   
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate,drivervehicleupdate"
+     * @throws Exception
+     */
+    public void deleteTrailer(Collection ids, UserSessionData userSessionData) throws Exception {
+        try{
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            VehicleABM vehicleABM = home.create();
+            Iterator it = ids.iterator();
+            while(it.hasNext()) {
+                vehicleABM.deleteTrailer(new Integer((String)it.next()), userSessionData);
+            }
+        } catch (Exception e) {
+        	Object[]p = new Object[1];
+        	p[0] = ids;
+            handler.handleException("deleteTrailer",e, userSessionData,p);
+        }   
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate,drivervehicleupdate"
+     * @throws Exception
+     */
+    public void trailerExclude(Collection ids, Date exclusionDate, String string, UserSessionData userSessionData)  throws Exception {
+        try{
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            VehicleABM vehicleABM = home.create();
+            Iterator it = ids.iterator();
+            while(it.hasNext()) {
+                vehicleABM.trailerExclude(new Integer((String)it.next()), exclusionDate, userSessionData);
+            }
+        } catch (Exception e) {
+        	Object[] p = new Object[3];
+        	p[0] = ids;
+        	p[1] = exclusionDate;
+        	p[2] = string;
+        	
+            handler.handleException("trailerExclude",e,userSessionData,p);
+        }   
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate,drivervehicleupdate"
+     * @throws Exception
+     */
+    public void trailerInclude(Collection ids, String string, UserSessionData userSessionData)  throws Exception {
+        try{
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            VehicleABM vehicleABM = home.create();
+            Iterator it = ids.iterator();
+            while(it.hasNext()) {
+                vehicleABM.trailerInclude(new Integer((String)it.next()), userSessionData);
+            }
+        } catch (Exception e) {
+        	Object[]p = new Object[2];
+        	p[0] = ids;
+        	p[1] = string;
+            handler.handleException("trailerInclude",e,userSessionData,p);
+        }   
+    }
+    
+    /**
+     * 
+     * @param items
+     * @param item
+     * @return
+     * @throws Exception
+     */
+    @SuppressWarnings("unused")
+	private boolean contains(Collection items, Item item) {
+		boolean contiene = false;	
+	   	Iterator itItems = items.iterator();
+	 	// Tengo que fijarme si el orden del item es el correcto:
+	 	while (itItems.hasNext() && ! contiene)
+	 	{
+	 		ItemValueStr itemValueStr = (ItemValueStr)itItems.next();
+	 		contiene = (itemValueStr.getItem().getId().equals(item.getId()));
+		}
+		return contiene;
+	}
+    
+    
+  /*  private void addItemAlert(Collection items, Integer CheckId, UserSessionData userSessionData) {
+		data.setVehicleCheckId(CheckId);
+	
+		AlertData alert;
+		try {
+			alert = AlertABMBean.findAlertByType(userSessionData.getFilter().getCorporationId(),
+					AlertConstants.VEHICLECHECKLISTITEMS);
+
+			Iterator it = items.iterator();
+			ItemValueStr itemValue;
+			while (it.hasNext()) {
+				String[] values = ((String)it.next()).split("-");
+				if(values.length == 2) {
+					itemValue = (ItemValueStr) it.next();
+					// Solo doy de alta alertas para aquellos items que la fecha lÃ­mite de reparaciÃ³n es distinta de null
+					if (values[2] !=null) {
+
+					Item item = itemValue.getItem();
+					VehicleChecklistItemAlertData alertCheck = VehicleCheckllistItemsAlertHandler.findAlertByVehicleCheckItem(v.getVehicle().getId(),item.getId());
+					
+					if (alertCheck == null) {
+						VehicleCheckllistItemsAlertHandler.createVehicleChecklistItemAlert
+						(new VehicleChecklistItemAlertData(null,alert,v.getVehicleCheckData(),itemValue.getItem().getId(),new Date()));
+					}	
+				} 
+			}
+		}
+		catch (Exception e) {
+				// TODO Auto-generated catch block
+				System.out.println("addItemAlert:" + e.getMessage());
+				e.printStackTrace();
+			}
+			//}
+		}
+    
+    
+    private void deleteItemAlert(Collection items,VehicleCheck v,UserSessionData userSessionData) {
+
+    	// Elimino alertas que corresponden a checklist del mismo vehiculo para items del formulario de checklist que no fueron seteados en el actual checklist		
+    	try {	
+    	VehicleReportHome home = VehicleReportUtil.getHome();
+    	VehicleReport vehicleReport = home.create();      
+        CheckListData checklist = vehicleReport.findVehicleCheckList(userSessionData);
+        
+        Iterator it1= checklist.getPoints().iterator();
+    	Point point;
+    	Iterator itItems;
+    		
+        while (it1.hasNext()) {
+        	point = (Point)it1.next();
+       	 itItems = point.getItems().iterator();
+     	while (itItems.hasNext())
+     	{
+     		Item itemCheck = (Item)itItems.next();
+     		if (!contains(items,itemCheck)) {
+     			//Borro Alerta si es que existe
+     			System.out.println("Borro " + itemCheck.getId());
+     			VehicleChecklistItemAlertData alertCheck = VehicleCheckllistItemsAlertHandler.findAlertByVehicleCheckItem(v.getVehicle().getId(),itemCheck.getId());
+     			if (alertCheck != null) {
+     				VehicleCheckllistItemsAlertHandler.deleteVehicleChecklistItemAlert(alertCheck);
+     			}	
+     		}
+     		else {
+     			System.out.println("NO Borro " + itemCheck.getId());
+     		}
+     		
+        	}
+        }
+    	} catch (Exception e) {
+    		System.out.println("deleteItemAlert:" + e.getMessage());
+    	}
+    	}
+    */
+  /*  /**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle"
+	 * @param data
+	 * @throws InvalidDataException
+	 * @throws CommunicationProblemException
+	 * @throws DeslogedException
+	 */	
+	/*public void vehicleChecklistAlertGenerate(VehicleCheckData data,Integer vehicleCheckId,
+			UserSessionData userSessionData) throws Exception {
+
+	// Genero alertas	
+	AlertData alert1 = AlertABMBean.findAlertByType(userSessionData.getFilter().getCorporationId(),
+				AlertConstants.VEHICLECHECKLIST);
+	
+	Collection to = alert1.getTargets(userSessionData.getFilter().getCorporationId());
+	
+	String body = "BODY Alerta general de Checklist";
+	
+	AlertHandlerFactory af = new AlertHandlerFactory();
+	af.getAlertHandler(AlertConstants.VEHICLECHECKLIST,to,
+			body, alert1.getSubject())
+			.alertar();		
+	
+	// Agrego Alerta Puntual
+	Session session=HibernateUtil.currentSession();
+	VehicleCheck v = new VehicleCheck();
+	session.load(v,vehicleCheckId);
+	
+	addItemAlert(data,vehicleCheckId,v,userSessionData);
+	
+	deleteItemAlert(data.getItemValueSet(),v,userSessionData);
+
+	System.out.println("FIN CHECKLIST");
+
+	}
+	*/
+	
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate"
+     * @throws Exception
+     */
+    public void createUnconformity(Integer vehicleId, UnconformityData unconformity, UserSessionData userSessionData) throws Exception {
+    	VehicleABM vehicleABM = null;
+        try{    
+           
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            vehicleABM = home.create();      
+            vehicleABM.createUnconformity(vehicleId,unconformity,userSessionData);
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[0] = vehicleId;
+        	parameters[1] =  unconformity;
+            handler.handleException("createUnconformity",exception, userSessionData, parameters);
+        } 
+    }
+    
+
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate"
+     * @throws Exception
+     */
+    public void deleteUnconformity(Integer vehicleId, Collection unconformities, UserSessionData userSessionData) throws Exception {
+    	VehicleABM vehicleABM = null;
+        try{    
+           
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            vehicleABM = home.create();      
+            
+            Iterator it = unconformities.iterator();
+            while(it.hasNext()) {
+            	vehicleABM.deleteUnconformity(vehicleId,(String)it.next(),userSessionData);
+            }
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[0] = vehicleId;
+        	parameters[1] = unconformities;
+            handler.handleException("deleteUnconformity",exception, userSessionData, parameters);
+        } 
+    }
+    
+    /**
+     * Contratos de Alquiler de los Vehiculos (Allergan)
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate"
+     * @throws Exception
+     */
+    public void createVehicleContract(Integer vehicleId, VehicleContractData contract, UserSessionData userSessionData) throws Exception {
+    	VehicleABM vehicleABM = null;
+        try{    
+           
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            vehicleABM = home.create();      
+            vehicleABM.createVehicleContract(vehicleId,contract,userSessionData);
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[0] = vehicleId;
+        	parameters[1] =  contract;
+            handler.handleException("createVehicleContract",exception, userSessionData, parameters);
+        } 
+    }
+    
+    /**
+     * Contratos de Alquiler de los Vehiculos (Allergan)
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate"
+     * @throws Exception
+     */
+    public void createVehiclesContracts(Collection<Integer> vehiclesId, Date date, 
+    		VehicleContractDataType type, UserSessionData userSessionData) throws Exception {
+    	VehicleABM vehicleABM = null;
+        try{    
+           
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            vehicleABM = home.create();      
+            
+            if (vehiclesId != null && vehiclesId.size() > 0){
+            	Iterator it = vehiclesId.iterator();
+            	while(it.hasNext()) {
+            		Integer vehicleId = (Integer) it.next();
+            		if (vehicleId != null && date != null && type != null){
+            			VehicleContractData contract = new VehicleContractData(vehicleId,date,type,false);
+            			vehicleABM.createVehicleContract(vehicleId,contract,userSessionData);
+            		}
+            	}
+            }
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[0] = vehiclesId;
+        	parameters[1] = date;
+        	parameters[2] = type;
+            handler.handleException("createVehiclesContracts",exception, userSessionData, parameters);
+        } 
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate"
+     * @throws Exception
+     */
+    public void deleteVehicleContract(Integer vehicleId, Collection contracts, UserSessionData userSessionData) throws Exception {
+    	VehicleABM vehicleABM = null;
+        try{    
+           
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            vehicleABM = home.create();      
+            
+            Iterator it = contracts.iterator();
+            while(it.hasNext()) {
+            	vehicleABM.deleteVehicleContract(vehicleId,(String)it.next(),userSessionData);
+            }
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[0] = vehicleId;
+        	parameters[1] = contracts;
+            handler.handleException("deleteVehicleContract",exception, userSessionData, parameters);
+        } 
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate"
+     * @throws Exception
+     */
+    public void deleteSimpleVehicleCheck(Collection checks, UserSessionData userSessionData) throws Exception {
+        try{
+        	VehicleABM vehicleABM = null;
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            vehicleABM = home.create();      
+            Iterator it = checks.iterator();
+            while(it.hasNext()) {
+            	vehicleABM.deleteSimpleVehicleCheck(new Integer((String)it.next()),userSessionData);
+            }
+        }catch(Exception e) {
+			Object[] parameters = {checks};
+            handler.handleException("deleteSimpleVehicleCheck",e, userSessionData, parameters);
+        }
+    }
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate"
+     */
+    public void createVehicleMaintenance(VehicleMaintenanceData data, UserSessionData userSessionData) throws Exception {
+        try{
+        	VehicleABM vehicleABM = null;
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            vehicleABM = home.create();      
+            vehicleABM.createVehicleMaintenance(data,userSessionData);
+        }catch(Exception e) {
+			Object[] parameters = {data};
+            handler.handleException("createVehicleMaintenance",e, userSessionData, parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate"
+     */
+    public void updateVehicleMaintenance(VehicleMaintenanceData data, UserSessionData userSessionData) throws Exception {
+        try{
+        	VehicleABM vehicleABM = null;
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            vehicleABM = home.create();      
+            vehicleABM.updateVehicleMaintenance(data,userSessionData);
+        }catch(Exception e) {
+			Object[] parameters = {data};
+            handler.handleException("updateVehicleMaintenance",e, userSessionData, parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate"
+     */
+    public void deleteVehicleMaintenance(Collection maintenances, UserSessionData userSessionData) throws Exception {
+        try{
+        	VehicleABM vehicleABM = null;
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            vehicleABM = home.create();      
+            Iterator it = maintenances.iterator();
+            while(it.hasNext()) {
+            	vehicleABM.deleteVehicleMaintenance((Integer) it.next(),userSessionData);
+            }
+        }catch(Exception e) {
+			Object[] parameters = {maintenances};
+            handler.handleException("deleteVehicleMaintenance",e, userSessionData, parameters);
+        }
+    }
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate"
+     */
+    public void createComplaint(ComplaintData data, UserSessionData userSessionData) throws Exception {
+        try{
+        	VehicleABM vehicleABM = null;
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            vehicleABM = home.create();      
+            vehicleABM.createComplaint(data,userSessionData);
+        }catch(Exception e) {
+			Object[] parameters = {data};
+            handler.handleException("createComplaint",e, userSessionData, parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate"
+     */
+    public void updateComplaint(ComplaintData data, UserSessionData userSessionData) throws Exception {
+        try{
+        	VehicleABM vehicleABM = null;
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            vehicleABM = home.create();      
+            vehicleABM.updateComplaint(data,userSessionData);
+        }catch(Exception e) {
+			Object[] parameters = {data};
+            handler.handleException("updateComplaint",e, userSessionData, parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate"
+     */
+    public void deleteComplaint(Integer id, UserSessionData userSessionData) throws Exception {
+        try{
+        	VehicleABM vehicleABM = null;
+            VehicleABMHome home = VehicleABMUtil.getHome();
+            vehicleABM = home.create();      
+           	vehicleABM.deleteComplaint(id,userSessionData);
+        }catch(Exception e) {
+			Object[] parameters = {id};
+            handler.handleException("deleteComplaint",e, userSessionData, parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleupdate"
+     */
+    public void updateVehicleContract(VehicleContractData contract, int action, UserSessionData userSessionData) throws Exception {
+        try{
+        	VehicleABM vehicleABM = VehicleABMUtil.getHome().create();      
+           	vehicleABM.updateVehicleContract(contract, action,userSessionData);
+        }catch(Exception e) {
+			Object[] parameters = {contract,action};
+            handler.handleException("updateVehicleContract",e, userSessionData, parameters);
+        }
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleview,systemaccess"
+     */
+    public void createOrUpdateDPAGoals(ArrayList<DPAGoalData> goals, UserSessionData userSessionData) throws Exception {
+        try{
+        	VehicleABM vehicleABM = VehicleABMUtil.getHome().create();
+        	for(DPAGoalData d: goals){
+        		vehicleABM.createOrUpdateDPAGoals(d, userSessionData);	
+        	}
+           	
+        }catch(Exception e) {
+			Object[] parameters = {};
+            handler.handleException("createOrUpdateDLAGoals",e, userSessionData, parameters);
+        }
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehicleview,systemaccess"
+     */
+    public void createOrUpdateDPAVehicleActive(ArrayList<DPAVehicleActiveData> vehicleActives, UserSessionData userSessionData) throws Exception {
+        try{
+        	VehicleABM vehicleABM = VehicleABMUtil.getHome().create();
+        	for(DPAVehicleActiveData d: vehicleActives){
+        		vehicleABM.createOrUpdateDPAVehicleActive(d, userSessionData);	
+        	}
+           	
+        }catch(Exception e) {
+			Object[] parameters = {};
+            handler.handleException("createOrUpdateDPAVehicleActive",e, userSessionData, parameters);
+        }
+    }
+
+}

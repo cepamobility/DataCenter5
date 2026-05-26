@@ -1,0 +1,862 @@
+ui/* CSS Document */
+
+.table{
+	background-color:#FFFFFF;
+    border-bottom:0px;
+    border-left:0px;
+    border-top:0px;
+    border-right:0px;
+    font-family:Verdana, Arial, Helvetica, sans-serif;
+    font-size:12px;
+}
+
+.tablelogin{
+	background-image:url(/datacenter/util/imgs/login.gif);
+    border-bottom:0px;
+    border-left:0px;
+    border-top:0px;
+    border-right:0px;
+    font-family:Verdana, Arial, Helvetica, sans-serif;
+    font-size:12px;
+}
+
+.tablelogin2{
+	background-image:url(/datacenter/util/imgs/login2.gif);
+    border-bottom:0px;
+    border-left:0px;
+    border-top:0px;
+    border-right:0px;
+    font-family:Verdana, Arial, Helvetica, sans-serif;
+    font-size:12px;
+}
+
+.txtlogin{
+	font-family:Verdana, Arial, Helvetica, sans-serif;
+    font-size:13px;
+    font-weight:bold;
+	color:#1a4896;    
+}
+
+.msglogin{
+	font-family:Verdana, Arial, Helvetica, sans-serif;
+	font-size:11px;
+
+}
+
+.space,whitespace,spaceSearch{ /* 4px to separate a table*/
+    font-size:5px;
+    
+
+} 
+.input{
+   font-size:10px;
+   font-family:Arial, Helvetica, sans-serif;
+   background-color:#F8F8F8;
+}
+.inputSelect{
+   font-size:10px;
+   font-family:Arial, Helvetica, sans-serif;
+   background-color:#FFFFFF;
+}
+
+.cursor{
+   cursor:pointer;
+
+}
+
+/*css class for user */
+
+.title1{
+color:black;
+font-family:Arial, Helvetica, sans-serif;
+font-size:24;
+font-weight:bold;
+
+}
+.titleReport{
+color:black;
+font-family:Arial, Helvetica, sans-serif;
+font-size:18;
+font-weight:bold;
+
+}
+.subtitleReport{
+color:black;
+font-family:Arial, Helvetica, sans-serif;
+font-size:14;
+font-weight:bold;
+
+}
+
+.guide0{
+color:white;
+background-image:url(/datacenter/util/imgs/center.jpg);
+font-family:Arial, Helvetica, sans-serif;
+font-size:10;
+font-weight:bold;
+
+}
+
+.guide1{
+color:white;
+background-image:url(/datacenter/util/imgs/center.jpg);
+font-family:Arial, Helvetica, sans-serif;
+font-size:16;
+font-weight:bold;
+
+}
+
+.guide{
+color:black;
+background-image:url(/datacenter/util/imgs/center_op.jpg);
+font-family:Arial, Helvetica, sans-serif;
+font-size:16;
+font-weight:bold;
+
+}
+
+.guide2{
+background-color:#E9E9E9;
+color:black;
+font-family:Arial, Helvetica, sans-serif;
+font-size:13;
+font-weight:bold;
+
+}
+.guide2small{
+background-color:#E9E9E9;
+color:black;
+font-family:Arial, Helvetica, sans-serif;
+font-size:7;
+font-weight:bold;
+
+}
+
+.guide3{
+background-color:#898F92;
+color:white;
+font-family:Arial, Helvetica, sans-serif;
+font-size:12;
+font-weight:bold;
+
+}
+
+.guide5{
+background-color:#999999;
+color:white;
+font-family:Arial, Helvetica, sans-serif;
+font-size:11;
+font-weight:bold;
+
+}
+
+.guide4{
+background-color:#696969;
+color:white;
+font-family:Arial, Helvetica, sans-serif;
+font-size:11;
+font-weight:bold;
+
+}
+
+.accessTitle{
+	color:black;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:24;
+	font-weight:bold;
+}
+.accessText{
+	color:black;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:14;
+}
+
+.accessDriver{
+	color:black;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:18;
+}
+
+.accessRed{
+	color:red;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:36;
+	font-weight:bold;
+}
+
+.accessGreen{
+	color:green;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:36;
+	font-weight:bold;
+}
+
+.default{
+background-color:#FFFFFF;
+color:black;
+font-family:Arial, Helvetica, sans-serif;
+font-size:12;
+}
+
+.input{
+font-size:10px;
+background-color:#F5F5F5;
+color:#000000;
+font-family:Arial, Helvetica, sans-serif;
+}
+.input2{
+font-size:10px;
+color:#000000;
+font-family:Arial, Helvetica, sans-serif;
+}
+
+.specialarea{
+font-size:10px;
+color:#000000;
+font-family:Arial, Helvetica, sans-serif;
+
+
+}
+/*Colours for menu configuration*/
+.linesub{
+background-color:#006699;
+color:white;
+font-family:Arial, Helvetica, sans-serif;
+font-size:12;
+}
+.linesub2{
+background-color:#0066CC;
+color:white;
+font-family:Arial, Helvetica, sans-serif;
+font-size:12;
+}
+.linesub3{
+background-color:#0099CC;
+color:white;
+font-family:Arial, Helvetica, sans-serif;
+font-size:12;
+}
+.linesub4{
+background-color:#0000FF;
+color:white;
+font-family:Arial, Helvetica, sans-serif;
+font-size:12;
+}
+.linesub5{
+background-color:#006699;
+color:white;
+font-family:Arial, Helvetica, sans-serif;
+font-size:12;
+}
+.linedefault{
+color:black;
+font-family:Arial, Helvetica, sans-serif;
+font-size:12;
+}
+
+.linelast a:link, .linelast a:active, .linelast a:visited {
+text-decoration:none;
+display: block;
+}
+.lineborder {
+border: 1px solid red;
+font-style:italic;
+font-weight:bold;
+}
+
+/*lineone and linetwo are the lines of all list  */
+
+.lineone{
+background-color:#F8F8F8;
+color:black;
+font-family:Arial, Helvetica, sans-serif;
+font-size:12;
+}
+.title{
+background-color:#F8F8F8;
+color:black;
+font-family:Arial, Helvetica, sans-serif;
+font-size:16;
+}
+
+.linetwo{
+background-color:#FFFFFF;
+color:black;
+font-family:Arial, Helvetica, sans-serif;
+font-size:12;
+}
+.linethree{
+background-color:#F8F8F8;
+color:black;
+font-family:Arial, Helvetica, sans-serif;
+font-size:12;
+}
+.linefour{
+background-color:#A8A8A8;
+color:black;
+font-family:Arial, Helvetica, sans-serif;
+font-size:12;
+}
+.texts{
+color:black;
+font-family:Arial, Helvetica, sans-serif;
+font-size:12;
+font-weight: bold;
+}
+.red{
+color:#860c07;
+font-family:Arial, Helvetica, sans-serif;
+font-size:12;
+font-weight: bold;
+}
+.redBig{
+color:#860c07;
+font-family:Arial, Helvetica, sans-serif;
+font-size:16;
+font-weight: bold;
+}
+.red2{
+color:red;
+background-color:#F8F8F8;
+font-family:Arial, Helvetica, sans-serif;
+font-size:12;
+font-weight: bold;
+}
+.yellow{
+color:#d8832b;
+font-family:Arial, Helvetica, sans-serif;
+font-size:12;
+font-weight: bold;
+}
+.yellowBig{
+color:#d8832b;
+font-family:Arial, Helvetica, sans-serif;
+font-size:16;
+font-weight: bold;
+}
+.blue{
+color:blue;
+font-family:Arial, Helvetica, sans-serif;
+font-size:12;
+font-weight: bold;
+}
+.simpleblue{
+color:blue;
+font-family:Arial, Helvetica, sans-serif;
+font-size:12;
+}
+.green{
+color:#355724;
+font-family:Arial, Helvetica, sans-serif;
+font-size:12;
+font-weight: bold;
+}
+.greenBig{
+color:#355724;
+font-family:Arial, Helvetica, sans-serif;
+font-size:16;
+font-weight: bold;
+}
+.green2{
+color:green;
+background-color:#F8F8F8;
+font-family:Arial, Helvetica, sans-serif;
+font-size:12;
+font-weight: bold;
+}
+
+.texts1{
+color:#1a4896;
+font-family:Arial, Helvetica, sans-serif;
+font-size:13;
+font-weight: bold;
+background-color:#E9E8E8;
+}
+
+
+.required{
+color:red;
+font-family:Arial, Helvetica, sans-serif;
+font-size:12;
+font-weight: bold;
+}
+.title2{
+    color: #FFFFFF;
+	font-family: Arial, Helvetica, sans-serif;
+	font-weight: bold;
+	font-size: 18px;
+    background-image:url(/datacenter/util/imgs/bg2.jpg);
+}
+
+/* New layout standard  */
+
+
+.Main{
+width:600px;
+border:0px;
+padding:0px;
+border-spacing:0px;
+
+}
+.halfSecondary{
+width:292px;
+border:0px;
+padding:0px;
+border-spacing:0px;
+}
+.quarterSecondary{
+width:138px;
+border:0px;
+padding:0px;
+border-spacing:0px;
+}
+.divisor{
+width:16px;
+border:0px;
+padding:0px;
+border-spacing:0px;
+}
+.tableDefault{
+width:100%;
+border:0px;
+padding:0px;
+border-spacing:0px;
+}
+.leftLine{
+background-image:url(/datacenter/util/imgs/left_line.gif);
+width:19px;
+}
+
+.leftLine1{
+background-image:url(/datacenter/util/imgs/left_line_op.gif);
+width:19px;
+}
+
+.rightLine{
+background-image:url(/datacenter/util/imgs/right_line.gif);
+width:19px;
+}
+
+.rightLine1{
+background-image:url(/datacenter/util/imgs/right_line_op.gif);
+width:19px;
+}
+
+.centerBase{
+background-image:url(/datacenter/util/imgs/center_base.gif);
+height:11px;
+}
+
+.centerBase1{
+background-image:url(/datacenter/util/imgs/center_base_op.gif);
+height:11px;
+}
+
+/* home */
+
+.bgTop{
+background-image:url(/datacenter/menu/imgs/top_bg.gif);
+height:21px;
+}
+
+.style1 {
+	color: #FFFFFF;
+	font-size: 4px;
+}
+
+.style2 {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 12px;
+	font-weight: bold;
+	color: #333333;
+}
+
+
+body {
+	margin-left: 0px;
+	margin-top: 10px;
+	margin-right: 0px;
+	margin-bottom: 0px;
+}
+a:link {
+	text-decoration: none;
+}
+a:visited {
+	text-decoration: none;
+}
+a:hover {
+	text-decoration: underline;
+}
+a:active {
+	text-decoration: none;
+}
+
+a.abutton:link, a.abutton:visited, a.abutton:active, a.abutton:active {
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 24px;
+	font-weight: bold;
+	color: #000000;
+	text-decoration: none;
+}
+
+
+.leftLineSearch{
+background-image:url(/datacenter/util/imgs/left_line_search.jpg);
+width:19px;
+}
+
+.rightLineSearch{
+background-image:url(/datacenter/util/imgs/right_line_search.jpg);
+width:19px;
+}
+
+.centerBaseSearch{
+	background-image:url(/datacenter/util/imgs/center_base_search.jpg);
+	height:11px;
+}
+
+.guideSearch{
+	background-image:url(/datacenter/util/imgs/center_top_search.jpg);
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 13px;
+	font-weight: bold;
+	color: #003C77;
+}
+
+.history{
+	background-image:url(/datacenter/util/imgs/back_icon.png);
+	font-family: Arial, Helvetica, sans-serif;
+	font-size: 9px;
+	color: #000000;
+}
+
+.success{
+font-family: Arial, Helvetica, sans-serif;
+font-size: 15px;
+font-weight: bold;
+color: #486b91;
+	
+}
+.linksuccess{
+cursor:pointer;
+font-family: Arial, Helvetica, sans-serif;
+font-size: 12px;
+color:#000000;
+}
+.SearchBack{
+background-color:#F9F9F9;
+font-family:Arial, Helvetica, sans-serif;
+font-size:11;
+}
+.succesback{
+background-color:#F9F9F9;
+color: #003C77;
+font-family: Arial, Helvetica, sans-serif;
+font-size: 13px;
+font-weight: bold;
+}
+
+.myinfoConfig{
+	color:#000000;
+	font-family:Arial, Helvetica, sans-serif;
+    font-size:12px;
+    vertical-align: middle;
+}
+
+.prueba6{
+	color:#FFFFFF;	
+    font-family:Verdana, Arial, Helvetica, sans-serif;
+    font-size:6px;
+}
+
+.prueba8{
+    color:#000000;	
+    font-family:Verdana, Arial, Helvetica, sans-serif;
+    font-size:8px;
+}
+
+.pruebablack10{
+    font-family:Verdana, Arial, Helvetica, sans-serif;
+    font-size:10px;
+}
+
+.prueba10{
+	color:#FFFFFF;
+    font-family:Verdana, Arial, Helvetica, sans-serif;
+    font-size:10px;
+}
+
+.prueba9{
+	color:#FFFFFF;
+    font-family:Verdana, Arial, Helvetica, sans-serif;
+    font-size:9px;
+}
+
+.prueba8blanco{
+	color:#FFFFFF;	
+    font-family:Verdana, Arial, Helvetica, sans-serif;
+    font-size:8px;
+}
+
+.print{
+   font-size:8px;
+   font-family:Helvetica, sans-serif;
+}
+
+.printtext{
+	border-color: #000000;
+	border-width: 1px;
+	border-style: solid;
+}
+
+#scrollalert {
+     width:347px;
+     height:170px;
+     background-color:#F2F2F2;
+     overflow:auto;
+}
+
+#scrollalert2 {
+     width:347px;
+     height:170px;
+     overflow:auto;
+}
+
+.txtOk{
+   	font-family:Arial, Helvetica, sans-serif;
+	font-size:10px;
+    font-weight:bold;
+	color:#009900;
+}
+
+.txtNot{
+   	font-family:Arial, Helvetica, sans-serif;
+	font-size:10px;
+    font-weight:bold;
+	color:#990000;
+}
+.messageRed{
+    color:red;	
+    font-family:Verdana, Arial, Helvetica, sans-serif;
+    font-size:12px;
+}
+
+.contentBayerReport {
+	margin-left: 20px;
+}
+.bayerReport0{
+	height: 20px;
+	background-color:#999999;
+	width:1040px;
+	margin-left: 10px;
+}
+.bayerReport1{
+	height: 20px;
+	background-color:#AAAAAA;
+	width:1040px;
+	margin-left: 10px;
+}
+.bayerReport2{
+	height: 20px;
+	background-color:#BBBBBB;
+	width:1040px;
+	margin-left: 10px;
+}
+.bayerReport3{
+	height: 20px;
+	background-color:#CCCCCC;
+	width:1040px;
+	margin-left: 10px;
+}
+.bayerReport4{
+	height: 20px;
+	background-color:#DDDDDD;
+	width:1040px;
+	margin-left: 10px;
+}
+.bayerReport5{
+	height: 20px;
+	background-color:#EEEEEE;
+	width:1040px;
+	margin-left: 10px;
+}
+.bayerReport6{
+	height: 20px;
+	background-color:#FFFFFF;
+	width:1040px;
+	margin-left: 10px;
+}
+.bayerLine{
+	height: 2px;
+	background-color:#000000;
+	width:1040px;
+	margin-left: 10px;
+}
+#filter{
+     width: 450px;
+     padding-left: 10px;
+}
+.titleBayer{
+     font-family:Verdana, Arial, Helvetica, sans-serif;
+	 font-size:20px;
+     font-weight:bold;
+     text-align:left;
+     width: 650px;
+     padding-left: 10px;
+     margin-bottom: 10px;
+}
+.parameterBayer{
+     font-family:Verdana, Arial, Helvetica, sans-serif;
+	 font-size:14px;
+     font-weight:bold;
+     text-align:left;
+     padding-top: 10px;
+}
+.colName{
+	 display: table-cell;  
+     font-family:Verdana, Arial, Helvetica, sans-serif;
+	 font-size:12px;
+    	font-weight:bold;
+    	text-align:left;
+         width: 450px;
+}
+.colValue{
+	 display: table-cell;
+	 font-family:Verdana, Arial, Helvetica, sans-serif;
+	 font-size:12px;
+    text-align:right;
+    width: 70px;
+}
+.colValue2{
+	 display: table-cell;
+	 font-family:Verdana, Arial, Helvetica, sans-serif;
+	 font-size:12px;
+     text-align:right;
+     width: 120px;
+}
+.colValue3{
+	 display: table-cell;
+	 font-family:Verdana, Arial, Helvetica, sans-serif;
+	 font-size:10px;
+     text-align:center;
+     width: 120px;
+  }
+.headerLine {
+	height: 20px;
+    background-color:#D2DDE8;
+	width:1040px;
+	margin-left: 10px;
+}
+.emptyValue {
+	 display: table-cell;
+	 width:450px;
+}
+.headerBayerReport0 {
+	 display: table-cell;  
+     font-family:Verdana, Arial, Helvetica, sans-serif;
+	 font-size:14px;
+     font-weight:bold;
+     text-align:center;
+}
+.headerBayerReport {
+	 display: table-cell;  
+     font-family:Verdana, Arial, Helvetica, sans-serif;
+	 font-size:14px;
+     font-weight:bold;
+     text-align:center;
+	 background-color:#D2DDE8;
+     width: 100px;
+}
+.blackBayerReport{
+	 display: table-cell;  
+	  background-color:#000000;
+    width: 120px;	
+}
+.redBayerReport{
+	 display: table-cell;  
+	  background-color:#FF0000;
+    width: 100px;	
+}
+.yellowBayerReport{
+	 display: table-cell;  
+	  background-color:#FFE37F;
+    width: 100px;	
+}
+.greenBayerReport{
+	 display: table-cell;  
+	  background-color:#009900;
+    width: 100px;	
+}
+.bayerCategory1{
+	background-color:#CCCCCC;
+	font-family:Verdana, Arial, Helvetica, sans-serif;
+	border: 1px solid black;
+	font-size:12px;
+    text-align:left;
+    padding: 10px;
+    width: 80px;
+}
+.bayerDetailCell1 {
+	background-color:#FFFFFF;
+	font-family:Verdana, Arial, Helvetica, sans-serif;
+	border: 1px solid black;
+	font-size:12px;
+    text-align:left;
+    padding: 10px;
+    width: 250px;
+}
+.bayerDetailCell2 {
+	background-color:#FFFFFF;
+	font-family:Verdana, Arial, Helvetica, sans-serif;
+	border: 1px solid black;
+	font-size:12px;
+    text-align:left;
+    padding: 10px;
+    width: 80px;
+}
+.bayerDetailCellTotal {
+	background-color:#DDDDDD;
+	font-family:Verdana, Arial, Helvetica, sans-serif;
+	border: 1px solid black;
+	font-size:12px;
+    text-align:left;
+    padding: 10px;
+    width: 80px;
+}
+.risklevel0{
+	background-color:green;
+	color:white;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:12;
+}
+.risklevel1{
+	background-color:yellow;
+	color:black;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:12;
+}
+.risklevel2{
+	background-color:red;
+	color:white;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:12;
+}
+.risklevel3{
+	background-color:black;
+	color:white;
+	font-family:Arial, Helvetica, sans-serif;
+	font-size:12;
+}
+
+.backBlack{
+	background-image:url(/datacenter/menu/imgs/black.png);
+}
+.backRed{
+	background-image:url(/datacenter/menu/imgs/red.png);
+}
+.backYellow{
+	background-image:url(/datacenter/menu/imgs/yellow.png);
+}
+.backGreen{
+	background-image:url(/datacenter/menu/imgs/green.png);
+}

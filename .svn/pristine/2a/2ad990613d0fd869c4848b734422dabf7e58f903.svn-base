@@ -1,0 +1,1314 @@
+/*
+ * Created on 27-oct-2005
+ */
+package persistence.driver;
+
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
+import javax.ejb.SessionBean;
+
+import org.hibernate.Hibernate;
+import org.hibernate.Query;
+import org.hibernate.SQLQuery;
+import org.hibernate.classic.Session;
+
+import persistence.activity.tables.CEPAScheduleActivityRegistry;
+import persistence.administration.corporation.CorporationABMBean;
+import persistence.administration.corporation.CorporationABMUtil;
+import persistence.administration.corporation.tables.DivOrgItemLevel1;
+import persistence.administration.tables.LevelOfServiceDriverDPA;
+import persistence.administration.user.tables.User;
+import persistence.datatype.DataTypeReportUtil;
+import persistence.datatype.tables.TypeVehicle;
+import persistence.driver.tables.AlcoholControl;
+import persistence.driver.tables.AlcoholControlPK;
+import persistence.driver.tables.AnualPlan;
+import persistence.driver.tables.AptitudTest;
+import persistence.driver.tables.AptitudTestPK;
+import persistence.driver.tables.CsvEntity;
+import persistence.driver.tables.Driver;
+import persistence.driver.tables.DriverBayer;
+import persistence.driver.tables.DriverLink;
+import persistence.driver.tables.DriverLogistic;
+import persistence.driver.tables.DriverLogisticPK;
+import persistence.driver.tables.DriverPrize;
+import persistence.driver.tables.DriverPrizePK;
+import persistence.driver.tables.DriverUnconformity;
+import persistence.driver.tables.MitigationPlan;
+import persistence.driver.tables.MitigationPlanActivity;
+import persistence.driver.tables.MitigationPlanActivityPK;
+import persistence.driver.tables.ProvisionalBTW;
+import persistence.driver.tables.TelematicControl;
+import persistence.driver.tables.TelematicControlSendMail;
+import persistence.event.tables.Event;
+import persistence.event.tables.EventAbstract;
+import persistence.hibernate.HibernateUtil;
+import persistence.log.driver.DriverLog;
+import persistence.log.driver.ProvisionalBTWLog;
+import persistence.log.event.EventLog;
+import persistence.log.vehicle.VehicleLog;
+import persistence.util.ExceptionHandler;
+import persistence.util.Util;
+import persistence.util.tables.DriverAccessLog;
+import persistence.vehicle.tables.Vehicle;
+
+import communication.activity.tables.CEPAActivityConstants;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.DivOrgData;
+import communication.administration.corporation.tables.ItemData;
+import communication.administration.dpa.LevelOfServiceDriverDPAData;
+import communication.administration.user.UserSessionData;
+import communication.alert.AlertConstants;
+import communication.driver.tables.AlcoholControlData;
+import communication.driver.tables.AnualPlanData;
+import communication.driver.tables.AptitudTestData;
+import communication.driver.tables.CsvEntityData;
+import communication.driver.tables.DriverBayerData;
+import communication.driver.tables.DriverData;
+import communication.driver.tables.DriverLogisticData;
+import communication.driver.tables.DriverPrizeData;
+import communication.driver.tables.MitigationPlanActivityData;
+import communication.driver.tables.MitigationPlanData;
+import communication.driver.tables.TelematicControlData;
+import communication.driver.tables.UnconformityData;
+import communication.exception.DeslogedException;
+import communication.exception.InvalidDataException;
+import communication.security.SecurityConstants;
+import communication.util.LogActions;
+import communication.util.MailSender;
+import communication.util.Validate;
+
+/**
+ * @ejb.bean name="DriverABM" display-name="Name for DriverABM"
+ *      description="Description for DriverABM" jndi-name="ejb/DriverABM"
+ *      type="Stateless"
+ *  
+ * @ejb.ejb-ref 
+ *          ejb-name ="CorporationABM"
+ *          ref-name = "ejb/CorporationABM"
+ *          view-type ="remote"
+ * 
+ * @jboss.ejb-ref-jndi
+ *          jndi-name = "ejb/CorporationABM" 
+ *          ref-name = "CorporationABM"
+ * 
+ * @ejb.ejb-ref 
+ *          ejb-name ="DataTypeReport"
+ *          ref-name = "ejb/DataTypeReport"
+ *          view-type ="remote"
+ * 
+ * @jboss.ejb-ref-jndi
+ *          jndi-name = "ejb/DataTypeReport" 
+ *          ref-name = "DataTypeReport"
+ */
+public abstract class DriverABMBean implements SessionBean {
+
+    private ExceptionHandler handler = new ExceptionHandler(DriverABMBean.class);
+    
+    /**
+     * Init transaction
+     * @ejb.create-method
+     * @ejb.permission role-name = "administrator,driverupdate,driverdelete,drivercreate,drivertests,driverupdateowndata,doorcontrol,driverbayerdata,jjreporter"
+     */
+    public void ejbCreate() throws javax.ejb.CreateException { }
+
+	/**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,drivercreate"
+	 * @param data Driver that will be created 
+	 * @param userRequest User logged
+	 */
+	public Integer driverCreate(DriverData data, UserSessionData userRequest, String comment) throws Exception {
+		
+		try{
+            Session session=HibernateUtil.currentSession();			
+            
+            validate(data,userRequest,"create");
+			
+			Driver driver = new Driver(data);
+
+            Integer id = (Integer)session.save(driver);
+			driver.setId(id);
+			
+			DriverLog log = new DriverLog(driver,userRequest.getFilter().getLoginName(),new Date(),LogActions.CREATE,comment);
+			session.save(log);
+			
+			if(driver.getCorporation().getId().equals(CorporationData.DPA)){
+				LevelOfServiceDriverDPAData dataLevel=new LevelOfServiceDriverDPAData();
+				dataLevel.setInspector(userRequest.getFullName());
+				dataLevel.setDriverId(id);
+				dataLevel.setDate(new Date());
+				dataLevel.setStatus("A");
+				dataLevel.setCorporationId(data.getCorporationId());
+				dataLevel.setFirstName(data.getFirstName());
+				dataLevel.setLastName(data.getLastName());
+				dataLevel.setCelular(data.getSuperviser());
+				dataLevel.setUf(data.getStateOrRegion());
+				dataLevel.setCpf(data.getIdDallas());
+				dataLevel.setRg(data.getBpsregistry());
+				dataLevel.setBirthDate(data.getBirthDate());
+				dataLevel.setVcnh(data.getLicenseExpiry());
+				Iterator it = data.getDivOrgsIterator();
+			    if(it.hasNext()) {
+			        DivOrgData divOrg = (DivOrgData)it.next();
+			        ItemData item1 = (ItemData)divOrg.getDivOrgLevels().getItemIterator().next();
+			        while(item1.getSubItems() != null) {
+			            item1 = (ItemData)item1.getSubItems().getItemIterator().next();
+			        }
+			        dataLevel.setFleet(item1.getId());
+			    }
+				    
+				LevelOfServiceDriverDPA level=new LevelOfServiceDriverDPA(dataLevel);
+				session.save(level);
+			}
+			
+            return id;
+		} catch (Exception e) {
+			Object[] parameters = {data,comment};
+            handler.getException(e,"driverCreate",userRequest,parameters);
+        }
+        return null;
+	}
+	
+	/**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,driveredit"
+	 * @param userRequest User logged
+	 */
+	public void driverLogisticCreate(DriverLogisticData data, UserSessionData userRequest) throws Exception {
+		try{
+            Session session=HibernateUtil.currentSession();			
+            DriverLogistic driver = new DriverLogistic(data);
+            session.save(driver);
+        } catch (Exception e) {
+			Object[] parameters = {data};
+            handler.getException(e,"driverLogisticCreate",userRequest,parameters);
+        }
+    }
+	
+	/**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,driveredit"
+	 * @param userRequest User logged
+	 */
+	public void driverLogisticUpdate(Integer driver, String activity, DriverLogisticData data, UserSessionData userRequest) throws Exception {
+		try{
+            Session session=HibernateUtil.currentSession();
+            DriverLogistic logistic = (DriverLogistic)session.load(DriverLogistic.class, new DriverLogisticPK(driver, activity));
+            session.delete(logistic);
+            DriverLogistic driverL = new DriverLogistic(data);
+            session.save(driverL);
+        } catch (Exception e) {
+			Object[] parameters = {driver,activity,data};
+            handler.getException(e,"driverLogisticUpdate",userRequest,parameters);
+        }
+    }
+    		
+	/**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,driveredit"
+	 * @param userRequest User logged
+	 */
+	public void driverLogisticDelete(Integer driver, String activity, UserSessionData userRequest) throws Exception {
+		try{
+            Session session=HibernateUtil.currentSession();
+            DriverLogistic logistic = (DriverLogistic)session.load(DriverLogistic.class, new DriverLogisticPK(driver, activity));
+            session.delete(logistic);
+        } catch (Exception e) {
+			Object[] parameters = {driver,activity};
+            handler.getException(e,"driverLogisticUpdate",userRequest,parameters);
+        }
+    }
+    		
+	/**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,driverupdate,driverupdateowndata,driverbayerdata"
+	 * @param data
+	 * @param userRequest
+	 */        			
+	public void driverUpdate(DriverData data, UserSessionData userSessionData, String comment, int action) throws Exception {
+	    try{
+	        Session session=HibernateUtil.currentSession();
+            if(userSessionData.isDriver() && !data.getId().equals(userSessionData.getDriverData().getId())) {
+                throw new InvalidDataException("driverUpdate","user driver wrong id");
+            }
+	        validate(data,userSessionData,"update");
+
+	        if (data.getId() != null){
+	        	Driver driver = (Driver)session.load(Driver.class,data.getId());
+	        	if(userSessionData.isCorporation(new int[] {CorporationData.MONSANTO,CorporationData.BAYER}) && driver.isBrasilCountry()) {
+		        	boolean exclude = false;
+		        	boolean include = false;
+		        	boolean changeVehicle = false;
+		        	boolean changeObs = false;
+	        		if(userSessionData.isCorporation(CorporationData.MONSANTO)) {
+	        			changeVehicle = changeVehicleAllowed(driver,data);
+	        			changeObs = changeVehicleAllowedObs(driver,data);
+	        		}
+	        		exclude = data.getExclusionDate() != null && driver.getExclusionDate() == null;
+	        		include = data.getExclusionDate() == null && driver.getExclusionDate() != null;
+//	        		if(changeVehicle || changeObs|| exclude || include) 
+//		        		changeDriverEmail(changeVehicle,exclude,include,data,driver,userSessionData);
+	        		if(changeVehicle && data.getVehicleAllowed().getResourceBundleId().equals(TypeVehicle.NO_VEHICLE) && data.getEmail() != null) {
+	        			sendDriverChange(data, userSessionData);
+	        		}
+	        	}
+	        	driver.updateData(data);
+	        	session.update(driver);
+		
+	        	DriverLog log = new DriverLog(driver,userSessionData.getFilter().getLoginName(),new Date(),action,comment);
+	        	session.save(log);
+	        }
+	        
+	    } catch (Exception e) {
+			Object[] parameters = {data,comment,action};
+            handler.getException(e,"driverUpdate",userSessionData,parameters);
+	    }
+	}
+	
+	private boolean changeVehicleAllowed(Driver driver, DriverData driverData) {
+		boolean change = false;
+		try {
+			if(driver.getVehicleAllowed() == null && driverData.getVehicleAllowed() == null)
+				change = false;
+			else if(driver.getVehicleAllowed() == null && driverData.getVehicleAllowed() != null)
+				change = true;
+			else if(driver.getVehicleAllowed() != null && driverData.getVehicleAllowed() == null)
+				change = true;
+			else
+				change = !driver.getVehicleAllowed().getResourceBundleId().equals(driverData.getVehicleAllowed().getResourceBundleId());
+		}catch (Exception e) {
+			e.printStackTrace();
+		}
+		return change;
+	}
+
+	private boolean changeVehicleAllowedObs(Driver driver, DriverData driverData) {
+		boolean change = false;
+		try {
+			change = !String.valueOf(driver.getLicenseObs()).equals(String.valueOf(driverData.getLicenseObs()));
+		}catch (Exception e) {
+			e.printStackTrace();
+		}
+		return change;
+	}
+
+	private void changeDriverEmail(boolean changeVehicle,boolean exclude,boolean include, DriverData data, Driver driver, UserSessionData userSessionData) {
+		MailSender sender = new MailSender();
+		try {
+			boolean sended = false;
+			int count = 0;
+			Collection<String> to = new LinkedList<String>();
+			if(SecurityConstants.isProductionServer()) {
+				to.add(AlertConstants.EMAIL_CRIS);
+			}else {
+				to.add(AlertConstants.EMAIL_JUAN);
+			}
+			while(!sended && count < 10) {
+				try {
+					sended = sender.sendImageMandrill(to, "CEPA DataCenter", AlertConstants.EMAIL_SUPPORT, "Mudança Condutor", AlertConstants.getBodyChangeDriver(changeVehicle,exclude,include,data,driver,userSessionData.getCorporationId()), new LinkedList<String>(), new LinkedList<String>(), AlertConstants.EMAIL_SUPPORT, "CEPA DataCenter", new LinkedList<String>(), null);
+				}catch (Exception e) {
+					e.printStackTrace();
+				}
+				count++;
+			}
+
+		}catch (Exception e) {
+			e.printStackTrace();
+		}
+		
+	}
+
+	public void sendDriverChange(DriverData driver, UserSessionData userSessionData) {
+		String body = "<p>Prezado , boa tarde!</p>" +
+				"<p></p>" +
+				"<p>Você consta no Data Center como condutor Monsanto, porém na última atualização enviada pela empresa não foi informado o tipo de veículo que você está autorizado a dirigir.<p>" +
+				"<p></p>"+
+				"<p>Por favor, nos confirmar se devemos considerar veículo de passeio, pick up S10, reboque, Caminhão, ônibus, etc... para atualização de dados e verificação das datas de renovação dos treinamentos necessários.</p>"+
+				"<p></p>"+
+				"<p>As respostas tem que ser encaminhadas ao monsanto_atualizacao@cepadc.com</p>"+
+				"<p></p>"+
+				"<p>Atenciosamente.</p>";
+		body = Util.toHTMLString(body);
+		try {
+			boolean sended = false;
+			int count = 0;
+			Collection<String> to = new LinkedList<String>();
+			if(SecurityConstants.isProductionServer()) {
+				to.add(driver.getEmail());
+			}else {
+				to.add(AlertConstants.EMAIL_JUAN);
+			}
+			MailSender sender = new MailSender();
+			while(!sended && count < 0/*10*/) {
+				try {
+					sended = sender.sendImageMandrill(to, "CEPA DataCenter", "monsanto_atualizacao@cepadc.com", "Treinamento de Direção Defensiva - atualização base de dados", body, new LinkedList<String>(), new LinkedList<String>(), "monsanto_atualizacao@cepadc.com", "CEPA DataCenter", new LinkedList<String>(), null);
+				}catch (Exception e) {
+					e.printStackTrace();
+				}
+				count++;
+			}
+
+		}catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	/**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,driverupdate,driverupdateowndata,driverbayerdata"
+	 * @param data
+	 * @param userRequest
+	 */        			
+	public void driverUpdateForestales(DriverData data, Integer divorg, UserSessionData userSessionData, String comment, int action) throws Exception {
+	    try{
+	        Session session=HibernateUtil.currentSession();
+            if(userSessionData.isDriver() && !data.getId().equals(userSessionData.getDriverData().getId())) {
+                throw new InvalidDataException("driverUpdate","user driver wrong id");
+            }
+	        validate(data,userSessionData,"update");
+
+	        if (data.getId() != null){
+	        	Driver driver = (Driver)session.load(Driver.class,data.getId());
+	        	driver.updateDataForestal(data);
+	        	if(divorg != null) {
+	        		DivOrgItemLevel1 divorgItem = (DivOrgItemLevel1)session.load(DivOrgItemLevel1.class, divorg);
+	        		if(driver.getCorporation().getId().intValue() == CorporationData.WEYERHAEUSER) {
+	        			driver.setDivOrg3(divorgItem);
+	        		}else {
+	        			driver.setDivOrg1(divorgItem);
+	        		}
+	        	}
+	        	session.update(driver);
+		
+	        	DriverLog log = new DriverLog(driver,userSessionData.getFilter().getLoginName(),new Date(),action,comment);
+	        	session.save(log);
+	        }
+	        
+	    } catch (Exception e) {
+			Object[] parameters = {data,comment,action};
+            handler.getException(e,"driverUpdate",userSessionData,parameters);
+	    }
+	}
+	
+	/**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,driverupdate,driverupdateowndata,driverbayerdata"
+	 * @param data
+	 * @param userRequest
+	 */        			
+	public void driverBayerUpdate(DriverBayerData data, 
+			UserSessionData userSessionData, String comment, int action) throws Exception {
+	    try{
+	        Session session=HibernateUtil.currentSession();
+          
+	        if (data.getId() != null){
+	        	DriverBayer driver = (DriverBayer)session.load(DriverBayer.class,data.getId());
+	        	driver.updateData(data);
+	        	session.update(driver);
+	        }
+	        
+	    } catch (Exception e) {
+			Object[] parameters = {data,comment,action};
+            handler.getException(e,"driverBayerUpdate",userSessionData,parameters);
+	    }
+	}
+
+	/**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,driverdelete" 
+	 * @param data
+	 * @param userRequest
+	 */
+	public void driverDelete(DriverData data, UserSessionData userRequest,String comment) throws Exception {
+	    try{
+	        Session session=HibernateUtil.currentSession();
+            validate(data,userRequest,"delete");
+
+	        Driver driver =null;
+	        driver=(Driver)session.load(Driver.class, data.getId());
+		    
+	        DriverLog log = new DriverLog(driver,userRequest.getFilter().getLoginName(),new Date(),LogActions.DELETE,comment);
+	        session.save(log);
+	     
+	        session.delete(driver);                                                                                                                                                     
+            		
+	    }catch(Exception e) {
+			Object[] parameters = {data,comment};
+            handler.getException(e,"driverDelete",userRequest,parameters);
+	    }
+	}
+	
+	
+	/**
+	 * @param data
+	 * @return null if is valid, String with message if is invalid
+	 */
+	
+	private void validate(DriverData data,UserSessionData userSession,String function) throws Exception {
+        if (userSession == null) {
+            throw new DeslogedException("Session data is empty","generic.error.deslogued");
+        }
+        if (data == null) {
+            throw new InvalidDataException("User data is empty","generic.user.userdata.isempty");
+        }
+        if(function.equals("delete")) {
+            if (data.getId() == null) {
+                throw new InvalidDataException("Class persistence.driver.DriverABM(driverDelete), primary key is empty","persistence.driver.driverdata.primarykey.isempty");
+            }
+        }else {
+    		int driverCorporation = data.getCorporation().getId();
+            if (data.getFirstName() == null || data.getFirstName().trim().length() == 0) {
+                throw new InvalidDataException("Class persistence.driver.DriverABM, invalid driver data","generic.driver.driverdata.firstNameInvalid");
+            }
+            if (data.getLastName() == null || data.getLastName().trim().length() == 0) {
+                throw new InvalidDataException("Class persistence.driver.DriverABM, invalid driver data","generic.driver.driverdata.lastNameInvalid");
+            }
+            if (data.getBirthDate() == null) {
+                throw new InvalidDataException("Class persistence.driver.DriverABM, invalid driver data","generic.driver.driverdata.birthDateInvalid");
+            }
+            if ((data.getSex() == null) || (data.getSex().getResourceBundleId() == null)){
+                throw new InvalidDataException("Class persistence.driver.DriverABM, invalid driver data","generic.driver.driverdata.sexInvalid");
+            }
+            if (data.getCountry() == null) {
+                throw new InvalidDataException("Class persistence.driver.DriverABM, invalid driver data","generic.driver.driverdata.countryInvalid");
+            }
+
+            if(data.getCorporation()==null){
+                throw new InvalidDataException("Class persistence.driver.DriverABM, invalid driver data","generic.driver.driverdata.corporationInvalid");
+            }
+            
+    		if(driverCorporation != CorporationData.FORESTALORIENTAL &&
+    				driverCorporation != CorporationData.WEYERHAEUSER &&
+    				driverCorporation != CorporationData.MONTES_DE_PLATA) {
+	            if(!userSession.isDriver()) {
+	                Iterator divOrgsIterator = data.getDivOrgsIterator();
+	                if(divOrgsIterator == null) {
+	                    throw new InvalidDataException("Class persistence.driver.DriverABM, invalid driver data","generic.driver.driverdata.divorgInvalid");
+	                }else {
+	                    String message = Validate.validateDivOrg(data.getDivOrgsIterator(),userSession);
+	                    if(message != null) {
+	                        throw new InvalidDataException("Class persistence.driver.DriverABM, invalid driver data",message);
+	                    }
+	                }
+	                if(!Validate.validateDivGeo(data.getCountry(),userSession)) {
+	                    throw new InvalidDataException("Class persistence.driver.DriverABM, invalid driver data","generic.driver.driverdata.divgeoInvalid");
+	                }
+	            }
+	        }
+		}
+	}
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,drivertests"
+     */
+    public void createAptitudTest(Integer driverId, AptitudTestData testData, UserSessionData userSessionData) throws Exception {
+        try{
+            Session session=HibernateUtil.currentSession();
+            AptitudTest test = new AptitudTest(driverId,testData,session);
+            session.save(test);
+        }catch(Exception e) {
+			Object[] parameters = {driverId,testData};
+            handler.getException(e,"createAptitudTest",userSessionData,parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,drivertests"
+     */
+    public void deleteAptitudTest(Integer driverId, String date, UserSessionData userSessionData) throws Exception {
+        try{
+            Session session=HibernateUtil.currentSession();
+            AptitudTest test = (AptitudTest)session.load(AptitudTest.class, new AptitudTestPK(driverId,date));
+            session.delete(test);
+        }catch(Exception e) {
+			Object[] parameters = {driverId,date};
+            handler.getException(e,"deleteAptitudTest",userSessionData,parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,drivertests"
+     */
+    public boolean existAptitudTest(Integer driverId, Date date, UserSessionData userSessionData) throws Exception {
+        try{
+            Session session=HibernateUtil.currentSession();
+            Query q = session.createSQLQuery("SELECT COUNT(*) AS c FROM aptitudtests WHERE id = "+driverId+" and date_trunc('day', date) = "+Util.formatSQL(date)).addScalar("c",Hibernate.INTEGER);
+            List list = q.list();
+            if(list.size() > 0) {
+            	return (((Integer)list.get(0)).intValue() > 0); 
+            }
+        }catch(Exception e) {
+			Object[] parameters = {driverId,date};
+            handler.getException(e,"existAptitudTest",userSessionData,parameters);
+        }
+        return false;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,drivertests"
+     */
+    public boolean existDriverLogistic(Integer driverId, String activity, UserSessionData userSessionData) throws Exception {
+        try{
+            Session session=HibernateUtil.currentSession();
+            Query q = session.createSQLQuery("SELECT COUNT(*) AS c FROM driverlogistic WHERE driver = "+driverId+" AND activity = '"+activity+"'").addScalar("c",Hibernate.INTEGER);
+            List list = q.list();
+            if(list.size() > 0) {
+            	return (((Integer)list.get(0)).intValue() > 0); 
+            }
+        }catch(Exception e) {
+			Object[] parameters = {driverId,activity};
+            handler.getException(e,"existDriverLogistic",userSessionData,parameters);
+        }
+        return false;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,drivertests"
+     */
+    public void createAlcoholControl(Integer driverId, AlcoholControlData controlData, UserSessionData userSessionData) throws Exception {
+        try{
+            Session session=HibernateUtil.currentSession();
+            AlcoholControl control = new AlcoholControl(driverId,controlData,session);
+            session.save(control);
+        }catch(Exception e) {
+			Object[] parameters = {driverId,controlData};
+            handler.getException(e,"createAlcoholControl",userSessionData,parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,drivertests"
+     */
+    public void deleteAlcoholControl(Integer driverId, String date, UserSessionData userSessionData) throws Exception {
+        try{
+            Session session=HibernateUtil.currentSession();
+            AlcoholControl control = (AlcoholControl)session.load(AlcoholControl.class, new AlcoholControlPK(driverId,date));
+            session.delete(control);
+        }catch(Exception e) {
+			Object[] parameters = {driverId,date};
+            handler.getException(e,"deleteAlcoholControl",userSessionData,parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,drivertests"
+     */
+    public void createDriverPrize(Integer driverId, DriverPrizeData prizeData, UserSessionData userSessionData) throws Exception {
+        try{
+            Session session=HibernateUtil.currentSession();
+            DriverPrize prize = new DriverPrize(driverId,prizeData,session);
+            session.save(prize);
+        }catch(Exception e) {
+			Object[] parameters = {driverId,prizeData};
+            handler.getException(e,"createDriverPrize",userSessionData,parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,drivertests"
+     */
+    public void deleteDriverPrize(Integer driverId, String date, UserSessionData userSessionData) throws Exception {
+        try{
+            Session session=HibernateUtil.currentSession();
+            DriverPrize prize = (DriverPrize)session.load(DriverPrize.class, new DriverPrizePK(driverId,date));
+            session.delete(prize);
+        }catch(Exception e) {
+			Object[] parameters = {driverId,date};
+            handler.getException(e,"deleteDriverPrize",userSessionData,parameters);
+        }
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,doorcontrol"
+     */
+    public void saveAccessLog(Integer driver,Integer contratist,Object[] errors, UserSessionData userSessionData) throws Exception {
+        try{
+            Session session=HibernateUtil.currentSession();
+            DriverAccessLog log = new DriverAccessLog(userSessionData.getFilter().getLoginName(),driver,contratist,errors);
+            session.save(log);
+        }catch(Exception e) {
+			Object[] parameters = {driver,contratist,errors[0],errors[1],errors[2],errors[3],errors[4],errors[5]};
+            handler.getException(e,"saveAccessLog",userSessionData,parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate"
+     */
+    public void createUnconformity(Integer driverId, UnconformityData data, UserSessionData userSessionData) throws Exception {
+        try{
+            Session session=HibernateUtil.currentSession();
+            DriverUnconformity unconformity = new DriverUnconformity(driverId,data,session,userSessionData);
+            session.save(unconformity);
+        }catch(Exception e) {
+			Object[] parameters = {driverId,data};
+            handler.getException(e,"createUnconformity",userSessionData,parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate"
+     */
+    public void deleteUnconformity(String unconformityId, UserSessionData userSessionData) throws Exception {
+        try{
+            Session session=HibernateUtil.currentSession();
+            DriverUnconformity unconformity = (DriverUnconformity)session.load(DriverUnconformity.class, new Integer(unconformityId));
+            session.delete(unconformity);
+        }catch(Exception e) {
+			Object[] parameters = {unconformityId};
+            handler.getException(e,"deleteUnconformity",userSessionData,parameters);
+        }
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate"
+     */
+    public void addProvisionalBTW(Integer driver,Date expiry,String result,Date btwDate,UserSessionData userSessionData) throws Exception {
+        try{
+            Session session=HibernateUtil.currentSession();
+            ProvisionalBTW provisional = new ProvisionalBTW(driver,expiry,result,btwDate);
+            session.save(provisional);
+            
+            ProvisionalBTWLog log = new ProvisionalBTWLog(driver,expiry,Calendar.getInstance().getTime(),userSessionData.getFilter().getLoginName(),result,LogActions.CREATE,btwDate);
+            session.save(log);
+
+        }catch(Exception e) {
+			Object[] parameters = {driver,expiry,result,btwDate};
+            handler.getException(e,"addProvisionalBTW",userSessionData,parameters);
+        }
+    }
+    
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate"
+     */
+    public void deleteProvisionalBTW(Integer driver,Date expiry,UserSessionData userSessionData) throws Exception {
+        try{
+            Session session=HibernateUtil.currentSession();
+            
+            Query query=session.createQuery("select p from ProvisionalBTW as p where p.pk.driver="+driver);
+            
+            List result= query.list();
+            Iterator iter=result.iterator();
+            boolean deleted=false;
+            while(iter.hasNext() && !deleted){
+            	ProvisionalBTW pbtw=(ProvisionalBTW)iter.next();
+            	
+            	if(pbtw.getDate().getYear()==expiry.getYear() && pbtw.getDate().getMonth()==expiry.getMonth() && pbtw.getDate().getDay()==expiry.getDay()){
+            		deleted=true;
+            		query=session.createQuery("Delete from ProvisionalBTW as p where p.pk.driver=(:idDriver) and p.pk.expiry=(:expiry) ");
+            		query.setParameter("idDriver",pbtw.getPk().getDriver() );
+            		query.setParameter("expiry", pbtw.getPk().getExpiry());
+            		query.executeUpdate();
+            	}
+            }
+            
+            Date btwDate=Calendar.getInstance().getTime();
+            ProvisionalBTWLog log = new ProvisionalBTWLog(driver,expiry,Calendar.getInstance().getTime(),userSessionData.getFilter().getLoginName(),"",LogActions.DELETE,btwDate);
+            session.save(log);
+
+        }catch(Exception e) {
+			Object[] parameters = {driver,expiry};
+            handler.getException(e,"deleteProvisionalBTW",userSessionData,parameters);
+        }
+    }
+    
+    /**
+     * Crea una csvEntity
+     * 
+     * @ejb.permission role-name = "administrator,driverupdatebatch,vehicleupdatebatch"
+	 * @ejb.interface-method
+	 */
+	public Integer csvEntityCreate(CsvEntityData data, UserSessionData userRequest, String comment) throws Exception {
+		
+		try{
+            Session session = HibernateUtil.currentSession();			
+            CsvEntity csvEntity = new CsvEntity(data);
+
+            Integer idCsv = (Integer)session.save(csvEntity);
+			csvEntity.setIdCsv(idCsv);
+            return idCsv;
+            
+		} catch (Exception e) {
+			Object[] parameters = {data,comment};
+            handler.getException(e,"csvEntityCreate",userRequest,parameters);
+        }
+        return null;
+	}
+    		
+	
+	
+	/**
+     * Actualiza una csvEntity
+     * 
+     * @ejb.permission role-name = "administrator,driverupdatebatch,vehicleupdatebatch"
+	 * @ejb.interface-method
+	 */	        			
+	public void csvEntityUpdate(CsvEntityData data, UserSessionData userSessionData, String comment, int action) throws Exception {
+	    try{
+	        Session session = HibernateUtil.currentSession();
+
+	        if (data.getIdCsv() != null){
+	        	CsvEntity csvEntity = (CsvEntity)session.load(CsvEntity.class,data.getIdCsv());
+	        	csvEntity.updateData(data);
+	        	session.update(csvEntity);
+	        }
+	        
+	    } catch (Exception e) {
+			Object[] parameters = {data,comment,action};
+            handler.getException(e,"driverUpdate",userSessionData,parameters);
+	    }
+	}
+
+	/**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,driverupload"
+     */
+    public void addTelematicControl(TelematicControlData telematicControlData,
+      UserSessionData userSessionData) throws Exception {
+        try{
+            Session session = HibernateUtil.currentSession();
+            TelematicControl control = new TelematicControl(telematicControlData,session);
+            telematicControlData.setId((Integer)session.save(control));
+            if(telematicControlData.getFileName()!=null){
+            	String fileName=control.getId()+"_Telec"+"_"+telematicControlData.getFileName();
+                 
+            	File fileDelete=new File(AlertConstants.TEMP_DIRECTORY_IMAGE_DPA+fileName);
+            	if(fileDelete.exists()){
+            		fileDelete.delete();
+            	}
+              
+                FileOutputStream fout;
+        
+                InputStream reportStream = telematicControlData.getFileInputStream();
+                fout = new FileOutputStream(AlertConstants.TEMP_DIRECTORY_IMAGE_DPA+fileName);
+        
+                int c = 0;
+                while ( (c=reportStream.read()) != -1){
+                	fout.write(c);
+                }   
+                fout.flush();
+                fout.close(); 
+        
+                control.setImage(fileName);
+                session.update(control);
+            }
+            
+        }catch(Exception e) {
+        	Object[] parameters = {telematicControlData};
+            handler.getException(e,"addTelematicControl",userSessionData,parameters);
+        }
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate"
+     */
+    public void updateTelematicControl(TelematicControlData telematicControlData,UserSessionData userSessionData) throws Exception {
+        try{
+        	
+        	 if(telematicControlData.getFileName()!=null){
+             	String fileName=telematicControlData.getId()+"_Telec"+"_"+telematicControlData.getFileName();
+                  
+                 File fileDelete=new File(AlertConstants.TEMP_DIRECTORY_IMAGE_DPA+fileName);
+      	        if(fileDelete.exists()){
+      	        	fileDelete.delete();
+      	        }
+      	        
+                  FileOutputStream fout;
+      			
+      			InputStream reportStream = telematicControlData.getFileInputStream();
+      			fout = new FileOutputStream(AlertConstants.TEMP_DIRECTORY_IMAGE_DPA+fileName);
+      			
+      			int c = 0;
+      			while ( (c=reportStream.read()) != -1){
+      				fout.write(c);
+      			}			
+      			fout.flush();
+      			fout.close();	
+      			
+      			telematicControlData.setFileName(fileName);
+      		}
+        	 
+            Session session = HibernateUtil.currentSession();
+            TelematicControl control = (TelematicControl)session.load(TelematicControl.class, telematicControlData.getId());
+            control.updateData(telematicControlData);
+            session.update(control);
+        }catch(Exception e) {
+			Object[] parameters = {telematicControlData};
+            handler.getException(e,"updateTelematicControl",userSessionData,parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate"
+     */
+    public void deleteTelematicControl(Integer controlId,UserSessionData userSessionData) throws Exception {
+        try{
+            Session session = HibernateUtil.currentSession();
+            TelematicControl control = (TelematicControl)session.load(TelematicControl.class, controlId);
+            session.delete(control);
+        }catch(Exception e) {
+			Object[] parameters = {controlId};
+            handler.getException(e,"deleteTelematicControl",userSessionData,parameters);
+        }
+    }
+
+	/**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,driverupdate,vehicleupdate"
+	 * @param data
+	 * @param userRequest
+	 */        			
+    public void updateDivisions(Integer driverId, Integer[] divOrgs, UserSessionData userSessionData) throws Exception {
+        try{
+            Session session = HibernateUtil.currentSession();
+            Driver driver = (Driver)session.load(Driver.class, driverId);
+            driver.updateDivisions(divOrgs,session);
+            session.update(driver);
+        }catch(Exception e) {
+			Object[] parameters = {driverId,divOrgs};
+            handler.getException(e,"updateDivisions",userSessionData,parameters);
+        }
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate"
+     */
+    public void unificateDrivers(Integer origin, Integer destiny, boolean delete, String comment, UserSessionData userSessionData) throws Exception {
+        try{
+            Session session = HibernateUtil.currentSession();
+            
+            Driver destinyDriver = (Driver)session.load(Driver.class, destiny);
+        	Query q = session.createQuery("SELECT v FROM Vehicle AS v WHERE v.driver.id = "+origin);
+        	Iterator it = q.list().iterator();
+        	while(it.hasNext()) {
+        		Vehicle v = (Vehicle)it.next();
+        		v.setDriver(destinyDriver);
+        		session.update(v);
+        		
+    			VehicleLog log = new VehicleLog(v,userSessionData.getFilter().getLoginName(),
+    					new Date(),LogActions.UPDATE,comment);
+    			session.save(log);									
+
+        	}
+        	
+        	q = session.createQuery("SELECT u FROM User AS u WHERE u.driver.id = "+origin);
+        	it = q.list().iterator();
+        	while(it.hasNext()) {
+        		User u = (User)it.next();
+        		u.setDriver(destinyDriver);
+        		session.update(u);
+        	}
+
+        	q = session.createQuery("SELECT e FROM EventAbstract AS e WHERE e.driver.id = "+origin);
+        	it = q.list().iterator();
+        	while(it.hasNext()) {
+        		EventAbstract event = (EventAbstract) it.next();
+        		event.setDriver(destinyDriver);
+        		session.update(event);
+        		
+        		if(event instanceof Event) {
+        			EventLog log = new EventLog(userSessionData.getFilter().getLoginName(),
+    					new Date(),LogActions.UPDATE,(Event)event,comment);
+        			session.save(log);						
+        		}
+        	}
+        	
+        	q = session.createQuery("SELECT activity FROM CEPAScheduleActivityRegistry AS activity WHERE activity.driver.id = "+origin);
+        	it = q.list().iterator();
+        	while(it.hasNext()) {
+        		CEPAScheduleActivityRegistry activity = (CEPAScheduleActivityRegistry) it.next();
+        		activity.setDriver(destinyDriver);
+        		session.update(activity);
+        	}
+        	 
+        	q = session.createQuery("SELECT at FROM AptitudTest AS at WHERE at.pk.driver.id = "+origin);
+        	it = q.list().iterator();
+        	while(it.hasNext()) {
+        		AptitudTest at = (AptitudTest) it.next();
+        		if(!existAptitudTest(destiny, at.getPk().getDate(), userSessionData)) {
+            		AptitudTest atNuevo = new AptitudTest(destiny, at.getData(), session);
+        			session.save(atNuevo);
+        		}
+        		session.delete(at);
+        	}
+
+        	q = session.createQuery("SELECT dl FROM DriverLogistic AS dl WHERE dl.pk.driver.id = "+origin);
+        	it = q.list().iterator();
+        	while(it.hasNext()) {
+        		DriverLogistic dl = (DriverLogistic) it.next();
+        		DriverLogistic dlNuevo = new DriverLogistic(dl.getData());
+        		dlNuevo.getPk().setDriver(destinyDriver);
+        		if(!existDriverLogistic(destiny, dl.getPk().getActivity().getResourceBundleId(), userSessionData)) {
+        			session.save(dlNuevo);
+        		}
+        		session.delete(dl);
+        	}
+
+        	q = session.createQuery("SELECT control FROM TelematicControl AS control WHERE control.driver.id = "+origin);
+        	it = q.list().iterator();
+        	while(it.hasNext()) {
+        		TelematicControl control = (TelematicControl) it.next();
+        		control.setDriver(destinyDriver);
+        		session.update(control);
+        	}
+
+        	q = session.createSQLQuery("UPDATE gab_drivers SET dcdriverid = "+destiny+" WHERE dcdriverid = "+origin);
+        	q.executeUpdate();
+        	
+        	q = session.createSQLQuery("SELECT id FROM pointaccount WHERE type = 1 AND reference = "+origin).addScalar("id",Hibernate.INTEGER);
+        	it = q.list().iterator();
+        	int originAccount = (it.hasNext()) ? ((Integer)it.next()).intValue() : -1;
+        	
+        	q = session.createSQLQuery("SELECT id FROM pointaccount WHERE type = 1 AND reference = "+destiny).addScalar("id",Hibernate.INTEGER);
+        	it = q.list().iterator();
+        	int destinyAccount = (it.hasNext()) ? ((Integer)it.next()).intValue() : -1;
+
+        	Query query = session.createQuery("UPDATE PointMove pm SET pm.account = "+destinyAccount+" WHERE pm.account = "+originAccount);
+        	query.executeUpdate();
+        	
+        	CorporationABMUtil.getHome().create().updatePointAccount(destinyAccount,userSessionData);
+        	
+        	if(delete) {    
+        		q = session.createQuery("SELECT mp FROM MitigationPlan mp WHERE mp.driver = "+origin);
+            	it = q.list().iterator();
+            	while(it.hasNext()) {
+            		MitigationPlan mp = (MitigationPlan) it.next();
+            		Iterator it2 = mp.getActivitySet().iterator();
+            		while(it2.hasNext()) {
+            			MitigationPlanActivity activity = (MitigationPlanActivity)it2.next();
+            			session.delete(activity);
+            		}
+            		session.delete(mp);
+            	}
+
+        		q = session.createQuery("SELECT ap FROM AnualPlan ap WHERE ap.driver = "+origin);
+            	it = q.list().iterator();
+            	while(it.hasNext()) {
+            		AnualPlan ap = (AnualPlan) it.next();
+            		session.delete(ap);
+            	}
+
+            	query = session.createQuery("DELETE FROM PointAccount pa WHERE pa.type = 1 AND pa.reference = "+origin);
+        		query.executeUpdate();
+        		
+        		query = session.createQuery("DELETE FROM DriverPointHistory AS dph WHERE dph.pk.driver.id=(:driver)");
+        		query.setParameter("driver", origin);
+        		query.executeUpdate();
+        		
+        		query = session.createQuery("DELETE FROM DriverPointMoveHistory AS dph WHERE dph.pk.driver.id=(:driver)");
+        		query.setParameter("driver", origin);
+        		query.executeUpdate();
+
+        		Driver originDriver = (Driver)session.load(Driver.class, origin);
+                DriverLog log = new DriverLog(originDriver,userSessionData.getFilter().getLoginName(),
+    					new Date(),LogActions.DELETE,comment);
+                
+                session.delete(originDriver);
+                session.save(log);
+        	}
+        }catch(Exception e) {
+			Object[] parameters = {origin,destiny,delete,comment};
+			handler.getException(e,"unificateDrivers",userSessionData,parameters);
+        }
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,driverupload"
+     */
+    public void sendRegistryTelematicControl(Integer id, TelematicControlData telematicControlData,String body,String to,String subject, UserSessionData userSessionData) throws Exception {
+    	 try{
+             Session session = HibernateUtil.currentSession();
+             
+           
+             TelematicControlSendMail tc=new TelematicControlSendMail(id,telematicControlData,body,to,subject,userSessionData,session);
+             
+             session.save(tc);
+             
+             
+         }catch(Exception e) {
+ 			Object[] parameters = {telematicControlData,userSessionData};
+ 			handler.getException(e,"sendRegistryTelematicControl",userSessionData,parameters);
+         }
+    	
+    }
+     
+    	
+
+	/**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,drivercreate"
+	 * @param data Driver that will be created 
+	 * @param userRequest User logged
+	 */
+	public void saveDriverLinks(Integer[] data, UserSessionData userSessionData) throws Exception {
+		try{
+            Session session=HibernateUtil.currentSession();			
+            DriverLink link = new DriverLink(data);
+            session.save(link);
+        }catch(Exception e) {
+			Object[] parameters = data;
+			handler.getException(e,"saveDriverLinks",userSessionData,parameters);
+        }
+    }
+
+	/**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,drivercreate"
+	 * @param data Driver that will be created 
+	 * @param userRequest User logged
+	 */
+	public void updateDriverLinks(Integer[] data, UserSessionData userSessionData) throws Exception {
+		try{
+            Session session=HibernateUtil.currentSession();			
+            DriverLink link = (DriverLink)session.load(DriverLink.class, data[0]);
+            link.setFosa(data[1]);
+            link.setWeyerhauser(data[2]);
+            link.setMdp(data[3]);
+            session.update(link);
+        }catch(Exception e) {
+			Object[] parameters = data;
+			handler.getException(e,"updateDriverLinks",userSessionData,parameters);
+        }
+	}
+
+	/**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,drivercreate"
+	 * @param data Driver that will be created 
+	 * @param userRequest User logged
+	 */
+	public void deleteDriverLinks(Integer data, UserSessionData userSessionData) throws Exception {
+		try{
+            Session session=HibernateUtil.currentSession();			
+            DriverLink link = (DriverLink)session.load(DriverLink.class, data);
+            if(link != null)
+            	session.delete(link);
+        }catch(Exception e) {
+        }
+	}
+
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,cepascheduleactivitycreate,cepascheduleactivityupdate,jjreporter"
+	 * @param data Driver that will be created 
+	 * @param userRequest User logged
+	 */
+	public void completeMitigationPlanActiviy(Integer driver, String activityDefinition, UserSessionData userSessionData) throws Exception {
+		try{
+            Session session=HibernateUtil.currentSession();
+            String activity = String.valueOf(MitigationPlanActivityData.BTW);
+            if(activityDefinition.equals(CEPAActivityConstants.HRD)) {
+            	activity = String.valueOf(MitigationPlanActivityData.HRD);
+            } 
+            if(activityDefinition.equals(CEPAActivityConstants.REPORTERJJ_COMMENTARYDRIVE)) {
+            	activity = String.valueOf(MitigationPlanActivityData.MONITOR)+","+String.valueOf(MitigationPlanActivityData.SECOND_MONITOR);   	
+            }
+            if(activityDefinition.equals(CEPAActivityConstants.FEEDBACK_LINE_MANAGER)) {
+            	activity = String.valueOf(MitigationPlanActivityData.FEEDBACK_LINE_MANAGER);
+            }
+            Query q = session.createSQLQuery("SELECT mp.id, activity FROM mitigationplans mp JOIN mitigationplanactivities mpa ON mpa.id = mp.id WHERE status = "+MitigationPlanData.PENDING+
+            		" AND driver = "+driver+" AND activity in ("+activity+") AND done = 'f' ORDER BY activity").addScalar("id", Hibernate.INTEGER).addScalar("activity", Hibernate.INTEGER);
+            Iterator it = q.list().iterator();
+            if(it.hasNext())  {
+            	Object[] data = (Object[])it.next();
+            	updateMigrationPlanActivity((Integer) data[0],(Integer) data[1], true, userSessionData);
+            }
+        }catch(Exception e) {
+			Object[] parameters = {driver, activityDefinition};
+			handler.getException(e,"updateMigrationPlanActivity",userSessionData,parameters);
+        }
+	}
+	
+	/**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,driverview,cepascheduleactivitycreate,cepascheduleactivityupdate"
+	 * @param data Driver that will be created 
+	 * @param userRequest User logged
+	 */
+	public void updateMigrationPlanActivity (Integer planId, Integer activity, boolean done, UserSessionData userSessionData) throws Exception {
+		try{
+            Session session=HibernateUtil.currentSession();
+            MitigationPlan plan = (MitigationPlan) session.load(MitigationPlan.class, planId); 
+            
+            MitigationPlanActivity planActivity = (MitigationPlanActivity) session.load(MitigationPlanActivity.class, new MitigationPlanActivityPK(activity,plan));
+            planActivity.setDone(done);
+            session.update(planActivity);
+            
+        	Query q = session.createSQLQuery("SELECT done,COUNT(*) AS c FROM mitigationplanactivities WHERE id = "+plan.getId()+" GROUP BY done").addScalar("done",Hibernate.BOOLEAN).addScalar("c",Hibernate.INTEGER);
+        	Iterator it = q.list().iterator();
+        	double total = 0.0;
+        	double doneActivities = 0.0;
+        	while(it.hasNext()) {
+        		Object[] data = (Object[])it.next();
+        		if(((Boolean)data[0]).booleanValue()) {
+        			doneActivities = ((Integer)data[1]).doubleValue();
+        		}
+    			total += ((Integer)data[1]).doubleValue();
+        	}
+        	if(done)
+        		doneActivities++;
+        	else
+        		doneActivities--;
+        	if(total == doneActivities){
+            	plan.setStatus(MitigationPlanData.COMPLETE);
+        	}else{
+            	plan.setStatus(MitigationPlanData.PENDING);
+        	}
+        	
+        	plan.setAdvance(new Integer(String.valueOf((Math.round(doneActivities * 100 / total)))));
+            session.update(plan);
+        }catch(Exception e) {
+			Object[] parameters = {planId, activity, done};
+			handler.getException(e,"updateMigrationPlanActivity",userSessionData,parameters);
+        }
+	}
+	
+	/** @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,driverview,cepascheduleactivitycreate,cepascheduleactivityupdate"
+	 * @param data Driver that will be created 
+	 * @param userRequest User logged
+	 */
+	public void updateAnualPlanActivity (Integer planId,boolean done, UserSessionData userSessionData) throws Exception {
+		try{
+            Session session=HibernateUtil.currentSession();
+            AnualPlan plan = (AnualPlan) session.load(AnualPlan.class, planId); 
+            
+            if(done){
+            	plan.setDate(new Date());
+            	plan.setStatus(AnualPlanData.COMPLETE);
+            	plan.setResullt(AnualPlanData.APROBADO);
+            }else{
+            	plan.setDate(null);
+            	plan.setStatus(AnualPlanData.PENDING);
+            	plan.setResullt(AnualPlanData.NO_NOTE);
+            }
+            
+            session.update(plan);
+        }catch(Exception e) {
+			Object[] parameters = {planId,  done};
+			handler.getException(e,"updateAnualPlanActivity",userSessionData,parameters);
+        }
+	}
+	
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,cepascheduleactivitycreate,cepascheduleactivityupdate,jjreporter"
+	 * @param data Driver that will be created 
+	 * @param userRequest User logged
+	 */
+	public void completeAnualPlanActivity (Integer driverId,String activityDefinition,boolean result, UserSessionData userSessionData) throws Exception {
+		try{
+            Session session=HibernateUtil.currentSession();
+            String activity = "-1";
+			if(activityDefinition.equals(CEPAActivityConstants.BTW1) || activityDefinition.equals(CEPAActivityConstants.BTW2)
+					 || activityDefinition.equals(CEPAActivityConstants.BTWONBOARD) || activityDefinition.equals(CEPAActivityConstants.BTW1_NEW_FORM_TABLET)
+					 || activityDefinition.equals(CEPAActivityConstants.BTW1ONBOARD_TABLET) || activityDefinition.equals(CEPAActivityConstants.BTW1_NEW_FORM_TABLET)
+						 || activityDefinition.equals(CEPAActivityConstants.HRD) 
+					 || activityDefinition.equals(CEPAActivityConstants.FEEDBACK_LINE_MANAGER)) {
+				activity=String.valueOf(AnualPlanData.TYPE_ACTIVITY_BTW);
+			}
+            if(activityDefinition.equals(CEPAActivityConstants.COMMENTARYDRIVE)) {
+            	activity = String.valueOf(AnualPlanData.TYPE_ACTIVITY_COMMENTED);
+            } 
+            if(activityDefinition.equals(CEPAActivityConstants.INDUCTION_NEW_FUNCTIONARY)) {
+            	activity = String.valueOf(AnualPlanData.TYPE_ACTIVITY_INDUCTION);   	
+            }
+            if(activityDefinition.equals(CEPAActivityConstants.ASSESSMENT)) {
+            	activity = String.valueOf(AnualPlanData.TYPE_ACTIVITY_EASSESMENT);
+            }
+            if(activityDefinition.equals(CEPAActivityConstants.MONITORS) || activityDefinition.equals(CEPAActivityConstants.MONITORS2)|| activityDefinition.equals(CEPAActivityConstants.MONITORS2_REFRESHMENT)) {
+            	activity = String.valueOf(AnualPlanData.TYPE_ACTIVITY_MONITORS);
+            }
+            if(activityDefinition.equals(CEPAActivityConstants.ELEARNINGPACK)) {
+            	activity = String.valueOf(AnualPlanData.TYPE_ACTIVITY_ELEARNING_1)+","+String.valueOf(AnualPlanData.TYPE_ACTIVITY_ELEARNING_2)+","+String.valueOf(AnualPlanData.TYPE_ACTIVITY_ELEARNING_FEEDBACK)+","+String.valueOf(AnualPlanData.TYPE_ACTIVITY_ELEARNING_MONITORS);
+            }
+            Calendar cal=Calendar.getInstance();
+            Query query=session.createQuery("select a from AnualPlan as a where a.driver="+driverId+" and a.type in ("+activity+") and a.year="+cal.get(Calendar.YEAR)+" and a.status in ("+AnualPlanData.PENDING+","+AnualPlanData.SCHEDULE+") ORDER BY a.type");
+            Iterator<AnualPlan> iter=query.list().iterator();
+            if(iter.hasNext()){
+            	AnualPlan plan=iter.next();
+            	plan.setStatus(AnualPlanData.COMPLETE);
+            	plan.setResullt(result?AnualPlanData.APROBADO:AnualPlanData.NO_APROBADO);
+            	plan.setDate(new Date());
+            	session.saveOrUpdate(plan);
+            }
+        }catch(Exception e) {
+			Object[] parameters = {driverId, activityDefinition};
+			handler.getException(e,"completeAnualPlanActivity",userSessionData,parameters);
+        }
+	}
+	
+	
+	/**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,driverview"
+	 * @param data Driver that will be created 
+	 * @param userRequest User logged
+	 */
+	public void associateAnualPlan (Integer driverId, Integer plan, UserSessionData userSessionData) throws Exception {
+		try{
+            Session session=HibernateUtil.currentSession();
+            
+            Query delete = session.createQuery("DELETE FROM AnualPlan ap WHERE ap.driver.id = "+driverId);
+            delete.executeUpdate();
+
+            Driver driver = (Driver)session.load(Driver.class, driverId);
+            SQLQuery query = session.createSQLQuery("SELECT activity,startType,start,days,alert1,alert2,alert3 FROM anualplandefinitions WHERE plan = "+plan);
+            query.addScalar("activity",Hibernate.INTEGER);
+            query.addScalar("startType",Hibernate.INTEGER);
+            query.addScalar("start",Hibernate.DATE);
+            query.addScalar("days",Hibernate.INTEGER);
+            query.addScalar("alert1",Hibernate.INTEGER);
+            query.addScalar("alert2",Hibernate.INTEGER);
+            query.addScalar("alert3",Hibernate.INTEGER);
+            Iterator<Object[]> it = query.list().iterator();
+            while(it.hasNext()) {
+            	Object[] data = it.next();
+            	Date start = null;
+            	switch((Integer)data[1]) {
+            		case 1:
+            			start = driver.getInclusionDate();
+            			break;
+            		case 2:
+            			start = Calendar.getInstance().getTime();
+            			break;
+            		case 3:
+            			start = (Date)data[2];
+            			break;
+            	}
+            	AnualPlan anualPlan = new AnualPlan(driver,(Integer)data[0],start,(Integer)data[3],(Integer)data[4],(Integer)data[5],(Integer)data[6]);
+            	session.save(anualPlan);
+            }
+         }catch(Exception e) {
+			Object[] parameters = {driverId,  plan};
+			handler.getException(e,"associateAnualPlan",userSessionData,parameters);
+        }
+    }
+	
+}

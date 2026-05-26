@@ -1,0 +1,182 @@
+<%@page language="java"
+    errorPage="../../exception.jsp"
+	import="business.*"    
+	import="communication.language.*"	
+	import="java.util.ArrayList"
+	import="communication.activity.tables.*"
+	import="communication.administration.user.tables.*"
+ 	import="communication.administration.user.*" 
+ 	import="communication.administration.corporation.tables.*"
+ 	import="communication.activity.tables.*"
+	import="communication.util.*"
+	import="presentation.translator.web.util.*"
+
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html" 
+%>
+
+<%@ taglib uri="/WEB-INF/struts-bean.tld"
+        prefix="bean" 
+%>
+
+<html:html>
+
+	<head>
+		<SCRIPT TYPE="text/javascript">
+		function popupform(href){	
+			var newWindow = window.open(href, '', 'height=400,width=600,scrollbars=yes,left=(screen.width  - 600)/2;');	
+			return true;
+		}
+		</SCRIPT>
+	</head>
+
+<%	
+	Text messages; SystemAccess sys;
+	sys=(SystemAccess)session.getAttribute("SystemAccess");
+	messages = sys.getText();
+	/* Titulo con Logo */
+	boolean conLogo;
+	String titulo = (String)session.getAttribute("tituloReporte");
+	String subtitulo = (String) session.getAttribute("subTituloReporte");
+	String idDriver = request.getParameter("idDriver");
+	String idActivity = request.getParameter("idActivity");
+	if (Util.empty(idActivity)){
+		idActivity = (String) session.getAttribute("idActivity");
+	}
+	if ((String)session.getAttribute("conLogos") != null)
+		conLogo = Boolean.valueOf(((String)session.getAttribute("conLogos")).trim()).booleanValue();
+	else
+		conLogo = false;
+	StringBuffer logoTitulo;
+
+%>
+
+<body>
+
+<form name="PrintForm">
+<div id="print">
+<%
+	boolean isPrint = false;
+	//Si es para imprimir:
+	String printParameter = request.getParameter("print");	
+	isPrint = (printParameter != null &&
+		Boolean.parseBoolean(printParameter.trim()))?true:false;
+	
+	if (conLogo && (titulo != null))
+	{
+		logoTitulo = new StringBuffer();
+		logoTitulo.append("<body>");		
+		// Si tiene logo de CEPA y titulo (y tal vez logo de la compañía lo muestro 
+		// Para el logo del cliente se puede parametrizar recibiendo el idCorp
+		// y mostrando la imagen que corresponda segun el idCorp.jpg
+		logoTitulo.append(
+			"<div align='left'>	" +
+			"	<table >" +
+			"		<tr>");
+		if (!sys.isCorporation(CorporationData.JJ)) {
+			logoTitulo.append("			<td align='right' width='90' >" +
+			"				<!-- Logo CEPA -->" +
+			"				<img src='/datacenter/util/imgs/logoCEPA.png' width='70px' height='60' alt='CEPA International'/>" +
+			"			</td>");
+		}
+		logoTitulo.append("			<td align='left' valign='center' width='500'>" +
+			"				<table> <tr><td align='left'><!--  Titulo Reporte --> <h3>" + 
+			 				titulo +
+			((subtitulo != null && !subtitulo.equals(""))? "</h3></td></tr><tr><td align='right'><h3>"+subtitulo :"") +
+			"			</h3></td></tr></table><td align='left' >" +
+			"				<!-- Logo Cliente --> ");
+		if (sys.isCorporation(CorporationData.MONSANTO)){
+			logoTitulo.append("<img src='/datacenter/util/imgs/monsanto_logo.gif' width='100px' height='60' alt='CEPA International'/>");
+		}
+		else if (sys.isCorporation(CorporationData.JJ)){			
+			if (!Util.empty(idDriver)){
+	     		// Obtengo la Region del driver para ver si muestro el lofo de Safe Fleet LA o el de J&J:
+	     		GeoItemData region = (GeoItemData)sys.getDriverReportFacade().
+		     			findDriverByPrimaryKey(new Integer(idDriver),sys.getUserSessionData()).
+			     		getCountry().getItems().iterator().next();
+	     		if (region.getName().equals("LA&C")){
+	     			// LOGO Safe Fleet J&J Latino America
+	     			logoTitulo.append("<img src='/datacenter/util/imgs/logoSafeFleet20.jpg' height='60px' alt='Safe Fleet J&J'/>");
+	     		}else{
+	     			// LOGO J&J:
+	     			logoTitulo.append("<img src='/datacenter/util/imgs/logoJ&J.jpg' width='100px' height='60px' alt='J&J Logo'/>");
+	     		}
+			}
+       	}
+		logoTitulo.append(
+			"			</td>" +
+			"		</tr><tr><td colspan='3'>") ;
+			byte[] mostrarTitulo = logoTitulo.toString().getBytes();
+			for(int i = 0; i < mostrarTitulo.length; i++) {
+			    response.getWriter().write(mostrarTitulo[i]);			
+			}
+	}				
+	/* Contenido del Reporte */
+	byte[] b = (byte[])session.getAttribute("resp");
+	System.out.println("Byte Array: "+b.length);
+	for(int i = 0; i < b.length; i++) {
+	    response.getWriter().write(b[i]);
+	}
+	
+	if (conLogo && (titulo != null))
+	{
+		logoTitulo = null;
+		logoTitulo = new StringBuffer();
+		logoTitulo.append("	</td></tr></table></div>");
+		byte[] mostrarTitulo = logoTitulo.toString().getBytes();
+		for(int i = 0; i < mostrarTitulo.length; i++) {
+		    response.getWriter().write(mostrarTitulo[i]);			
+		}
+	}
+	
+	/* Inserto Graficas si corresponde */
+	String image = null;
+	ArrayList arrayGraphics = (ArrayList)session.getAttribute("arrayGraficas");
+	if (arrayGraphics != null && arrayGraphics.size() > 0)
+	{
+		for (int i = 0; i < arrayGraphics.size(); i++)
+		{
+			image = "/images/" + (String)arrayGraphics.get(i);			
+	%>	
+			<div align="center">
+				<br>
+				<img src='<%=image%>' width="400px" height="400"/>
+				<br>
+			</div>
+			
+	<%	}
+	}
+	
+	/* Cierro el html */
+	logoTitulo = null;
+	logoTitulo = new StringBuffer();
+	
+	
+	logoTitulo.append("</body>");
+	if (isPrint){
+		logoTitulo.append("<script>window.print();</script>");
+	}
+	byte[] cierroHtml = logoTitulo.toString().getBytes();
+	for(int i = 0; i < cierroHtml.length; i++) {
+	    response.getWriter().write(cierroHtml[i]);			
+	}
+		
+	%>
+
+
+			</div>	
+		</form>
+		<table>
+			<tr>
+				<td align="right">
+					<font size="2" face="Arial, Helvetica, sans-serif">			
+						<input type="hidden" name="output" value="PDF" />
+						<input styleClass="input" type="button" value='<%=messages.getText("generic.messages.printversion")%>' onclick="popupform('<%="/datacenter/activity/schedule/inductionReport.jsp?idDriver="+idDriver+"&idActivity="+idActivity+"&print=true"%>');" />
+					</font>
+				</td>
+			</tr>
+		</table>
+	</body>	
+</html:html>

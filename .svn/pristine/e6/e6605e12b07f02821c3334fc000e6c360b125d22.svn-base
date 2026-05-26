@@ -1,0 +1,40 @@
+<%@page language="java" 
+	errorPage="../exception.jsp"
+	import="java.util.*"
+	import="business.*"
+	import="business.fleet.*"
+	import="business.vehicle.*"
+	import="business.datatype.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.fleet.tables.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.datatype.tables.*"
+	import="communication.datatype.*"
+	import="communication.vehicle.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+
+%>
+
+<%
+	SystemAccess sys=(SystemAccess)session.getAttribute("SystemAccess");
+	String check = Util.checkPermission(sys,SecurityConstants.DRIVER_INSERT_ODOMETER);
+	int value = 0;
+	if(check!=null) {
+		value = -1;
+	}else {
+		String plate = request.getParameter("vehicle");
+		String period = request.getParameter("month");
+		String year = request.getParameter("year");
+		String odometer = request.getParameter("odometer");
+		if(Util.empty(plate) || !Util.isNumber(period) || Integer.parseInt(period) < 1 || Integer.parseInt(period) > 12 || !Util.isNumber(year) || !Util.isNumber(odometer)) {
+	value = 0;
+		}else {
+	value = sys.getFleetABMFacade().saveOdometer(plate, new Integer(odometer), new Integer(period), new Integer(year), sys.getUserSessionData());
+		}
+	}
+%>
+<%=String.valueOf(value)%>	

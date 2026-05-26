@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.event.tables" >
+	<class name="EventFile" table="eventfiles">
+		<id column="id" name="id">
+            <generator class="sequence"> 
+            	<param name="sequence">EventFile_Sequence</param>
+            </generator>
+        </id>    
+       <property name="event" type="java.lang.Integer"  column="event"/>
+       <property name="name" type="java.lang.String"  column="name"/>
+       <property name="fileType" type="java.lang.Integer"  column="filetype"/>
+    </class>
+</hibernate-mapping>
+        
+       

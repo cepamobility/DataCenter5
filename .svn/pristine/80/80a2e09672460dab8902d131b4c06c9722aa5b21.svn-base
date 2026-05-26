@@ -1,0 +1,342 @@
+package presentation.translator.web.user;
+
+import java.io.File;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Hashtable;
+import java.util.LinkedList;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.action.DynaActionForm;
+
+import presentation.translator.web.administration.groups.GroupAddLineForm;
+import presentation.translator.web.util.AbstractAction;
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+import business.administration.user.UserABMFacade;
+
+import communication.administration.RoleData;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.user.tables.UserAttributes;
+import communication.administration.user.tables.UserData;
+import communication.alert.AlertConstants;
+import communication.language.Text;
+import communication.util.MailSender;
+
+/**
+ * 
+ * @author gbenaderet
+ *
+ * Notas: En un principio el usuario contratista es solo para FOSA.
+ */
+public class ContractorUserCreateAction extends AbstractAction {
+
+    public ActionForward cancel(HttpSession session,ActionMapping mapping, ActionForm form) {
+        return mapping.findForward("UserNEDList");
+    }
+
+    public ActionForward action(ActionMapping mapping, ActionForm createForm, HttpServletRequest request, HttpServletResponse response) throws Throwable {
+
+        HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        Text messages = sys.getText();
+
+        DynaActionForm createData = (DynaActionForm) createForm;
+        String nick = createData.getString("loginname");
+        String firstName = createData.getString("firstName");
+        String lastName = createData.getString("lastName");
+        String language = createData.getString("language");
+        String mail = createData.getString("email");
+        String role = "contractors";
+        String passwd = createData.getString("password");
+        //String repasswd = createData.getString("rePassword");
+        String contractorId = createData.getString("contractorId");        
+        String contractorName = createData.getString("contractorName");
+        String stype = createData.getString("type");
+
+        // Otras Variables:
+        String country1 = "", country2="", country3="", /*countryName = "", */ id = null;
+        String[] divOrg11 = null ,divOrg12 = null , divOrg13 = null , divOrg21 = null,
+        	divOrg22 = null, divOrg23 = null, divOrg31 = null, divOrg32 = null, 
+        	divOrg33 = null, directory = null;
+        
+        if (sys.getUserSessionData().getFilter().getCorporationId().intValue() == CorporationData.FORESTALORIENTAL){
+	        // Esto es particular para FOSA:        
+	        country1 = "330244"; // Mercosur
+	        country2 = "31"; // Uruguay;
+	        country3 = null;
+	        //countryName = "datatype.country.uy";        
+	        divOrg11 = new String[1];
+	        divOrg11[0] = contractorId; 
+	        divOrg12 = new String[1]; 
+	        divOrg13 = new String[1];
+	        divOrg21 = new String[1]; 
+	        divOrg22 = new String[1];
+	        divOrg23 = new String[1];
+	        divOrg31 = new String[1];
+	        divOrg32 = new String[1]; 
+	        divOrg33 = new String[1];        
+	        id = null; // id de grupo.
+	        
+	        //String directory = "/home/datacenter5/fosa/accinv/uy/" ;
+	        // Migracion a JBOss5.1: C:/jboss51/datacenter/datacenter5.war/
+	        directory = new String[7];
+	        /*
+	        directory[0] = "home"; directory[1] = "datacenter5";
+	        directory[2] = "fosa"; directory[3] = "accinv";
+	        directory[4] = "uy";
+	        */
+	        directory[0] = "home"; directory[1] = "jboss51";
+	        directory[2] = "datacenter"; directory[3] = "datacenter5.war";
+	        directory[4] = "fosa"; directory[5] = "accinv";
+	        directory[6] = "uy";
+	        // Fin datos para FOSA
+	        
+        }else if (sys.getUserSessionData().getFilter().getCorporationId().intValue() == CorporationData.LOSPIQUES){
+        	// LOS PIQUES:
+        	//country1 = "330244"; // Mercosur
+	        //country2 = "31"; // Uruguay;
+	        //country3 = null;
+        	divOrg11 = new String[1];
+	        // divOrg11[0] = contractorId; 
+	        divOrg12 = new String[1]; 
+	        divOrg13 = new String[1];
+	        divOrg21 = new String[1]; 
+	        divOrg22 = new String[1];
+	        divOrg23 = new String[1];
+	        divOrg31 = new String[1];
+	        divOrg32 = new String[1]; 
+	        divOrg33 = new String[1];        
+	        id = null; // id de grupo.
+	        
+	        //String directory = "/home/datacenter5/lospiques/accinv/uy/" ;
+	        // Migracion a JBOss5.1: C:/jboss51/datacenter/datacenter5.war/
+		      
+	        directory = new String[7];
+	        directory[0] = "home"; directory[1] = "jboss51";
+	        directory[2] = "datacenter"; directory[3] = "datacenter5.war";
+	        directory[4] = "lospiques"; directory[5] = "accinv";
+	        directory[6] = "uy";
+        }
+        	
+        
+        try {
+
+            if(stype.equals("password")) {
+                if(Util.empty(mail)) {
+                    session.setAttribute("Msg","user.error.emptymail");
+                    
+                    createData.set("password", null);
+                    createData.set("rePassword",null);
+                    session.removeAttribute("contractorsList");            		
+                    return mapping.findForward("error");
+                }
+                int type = (sys.getUserSessionData().getFilter().
+                		getCorporationId().intValue() != CorporationData.JJ) ? 
+                				UserAttributes.SIMPLE : UserAttributes.DIFFICULT;
+                passwd = sys.getUserABMFacade().getNewPass(type);
+            }else {
+
+                String msg = validate(messages,createForm);
+                if (msg != null) {
+                    session.setAttribute("Msg", msg);
+                    createData.set("password", null);
+                    createData.set("rePassword",null);
+                    
+                    session.removeAttribute("contractorsList");            		
+                    return mapping.findForward("error");
+                }                
+            }
+                
+            Integer contractorIdNumber = Util.isNumber(contractorId)?new Integer(contractorId):null;
+            UserData data = new UserData(passwd,firstName,lastName,language,
+            		nick,mail,sys.getUserSessionData().getFilter().getCorporationId(),
+            		new Hashtable(), new RoleData(role,true,null),null,new LinkedList(),
+            		contractorIdNumber);
+            UserABMFacade userABM = null;
+            userABM = sys.getUserABMFacade();
+            userABM.userCreate(data,sys.getUserSessionData());
+            
+            if (sys.getUserSessionData().getFilter().getCorporationId().intValue() == CorporationData.FORESTALORIENTAL){
+            	// 	FOSA:
+            	// Asignarle el grupo del contratista
+            	GroupAddLineForm groupForm = new GroupAddLineForm(country1, country2, country3,
+        			divOrg11, divOrg12, divOrg13,divOrg21, divOrg22, divOrg23,
+        			divOrg31, divOrg32, divOrg33, id);
+            	Collection groupLines = groupForm.getGroupLine(sys.getUserSessionData());
+            	userABM.addUserContractorGroup(nick,contractorName,contractorId, groupLines, 
+            		sys.getUserSessionData());
+            	
+            	// Investigacion de Accidentes para ese Contratista:
+                accidentInvestigationPart(sys,directory, contractorName);
+            }
+            
+           
+            
+            
+            if(stype.equals("password")) {
+                MailSender sender = new MailSender();
+                String password = getMessage1(language,nick)+passwd;
+                String title = getTitle1(language);
+                
+                sender.send(mail,
+                		AlertConstants.MAILSERVER,
+                		AlertConstants.FROMNAME_DC,
+                		AlertConstants.FROM_DC,
+                		AlertConstants.FROMPASSWORD_DC,
+                		title,password);
+            }
+            
+            session.removeAttribute("contractorsList");
+    		   		
+            return mapping.findForward("UserNEDList");
+                
+        }catch(Exception e) {
+            Throwable thw = (e instanceof ServletException) ? ((ServletException)e).getRootCause() : e;
+            while (thw.getCause() != null) {
+                thw = thw.getCause();
+            }
+            if (thw.getClass().toString().indexOf("AlreadyExistsException") > 0) {
+                session.setAttribute("Msg",messages.getText("user.error.alreadyexist"));
+                createData.set("password",null);
+                createData.set("rePassword",null);
+                session.removeAttribute("contractorsList");        		
+                return mapping.findForward("error");
+            }else {
+                createData.set("password",null);
+                createData.set("rePassword",null);
+                createData.set("loginname",null);
+                session.removeAttribute("contractorsList");        		
+                throw e;
+            }
+        }
+    }
+
+    
+    /**
+     * 
+     * @param directory
+     * @param contractorName
+     * @throws Exception
+     */
+    private void accidentInvestigationPart(SystemAccess sys, String[] directory, String contractorName) throws Exception{
+    	
+        // Crear carpeta de investigacion de accidentes, si no existe:
+        // Me fijo si existe el directorio, sino lo creo.
+        
+        directory[directory.length-2] = Util.stringToSlug(contractorName);
+        Calendar c = Calendar.getInstance();
+        String year = (new Integer(c.get(Calendar.YEAR))).toString();
+        directory[directory.length-1] = year; // Año actual para las investigaciones de accidentes.
+		File dir = new File( "/");
+		for (int i = 0; i < directory.length; i++) {
+		    dir = new File(dir, directory[i]);
+		    if (!dir.exists()){
+		    	boolean success = dir.mkdir();
+		    	if (!success) System.out.println("No se pudo crear el directorio: "+dir.getPath());
+		    }
+		}
+			
+		
+    }
+    
+    
+    /**
+     * 
+     * @param messages
+     * @param form
+     * @return
+     */
+    private String validate(Text messages,ActionForm form) {
+    	DynaActionForm createData = (DynaActionForm) form;
+        String loginname = createData.getString("loginname");
+        String firstName = createData.getString("firstName");
+        String lastName = createData.getString("lastName");
+        String language = createData.getString("language");
+        String passwd = createData.getString("password");
+        String repasswd = createData.getString("rePassword");
+        String contractorId = createData.getString("contractorId");
+        String contractorName = createData.getString("contractorName");
+        
+          
+        if (Util.empty(loginname)) {
+            return messages.getText("generic.user.userdata.loginname.isinvalid");
+        }
+        if (!Util.empty(passwd) && !Util.empty(repasswd)) {
+            if (passwd.compareTo(repasswd) != 0) {
+                return messages.getText("generic user.userdata.passconfirm");
+            }
+        } else {
+            return messages.getText("generic.user.userdata.pass.isempty");
+        }
+        if (Util.empty(firstName)) {
+            return messages.getText("generic.user.userdata.firstname.isempty");
+        }
+        if (Util.empty(lastName)) {
+            return messages.getText("generic.user.userdata.lastname.isempty");
+        }
+        if (Util.empty(language)) {
+            return messages.getText("generic.user.userdata.language.isempty");
+        }
+        if (Util.empty(contractorId)) {
+            return messages.getText("generic.user.userdata.contractorid.isempty");
+        }
+        if (Util.empty(contractorName)) {
+            return messages.getText("generic.user.userdata.contractorname.isempty");
+        }
+        return null;
+    }
+
+    /**
+     * 
+     * @param language
+     * @return
+     */
+    private String getTitle1(String language) {
+        if(language.equals("es")) {
+            return "Nuevo usuario";
+        }else if(language.equals("pt")) {
+            return "Usuario novo";
+        }else {
+            return "New User";
+        }
+    }
+    
+    /**
+     * 
+     * @param language
+     * @param loginname
+     * @return
+     */
+    private String getMessage1(String language, String loginname) {
+        String message = "";
+        if(language.equals("es")) {
+            message += "<b>Por su pedido, su usuario ha sido creado.</b><br>";
+            message += "<b>url:</b> <a href='https://" + AlertConstants.DC_DOMAIN + "' >" + AlertConstants.DC_DOMAIN + "</a><br>";
+            message += "<b>Login:</b> "+loginname;
+            message += "<br>";
+            message += "<b>Password: </b>";
+        }else if(language.equals("pt")) {
+            message += "<b>Segundo Solicitação, su usuario foi criado.</b><br>";
+            message += "<b>url:</b> <a href='https://" + AlertConstants.DC_DOMAIN + "' >" + AlertConstants.DC_DOMAIN + "</a><br>";
+            message += "<b>Login:</b> "+loginname;
+            message += "<br>";
+            message += "<b>Password: </b>";        
+        }else {
+            message += "<b>For your asking your user has been created.</b><br>";
+            message += "<b>url:</b> <a href='https://" + AlertConstants.DC_DOMAIN + "' >" + AlertConstants.DC_DOMAIN + "</a><br>";
+            message += "<b>Login:</b> "+loginname;
+            message += "<br>";
+            message += "<b>Password: </b>";
+        }
+        return Util.emailTranslation(message);
+    }
+   
+}

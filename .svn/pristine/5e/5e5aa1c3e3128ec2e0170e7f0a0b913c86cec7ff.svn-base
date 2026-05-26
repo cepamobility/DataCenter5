@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.log.driver">
+	<class name="ProvisionalBTWLog" table="provisionalbtwslog">
+		
+       	<composite-id class="ProvisionalBTWLogPK" name="pk" >
+       		<key-property  name="driver" column="id"  type="java.lang.Integer"	/>
+	        <key-property 	name="expiry"	type="java.util.Date"	column="expiry" />
+	        <key-property	name="userId"	type="java.lang.String"		column="userid"/>
+	        <key-property	name="date"		type="java.util.Date"		column="date"/>
+       </composite-id>
+        
+        <property	name="action"			type="java.lang.Integer"		column="action"		not-null="true" />
+        <property column="result" name="result" type="java.lang.String" not-null="true" />
+        <property column="btwdate" name="btwDate" type="java.util.Date" not-null="true" />
+		
+  	</class>
+</hibernate-mapping>

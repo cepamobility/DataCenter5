@@ -1,0 +1,165 @@
+<%@page import="communication.alert.AlertConstants"%>
+<%@page language="java"
+    errorPage="../exception.jsp"
+	import="business.*"
+	import="java.io.*"
+	import="java.text.*"
+	import="java.util.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.util.*"
+ 	import="communication.administration.user.*" 
+	import="communication.util.Filter"
+	import="presentation.translator.web.event.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="communication.administration.corporation.tables.*"	
+ 			
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html" 
+%>
+<%
+	RequestDispatcher dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+	dispatcher.include(request,response);
+ 	
+	SystemAccess sys = (SystemAccess)session.getAttribute("SystemAccess");
+	Text messages = sys.getText();
+	UserSessionData userSessionData = sys.getUserSessionData();
+
+	String check = null;
+	check = Util.checkPermission(sys,SecurityConstants.EDIT_EVENT);	
+	if(check != null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		String event = request.getParameter("event");
+		int type = Integer.parseInt(request.getParameter("type"));
+%>
+
+<html:html>
+	<head>
+		<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+		<script type="text/javascript">
+			function deleteFile(id) {
+				if(confirm('<%=messages.getText("event.file.deleteconfirm")%>')) {
+					var form = document.forms['EventDeleteFileForm'];
+					form.id.value = id;
+					form.submit();
+				}
+			}
+		</script>
+	</head>
+	<body>
+<%		if(type == 1) {
+%>		<form name="back" action="layout.jsp">
+			<input type="hidden" name="refer" value="event/EventView.jsp" />	
+			<input type="hidden" name="eventId" value="<%=event%>"/>	
+		</form>
+<%		}else {
+%>		<form name="back" action="layout.jsp">
+			<input type="hidden" name="refer" value="event/FineView.jsp" />	
+			<input type="hidden" name="fine" value="<%=event%>"/>	
+		</form>
+<%		}
+%>
+		<html:form action="/EventDeleteFile" >
+			<html:hidden property="id"/>	
+			<html:hidden property="event" value="<%=event%>"/>	
+			<html:hidden property="type" value="<%=String.valueOf(type)%>"/>	
+		</html:form>
+		<html:form action="/EventSaveFile" method="post" enctype="multipart/form-data" >
+			<html:hidden property="event" value="<%=event%>"/>	
+			<html:hidden property="type" value="<%=String.valueOf(type)%>"/>	
+			<table width="700"  border="0" align="center" cellpadding="0" cellspacing="0">
+  				<tr class="guide1">
+  					<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText("generic.event.files")%>' />
+			  	</tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+          		<tr>
+           			<td>
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("event.file.list")%>' />
+						<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="default" >
+<%		Collection<Object[]> files = sys.getEventReportFacade().getFiles(new Integer(event), userSessionData);
+		if(files == null || files.size() == 0) {
+%>							<tr class='linetwo'>
+								<th align="left"><%=messages.getText("event.file.nofiles")%></th>
+							</tr>			
+<%		}else {
+			Iterator<Object[]> fileIt = files.iterator();
+			boolean lineone = true;
+			while(fileIt.hasNext()) {
+				Object[] fileData = (Object[]) fileIt.next();
+				String link = SecurityConstants.DATACENTER5_LINK_DIRECTORY+"eventfiles/event_"+fileData[0].toString();
+%>							<tr class='<%=(lineone) ? "lineone" : "linetwo"%>' height="30">
+								<td width="80%" align="left">
+									<a href='<%=(((Integer)fileData[2]).intValue() == 2) ? link + ".jpg" : link + ".pdf"%>' target="_blank">
+										<%=fileData[1]%>
+									</a>
+								</td>
+								<td width="20%" align="center">
+									<input type="button" value='<%=messages.getText("generic.messages.delete")%>' class="input" onclick="deleteFile(<%=fileData[0].toString()%>);"/>
+								</td>
+							</tr>
+<%				lineone = !lineone;
+			}
+		}
+%>						
+				      	</table>              
+						<jsp:include  page='../component/utilityboxbottom.jsp' />
+					</td>
+				</tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+          		<tr>
+           			<td>
+						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("event.file.upload")%>' />
+						<table width="100%" border="0" align="center" cellpadding="0" cellspacing="0" class="default" >
+		    				<tr  class="linetwo">
+		      					<th align="left" width="30%"> <%=messages.getText("event.file.name")%>:</th>
+		       					<td align="left" width="70%">
+		       						<html:text property="name" size="40" styleClass="input"/>
+		       					</td>
+		    				</tr>
+		    				<tr class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+		    				<tr  class="linetwo">
+								<th align="left"><%=messages.getText("generic.supportmaterial.reports.file")%>:</th>
+								<td align="left">
+									<html:file property="file" />
+								</td>			      					      					      		
+							</tr>     						
+					      	<tr>
+					      		<td colspan="2" align="right">
+						    		<html:submit value='<%=messages.getText("event.file.save")%>' />
+					      		</td>
+					      	</tr>
+				      	</table>              
+						<jsp:include  page='../component/utilityboxbottom.jsp' />
+					</td>
+				</tr>
+  				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+			  	</tr>
+				<tr>
+					<td align="left" class="texts" colspan="3">
+						<jsp:include  page="../component/utilitybox4top.jsp" />
+						<table width="100%" class="texts1" border="0" cellpadding="0" cellspacing="0">
+							<tr class="lineone">
+								<td align="left" class="lineone">
+									<input type="button" value='<%=messages.getText("generic.messages.back")%>' class="input" onclick="document.forms['back'].submit();"/>
+								</td>
+							</tr>
+						</table>
+						<jsp:include  page="../component/utilitybox4bottom.jsp" />
+					</td>
+				</tr>
+	      	</table>              
+		</html:form>
+	</body>
+</html:html>
+<% }
+%>
+

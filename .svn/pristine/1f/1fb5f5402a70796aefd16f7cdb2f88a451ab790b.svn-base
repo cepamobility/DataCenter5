@@ -1,0 +1,673 @@
+<!doctype html>
+
+<%@page import="java.util.Calendar"%>
+<%@page import="communication.administration.corporation.tables.CorporationData"%>
+<%@page import="communication.administration.corporation.tables.DivOrgData"%>
+<%@page import="java.util.Date"%>
+<%@page import="presentation.translator.web.util.Util"%>
+<%@page import="communication.vehicle.tables.VehicleData"%>
+<%@page import="java.util.Collections"%>
+<%@page import="communication.activity.tables.ItemData"%>
+<%@page import="communication.language.Text"%>
+<%@page import="communication.activity.tables.PointData"%>
+<%@page import="java.util.Iterator"%>
+<%@page import="java.util.List"%>
+<%@page import="java.util.Collection"%>
+<%@page import="presentation.translator.web.util.*"%>
+<%@page import="communication.activity.tables.CheckListData"%>
+<%@page language="java" 
+	errorPage="../exception.jsp" 
+	import="business.*"
+%>
+<%@page import="communication.administration.user.UserSessionData"%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+<%
+	SystemAccess sys = (SystemAccess)session.getAttribute("SystemAccess");
+	UserSessionData userSessionData = sys.getUserSessionData();
+	Text messages = sys.getText();
+
+	
+	VehicleData data = sys.getVehicleReportFacade().findVehicleByPrimaryKey(new Integer(request.getParameter("id")),userSessionData); 
+	//Id=79/80	
+	String checklist = request.getParameter("checklist");
+	
+	String next = "layout.jsp?refer=vehicle/VehicleView.jsp?id="+request.getParameter("id");
+	String path="../";
+
+	String checkId=checklist;
+	
+	String version=String.valueOf( new Date().getTime());
+%>
+
+<html lang="en">
+	<head>
+		<meta charset="iso-8859-1">
+		<meta name="MobileOptimized" content="width" />
+		<meta name="HandheldFriendly" content="true" />
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<meta http-equiv="content-language" content="es" />
+		<title>Checklist</title>
+		<link rel="shortcut icon" type="../image/ico" href="../images/favicon.ico">
+		<link rel="stylesheet" href="../styles/mbase.css">
+		<link rel="stylesheet" href="../styles/mchecklist.css">
+		<link rel="stylesheet" href="../styles/jquery-ui-1.10.3.custom.min.css">
+		<style>
+			.novisible{
+				display:none;
+				visibility:hidden;
+			}
+		</style>	
+	</head>
+	<body>
+	<header>
+			<section class="grid_container">
+				<h1 class="customer_logo"><img src="../menu/images/main_logo.png"/></h1>
+				<br>
+				<div class="toolbar">
+					<span class="username"><%=sys.getUserSessionData().getFilter().getFirstName()+" "+sys.getUserSessionData().getFilter().getLastName() %></span>
+					<span class="exit"><a href='../login.jsp'><%=messages.getText("generic.messages.exit") %></a></span>
+				</div>
+				<div id="videocontainer" style="display: none;">
+					<div style="float: left;">
+					<!--  <img src='menu/images/Shot_Camera-icon.png' style="height:100px;width:100px;" onclick="takepicture();"/>-->	
+						<!-- <div id="videocontainerh"> -->
+					</div>
+					<video id="video" style="position:fixed;top:0;left:0;width: 100%;height: 100%;" autoplay onclick="takepicture();"></video>
+		 		</div>
+			</section>
+	</header>		
+		<section id="content">
+			<section class="grid_container">
+				<form id="assessment" name="assessment" class="checklist" action="resultCheckList2.jsp"  data-module="<%=checklist%>" data-success-redirect="success.jsp">
+					<fieldset class="title">
+						<h4>
+							<%=messages.getText("checklist.dpa.title"+checklist) %></h4>
+						
+						<!-- h5>Data Efetivação: 07/02/2011 • Revisão: 00</h5 -->
+					</fieldset>
+
+					<fieldset>
+						<div class="narrow" id="qw1" data-type="2">
+							<label for="q1"><%=messages.getText("generic.vehicle.vehicledata.matricula") %></label>
+							<input id="q1" name="q1" type="hidden" value="<%=String.valueOf(data.getId())%>"><%=data.getMatricula()%>
+						</div>
+						<div class="narrow" id="qw3" data-type="2">
+							<label for="q3"><%=messages.getText("generic.messages.date") %></label>
+							<input id="q3" name="q3" type="date"  >
+						</div>
+						<div class="narrow" id="qw33" data-type="22">
+							<label for="q33"><%="Hora" %></label>
+							<select id="q33" name="q33" type="text"  style="width:80px;" style="float: left;">
+								<% for(int i=0;i<24;i++){ 
+									%>
+									<option value='<%=Integer.valueOf(i).toString()%>'><%=Integer.valueOf(i).toString()%></option>
+								<%}%>
+							</select> 
+							:
+							<select style="width:80px;" id="q34" name="q34" type="text"  >
+								<% for(int i=0;i<60;i++){ 
+									%>
+									<option value='<%=Integer.valueOf(i).toString()%>'><%=Integer.valueOf(i).toString()%></option>
+								<%}%>
+							</select>
+						</div>
+						
+					</fieldset>
+
+
+<%
+			CheckListData checkList = sys.getActivityReportFacade().findCheckList(new Integer(checkId),userSessionData);	
+			Collection points = checkList.getPoints();
+			Collections.sort((List)points);
+			Iterator pointIt = points.iterator();
+			Integer idVG=null;
+			while(pointIt.hasNext()) {
+				PointData point = (PointData) pointIt.next();
+				Iterator<ItemData> itemsIt = point.getSortItems();
+				ItemData item = itemsIt.next();
+				if(item.getType().intValue() > 2) {
+%>						<fieldset class="title">
+							<h5><%=messages.getText(point.getText()) %></h5>
+						</fieldset>
+<%					do {
+						String divName = "qw"+String.valueOf(item.getId());
+						String qName = "q"+String.valueOf(item.getId());
+						String preText=".";
+						if(checklist.equals("79")){
+							if(item.getText().equalsIgnoreCase("forestales.check.h1")){
+								Iterator iterDiv=data.getDivOrgsIterator();
+								if(iterDiv.hasNext()){
+									DivOrgData divOrg = (DivOrgData)iterDiv.next();
+									if(sys.isCorporation(CorporationData.WEYERHAEUSER)){
+										if(iterDiv.hasNext()){
+											divOrg = (DivOrgData)iterDiv.next();
+											if(iterDiv.hasNext()){
+												 divOrg = (DivOrgData)iterDiv.next();	
+											}
+											
+										}
+									}
+									communication.administration.corporation.tables.ItemData item1 = (communication.administration.corporation.tables.ItemData)divOrg.getDivOrgLevels().getItemIterator().next();
+							        while(item1.getSubItems() != null) {
+							            item1 = (communication.administration.corporation.tables.ItemData)item1.getSubItems().getItemIterator().next();
+							        }
+									preText= item1.getName();
+									
+								}
+							}
+							if(item.getText().equalsIgnoreCase("forestales.check.h2") ){
+								preText=data.getMatricula();
+							}
+							if(item.getText().equalsIgnoreCase("forestales.check.h4")){
+								preText=sys.getUserSessionData().getFullName();
+							}
+						}else
+						if(checklist.equals("80") || checklist.equals("84")){
+							if(item.getText().equalsIgnoreCase("forestales.check2.h3") || item.getText().equalsIgnoreCase("forestales.checkinternal2.h3")){
+								Iterator iterDiv=data.getDivOrgsIterator();
+								if(iterDiv.hasNext()){
+									DivOrgData divOrg = (DivOrgData)iterDiv.next();
+									if(sys.isCorporation(CorporationData.WEYERHAEUSER)){
+										if(iterDiv.hasNext()){
+											divOrg = (DivOrgData)iterDiv.next();
+											if(iterDiv.hasNext()){
+												 divOrg = (DivOrgData)iterDiv.next();	
+											}
+											
+										}
+									}
+									communication.administration.corporation.tables.ItemData item1 = (communication.administration.corporation.tables.ItemData)divOrg.getDivOrgLevels().getItemIterator().next();
+							        while(item1.getSubItems() != null) {
+							            item1 = (communication.administration.corporation.tables.ItemData)item1.getSubItems().getItemIterator().next();
+							        }
+									preText= item1.getName();
+								}									
+							}else
+							if(item.getText().equalsIgnoreCase("forestales.check2.h6") || item.getText().equalsIgnoreCase("forestales.checkinternal2.h6")){
+								preText=data.getMatricula();
+							}
+						}
+												
+%>						<fieldset>
+							<div id="<%=divName%>" data-type="1">
+								<label for="<%=qName%>"><%=messages.getText(item.getText()) %></label>
+								<label class="inline"><input id="<%=qName%>" name="<%=qName%>" value='<%=preText%>' type="text"></label>
+							</div>
+						</fieldset>
+<% 						if(itemsIt.hasNext()) { 
+							item = itemsIt.next();
+						}else {
+							item = null;
+						}
+					} while (item != null);
+				}else {
+					String divName = "qw"+String.valueOf(item.getId());
+					String qName = "q"+String.valueOf(item.getId());
+					String comName = "q"+String.valueOf(item.getId())+"comment";
+					if(item.getType().intValue() == 1) {
+%>					<fieldset class="title">
+						<h5 style="cursor:pointer;" onclick="toggleVisibleGroup(<%=item.getId()%>)"><%= messages.getText(point.getText()) %></h5>
+					</fieldset>
+<%					idVG=item.getId();
+					}
+					
+	
+%> 
+					<fieldset tagVG="<%=idVG%>" tagVGm="n">
+						<div id="<%=divName%>" data-type="16"  data-foto="true">
+							
+							<label style="cursor:pointer;font-size: 20px;" for="<%=qName%>" onclick="toggleVisible(this);"><%=messages.getText(item.getText()) %></label>
+							<label class="radio" tagV="n" style="float:left;"><input idaux='<%="ids"+qName%>' tagErr="n" type="radio" name="<%=qName%>" value="1" checked="checked"><%=checklist.equals("80")|| checklist.equals("84")? "S/O":"SI"%></label>
+							<label class="radio" tagV="n"  ><input type="radio" idaux='<%="ids"+qName%>' tagErr="s" nameSelect="<%="s"+qName%>" name="<%=qName%>" value="2"><%=checklist.equals("80") || checklist.equals("84")? "C/O":"NO" %></label>
+							<label class="inline" tagV="n">
+								<%=messages.getText("generic.messages.observations") %><br>
+								<input id="<%=comName%>" name="<%=comName%>" type="text">
+							</label>
+							<select p='t' name="<%="s"+qName%>" id="<%="s"+qName%>" class="select" style="display:none;">
+								<option value="30"></option>
+							</select>
+							<img tagV="n" src="../menu/images/Photo-Video-Slr-camera-icon.png" style="width:35px;cursor:pointer;right:10px;top:10px;" onclick="init('<%=qName%>');"/>
+							<input tagV="n" type="file" onchange="uploadImage('<%=qName%>',this);" tag="fileSrc" id="file<%=qName%>"></input>
+							<canvas tagV="n" id="canvas<%=qName%>" style="display: none;"></canvas>
+							<div tagV="n" id="foto<%=qName%>"></div>
+							<input type="hidden" id="fotoSrc<%=qName%>" tag='fotoSrc' src="" foto="false" />
+							<div tagV="n" id="foto2<%=qName%>"></div>
+							<input type="hidden" id="fotoSrc2<%=qName%>" tag='fotoSrc2' src="" foto="false" />
+						</div>
+					</fieldset>
+<%				}
+			}
+%> 
+
+					<fieldset>
+						<div id="qw4" data-type="1"  >
+							<label for="q4"><%="Email Condutor" %></label>
+							<label class="inline"><input id="q4" name="q4" type="text" value=""></label>
+						</div>
+					</fieldset>
+					<fieldset class="title">
+						<h5><%=messages.getText("generic.messages.observations") %></h5>
+					</fieldset>
+					<fieldset>
+						<div id="qw2" data-type="11">
+							<textarea id="q2" name="q2" cols="15" rows="4"><%=messages.getText("checklist.dpa.noobs") %></textarea>
+						</div>
+					</fieldset>
+					<fieldset class="title">
+						<h5><%=messages.getText("generic.activity.result") %></h5>
+					</fieldset>
+					<fieldset>
+						<div id="qw0" data-type="3">
+							<label class="radio"><input type="radio" name="q0" id="resultap" value="1" checked><%=messages.getText("generic.messages.approved").toUpperCase() %></label>
+							<label class="radio"><input type="radio" name="q0" id="resultapco" value="3" ><%=messages.getText("generic.activity.note.apruvedwithobservations").toUpperCase() %></label>
+							<label class="radio"><input type="radio" name="q0" id="resultnoap" value="2" ><%=messages.getText("generic.messages.notapproved").toUpperCase() %></label>
+						</div>
+					</fieldset>
+					<input type="submit" value="Enviar">
+				</form>
+			</section>
+		</section>
+		<div id="confirm_message" style="display:none;">
+			Con Observaciones:
+			__questions__
+			Esta seguro?
+			<br>
+			<img style='display:none;' width="225px" class='loader' src='<%=path%>menu/images/ajax-loader.gif'/>
+			<br>
+			<button class="button confirm_answers_ok"><%=messages.getText("generic.messages.confirm") %></button>
+			<button class="button confirm_answers_no"><%=messages.getText("generic.messages.cancel") %></button>
+		</div>
+		<script type="text/javascript">
+			var corp='UPM';
+			var srcImgWarning='<%=path%>menu/images/redFlag.png';
+			function toggleVisible(t){
+				$(t).parent().find('label').each(
+						function(){
+							if($(this).attr('tagV')=='n' || $(this).attr('tagV')=='s'){
+								if($(this).attr('tagV')=='n'){
+									$(this).css("display","block");
+									$(this).attr('tagV','s');
+								}else{
+									$(this).css("display","none");
+									$(this).attr('tagV','n');
+								}
+							}	
+						}
+				);
+				$(t).parent().find('img').each(
+						function(){
+							if($(this).attr('tagV')=='n' || $(this).attr('tagV')=='s'){
+								if($(this).attr('tagV')=='n'){
+									$(this).css("display","block");
+									$(this).attr('tagV','s');
+								}else{
+									$(this).css("display","none");
+									$(this).attr('tagV','n');
+								}
+							}	
+						}
+				);
+				$(t).parent().find('input').each(
+						function(){
+							if($(this).attr('tagV')=='n' || $(this).attr('tagV')=='s'){
+								if($(this).attr('tagV')=='n'){
+									$(this).css("display","block");
+									$(this).attr('tagV','s');
+								}else{
+									$(this).css("display","none");
+									$(this).attr('tagV','n');
+								}
+							}	
+						}
+				);
+			}
+
+
+			
+			 function stopSelected(cb){
+				 if($(cb).is(':checked')){
+					 $('input[name="'+$(cb).attr('rname')+'"]').prop('checked',true);
+				 }
+			 }
+				 
+				var initiated=false;
+			  	var qNameBuff="";
+			  	var h,w,topBack;
+			  	var sourcesIds=null;
+
+			 function off(){
+				 $('#videocontainer').hide();
+				 $('#videocontainerh').hide();
+				 
+			 }
+			 function on(){
+				 $('#videocontainer').show();
+				 $('#videocontainerh').show();
+				 
+			 } 	
+		 	 function init(qName) {
+		 		 topBack=$(window).scrollTop();
+		 		 qNameBuff=qName;	
+			 	  video        = document.querySelector('#video');
+			   	  canvas       = document.querySelector('#canvas'+qName);
+			   
+				  ctx    = canvas.getContext('2d');
+				  streaming    = false;
+				  width  = 600;
+				  height = 450;
+
+				  
+				  img = new Image(),
+			      imgwidth = 172,
+			      imgheight = 50;
+			  	  img.src = 'menu/images/logo_cepa_agua.png';
+					
+
+				if(!initiated){
+					if(navigator.userAgent.match(/Chrome/i)){
+						if(sourcesIds==null){
+							MediaStreamTrack.getSources(
+								function(sourceInfos){
+									$('#videocontainerh').append("<select id='video_select' style='height:100px;width:100px;'/>");
+									var video_select=$('#video_select');
+									var video_count=0;
+									 for (var i = 0; i < sourceInfos.length; i++) {
+										var option = document.createElement("option");
+										    option.value = sourceInfos[i].id;
+										    option.text = sourceInfos[i].label;
+										    if (sourceInfos[i].kind === 'audio') {
+										      /*audio_count++;
+										      if (option.text === '') {
+										        option.text = 'Audio ' + audio_count;
+										      }
+										      audio_select.appendChild(option);*/
+										    } else {
+										      video_count++;
+										      if (option.text === '') {
+										        option.text = 'Video ' + video_count;
+										      }
+										      
+										      video_select.append(option);
+										      sourcesIds=sourceInfos[i].id;
+										      video_select.val(sourcesIds);								      
+										    }
+									 }
+									 if(video_count<2){
+										 sourcesIds="N";
+									 }
+									 video_select.change(function(){sourcesIds=$('#video_select').val();initiated=false;init2();});
+									 init2();
+								}
+								
+							);
+						}else{
+							init2();
+						}
+					}else{
+						init2();
+					}
+				   
+				}else{
+					on();
+					 canvas.width = w;
+			          canvas.height = h;
+			          ctx.drawImage(img, 590 - imgwidth, 440 - imgheight, imgwidth, imgheight);
+			          streaming = true;
+				}
+				
+			  }
+
+			  function init2(){
+					
+				  navigator.getMedia = ( navigator.getUserMedia ||
+		                  navigator.webkitGetUserMedia ||
+		                  navigator.mozGetUserMedia ||
+		                  navigator.msGetUserMedia);
+					var constraint={video: true,audio: false};
+					
+					if(sourcesIds!=null && sourcesIds!="N"){
+						constraint={video: {optional: [{sourceId: sourcesIds}]},audio: false};
+					}
+					
+					navigator.getMedia(
+
+							constraint,
+							
+					function(stream) {
+						if (navigator.mozGetUserMedia) {
+							 video.mozSrcObject = stream;
+						} else {
+							 var vendorURL = window.URL || window.webkitURL;
+							 video.src = vendorURL ? vendorURL.createObjectURL(stream) : stream;
+						}
+
+			    		
+						
+						video.play();
+						//video.style.width = width + 'px';
+						//video.style.height = height + 'px';
+						if (video.requestFullscreen) {
+			    			 video.requestFullscreen();
+						} else if (video.mozRequestFullScreen) {
+							video.mozRequestFullScreen();
+						} else if (video.webkitRequestFullscreen) {
+							video.webkitRequestFullscreen();
+						}
+						
+						on();
+						initiated=true;
+					},
+					function(err) {
+					console.log("An error occured! " + err);
+					}
+					);
+					
+					video.addEventListener('play', function(ev){
+					if (!streaming) {
+					 /*finalheight = video.clientHeight / (video.clientWidth/width);
+					 video.setAttribute('width', width);
+					 video.setAttribute('height', finalheight);
+					 canvas.width = width;
+					 canvas.height = finalheight;
+					 h=finalheight;
+					 w=width;*/
+					 h=video.videoHeight;
+					 w=video.videoWidth;
+					 canvas.width = w;
+					 canvas.height = h;
+					 
+					 ctx.drawImage(img, 590 - imgwidth, 440 - imgheight, imgwidth, imgheight);
+					 streaming = true;
+					 
+					}
+					}, false);
+		      }
+
+		 	 function takepicture(qName) {
+		 	 	 if(qName=="undefined" || !qName){
+		 	 		qName=qNameBuff;
+		 	 	  }
+		 	    //ctx.save();
+		 	    //ctx.translate(width, 0);
+		 	    //ctx.scale(-1, 1);
+		 	    canvas=document.createElement("canvas");
+		 	    ctx    = canvas.getContext('2d');
+		 	   	h=video.videoHeight;
+				w=video.videoWidth;
+				canvas.width = w;
+				canvas.height = h;
+				 
+				//ctx.drawImage(img, w - imgwidth, h - imgheight, imgwidth, imgheight);
+		 	    ctx.drawImage(video, 0, 0, w, h);
+		 	    //ctx.restore();
+		 	    //ctx.scale(1, 1);
+		 	    //ctx.drawImage(img, 590 - imgwidth, 440 - imgheight, imgwidth, imgheight);
+		 	    
+
+		 	    upload(qName);
+
+		 	    off();
+		 	  }
+
+		 	function upload(qName) {
+		 	    var head = /^data:image\/(png|jpeg);base64,/,
+		 	        data = '',
+		 	        fd = new FormData(),
+		 	        xhr = new XMLHttpRequest();
+
+		 	    data = canvas.toDataURL('image/jpeg', 0.9).replace(head, '');
+				$('#fotoSrc'+qName).attr('foto','true');
+				$('#fotoSrc'+qName).attr('fotoSrc',data);
+				$('#foto'+qName).empty();
+				$('#foto'+qName).append("<img src='data:image/jpeg;base64,"+data+"' style='max-width:"+($($('fieldset[class="title2"]')[0]).width()-20)+"px;'/>");
+		 	  }
+
+
+			function uploadImage(qName,input){
+				if($(input)[0].files.length>0 && $(input)[0].files[0]!=null && $(input)[0].files[0]!=undefined && $(input)[0].files[0]!=null){
+					$('#foto2'+qName).html("Loading...");
+					
+					var reader = new FileReader();
+				    var file = $(input)[0];
+
+				    reader.onload = function () {
+				        var data = reader.result;
+				        var imgSrcBase64 = data.replace(/^[^,]*,/, '');
+				    	$('#fotoSrc2'+qName).attr('foto','true');
+						$('#fotoSrc2'+qName).attr('fotoSrc',imgSrcBase64);
+						$('#foto2'+qName).empty();
+						$('#foto2'+qName).html("<img src='data:image/jpeg;base64,"+imgSrcBase64+"' style='max-width:"+($($('fieldset[class="title2"]')[0]).width()-20)+"px;'/>");
+				
+				    };
+
+				    reader.readAsDataURL(file.files[0]);
+				}
+			}
+		</script>
+		
+		<script type="text/javascript" src="../scripts/json2.min.js?<%=version%>"></script>
+		<script type="text/javascript" src="../scripts/jquery-2.0.2.min.js?<%=version%>"></script>
+		<script type="text/javascript" src="../scripts/jquery-ui-1.10.3.custom.min.js?<%=version%>"></script>
+		<script type="text/javascript" src="../scripts/jquery.ui.datepicker-pt.js?<%=version%>"></script>
+		<script type="text/javascript" src="../scripts/jquery.ui.datepicker-es.js?<%=version%>"></script>
+		<script type="text/javascript" src="../scripts/jquery.tadeouy.loggable.js?<%=version%>"></script>
+		<script type="text/javascript" src="../scripts/jquery.tadeouy.assessmentController.js?<%=version%>"></script>
+		<script type="text/javascript" src="../scripts/jquery.tadeouy.question.js?<%=version%>"></script>
+		<script type="text/javascript" src="../scripts/jquery.tadeouy.card.js?<%=version%>"></script>
+		<script type="text/javascript" src="../scripts/jquery.tadeouy.assessment.js?<%=version%>"></script>
+		<script type="text/javascript" src="../scripts/assessment.js?<%=version%>"></script>
+		<script type="text/javascript">
+			$(document).ready(
+					function(){
+						 var width = (window.innerWidth > 0) ? window.innerWidth : screen.width;
+
+
+ 
+						 
+						$("#content").css("width",width-20);
+						$("input[type='text']").each(
+							function(){
+								$(this).css("width",width-88);
+							}
+						);
+						
+						$('label[tagV="n"]').each(
+								function(){
+									$(this).css("display","none");
+								}	
+						);
+						$('img[tagV="n"]').each(
+								function(){
+									$(this).css("display","none");
+								}	
+						);
+						$('input[tagV="n"]').each(
+								function(){
+									$(this).css("display","none");
+								}	
+						);
+						$('label[tagV="no"]').each(
+								function(){
+									$(this).css("display","none");
+								}	
+						);
+
+						$('fieldset[tagVGm="n"]').each(
+								function(){
+									$(this).css("display","none");
+								}
+						);
+ 
+					
+						var date=new Date();
+						$('#q33').val(date.getHours());
+						$('#q34').val(date.getMinutes());
+
+								
+						<%if(!checklist.equals("79")){%>
+							$('input[tagErr="s"]').each(
+									function(){
+										$(this).change(
+											function(){
+												if( $(this).is(":checked") ){
+													$("#"+$(this).attr('idaux')).css('display','block');
+												}else{
+													$("#"+$(this).attr('idaux')).css('display','none');
+												}	
+											}
+										);
+									}	
+							);
+						<%}%>
+
+						
+						
+						$('input[tagErr="n"]').each(
+								function(){
+									$(this).change(
+										function(){
+											if( $(this).is(":checked") ){
+												$("#"+$(this).attr('idaux')).css('display','none');
+											}else{
+												$("#"+$(this).attr('idaux')).css('display','block');
+											}	
+										}
+									);
+								}	
+						);
+					}
+			);
+
+			function toggleVisibleGroup(n){
+				$(document).find('fieldset').each(
+						function(){
+							if($(this).attr('tagVG')==n ){
+								if($(this).attr('tagVGm')=='n'){
+									$(this).css("display","block");
+									$(this).attr('tagVGm','s');
+								}else{
+									$(this).css("display","none");
+									$(this).attr('tagVGm','n');
+								}
+							}	
+						}
+				);
+				
+			}
+
+
+			session();
+			
+			function session(){
+				setTimeout(checkSession,1000*60*10);
+			}
+			
+			function checkSession(){
+				$.ajax({async:true,url:'/datacenter/index2.jsp',success:function(){session();}});
+			}
+		</script>
+	</body>
+</html>

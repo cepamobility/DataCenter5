@@ -1,0 +1,26 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.driver.tables">
+    <class name="DriverBayer" table="driversbayer">
+
+        <id	column="id"	name="id"	type="java.lang.Integer">
+            <generator class="sequence">
+            	<param name="sequence">Driver_Sequence</param>
+            </generator>
+        </id>
+        
+        <property	name="fullName"	type="java.lang.String"		column="fullName"		not-null="true" />
+        <property	name="corporationid"	type="java.lang.String"	column="corporationid"	/>
+        
+        
+        <property	name="licenseExpiry"	type="java.util.Date"		column="licenseExpiry" />
+        <property	name="stateOrRegion"				type="java.lang.String"		column="stateorregion"	/>
+        <property	name="city"				type="java.lang.String"		column="city"			/>
+        <property	name="email"			type="java.lang.String"		column="email"			/>
+        <property	name="phone"			type="java.lang.String"		column="phone"			/>
+        
+    </class>
+</hibernate-mapping>

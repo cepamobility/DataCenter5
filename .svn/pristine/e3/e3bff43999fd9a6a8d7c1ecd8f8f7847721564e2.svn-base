@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.administration.tables" >
+    <class name="CorrectiveActionDPA" table="correctiveactiondpa">
+		
+		 <id
+            column="id"
+            name="id"
+        >
+            <generator class="native"/>
+        </id>
+        
+        <property	name="date" type="java.util.Date" column="date"/>      
+        <property	name="comment" type="java.lang.String" column="comment"/>        
+
+        <set name="images" table="correctiveactionimagesdpa" cascade="all">
+       		<key column="correctiveactiondpa"></key>       		
+       		<composite-element class="persistence.administration.tables.CorrectiveActionImageDPA" >
+        		<property name="imageName" column="imageName" unique-key="true" unique="true"  ></property>
+        		<property name="text" column="text" ></property>
+           </composite-element>
+       	</set>
+       	
+       	<many-to-one name="unconformityDPA" column="unconformitydpa" class="UnconformityDPA" />
+       	
+       	<set name="items">
+       		<key column="correctiveactiondpa" not-null="false"/>
+			<one-to-many class="UnconformityItemDPA" />
+		</set>
+       	
+	 </class>
+
+</hibernate-mapping>

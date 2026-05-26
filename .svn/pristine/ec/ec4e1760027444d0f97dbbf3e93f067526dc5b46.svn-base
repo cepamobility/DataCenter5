@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.report.tables">
+    <class name="JJGoals" table="jjgoals">
+
+        <id	column="id"	name="id"	type="java.lang.Integer">
+            <generator class="sequence">
+            	<param name="sequence">JJReports_goals_Sequence</param>
+            </generator>
+        </id>
+        
+        <property	name="year"	type="java.lang.Integer"    unique="true"	    column="year"		not-null="true" />
+        <property	name="cpmm"	type="java.lang.Double"		column="cpmm"		not-null="true" />
+        <property	name="ipmm"	type="java.lang.Double"		column="ipmm"		not-null="true" />
+        <property	name="cpmmTop"	type="java.lang.Double"		column="cpmmTop"		not-null="true" />
+        <property	name="ipmmTop"	type="java.lang.Double"		column="ipmmTop"		not-null="true" />
+	    	    
+    </class>
+</hibernate-mapping>

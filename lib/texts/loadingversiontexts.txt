@@ -1,0 +1,24 @@
+--se limpia la tabla auxiliar versiontexts
+delete from versiontexts;
+
+-- se carga la tabla auxiliar versiontexts a aprtir del archivo versionTexts.cvs
+copy versiontexts from '/home/gbenaderet/workspace/DataCenter5/lib/texts/versionTexts.csv';
+
+-- se eliminan de la tabla generalmessages los textos con claves que figuran al archivo versionTexts.cvs
+-- se asume que si cambia un texto en un idioma se cargará el texto en TODOS los idiomas
+delete from generalmessages
+where labelkey in (select labelkey from versiontexts);
+
+-- se carga la tabla generalmessages a partir de la tabla auxiliar versiontexts
+insert into generalmessages
+(select labelkey,'es',es
+from versiontexts
+)
+union
+(select labelkey,'en',en
+from versiontexts
+)
+union
+(select labelkey,'pt',pt
+from versiontexts
+);

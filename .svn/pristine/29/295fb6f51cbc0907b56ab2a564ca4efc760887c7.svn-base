@@ -1,0 +1,506 @@
+<%@page import="communication.datatype.tables.TypeTradeDataType"%>
+<%@page import="communication.administration.dpa.LevelOfServiceVehicleDPAData"%>
+<%@page import="communication.driver.tables.DriverData"%>
+<%@page import="presentation.translator.web.dpa.DPALevelOfServiceVehicleForm"%>
+<%@page import="communication.datatype.DataTypeConstants"%>
+<%@page import="communication.administration.corporation.tables.ItemData"%>
+<%@page language="java" 
+	errorPage="../exception.jsp" 
+	import="business.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.vehicle.*"
+ 	import="communication.administration.user.*" 	
+ 	import="communication.datatype.tables.ActivityTypeDataType"
+	import="java.util.*"	
+
+%>
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+<%!
+	RequestDispatcher dispatcher; 
+	Text messages; SystemAccess sys;
+	UserSessionData userSessionData; 
+	DriverData driverData;
+	String vehicleId;
+	String id;
+	
+	
+%>
+<%
+	
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	userSessionData=sys.getUserSessionData();	
+
+	
+	
+	String check = Util.checkPermission(sys,SecurityConstants.EDIT_VEHICLE);
+	String check1 = Util.checkPermission(sys,SecurityConstants.MODIFY_VEHICLE);	
+	
+	
+	if (check!=null) { 
+		response.sendRedirect(request.getContextPath()+check);	
+	}else if (check1!=null) { 
+		response.sendRedirect(request.getContextPath()+check1);	
+	}else {
+		messages=sys.getText();
+	
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+
+		
+		id=(String)request.getParameter("id");
+		vehicleId=(String)request.getParameter("vehicleId");
+		
+		DPALevelOfServiceVehicleForm form=new DPALevelOfServiceVehicleForm();
+		if(request.getAttribute("DPALevelOfServiceVehicleForm")!=null){
+			form=(DPALevelOfServiceVehicleForm)request.getAttribute("DPALevelOfServiceVehicleForm");
+		}else if(vehicleId!=null || id!=null){
+			form.load(sys, id!=null?Integer.valueOf(id):null, vehicleId!=null?Integer.valueOf(vehicleId):null);
+		}
+		
+		id=form.getId()!=null?form.getId().toString():"0";
+		vehicleId=form.getVehicleId()!=null?form.getVehicleId().toString():"0";
+		session.setAttribute("DPALevelOfServiceVehicleForm", form);
+		
+		
+%>	
+
+<%@page import="business.vehicle.VehicleReportFacadeBean"%>
+
+<html:html>
+
+<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+	<script type="text/javascript" src="./menu/js/jquery-1.10.2.min.js"></script>
+	<script type="text/javascript">
+	var itemDefault='<option value="0"><%=messages.getText("generic.messages.select")%></option>';	
+	
+	$(document).ready(
+		function(){
+
+			var val= $('#divOrg11')[0].value;
+			if(val!='0'){
+				loadDivOrg1();
+			}
+			val= '<%=form.getDivOrg2()%>'; 
+			if(val!='0'){
+				$('#divOrg12')[0].value=val;
+				loadDivOrg2();
+			}
+			val= '<%=form.getDivOrg3()%>';
+			if(val!='0'){
+				$('#divOrg13')[0].value=val;
+			}
+			
+			$('#divOrg11').change(loadDivOrg1);
+		
+			$('#divOrg12').change(loadDivOrg2);	
+
+
+			function loadDivOrg2(){
+				var val= $('#divOrg11')[0].value;
+				var val2= $('#divOrg12')[0].value;
+				$.ajax(
+					{
+						url:'DPALevelOfServiceVehicleAction.do?getItems=true&index=3&level1='+val+'&level2='+val2,
+						async:false,
+						success:function(data){
+							$('#divOrg13').empty();
+							$('#divOrg13').append(itemDefault);
+							for(var i=0; i<data.length; i++){
+								$('#divOrg13').append('<option value="'+data[i].id+'">'+data[i].name+'</option>');	
+							}
+						}
+					}
+				);
+			}
+			
+			function loadDivOrg1(){
+				var val= $('#divOrg11')[0].value;
+				$.ajax(
+					{
+						url:'DPALevelOfServiceVehicleAction.do?getItems=true&index=2&level1='+val,
+						async:false,
+						success:function(data){
+							$('#divOrg12').empty();
+							$('#divOrg12').append(itemDefault);
+							$('#divOrg13').empty();
+							$('#divOrg13').append(itemDefault);
+							for(var i=0; i<data.length; i++){
+								$('#divOrg12').append('<option value="'+data[i].id+'">'+data[i].name+'</option>');	
+							}
+						}
+					}
+				);
+					
+			}
+
+			<%if(form.getCrlv()==null || (form.getCrlv()!=null && !form.getCrlv().equals(LevelOfServiceVehicleDPAData.TYPE_GENERIC_3_VALUE))){%>
+				<%="$('#crlvDate').css('visibility','hidden');"%>
+			<%}%>
+			
+			$('#crlv').change(
+					function(){
+						if($(this).val()==3){ 
+							$('#crlvDate').css('visibility','visible');
+						}else{
+							$('#crlvDate').css('visibility','hidden');
+						}
+					});
+
+			<%if(form.getThirdPartyInsurance()==null || (form.getThirdPartyInsurance()!=null && !form.getThirdPartyInsurance().equals(LevelOfServiceVehicleDPAData.TYPE_GENERIC_3_VALUE))){%>
+				<%="$('#thirdPartyInsuranceDate').css('visibility','hidden');"%>
+			<%}%>
+				
+			$('#thirdPartyInsurance').change(
+					function(){
+						if($(this).val()==3){ 
+							$('#thirdPartyInsuranceDate').css('visibility','visible');
+						}else{
+							$('#thirdPartyInsuranceDate').css('visibility','hidden');
+						}
+					});
+		
+		}
+	);
+	</script>
+</head>
+
+<body>
+	 
+	<center>
+	<html:form action="/DPALevelOfServiceVehicleAction" styleId="DPALevelOfServiceVehicleAction" enctype="multipart/form-data" >
+		<html:hidden property="id"/>
+		<html:hidden property="vehicleId"/>
+		<table width="768" border="0" cellspacing="0" cellpadding="0">  
+			<tr class="guide1">
+			<%
+				String page14 = "../component/titlecomponent.jsp?title="+messages.getText("generic.dpa.levelofservice.title");
+			%>
+				<jsp:include  page='<%=page14 %>' />
+  			</tr>
+      		<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+  			</tr>
+		<tr> 
+			<td height="40" colspan="3" valign="middle">
+<%
+		String page13 = "../component/utilityboxtop.jsp?title="+messages.getText("generic.dpa.levelofservicevehicle.section1");
+				%>
+				<jsp:include  page='<%=page13 %>' />
+				<table width="100%" height="60" border="0" cellpadding="0" cellspacing="0">
+					<tr  >
+   						<td width="50%" align="left" class="texts">
+							<%=messages.getText("generic.dpa.levelofservicevheicle.type")%></label>
+						</td>
+						<td width="50%" align="right" class="linetwo">	
+							<html:select  styleId="tipo" property="tipo" >
+								<html:option value='<%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_VEHICLE_TYPE_1_VALUE) %>'><%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_VEHICLE_TYPE_1_LABEL)%></html:option>
+								<html:option value='<%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_VEHICLE_TYPE_2_VALUE) %>'><%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_VEHICLE_TYPE_2_LABEL)%></html:option>
+								<html:option value='<%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_VEHICLE_TYPE_3_VALUE) %>'><%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_VEHICLE_TYPE_3_LABEL)%></html:option>
+							</html:select>	
+						</td>
+					</tr>
+   					<tr><td colspan=2>&nbsp</td></tr>
+   	 				<tr> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= messages.getText("generic.activity.date")%><%=" ( "+messages.getText("generic.messages.dateformat")+" ) "%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							
+							<html:text style="width:30;"   property="dateDay" styleClass="input"  />&nbsp;/&nbsp;                
+							<html:text style="width:30;"  property="dateMonth" styleClass="input"  />&nbsp;/&nbsp; 
+							<html:text style="width:60;"  property="dateYear" styleClass="input"  />&nbsp;         
+						</td>
+   					</tr>
+   						<tr><td colspan=2>&nbsp</td></tr>
+   					<tr> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= messages.getText("generic.dpa.levelofservicevehicle.matriucula")%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							
+							<html:text style="width:300;"  disabled="true"   property="matricula" styleClass="input" />
+							                
+							
+						</td>
+   					</tr>
+   					<tr><td colspan=2>&nbsp</td></tr>
+   					<tr> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= messages.getText("generic.dpa.levelofservicedriver.inspector")%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							
+							<html:text style="width:300;"   property="inspector" styleClass="input" />
+							                
+							
+						</td>
+   					</tr>
+   					<tr><td colspan=2>&nbsp</td></tr>
+   					<tr> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= messages.getText("generic.dpa.levelofservicedriver.status")%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							
+							<html:radio style="width:30;"  disabled="true"  property="status" styleClass="input" value="A" ><%= messages.getText("generic.dpa.levelofservicedriver.status.active")%></html:radio>
+							<html:radio style="width:30;"  disabled="true"  property="status" styleClass="input" value="I" ><%= messages.getText("generic.dpa.levelofservicedriver.status.inactive")%></html:radio>                
+							
+						</td>
+   					</tr>
+   					<tr><td colspan=2>&nbsp</td></tr>
+   					<tr> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= messages.getText("generic.dpa.levelofservicedriver.plant")%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							<html:text style="width:300;"   property="plant" styleClass="input" />
+						</td>
+   					</tr>
+   					<tr style="display:none;"><td colspan=2>&nbsp</td></tr>
+   					<tr style="display:none;" >
+   						<td width="50%" align="left" class="texts">
+							<label for="divOrg11"><%=messages.getText(sys.getUserSessionData().getFilter().getLevelNames(messages)[0])%></label>
+						</td>
+						<td width="50%" align="right" class="linetwo">	
+							<html:select  styleId="divOrg11"  disabled="true" property="divOrg1" >
+									<html:option value="0"><%=messages.getText("generic.messages.select")%></html:option>
+							 	<%	
+							 		Iterator iter=sys.getUserSessionData().getFilter().getLevelItems(1, 0, null, null,communication.util.Filter.USER);
+							 		while(iter.hasNext()){
+							 			ItemData item=(ItemData) iter.next();	
+								%>
+									<html:option value="<%=item.getId().toString()%>"><%=item.getName()%></html:option>
+								<%
+							 		}
+							 %>	
+							</html:select>	
+						</td>
+					</tr>
+					<tr style="display:none;"><td colspan="2">&nbsp;</td></tr>	
+					<tr style="display:none;">
+						<td width="50%" align="left" class="texts">
+							<label for="divOrg12"><%=messages.getText(sys.getUserSessionData().getFilter().getLevelNames(messages)[1])%></label>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							<html:select  styleId="divOrg12"  disabled="true" property="divOrg2" ></html:select>
+						</td>
+					</tr>
+					<tr style="display:none;"><td colspan="2">&nbsp;</td></tr>	
+					<tr style="display:none;">
+					<td width="50%" align="left" class="texts">
+					<label for="divOrg13"><%=messages.getText(sys.getUserSessionData().getFilter().getLevelNames(messages)[2])%></label>
+					</td>
+					<td width="50%" align="right" class="linetwo">
+						<html:select  styleId="divOrg13"  disabled="true" property="divOrg3" ></html:select>
+					</td>
+					</tr>
+					<tr><td colspan=2>&nbsp</td></tr>
+   					<tr> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= messages.getText("generic.dpa.levelofservicevehicle.proptank")%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							<html:text style="width:300;"   property="propTank" styleClass="input" />
+						</td>
+   					</tr>
+   					<tr><td colspan=2>&nbsp</td></tr>
+   					<tr> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= messages.getText("generic.dpa.levelofservicevehicle.marca")%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							<html:select  styleId="marca"  disabled="true" property="marca" >
+						<%  Iterator iter = sys.getDataTypeReportFacade().findAll(DataTypeConstants.TYPETRADE,userSessionData).iterator();
+							while(iter.hasNext()) {
+								String value = ((TypeTradeDataType)iter.next()).getResourceBundleId();
+								if(value.equals("generic.messages.nodata")) {%>
+									<html:option value="<%=value%>"><%=messages.getText(value)%></html:option>
+								<%}else {%>
+									<html:option value="<%=value%>"><%=value%></html:option>
+								<%}
+							}%>
+							</html:select>
+						</td>
+   					</tr>
+					<tr><td colspan=2>&nbsp</td></tr>
+   					<tr> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= messages.getText("generic.dpa.levelofservicevehicle.model")%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							<html:text style="width:300;"  disabled="true"  property="model" styleClass="input" />
+						</td>
+   					</tr>
+   					<tr><td colspan=2>&nbsp</td></tr>
+   					<tr> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= messages.getText("generic.dpa.levelofservicevehicle.yearmodel")%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							<html:text style="width:300;"   disabled="true" property="yearModel" styleClass="input" />
+						</td>
+   					</tr>
+   					
+   					<tr><td colspan=2>&nbsp</td></tr>
+   	 				<tr> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= messages.getText("generic.dpa.levelofservicevehicle.startoperation")%><%=" ( "+messages.getText("generic.messages.dateformat")+" ) "%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							
+							<html:text style="width:30;"   property="startOperationDay" styleClass="input"  />&nbsp;/&nbsp;                
+							<html:text style="width:30;"  property="startOperationMonth" styleClass="input"  />&nbsp;/&nbsp; 
+							<html:text style="width:60;"  property="startOperationYear" styleClass="input"  />&nbsp;         
+						</td>
+   					</tr>
+   					<tr><td colspan=2>&nbsp</td></tr>
+   	 				<tr> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= messages.getText("generic.dpa.levelofservicevehicle.inspectvehicle")%><%=" ( "+messages.getText("generic.messages.dateformat")+" ) "%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							
+							<html:text style="width:30;"   property="inspectVehicleDay" styleClass="input"  />&nbsp;/&nbsp;                
+							<html:text style="width:30;"  property="inspectVehicleMonth" styleClass="input"  />&nbsp;/&nbsp; 
+							<html:text style="width:60;"  property="inspectVehicleYear" styleClass="input"  />&nbsp;         
+						</td>
+   					</tr>
+   					<tr><td colspan=2>&nbsp</td></tr>
+   	 				<tr> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= messages.getText("generic.dpa.levelofservicevehicle.vvaluationreportofthetachograph")%><%=" ( "+messages.getText("generic.messages.dateformat")+" ) "%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							
+							<html:text style="width:30;"   property="vvaluationReportOfTheTachographDay" styleClass="input"  />&nbsp;/&nbsp;                
+							<html:text style="width:30;"  property="vvaluationReportOfTheTachographMonth" styleClass="input"  />&nbsp;/&nbsp; 
+							<html:text style="width:60;"  property="vvaluationReportOfTheTachographYear" styleClass="input"  />&nbsp;         
+						</td>
+   					</tr>
+   					<tr><td colspan=2>&nbsp</td></tr>
+   					<tr> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= messages.getText("generic.dpa.levelofservicevehicle.chassi")%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							<html:text style="width:300;"  disabled="true" property="chassi" styleClass="input" />
+						</td>
+   					</tr>
+   					<tr><td colspan=2>&nbsp</td></tr>
+   					<tr> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= messages.getText("generic.dpa.levelofservicevehicle.renavan")%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							<html:text style="width:300;"  disabled="true"  property="renavan" styleClass="input" />
+						</td>
+   					</tr>
+   					<tr><td colspan=2>&nbsp</td></tr>
+   					<tr> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= "Eqp"%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							<html:text style="width:300;"   property="eqp" styleClass="input" />
+						</td>
+   					</tr>
+   					<tr><td colspan=2>&nbsp</td></tr>
+   					<tr> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= messages.getText("generic.dpa.levelofservicevehicle.reportofinsp")%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							<html:select  styleId="reportOFINSP" property="reportOFINSP" >
+								<html:option value='<%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_GENERIC_1_VALUE) %>'><%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_GENERIC_1_LABEL)%></html:option>
+								<html:option value='<%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_GENERIC_2_VALUE) %>'><%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_GENERIC_2_LABEL)%></html:option>
+								<html:option value='<%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_GENERIC_3_VALUE) %>'><%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_GENERIC_3_LABEL)%></html:option>
+							</html:select>
+						</td>
+   					</tr>
+   					<tr><td colspan=2>&nbsp</td></tr>
+   					<tr> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= messages.getText("generic.dpa.levelofservicevehicle.crlv")%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							<html:select  styleId="crlv" property="crlv" >
+								<html:option value='<%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_GENERIC_1_VALUE) %>'><%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_GENERIC_1_LABEL)%></html:option>
+								<html:option value='<%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_GENERIC_2_VALUE) %>'><%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_GENERIC_2_LABEL)%></html:option>
+								<html:option value='<%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_GENERIC_3_VALUE) %>'><%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_GENERIC_3_LABEL)%></html:option>
+							</html:select>	
+						</td>
+   					</tr>
+   					<tr><td colspan=2>&nbsp</td></tr>
+   					<tr id="crlvDate"> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= messages.getText("generic.dpa.levelofservicevehicle.crlv")+" Data( dd/mm/aaaa )"%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							<html:text style="width:30;"   property="crlvDay" styleClass="input"  />&nbsp;/&nbsp;                
+							<html:text style="width:30;"  property="crlvMonth" styleClass="input"  />&nbsp;/&nbsp; 
+							<html:text style="width:60;"  property="crlvYear" styleClass="input"  />&nbsp;         
+						</td>
+   					</tr>
+   					<tr><td colspan=2>&nbsp</td></tr>
+   					<tr> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= messages.getText("generic.dpa.levelofservicevehicle.thirdpartyinsurance")%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							<html:select  styleId="thirdPartyInsurance" property="thirdPartyInsurance" >
+								<html:option value='<%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_GENERIC_1_VALUE) %>'><%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_GENERIC_1_LABEL)%></html:option>
+								<html:option value='<%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_GENERIC_2_VALUE) %>'><%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_GENERIC_2_LABEL)%></html:option>
+								<html:option value='<%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_GENERIC_3_VALUE) %>'><%=messages.getText(LevelOfServiceVehicleDPAData.TYPE_GENERIC_3_LABEL)%></html:option>
+							</html:select>	
+						</td>
+   					</tr>
+   					<tr><td colspan=2>&nbsp</td></tr>
+   					<tr id="thirdPartyInsuranceDate"> 
+       					<td width="50%" align="left" class="texts">        
+   							<%= messages.getText("generic.dpa.levelofservicevehicle.thirdpartyinsurance")+ " Data( dd/mm/aaaa )"%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+							<html:text style="width:30;"   property="thirdPartyInsuranceDay" styleClass="input"  />&nbsp;/&nbsp;                
+							<html:text style="width:30;"  property="thirdPartyInsuranceMonth" styleClass="input"  />&nbsp;/&nbsp; 
+							<html:text style="width:60;"  property="thirdPartyInsuranceYear" styleClass="input"  />&nbsp;         
+						</td>
+   					</tr>
+   					
+   					<tr><td colspan=2>&nbsp</td></tr>
+   					
+   				</table>
+				<jsp:include  page="../component/utilityboxbottom.jsp" />
+			</td>
+		</tr>  
+      	<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+  		
+       	<tr>   		
+	   		<td align="right">
+	   		
+	   			<input name="button2" type="button" onclick="document.location.href='layout.jsp?refer=/vehicle/VehicleView.jsp?id=<%=vehicleId%>'" value='<%=messages.getText("generic.messages.back")%>' class="input"/>
+	   			<input name="button2" type="button" onclick="DPALevelOfServiceVehicleAction.submit();" value='<%=messages.getText("generic.messages.save")%>' class="input"/>
+	   	   	</td>             
+   	  	</tr>              
+	</table>
+
+	</html:form>
+	</center>
+	</body>
+	
+</html:html>
+<%
+	}
+%>

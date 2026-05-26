@@ -1,0 +1,618 @@
+<%@page import="communication.administration.dpa.UnconformityDPAData"%>
+<%@page import="communication.administration.dpa.UnconformityTypeDPADataType"%>
+<%@page language="java"
+	errorPage="../exception.jsp"
+	import="java.util.*"
+	import="java.util.LinkedList"
+	import="business.*"
+	import="business.driver.*" 
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.util.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.administration.user.tables.*"
+	import="communication.driver.tables.*"
+	import="communication.event.tables.*"
+	import="communication.activity.tables.*"
+	import="communication.vehicle.tables.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.driver.*"
+ 	import="communication.util.DateValue"
+ 	import="org.apache.struts.action.DynaActionForm"
+ %>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<html:html>
+<%! RequestDispatcher dispatcher; String context;String pathView; 
+	String pathMsg; String pathSearch;String fileName;  
+	Text messages; String pathLanguage;
+	SystemAccess sys; 
+	TelematicControlData data;
+	DriverMainAttributes driver;
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	
+	int type = TelematicControlData.TYPE_EXCESSIVE_SPEED;
+	String check = Util.checkPermission(sys,SecurityConstants.MODIFY_DRIVER);	
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		messages=sys.getText();
+
+		pathLanguage="/util/jsp/language.jsp";
+	
+
+		dispatcher=request.getRequestDispatcher(pathLanguage);
+		dispatcher.include(request,response);
+	
+		context=request.getContextPath();
+		pathMsg="/util/jsp/message.jsp";
+	
+		dispatcher=request.getRequestDispatcher(pathMsg);
+		dispatcher.include(request,response);
+
+		String id = (String)request.getParameter("id");
+		
+		
+		String vehicle = null;
+		VehicleMainAttributes dataVehicle = null;
+		Calendar c = Calendar.getInstance();
+		int month = c.get(Calendar.MONTH) + 1;
+		int year = c.get(Calendar.YEAR);
+		String point="1";
+		String status="Ativo";
+		if(id != null){	
+	data = sys.getDriverReportFacade().findTelematicControl(new Integer(id), sys.getUserSessionData());
+	month = Integer.parseInt(Util.getMonth(data.getDate()));
+	year = Integer.parseInt(Util.getYear(data.getDate()));
+	driver = data.getDriver();
+	dataVehicle = data.getVehicle();
+	vehicle = dataVehicle!=null?String.valueOf(dataVehicle.getId()):null;
+	type = data.getType().intValue();
+	point= data.getPoint();
+	status=data.getStatus();
+	fileName=data.getFileName();
+		}else {
+	data = null;
+	session.removeAttribute("TelematicControlForm");
+	String driverId = (String)request.getParameter("driver");
+	if(driverId != null){
+		driver = sys.getDriverReportFacade().findDriverMainData(new Integer(driverId),sys.getUserSessionData());
+		//driver = sys.getDriverReportFacade().findDriverByPrimaryKey(new Integer(driverId),sys.getUserSessionData());
+	}
+	
+	 DynaActionForm telematicControlData = (DynaActionForm)session.getAttribute("TelematicControlForm");
+	 if (telematicControlData != null){
+		 // Recargo el formulario
+		 telematicControlData=new DynaActionForm();
+		 session.setAttribute("TelematicControlForm", telematicControlData);
+	 }
+	 
+	 
+	 
+	vehicle = (String)request.getParameter("vehicle");
+	if(vehicle != null){
+		 dataVehicle = sys.getVehicleReportFacade().findVehicleById(new Integer (vehicle), sys.getUserSessionData());
+	}
+		}
+		//TelematicControlQueryForm form = (TelematicControlQueryForm);
+		
+		/*
+		*Campos que manejan las fechas MONTH y YEAR
+		*/
+		
+		/**
+		*Agrego el vehicle al controlTelematic
+		*/
+		status=status==null?"Ativo":status;		
+		pathView="./view.jsp?id="+id;
+		session.setAttribute("url","driver/DriverView.jsp?id="+id);
+%>
+
+	<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	<script language="javascript" src='./menu/js/driverFunctions.js' type='text/javascript' >
+	</script>
+	<script>
+		function onSelect1(calendar, date) {
+			var date2 = calendar.date;
+			var time = date2.getTime();
+	  		var input_day = document.getElementById("dayId1");
+	  		var input_month = document.getElementById("monthId1");
+	  		var input_year = document.getElementById("yearId1");
+	  		var date3 = new Date(time);
+	  		input_day.value = date3.print("%d");
+	  		input_month.value = date3.print("%m");
+	  		input_year.value= parseInt(date3.print("%Y"),10);
+	  	}
+		function onSelect2(calendar, date) {
+			var date2 = calendar.date;
+			var time = date2.getTime();
+	  		var input_day = document.getElementById("dayId2");
+	  		var input_month = document.getElementById("monthId2");
+	  		var input_year = document.getElementById("yearId2");
+	  		var date3 = new Date(time);
+	  		input_day.value = date3.print("%d");
+	  		input_month.value = date3.print("%m");
+	  		input_year.value= parseInt(date3.print("%Y"),10);
+	  	}
+		function onSelect3(calendar, date) {
+			var date2 = calendar.date;
+			var time = date2.getTime();
+	  		var input_day = document.getElementById("dayId3");
+	  		var input_month = document.getElementById("monthId3");
+	  		var input_year = document.getElementById("yearId3");
+	  		var date3 = new Date(time);
+	  		input_day.value = date3.print("%d");
+	  		input_month.value = date3.print("%m");
+	  		input_year.value= parseInt(date3.print("%Y"),10);
+	  	}
+
+		function deleteControl() {
+		  	var form = document.forms['DeleteTelematicControlForm'];
+		  	if(confirm('<%=messages.getText("driver.telematiccontrol.confirmdelete")%>')) {
+				form.submit();
+			}
+		}
+
+	</script>
+	
+	<head/>
+
+	<body onload="changeSelect()" bgcolor="#FFFFFF">
+
+<%
+	if(driver!=null){
+	if(id != null){
+%>
+		<html:form action="DeleteTelematicControl">
+			<html:hidden property="id" value="<%=id%>"/>	
+			<html:hidden property="driver" value="<%=String.valueOf(driver.getId())%>"/>
+		</html:form>
+		<form name="send" action="layout.jsp" >
+			<input type="hidden" name="refer" value="driver/SendTelematicControl.jsp" />
+			<input type="hidden" name="control" value="<%=id%>"/>	
+		</form>
+<%
+	}
+%>	
+		<html:form action="/TelematicControlPDA" method="post"  enctype="multipart/form-data">
+<%
+	if(id != null){
+%>			<html:hidden property="id" value="<%=id%>"/>	
+<%
+		}
+	%>			<html:hidden property="driver" value="<%=String.valueOf(driver.getId())%>"/>
+<%
+	if(vehicle != null){
+%>			<html:hidden property="vehicle" value="<%=vehicle%>"/>
+<%
+	}
+%>	
+			<table width="650" align='center' cellpadding="0" cellspacing="0" border="0">  
+				<tr class="guide1">
+					<jsp:include  page='<%="../component/titlecomponent.jsp?colspan=5&title="+messages.getText("generic.driver.telematiccontrol")%>' />
+				</tr>
+				<tr>
+					<jsp:include  page="../component/spaceline.jsp" />
+  				</tr>
+  				<tr>
+					<td valign="top" align="center">
+  						<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("driver.telematiccontrol.data")%>' />
+						<table width="100%" align='center' cellpadding="0" cellspacing="0" border="0">  
+							<tr>
+							    <td>
+									<table width="100%">
+										<tr class="linetwo">
+											<th width="224" align="left"><%=messages.getText("driver.telematic.driver")%></th>
+											<td align="right">
+												<%=driver.getFirstName() + " " + driver.getLastName()%>
+											</td>
+										</tr>
+										<!-- Vehicle -->
+										<tr class="linetwo">
+											<th width="224" align="left"><%=messages.getText("driver.telematiccontrol.associatedVehicle")%></th>
+											<td align="right">
+												<%=(dataVehicle != null) ? dataVehicle.getMatricula() : "---"%>
+											</td>
+										</tr>
+										<!-- Opcion Colores -->
+										<tr class="linetwo">
+											<th width="224" align="left"><%=messages.getText("driver.telematic.type")%></th>
+											<td align="right">
+												<select id="type" name="type" onchange="javascript:doChange();">
+													<option value="<%=String.valueOf(TelematicControlData.TYPE_EXCESSIVE_SPEED)%>" <%=(type == TelematicControlData.TYPE_EXCESSIVE_SPEED) ? "selected='selected'" : ""%>><%=messages.getText("driver.telematiccontrol.excessivespeed")%></option>
+													<option value="<%=String.valueOf(TelematicControlData.TYPE_FREE_TIME)%>" <%=(type == TelematicControlData.TYPE_FREE_TIME) ? "selected='selected'" : ""%>><%=messages.getText("driver.telematiccontrol.freetime")%></option>
+													<option value="<%=String.valueOf(TelematicControlData.TYPE_WORK_HOURS)%>" <%=(type == TelematicControlData.TYPE_WORK_HOURS) ? "selected='selected'" : ""%>><%=messages.getText("driver.telematiccontrol.workhours")%></option>
+													<option value="<%=String.valueOf(TelematicControlData.TYPE_INSERTICIAL_REPORT)%>" <%=(type == TelematicControlData.TYPE_INSERTICIAL_REPORT) ? "selected='selected'" : ""%>><%=messages.getText("driver.telematiccontrol.interstitialreport")%></option>
+													<option value="<%=String.valueOf(TelematicControlData.TYPE_24HOOUR_WITHOUT_REPORT)%>" <%=(type == TelematicControlData.TYPE_24HOOUR_WITHOUT_REPORT) ? "selected='selected'" : ""%>><%=messages.getText("driver.telematiccontrol.24hourworeport")%></option>
+													<option value="<%=String.valueOf(TelematicControlData.TYPE_WEEK_WORK)%>" <%=(type == TelematicControlData.TYPE_WEEK_WORK) ? "selected='selected'" : ""%>><%=messages.getText("driver.telematiccontrol.weekwork")%></option>
+													<option value="<%=String.valueOf(TelematicControlData.TYPE_HARD_START)%>" <%=(type == TelematicControlData.TYPE_HARD_START) ? "selected='selected'" : ""%>><%=messages.getText("driver.telematiccontrol.hardstart")%></option>
+													<option value="<%=String.valueOf(TelematicControlData.TYPE_HARD_STOP)%>" <%=(type == TelematicControlData.TYPE_HARD_STOP) ? "selected='selected'" : ""%>><%=messages.getText("driver.telematiccontrol.hardstop")%></option>
+												</select>
+												
+							    	    	</td>
+										</tr>
+										<tr class="linetwo">
+											<th width="224" align="left"><%=messages.getText("driver.telematic.image")%></th>
+											<td align="right">
+											<%
+												if(id!=null && fileName!=null){
+											%>
+											<image src='ImageService?file=<%=fileName%>' style="cursor:pointer;" onclick="window.open('ImageService?file=<%=fileName%>');" width="250px" />
+											<%
+												}
+											%>
+												<html:file property="file"></html:file>
+							    	    	</td>
+										</tr>
+       									<!-- FECHA -->
+									<!-- Evento de velocidade máx. atingida (Km/h)* -->
+										<tr class="linetwo">
+											<th width="224" align="left">
+												<div id="field1">
+													<%=messages.getText("driver.telematic.speed")%>
+												</div>
+												<div id="field30">
+													<%=messages.getText("driver.telematic.speed2")%>
+												</div>
+											</th>
+											<td align="right">
+												<div id="field2">
+													<html:text property='speed' styleClass='input'	value='<%=(data != null && data.getSpeed() != null) ? data.getSpeed().toString() : ""%>' style="width: 50px;">
+													</html:text>
+												</div>
+											</td>
+										</tr>
+										<tr class="space">
+											<th align="right"></th>
+											<td align="right">
+												<div id="field3">&nbsp;</div>
+											</td>
+										</tr>								
+										<tr class="linetwo">
+											<th width="224" align="left">
+												<div id="field4">
+													<%=messages.getText("driver.telematic.limit")%>
+												</div>
+											</th>
+											<td align="right">
+												<div id="field5">
+													80 km/h
+												</div>
+												<div id="field31">
+													10 km/h
+												</div>
+												<div id="field32">
+													11 km/h
+												</div>
+											</td>
+										</tr>
+										<tr class="space">
+											<th align="right"></th>
+											<td align="right">&nbsp;</td>
+										</tr>								
+										<tr class="linetwo">
+											<th width="224" align="left"><%=messages.getText("driver.telematic.date")%></th>
+											<td align="right" valign="middle">
+												<html:text property="date" style="width:20;" styleClass="input" styleId="dayId1" maxlength="2" value='<%=(data == null) ? "" : Util.getDay(data.getDate())%>' />&nbsp;/&nbsp;
+												<html:text property="month" style="width:20;" styleClass="input" styleId="monthId1" maxlength="2" value='<%=(data == null) ? "" : Util.getMonth(data.getDate())%>' />&nbsp;/&nbsp;
+												<html:text property="year" style="width:40;" styleClass="input" styleId="yearId1" maxlength="4" value='<%=(data == null) ? "" : Util.getYear(data.getDate())%>' />
+												<html:img page="/component/jscalendar-1.0/img.gif" styleId="calendar_button1" style="cursor: pointer; border: 1px solid red;" onmouseover="this.style.background='red';" style="width:20;" align="middle" onmouseout="this.style.background=''" />
+											</td>
+											<script type="text/javascript">
+												Calendar.setup({
+													inputArea : "yearId1",
+													ifFormat : "%d/%m/%Y",
+													showsTime : true,
+													timeFormat : "24",
+													button : "calendar_button1",
+													step : 1,
+													onSelect : onSelect1,
+													singleClick : true
+												});
+											</script>
+										</tr>
+										<tr class="space">
+											<th align="right"></th>
+											<td align="right">&nbsp;</td>
+										</tr>								
+										<tr class="linetwo">
+											<th width="224" align="left"><%=messages.getText("driver.telematic.point")%></th>
+											<td align="right" valign="middle">
+												<select id="point" name="point">
+													<option value="<%=String.valueOf(TelematicControlData.DPA_POINT_Leve_VALUE)%>" <%=(TelematicControlData.DPA_POINT_Leve_VALUE.equals(point)) ? "selected='selected'" : ""%>><%=TelematicControlData.DPA_POINT_Leve_LABEL%></option>
+													<option value="<%=String.valueOf(TelematicControlData.DPA_POINT_Media_VALUE)%>" <%=(TelematicControlData.DPA_POINT_Media_VALUE.equals(point)) ? "selected='selected'" : ""%>><%=TelematicControlData.DPA_POINT_Media_LABEL%></option>
+													<option value="<%=String.valueOf(TelematicControlData.DPA_POINT_Grave_VALUE)%>" <%=(TelematicControlData.DPA_POINT_Grave_VALUE.equals(point)) ? "selected='selected'" : ""%>><%=TelematicControlData.DPA_POINT_Grave_LABEL%></option>
+													<option value="<%=String.valueOf(TelematicControlData.DPA_POINT_Gravissima_VALUE)%>" <%=(TelematicControlData.DPA_POINT_Gravissima_VALUE.equals(point)) ? "selected='selected'" : ""%>><%=TelematicControlData.DPA_POINT_Gravissima_LABEL%></option>
+												</select>
+											</td>
+											
+										</tr>
+										<tr class="space">
+											<th align="right"></th>
+											<td align="right">&nbsp;</td>
+										</tr>								
+										<tr class="linetwo">
+											<th width="224" align="left"><%=messages.getText("driver.telematic.status")%></th>
+											<td align="right" valign="middle">
+												<select id="status" name="status">
+													<option value="Ativo" <%=(status.equals("Ativo")) ? "selected='selected'" : ""%>>Ativo</option>
+													<option value="Inativo" <%=(status.equals("Inativo")) ? "selected='selected'" : ""%>>Inativo</option>
+												</select>
+												
+											</td>
+											
+										</tr>
+										<tr class="space">
+											<th align="right"></th>
+											<td align="right">&nbsp;</td>
+										</tr>
+										<tr class="linetwo">
+											<th width="224" align="left">
+												<div >
+													<%=messages.getText("driver.telematic.statuscomment")%>
+												</div>
+											</th>
+											<td align="right">
+												<div >
+													<html:text property='statusComment' styleClass='input'	value='<%=(data != null && data.getStatusComment() != null) ? data.getStatusComment(): ""%>' style="width: 250px;">
+													</html:text>
+												</div>
+											</td>
+										</tr>
+										<tr class="space">
+											<th align="right"></th>
+											<td align="right">&nbsp;</td>
+										</tr>								
+										
+										<tr class="linetwo">
+											<th width="224" align="left">
+												<div id="field12"><%=messages.getText("driver.telematic.time")%>&nbsp;(hh:mm:ss)</div>
+												<div id="field13"><%=messages.getText("driver.telematiccontrol.out")%></div>
+												<div id="field17"><%=messages.getText("driver.telematiccontrol.drivetime")%></div>
+												<div id="field19"><%=messages.getText("driver.telematiccontrol.endhourworkday")%></div>
+												<div id="field24"><%=messages.getText("driver.telematiccontrol.lastreport")%></div>
+												<div id="field25"><%=messages.getText("driver.telematiccontrol.firstday")%></div>
+											</th>
+											<td align="right">
+												<div id="field22">
+													<html:text property="timeHour" style="width:20;" styleClass="input" maxlength="2" value='<%=(data == null) ? "" : Util.getHour(data.getTime())%>' />&nbsp;:&nbsp;
+													<html:text property="timeMin" style="width:20;" styleClass="input" maxlength="2" value='<%=(data == null) ? "" : Util.getMinute(data.getTime())%>' />&nbsp;:&nbsp;
+													<html:text property="timeSec" style="width:20;" styleClass="input" maxlength="2" value='<%=(data == null) ? "" : Util.getSecond(data.getTime())%>' />
+												</div>
+												<div id="field23">
+													<html:text property="date2" style="width:20;" styleClass="input" styleId="dayId2" maxlength="2" value='<%=(data == null) ? "" : Util.getDay(data.getDate2())%>' />&nbsp;/&nbsp;
+													<html:text property="month2" style="width:20;" styleClass="input" styleId="monthId2" maxlength="2" value='<%=(data == null) ? "" : Util.getMonth(data.getDate2())%>' />&nbsp;/&nbsp;
+													<html:text property="year2" style="width:40;" styleClass="input" styleId="yearId2" maxlength="4" value='<%=(data == null) ? "" : Util.getYear(data.getDate2())%>' />
+													<html:img page="/component/jscalendar-1.0/img.gif" styleId="calendar_button2" style="cursor: pointer; border: 1px solid red;" onmouseover="this.style.background='red';" style="width:20;" align="middle" onmouseout="this.style.background=''" />
+												</div>
+												<script type="text/javascript">
+													Calendar.setup({
+														inputArea : "yearId2",
+														ifFormat : "%d/%m/%Y",
+														showsTime : true,
+														timeFormat : "24",
+														button : "calendar_button2",
+														step : 1,
+														onSelect : onSelect2,
+														singleClick : true
+													});
+												</script>
+											</td>
+										</tr>
+										<tr class="space">
+											<th align="right"></th>
+											<td align="right">&nbsp;</td>
+										</tr>
+						<!-- Duracion del evento -->
+										<tr class="linetwo">
+											<th width="224" align="left">
+												<div id="field14"><%=messages.getText("driver.telematic.duration")%></div>
+												<div id="field15"><%=messages.getText("driver.telematiccontrol.in")%></div>
+												<div id="field18"><%=messages.getText("driver.telematiccontrol.tolerancetime")%></div>
+												<div id="field20"><%=messages.getText("driver.telematiccontrol.starthourworkday")%></div>
+												<div id="field29"><%=messages.getText("driver.telematiccontrol.lastday")%></div>
+											</th>
+											<td align="right">
+												<div id="field26">
+													<html:text property="durationHour" style="width:20;" styleClass="input" maxlength="2" value='<%=(data == null) ? "" : Util.getHour(data.getDuration())%>' />&nbsp;:&nbsp;
+													<html:text property="durationMin" style="width:20;" styleClass="input" maxlength="2" value='<%=(data == null) ? "" : Util.getMinute(data.getDuration())%>' />&nbsp;:&nbsp;
+													<html:text property="durationSec" style="width:20;" styleClass="input" maxlength="2" value='<%=(data == null) ? "" : Util.getSecond(data.getDuration())%>' />
+												</div>
+												<div id="field27">
+													<html:text property="date3" style="width:20;" styleClass="input" styleId="dayId3" maxlength="2" value='<%=(data == null) ? "" : Util.getDay(data.getDate3())%>' />&nbsp;/&nbsp;
+													<html:text property="month3" style="width:20;" styleClass="input" styleId="monthId3" maxlength="2" value='<%=(data == null) ? "" : Util.getMonth(data.getDate3())%>' />&nbsp;/&nbsp;
+													<html:text property="year3" style="width:40;" styleClass="input" styleId="yearId3" maxlength="4" value='<%=(data == null) ? "" : Util.getYear(data.getDate3())%>' />
+													<html:img page="/component/jscalendar-1.0/img.gif" styleId="calendar_button3" style="cursor: pointer; border: 1px solid red;" onmouseover="this.style.background='red';" style="width:20;" align="middle" onmouseout="this.style.background=''" />
+												</div>
+												<script type="text/javascript">
+													Calendar.setup({
+														inputArea : "yearId3",
+														ifFormat : "%d/%m/%Y",
+														showsTime : true,
+														timeFormat : "24",
+														button : "calendar_button3",
+														step : 1,
+														onSelect : onSelect3,
+														singleClick : true
+													});
+												</script>
+											</td>
+										</tr>
+										<tr class="space">
+											<th align="right"></th>
+											<td align="right">&nbsp;</td>
+										</tr>
+							<!-- Numero de ocurrencias -->
+										<tr class="linetwo">
+											<th width="224" align="left">
+												<div id="field6"><%=messages.getText("driver.telematiccontrol.freetimevalue")%></div>
+												<div id="field16"><%=messages.getText("driver.telematiccontrol.exceedtime")%></div>
+												<div id="field21"><%=messages.getText("driver.telematiccontrol.interstitialtime")%></div>
+											</th>
+											<td align="right">
+												<div id="field7">
+													<html:text property="totalDurationHour" style="width:20;" styleClass="input" maxlength="2" value='<%=(data == null) ? "" : Util.getHour(data.getTotalDuration())%>' />&nbsp;:&nbsp;
+													<html:text property="totalDurationMin" style="width:20;" styleClass="input" maxlength="2" value='<%=(data == null) ? "" : Util.getMinute(data.getTotalDuration())%>' />&nbsp;:&nbsp;
+													<html:text property="totalDurationSec" style="width:20;" styleClass="input" maxlength="2" value='<%=(data == null) ? "" : Util.getSecond(data.getTotalDuration())%>' />
+												</div>
+											</td>
+										</tr>
+										<tr class="space">
+											<th align="right"></th>
+											<td align="right">&nbsp;</td>
+										</tr>
+										<tr class="linetwo">
+											<th width="224" align="left">
+												<div id="field8"><%=messages.getText("driver.telematic.stops")%></div>
+												<div id="field28"><%=messages.getText("driver.telematiccontrol.exceeddays")%></div>
+											</th>
+											<td align="right">
+												<div id="field9">
+													<html:text property='limitExceededRain' styleId="limitRain" styleClass='input' value='<%=(data != null && data.getLimitExceededRain() != null) ? data.getLimitExceededRain().toString() : ""%>'>
+													</html:text>
+												</div>
+											</td>
+										</tr>
+										<tr class="linetwo">
+											<th width="224" align="left">
+												<div id="field33"><%=messages.getText("driver.telematiccontrol.rain2")%></div>
+											</th>
+											<td align="right">
+												<div id="field34">
+													<input type="checkbox" name='limitExceededRain'class='input'  value='on' <%=(data != null && data.getLimitExceededRain() != null && data.getLimitExceededRain()==1) ? "checked" : ""%>/>
+												</div>
+											</td>
+										</tr>
+										<tr class="space">
+											<th align="right"></th>
+											<td align="right">&nbsp;</td>
+										</tr>
+										<tr class="linetwo">
+											<th width="224" align="left">
+												<%=messages.getText("driver.telematic.garage")%>
+											</th>
+											<td align="right">
+												<html:text property='garage' styleClass='input' value='<%=(data != null && data.getGarage() != null) ? data.getGarage() : ""%>'>
+												</html:text>
+											</td>
+										</tr>
+										<tr class="space">
+											<th align="right"></th>
+											<td align="right">&nbsp;</td>
+										</tr>
+										<tr class="linetwo">
+											<th width="224" align="left">
+												<div id="field10" style="display: block;"><%=messages.getText("driver.telematic.occurrences")%></div>
+											</th>
+											<td align="right">
+												<div id="field11" >
+													<html:text property='occurrences' styleClass='input' value='<%=(data != null && data.getOccurrences() != null) ? data.getOccurrences().toString() : ""%>'>
+													</html:text>
+												</div>
+											</td>
+										</tr>
+										<tr>
+											<td colspan="3" align="right" class="linetwo">
+												<input type="button" value='<%=messages.getText("generic.messages.save")%>' onclick="tsubmit();"	class="input" />
+												 
+<% 			if (id != null) {
+%> 												<input type="button" value='<%=messages.getText("generic.messages.sendreport")%>' class="input" onclick="javascript:document.forms['send'].submit();" /> 
+ 												<input type="button" value='<%=messages.getText("generic.messages.delete")%>' class="input" onclick="javascript:deleteControl();" /> 
+<%	 		}
+%>											 	<html:cancel value='<%=messages.getText("generic.messages.cancel")%>' styleClass="input" />
+											</td>
+										</tr>
+									</table>
+								</td>
+							</tr>
+						</table> 
+						<jsp:include  page="../component/utilityboxbottom.jsp" />		
+					</td>
+				</tr>
+			</table>			
+		</html:form>
+	<script type="text/javascript">
+
+	function tsubmit(){
+
+		if(document.forms['TelematicControlForm'].type.selectedIndex==0){
+			$('#limitRain').remove();
+		}
+
+		document.forms['TelematicControlForm'].submit();
+			
+	}
+		
+<%		switch (type) {
+			case TelematicControlData.TYPE_EXCESSIVE_SPEED: 
+%>				var array = [1,1,1,1,1,0,0,0,0,1,1,1,0,1,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,1,1];		
+<%				break;
+			case TelematicControlData.TYPE_WORK_HOURS:
+%>				var array = [0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,1,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0];
+<%				break;
+			case TelematicControlData.TYPE_FREE_TIME:
+%>				var array = [0,0,0,0,0,0,1,0,0,0,0,0,1,0,1,1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0];
+<%				break;
+			case TelematicControlData.TYPE_INSERTICIAL_REPORT: 
+%>				var array = [0,0,0,0,0,0,1,0,0,1,1,0,0,0,0,0,0,0,1,1,1,1,0,0,0,1,0,0,0,0,0,0,0,0];	
+<%				break;
+			case TelematicControlData.TYPE_24HOOUR_WITHOUT_REPORT: 
+%>				var array = [0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0];	
+<%				break;
+			case TelematicControlData.TYPE_WEEK_WORK: 
+%>				var array = [0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,1,1,1,0,0,0,0,0];	
+<%				break;
+			case TelematicControlData.TYPE_HARD_START: 
+%>				var array = [0,1,1,1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,1,0,0,0];	
+<%				break;
+			case TelematicControlData.TYPE_HARD_STOP: 
+%>				var array = [0,1,1,1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,1,0,0];	
+<%				break;
+		}
+%>		showArray(array);
+		function showArray(array) {
+			for(i = 0; i < array.length ; i++) { // listando los elementos del array
+					var field = '#field'+(i+1);
+					if(array[i] == 1) {
+						$(field).show();
+					}else {
+						$(field).hide();
+					}
+			}
+		}
+		function doChange() {
+			var index = document.forms['TelematicControlForm'].type.selectedIndex;
+			if (index == 0) {
+				var array = [1,1,1,1,1,0,0,0,0,1,1,1,0,1,0,0,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,1,1];	
+			} else if (index == 1) {
+				var array = [0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0,1,1,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0];
+			} else if (index == 2) {
+				var array = [0,0,0,0,0,0,1,0,0,0,0,0,1,0,1,1,0,0,0,0,0,1,0,0,0,1,0,0,0,0,0,0,0,0];
+			} else if (index == 3) {
+				var array = [0,0,0,0,0,0,1,0,0,1,1,0,0,0,0,0,0,0,1,1,1,1,0,0,0,1,0,0,0,0,0,0,0,0];	
+			} else if (index == 4){
+				var array = [0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0,0,1,1,0,0,0,0,0,0,0,0,0,0];
+			} else if (index == 6){
+				var array = [0,1,1,1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,1,0,0,0];	
+			} else if (index == 7){
+				var array = [0,1,1,1,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,1,0,1,0,0];	
+			} else {
+				var array = [0,0,0,0,0,0,0,0,1,1,1,0,0,0,0,0,0,0,0,0,0,0,1,0,1,0,1,1,1,0,0,0,0,0];
+			}
+			showArray(array);
+		}
+	</script>		
+<%
+		} else {
+%>		<jsp:include  page='<%="/util/allowedData.jsp?message=driver.error.access.driver"%>'/>
+<%
+		}
+	}
+%>
+	</body>
+</html:html>

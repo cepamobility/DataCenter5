@@ -1,0 +1,1763 @@
+package persistence.report;
+
+import java.math.BigInteger;
+import java.sql.Time;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
+import javax.ejb.SessionBean;
+
+import org.hibernate.Query;
+import org.hibernate.classic.Session;
+import org.jboss.logging.Logger;
+
+import business.util.MemoryLog;
+import persistence.administration.corporation.CorporationABM;
+import persistence.administration.corporation.CorporationABMUtil;
+import persistence.administration.corporation.CorporationReport;
+import persistence.administration.corporation.CorporationReportUtil;
+import persistence.administration.corporation.tables.DivOrgItemLevel1;
+import persistence.administration.corporation.tables.PointMove;
+import persistence.alert.tables.ContractorData;
+import persistence.driver.tables.Driver;
+import persistence.hibernate.HibernateUtil;
+import persistence.log.LoggerFormatting;
+import persistence.report.tables.JJChSum;
+import persistence.report.tables.JJCrashByType;
+import persistence.report.tables.JJCrashNonRecordable;
+import persistence.report.tables.JJCrashSubtypes;
+import persistence.report.tables.JJGoals;
+import persistence.report.tables.JJIncidentByType;
+import persistence.report.tables.JJOGSum;
+import persistence.report.tables.JJOGSumTotal;
+import persistence.util.ExceptionHandler;
+import persistence.util.Util;
+import persistence.util.UtilityQuery;
+import persistence.vehicle.tables.Vehicle;
+import persistence.vehicle.tables.VehicleState;
+import communication.administration.corporation.CalculateRetroactiveImpactData;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.PointMoveData;
+import communication.administration.corporation.tables.PointsDefinitionData;
+import communication.administration.corporation.util.FringeData;
+import communication.administration.user.UserSessionData;
+import communication.driver.tables.DriverStatusData;
+import communication.exception.DCException;
+import communication.exception.DeslogedException;
+import communication.exception.InvalidDataException;
+import communication.fleet.ContractorPointData;
+import communication.fleet.FleetStatusData;
+import communication.fleet.ResumePointData;
+import communication.fleet.VehiclePointData;
+import communication.language.Text;
+import communication.report.JJChSumData;
+import communication.report.JJCrashByChampionData;
+import communication.report.JJCrashByTypeData;
+import communication.report.JJCrashNonRecordableData;
+import communication.report.JJCrashSubtypesData;
+import communication.report.JJGoalsData;
+import communication.report.JJIncidentByTypeData;
+import communication.report.JJOGSumData;
+import communication.report.JJOGSumTotalData;
+import communication.report.JJResumeLAData;
+import communication.report.UnconformityAction;
+import communication.util.ListResult;
+import communication.vehicle.report.ChecklistReportHead;
+import communication.vehicle.report.ChecklistReportItem;
+import communication.vehicle.tables.VehicleData;
+import communication.vehicle.tables.VehicleStateData;
+import communication.vehicle.tables.VehicleStatusData;
+/**
+ * @ejb.bean name="BIReport"
+ *           display-name="Name for BIReport"
+ *           description="Description for BIReport"
+ *           jndi-name="ejb/BIReport"
+ *           type="Stateless"
+ *           
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/CorporationReport" ref-name = "CorporationReport"
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/CorporationABM" ref-name = "CorporationABM"
+ * 
+ */
+
+public abstract class BIReportBean implements SessionBean {	
+	
+	 public static final int FIRST_NAME_DRIVER = 0;
+     public static final int LAST_NAME_DRIVER = 1;
+     public static final int COUNTRY = 4;
+     public static final int CHASIS = 5;
+     public static final int MATRICULA = 6;  
+     public static final int PREFIX = 7;  
+	    
+	 private ExceptionHandler handler = new ExceptionHandler(BIReportBean.class);
+	    	
+	
+	/**
+	 * Logger for this class
+	 */
+	private Logger logger=Logger.getLogger(BIReportBean.class);
+	private LoggerFormatting logFormatting=new LoggerFormatting();	
+	
+    /**
+     * Init transaction
+     * @ejb.create-method
+     * @ejb.permission role-name = "administrator,systemaccess"
+     */
+    public void ejbCreate()
+    throws javax.ejb.CreateException {
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess" 
+     */
+    public ArrayList<ChecklistReportHead> findCheckReportHead(Integer startDay, Integer startMonth , Integer startYear, Integer endDay,Integer endMonth,Integer endYear,String type,UserSessionData userSessionData) throws Exception {
+    	ArrayList<ChecklistReportHead> res = new ArrayList<ChecklistReportHead>();
+        try {
+        	if (userSessionData == null) {
+        		throw new DeslogedException("findCheckReportHead","userSessionData = null");
+        	}
+        	Integer corporation=userSessionData.getCorporationId();
+        			
+        	Session session = HibernateUtil.currentSession();
+            String sql = " select to_char(vehicleCheck.date, 'YYYY/MM/DD')  as dateStr, vehicle.divOrg1, vehicleCheck.result,vehicle.divOrg3, vehicle.matricula, vehicleCheck.inspectedBy,vehicleCheck.vehicleCheckId,vehicle.id, un.id as unid "+ 
+            			 " from vehiclecheck as vehicleCheck "+
+            			 " inner join vehicles as vehicle on( vehicle.id = vehicleCheck.vehicle )"+
+            			 " left outer join unconformitydpa as un on( un.vehicleCheckId = vehicleCheck.vehicleCheckId ) "+
+            			 " where vehicle.corporation= "+corporation+" "+
+            			 " and  "+(startYear!=null?"to_date(to_char(vehicleCheck.date, 'YYYY-MM-DD'), 'YYYY-MM-DD')>=to_date((:sd), 'YYYY-MM-DD') and":"")+" "+(endYear!=null?"to_date(to_char(vehicleCheck.date, 'YYYY-MM-DD'), 'YYYY-MM-DD')<to_date((:ed), 'YYYY-MM-DD')  and":"")+" vehicleCheck.name="+(type.equalsIgnoreCase("s")?"'79'":"'80'") +
+            			 " order by dateStr desc ";
+            
+            Query query = session.createSQLQuery(sql);//
+            
+            if(startYear!=null){
+            	query.setParameter("sd", Util.formatHSQL(Util.getDateFloor(startYear, startMonth, startDay),0));	
+            }
+            
+            if(endYear!=null){
+            	query.setParameter("ed", Util.formatHSQL(Util.getDateFloor(endYear,endMonth,endDay),1));	
+            }
+            
+            
+            Iterator iter = query.list().iterator();
+            while(iter.hasNext()){
+            	Object[] row=(Object[])iter.next();
+        		String date=(String) row[0];
+        		Integer divOrg1=(Integer) row[1];
+        		Integer result=(Integer) row[2];
+        		Integer divOrg3=(Integer) row[3];
+        		String matricula=(String) row[4];
+        		String inspectedBy=(String) row[5];
+        		Integer checkId=(Integer) row[6];
+        		Integer vehicleId=(Integer) row[7];
+        		Integer unId=(Integer) row[8];
+        		ChecklistReportHead vc=new ChecklistReportHead();
+            	vc.setResult(result.toString());
+            	vc.setPlate(matricula);
+            	vc.setDate(date);
+            	vc.setInspectedBy(inspectedBy);
+            	vc.setVehicleCheckId(checkId);
+            	vc.setVehicleId(vehicleId);
+            	vc.setUnconformityId(unId);
+            	
+            	if(corporation.equals(CorporationData.COFUSA) || corporation.equals(9) || corporation.equals(50)){
+            		if(divOrg1!=null && divOrg1>0){
+                		DivOrgItemLevel1 divOrg=(DivOrgItemLevel1)session.load(DivOrgItemLevel1.class, divOrg1);
+                		if(divOrg!=null){
+                			vc.setTransporter(divOrg.getResourceKey());
+                    	}
+            		}
+            	}else if(corporation.equals(19) )
+	            	if(divOrg3!=null && divOrg3>0){
+	            		DivOrgItemLevel1 divOrg=(DivOrgItemLevel1)session.load(DivOrgItemLevel1.class, divOrg3);
+	            		if(divOrg!=null){
+	            			vc.setTransporter(divOrg.getResourceKey());
+	            		}
+	            	}
+            	
+            	Query query2=session.createSQLQuery("select count(*) from vehiclecheckitemsvalues where vehiclecheck="+checkId+" and itemValue='2'");
+            	BigInteger val=(BigInteger) query2.uniqueResult();
+            	vc.setWithObservations(val.intValue()>0);
+            	
+            	res.add(vc);
+            }
+            
+            
+            return res;
+        } catch (Exception e) {
+        	Object[] parameters = {userSessionData,startMonth,endMonth};
+            handler.getException(e,"ChecklistReportHead",userSessionData,parameters);
+        }
+        return new ArrayList<ChecklistReportHead>();
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess" 
+     */
+    public ArrayList<ChecklistReportItem> findCheckReportItem(Integer startDay, Integer startMonth , Integer startYear, Integer endDay,Integer endMonth,Integer endYear,String type,UserSessionData userSessionData) throws Exception {
+    	ArrayList<ChecklistReportItem> res = new ArrayList<ChecklistReportItem>();
+        try {
+        	if (userSessionData == null) {
+        		throw new DeslogedException("findCheckReportItem","userSessionData = null");
+        	}
+        	Integer corporation=userSessionData.getCorporationId();
+        			
+        	Session session = HibernateUtil.currentSession();
+            String sql = "  select to_char(vehicleCheck.date, 'YYYY/MM/DD')  as dateStr, vehicle.divOrg1, vehicleCheck.result,vehicle.divOrg3, vehicle.matricula,iv.itemvalue,iv.itemtag,vehicleCheck.inspectedBy,m.text  "+ 
+            			 " from vehiclecheckitemsvalues as iv "+
+            			 " inner join vehiclecheck as vehicleCheck on(vehicleCheck.vehicleCheckId=iv.vehicleCheck) "+
+            			 " inner join vehicles as vehicle on( vehicle.id = vehicleCheck.vehicle ) "+
+            			 " inner join items as i on (i.id=iv.item) "+
+                 		 " inner join generalmessages as m on (m.labelKey=i.text and m.language='es') "+
+            			 " left outer join unconformitydpa as un on( un.vehicleCheckId = vehicleCheck.vehicleCheckId ) "+
+            			 " where iv.itemvalue='2' and vehicle.corporation= "+corporation+" "+
+            			 " and  "+(startYear!=null?"to_date(to_char(vehicleCheck.date, 'YYYY-MM-DD'), 'YYYY-MM-DD')>=to_date((:sd), 'YYYY-MM-DD') and":"")+" "+(endYear!=null?"to_date(to_char(vehicleCheck.date, 'YYYY-MM-DD'), 'YYYY-MM-DD')<to_date((:ed), 'YYYY-MM-DD')  and":"")+" vehicleCheck.name="+(type.equalsIgnoreCase("s")?"'79'":"'80'") +
+            			 " order by dateStr desc";
+            
+            Query query = session.createSQLQuery(sql);//
+            
+            if(startYear!=null){
+            	query.setParameter("sd", Util.formatHSQL(Util.getDateFloor(startYear, startMonth, startDay),0));	
+            }
+            
+            if(endYear!=null){
+            	query.setParameter("ed", Util.formatHSQL(Util.getDateFloor(endYear,endMonth,endDay),1));	
+            }
+            
+            
+            Iterator iter = query.list().iterator();
+            while(iter.hasNext()){
+            	ChecklistReportItem item=new ChecklistReportItem();
+            	Object[] row=(Object[])iter.next();
+        		String date=(String) row[0];
+        		Integer divOrg1=(Integer) row[1];
+        		Integer result=(Integer) row[2];
+        		Integer divOrg3=(Integer) row[3];
+        		String matricula=(String) row[4];
+        		String value=(String) row[5];
+        		String tag=(String) row[6];
+        		String inspectedBy=(String) row[7];
+        		String text=(String) row[8];
+            	
+        		item.setDate(date);
+        		item.setInspectedBy(inspectedBy);
+        		item.setObservations("");
+        		item.setTag(tag);
+        		item.setPlate(matricula);
+        		item.setResult(value);
+        		item.setText(text);
+        		
+            	if(corporation.equals(CorporationData.COFUSA) || corporation.equals(9) || corporation.equals(50)){
+            		if(divOrg1!=null && divOrg1>0){
+                		DivOrgItemLevel1 divOrg=(DivOrgItemLevel1)session.load(DivOrgItemLevel1.class, divOrg1);
+                		if(divOrg!=null){
+                			item.setTransporter(divOrg.getResourceKey());
+                    	}
+            		}
+            	}else if(corporation.equals(19) )
+	            	if(divOrg3!=null && divOrg3>0){
+	            		DivOrgItemLevel1 divOrg=(DivOrgItemLevel1)session.load(DivOrgItemLevel1.class, divOrg3);
+	            		if(divOrg!=null){
+	            			item.setTransporter(divOrg.getResourceKey());
+	            		}
+	            	}
+            	
+            	
+            	
+            	res.add(item);
+            }
+            
+            
+            return res;
+        } catch (Exception e) {
+        	Object[] parameters = {userSessionData,startMonth,endMonth};
+            handler.getException(e,"findCheckReportItem",userSessionData,parameters);
+        }
+        return new ArrayList<ChecklistReportItem>();
+    }
+
+    
+    
+    /**
+	 * @throws Exception 
+     * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,systemaccess"
+	*/
+	public ArrayList<UnconformityAction> forestalesUnconformities(Integer vehicleId,String checkName,Date start,Date end,Integer type,Integer times ,  UserSessionData userSessionData,Text messages) throws Exception{
+		 ArrayList<UnconformityAction> res=new ArrayList<UnconformityAction>();
+		try {
+
+			if (userSessionData == null) {
+				throw new DeslogedException("forestalesUnconformities","userSessionData = null");
+			}
+		 
+			String where=""+UtilityQuery.corporationDivisionsRestictionsSQL("v", userSessionData);
+			if(start!=null || end!=null){
+				where+=" and vc.name in ("+checkName+")  ";
+				where+=" and "+(start!=null?"to_date(to_char(u.date, 'YYYY-MM-DD'), 'YYYY-MM-DD') >=to_date((:start), 'YYYY-MM-DD')":"1=1");
+				where+=" and ";
+				where+= end!=null?"to_date(to_char(u.date, 'YYYY-MM-DD'), 'YYYY-MM-DD') <to_date((:end), 'YYYY-MM-DD') ":"1=1";
+				
+			}
+			if(vehicleId!=null){
+				where+=" and v.id="+vehicleId; 
+			}
+			
+			switch (times) {
+				case 5:
+					where+=" and  EXTRACT(MONTH FROM i.expirity)=EXTRACT(MONTH FROM u.date  + interval '30 day') and EXTRACT(YEAR FROM i.expirity)=EXTRACT(YEAR FROM u.date + interval '30 day') and EXTRACT(DAY FROM (i.expirity ))=EXTRACT(DAY FROM u.date + interval '30 day') ";
+					break;
+				case 1:
+					where+=" and  EXTRACT(MONTH FROM i.expirity )=EXTRACT(MONTH FROM u.date + interval '0 day') and EXTRACT(YEAR FROM i.expirity)=EXTRACT(YEAR FROM u.date + interval '0 day') and EXTRACT(DAY FROM i.expirity )=EXTRACT(DAY FROM u.date + interval '0 day') ";
+					break;
+				case 2:
+					where+=" and  EXTRACT(MONTH FROM i.expirity )=EXTRACT(MONTH FROM u.date + interval '1 day') and EXTRACT(YEAR FROM i.expirity)=EXTRACT(YEAR FROM u.date + interval '1 day') and EXTRACT(DAY FROM i.expirity)=EXTRACT(DAY FROM u.date  + interval '1 day') ";
+					break;
+				case 3:
+					where+=" and  EXTRACT(MONTH FROM i.expirity )=EXTRACT(MONTH FROM u.date + interval '2 day') and EXTRACT(YEAR FROM i.expirity)=EXTRACT(YEAR FROM u.date + interval '2 day') and EXTRACT(DAY FROM i.expirity)=EXTRACT(DAY FROM u.date  + interval '2 day') ";
+					break;
+	
+				case 4:
+					where+=" and  EXTRACT(MONTH FROM i.expirity )=EXTRACT(MONTH FROM u.date + interval '3 day') and EXTRACT(YEAR FROM i.expirity)=EXTRACT(YEAR FROM u.date + interval '3 day') and EXTRACT(DAY FROM i.expirity)=EXTRACT(DAY FROM u.date  + interval '3 day') ";
+					break;
+				case 6://Expiranron o expiran en la proxima semana
+					where+=" and  i.expirity>=current_timestamp + interval '1h' * 6 and i.expirity<=current_timestamp + interval '1 h' * 6 + interval '7 day'" ;
+					break;
+				default:
+					break;
+			}
+			
+			switch (type) {
+			// //"Todas las fallas","Consulta de fallas abiertas","Consulta de fallas cerradas","Fallas cerradas en fecha","Fallas cerradas fuera de plazo"
+				case 1:
+					where+=" and i.correctiveactiondpa is null "; 
+					break;
+				case 2:
+					where+=" and i.correctiveactiondpa is not null "; 
+					break;
+				case 3://Se corrige en plazo o se corige y es sin plazo
+					where+=" and i.correctiveactiondpa is not null and (to_date(to_char(a.date, 'YYYY-MM-DD'), 'YYYY-MM-DD') <= to_date(to_char(i.expirity, 'YYYY-MM-DD'), 'YYYY-MM-DD') or to_date(to_char(u.date, 'YYYY-MM-DD'), 'YYYY-MM-DD')=to_date(to_char(i.expirity + interval '1 day', 'YYYY-MM-DD'), 'YYYY-MM-DD')) "; 
+					break;
+				case 4://Esta corregida y es con fecha de corrección mayor a la de expiración o y no es sin plazo. 
+					where+=" and i.correctiveactiondpa is not null and  to_date(to_char(a.date, 'YYYY-MM-DD'), 'YYYY-MM-DD') > to_date(to_char(i.expirity , 'YYYY-MM-DD'), 'YYYY-MM-DD') and not  ( to_date(to_char(u.date, 'YYYY-MM-DD'), 'YYYY-MM-DD') = to_date(to_char(i.expirity + interval '1 day' , 'YYYY-MM-DD'), 'YYYY-MM-DD'))"; 
+					break;
+				case 5://No esta corregida y es con fecha  expiración vencida. 
+					where+=" and i.correctiveactiondpa is null and ( to_date(to_char(CURRENT_TIMESTAMP, 'YYYY-MM-DD'), 'YYYY-MM-DD') > to_date(to_char(i.expirity , 'YYYY-MM-DD'), 'YYYY-MM-DD') or ( to_date(to_char(CURRENT_TIMESTAMP, 'YYYY-MM-DD'), 'YYYY-MM-DD') = to_date(to_char(i.expirity , 'YYYY-MM-DD'), 'YYYY-MM-DD') and to_date(to_char(CURRENT_TIMESTAMP, 'YYYY-MM-DD'), 'YYYY-MM-DD') = to_date(to_char(u.date , 'YYYY-MM-DD'), 'YYYY-MM-DD')) ) and  not ( to_date(to_char(u.date, 'YYYY-MM-DD'), 'YYYY-MM-DD') = to_date(to_char(i.expirity + interval '1 day' , 'YYYY-MM-DD'), 'YYYY-MM-DD'))"; 
+					break;	
+				default:
+					break;
+			}
+			
+			Session session=HibernateUtil.currentSession();
+			Query query=session.createSQLQuery("select u.id,u.date,i.type,i.comment as iComment,i.expirity ,v.matricula,i.correctiveactiondpa, a.comment as aComment, a.date as aDate, v.divOrg1,v.divOrg3"+ 
+	            		" from unconformityitemdpa as i INNER JOIN unconformitydpa as u on (i.unconformitydpa=u.id and u.corpId="+userSessionData.getCorporationId()+") "+ 
+	            		" INNER JOIN vehiclecheck as vc on vc.vehiclecheckid=u.vehiclecheckid "+
+	            		" LEFT OUTER JOIN  correctiveactiondpa as a ON a.id=i.correctiveactiondpa "+ 
+	            		" INNER JOIN vehicles as v on vc.vehicle=v.id "+where+" order by u.date");
+			if(start!=null){
+	            	query.setParameter("start", Util.formatHSQL(start,0));
+            }
+            if(end!=null){
+            	query.setParameter("end", Util.formatHSQL(end,1));
+            }
+	            
+	            
+            Iterator iter=query.list().iterator();
+            
+            while(iter.hasNext()){
+            	Object[] row=(Object[])iter.next();
+            	Integer uId=(Integer) row[0];
+            	Date uDate=(Date)row[1];
+            	String iType=(String) row[2];
+            	String iComment=(String) row[3];
+            	Date iExpirity=(Date)row[4];
+            	String matricula =(String)row[5];
+            	Integer caId=(Integer)row[6];
+            	String caComment=(String)row[7];
+            	Date aDate=(Date)row[8];
+            	Integer divOrg1=(Integer)row[9];
+            	Integer divOrg3=(Integer)row[10];
+            	String contractorName="";
+            	if(userSessionData.getCorporationId()==CorporationData.WEYERHAEUSER){
+            		DivOrgItemLevel1 item1=(DivOrgItemLevel1) session.load(DivOrgItemLevel1.class, divOrg3);
+            		contractorName=item1.getResourceKey();
+            	}else{
+            		DivOrgItemLevel1 item1=(DivOrgItemLevel1) session.load(DivOrgItemLevel1.class, divOrg1);
+            		contractorName=item1.getResourceKey();
+                }
+            	UnconformityAction rowUA=new UnconformityAction();
+            	rowUA.setDateItem(Util.formatDateWithHour2(uDate));
+            	rowUA.setCommentAction(caComment);
+            	rowUA.setCommentItem(iComment);
+            	rowUA.setContractorName(contractorName);
+            	rowUA.setCorrectiveActionId(caId);
+            	rowUA.setDateAction(Util.formatDateWithHour2(aDate));
+            	rowUA.setIdItem(uId);
+            	rowUA.setMatricula(matricula);
+            	rowUA.setTypeItem(messages.getText(iType));
+            	
+            	Calendar cal =Calendar.getInstance();
+            	cal.setTime(Util.floorDate(uDate));
+            	Calendar cal2 =Calendar.getInstance();
+            	cal2.setTime(Util.floorDate(iExpirity));
+            	if(Util.compareOnlyDate(cal2,cal)>=0){
+            	
+            		rowUA.setExpirityItem(Util.formatDateWithHour2(iExpirity));
+            		if(caId!=null){
+            			cal =Calendar.getInstance();
+            			cal.setTime(Util.floorDate(aDate));
+            			if(Util.compareOnlyDate(cal,cal2)<=0){
+            				//En fecha
+            				rowUA.setStatus(1);
+            			}else{
+            				rowUA.setStatus(2);
+            			}
+            		}else{
+            			Calendar calNow =Calendar.getInstance();
+            			calNow.setTime(Util.floorDate(new Date()));
+            			//Si no es detención inmediata y todavía no venció incluyendo hoy.
+            			if(Util.compareOnlyDate(calNow, cal2)<=0 && !(Util.compareOnlyDate(cal,cal2)==0)){
+            				//Nn vencio
+            				rowUA.setStatus(3);
+            			}else{
+            				//Vencida
+            				rowUA.setStatus(4);
+            			}
+            				
+            		}
+            	}else{
+            		if(caId!=null){
+            			rowUA.setStatus(1);
+            			rowUA.setExpirityItem("S/P");
+            		}else{
+	            		rowUA.setExpirityItem("S/P");
+	            		rowUA.setStatus(3);//
+            		}
+            	}
+            	
+            	res.add(rowUA);
+            }
+           
+
+		} catch (Exception e) {
+			Object[] parameters = {start,end,type,times};
+		    handler.getException(e,"forestalesUnconformities",userSessionData,parameters);
+		}
+		return res;
+	}
+	
+	
+	/**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess"
+     */ 
+    public ListResult findVehicleList(String value, UserSessionData userRequest,int attribute,int first,int count, int status) throws Exception {
+        ListResult listResult=null;
+        try{    
+            Session session = HibernateUtil.currentSession();
+
+            String queryStr = "SELECT COUNT(*) FROM Vehicle AS vehicle ";
+            
+            if(userRequest.isDriver()) {
+                queryStr += " WHERE vehicle.corpCountry.pk.corporation.id = "+userRequest.getFilter().getCorporationId();
+                queryStr += " AND vehicle.driver IS NOT null AND vehicle.driver.id = "+String.valueOf(userRequest.getDriverData().getId());            
+            }else {
+                queryStr += UtilityQuery.corporationDivisionsRestictions("vehicle",userRequest);                
+            }
+            
+            Query query = getQuery(session,attribute,queryStr,value,userRequest, status);
+            
+            List vehicleColl = query.list();
+            Iterator iter = vehicleColl.iterator();
+            Integer total = new Integer(0);
+            while (iter.hasNext()) {
+                total = new Integer(((Long) iter.next()).intValue());
+            }
+            
+            queryStr = " SELECT vehicle FROM Vehicle AS vehicle ";
+            
+            if(userRequest.isDriver()) {
+                queryStr += " WHERE vehicle.corpCountry.pk.corporation.id = "+userRequest.getFilter().getCorporationId();
+                queryStr += " AND vehicle.driver IS NOT null AND vehicle.driver.id = "+String.valueOf(userRequest.getDriverData().getId());            
+            }else {
+                queryStr += UtilityQuery.corporationDivisionsRestictions("vehicle",userRequest);                
+            }
+            
+            query = getQueryWithOrderBy(session,attribute,queryStr,value,status, userRequest);
+            
+            if(count != -1) {
+                if(total.intValue() < first) {
+                    if(total.intValue() % count == 0) {
+                        first = total.intValue() - count;
+                    }else {
+                        first = total.intValue() - (total.intValue() % count);
+                    }
+                }
+                query.setFirstResult(first);
+                query.setMaxResults(count);
+            }
+            
+            vehicleColl = query.list();
+            Collection result = new LinkedList();
+            if (vehicleColl != null){
+            	 iter = vehicleColl.iterator();
+                 Vehicle vehicle;
+                 while (iter.hasNext()) {
+                	 vehicle = (Vehicle) iter.next();
+                	 if (vehicle != null && vehicle.getVehicleData()!= null){
+                		 result.add(vehicle.getVehicleData());
+                	 }
+                 }
+            }
+
+            listResult = new ListResult(result, total.intValue());
+            
+        } catch (Exception e) {
+			Object[] parameters = {value,attribute,first,count,status};
+             handler.getException(e,"findList",userRequest,parameters);
+             
+        }
+        
+        return listResult;
+            
+    }  
+    
+    /**
+	 * @ejb.permission role-name ="administrator,systemaccess"
+	 * @ejb.interface-method
+	 */
+	public ListResult findDriverByCorporationIdFirstNameLastName(String stringSearch,Integer level, UserSessionData userRequest) throws Exception {
+		
+		if (userRequest == null) {
+			throw new DeslogedException("findDriverByCorporationIdFirstNameLastName","session null");
+		}
+		Collection values = new LinkedList();
+		ListResult result=new ListResult();
+		try {
+			
+			if(stringSearch!=null){
+				stringSearch=stringSearch.toUpperCase();
+			}
+			
+			String queryStr = "SELECT COUNT(*) FROM drivers AS driver ";
+            
+			switch (level) {
+			case 0://Todas
+				break;
+			case 1://Puntaje amarillo entre 80 y 60 puntos
+				queryStr+=" inner join PointAccount as p on (CAST(p.reference as INTEGER)=driver.id and p.type=1 and p.total<=80 and  p.total>60) ";
+				break;
+			case 2://Puntaje naranja entre 60 y 40 puntos
+				queryStr+=" inner join PointAccount as p on (CAST(p.reference as INTEGER)=driver.id and p.type=1 and p.total<=60 and  p.total>40) ";
+				break;
+			case 3://Puntaje rojo menor a 40 puntos 
+				queryStr+=" inner join PointAccount as p on (CAST(p.reference as INTEGER)=driver.id and p.type=1 and p.total<=40) ";
+				break;
+			}
+		
+			queryStr += UtilityQuery.corporationDivisionsRestictionsSQL("driver", userRequest);
+			
+			if(stringSearch != null){
+				queryStr += " AND ( driver.corporationId like '"+stringSearch+"%' or driver.firstName like '"+stringSearch+"%' or driver.lastName like '"+stringSearch+"%') ";
+			}
+		
+			
+			Query query =HibernateUtil.currentSession().createSQLQuery(queryStr);
+	        
+            List drivereColl = query.list();
+            Iterator iter = drivereColl.iterator();
+            Integer total = new Integer(0);
+            while (iter.hasNext()) {
+                total = new Integer(((BigInteger) iter.next()).intValue());
+            }
+         
+			String sql = "SELECT driver.id FROM drivers AS driver  ";
+	
+   			switch (level) {
+			case 0://Todas
+				break;
+			case 1://Puntaje amarillo entre 80 y 60 puntos
+				sql+=" inner join PointAccount as p on (CAST(p.reference as INTEGER)=driver.id and p.type=1 and p.total<=80 and  p.total>60) ";
+				break;
+			case 2://Puntaje naranja entre 60 y 40 puntos
+				sql+=" inner join PointAccount as p on (CAST(p.reference as INTEGER)=driver.id and p.type=1 and p.total<=60 and  p.total>40) ";
+				break;
+			case 3://Puntaje rojo menor a 40 puntos 
+				sql+=" inner join PointAccount as p on (CAST(p.reference as INTEGER)=driver.id and p.type=1 and p.total<=40) ";
+				break;
+			}
+			
+   			sql += UtilityQuery.corporationDivisionsRestictionsSQL("driver", userRequest);
+			
+   			if(stringSearch != null){
+				sql += " AND ( driver.corporationId like '"+stringSearch+"%' or driver.firstName like '"+stringSearch+"%' or driver.lastName like '"+stringSearch+"%' )";
+			}
+				
+			query = HibernateUtil.currentSession().createSQLQuery(sql);
+			 
+			CorporationReport corpReport=CorporationReportUtil.getHome().create();
+			
+			List drivers = query.list();
+			if (drivers != null) {
+				Iterator driversIt = drivers.iterator();
+				while (driversIt.hasNext()) {
+					Driver driver= (Driver)HibernateUtil.currentSession().load(Driver.class, (Integer)driversIt.next()) ;
+					DriverStatusData statusD=new DriverStatusData();
+					statusD.setDriver(driver.getDriverData());
+					statusD.setPointAccount(corpReport.getPointAccount(1,driver.getId(),userRequest));
+					values.add(statusD);
+				}
+			}
+			result = new ListResult(values, total);
+		} catch (Exception e) {
+			Object[] parameters = { stringSearch };
+			handler.getException(e, "findDriverByCorporationIdFirstNameLastName", userRequest, parameters);
+		}
+	 
+		return result;
+	}
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */ 
+    public ListResult findVehicleWithStatusList(String value, UserSessionData userRequest,int attribute,int first,int count, int status, Text messages) throws Exception {
+        ListResult listResult=null;
+        try{    
+            Session session = HibernateUtil.currentSession();
+
+            String queryStr = "SELECT COUNT(*) FROM Vehicle AS vehicle ";
+            
+            if(userRequest.isDriver()) {
+                queryStr += " WHERE vehicle.corpCountry.pk.corporation.id = "+userRequest.getFilter().getCorporationId();
+                queryStr += " AND vehicle.driver IS NOT null AND vehicle.driver.id = "+String.valueOf(userRequest.getDriverData().getId());            
+            }else {
+                queryStr += UtilityQuery.corporationDivisionsRestictions("vehicle",userRequest);                
+            }
+            
+            Query query = getQuery(session,attribute,queryStr,value,userRequest, status);
+            
+            List vehicleColl = query.list();
+            Iterator iter = vehicleColl.iterator();
+            Integer total = new Integer(0);
+            while (iter.hasNext()) {
+                total = new Integer(((Long) iter.next()).intValue());
+            }
+            
+            queryStr = " SELECT vehicle FROM Vehicle AS vehicle ";
+            
+            if(userRequest.isDriver()) {
+                queryStr += " WHERE vehicle.corpCountry.pk.corporation.id = "+userRequest.getFilter().getCorporationId();
+                queryStr += " AND vehicle.driver IS NOT null AND vehicle.driver.id = "+String.valueOf(userRequest.getDriverData().getId());            
+            }else {
+                queryStr += UtilityQuery.corporationDivisionsRestictions("vehicle",userRequest);                
+            }
+            
+            query = getQueryWithOrderBy(session,attribute,queryStr,value,status, userRequest);
+            
+            if(count != -1) {
+                if(total.intValue() < first) {
+                    if(total.intValue() % count == 0) {
+                        first = total.intValue() - count;
+                    }else {
+                        first = total.intValue() - (total.intValue() % count);
+                    }
+                }
+                query.setFirstResult(first);
+                query.setMaxResults(count);
+            }
+            
+            CorporationReport corpReport=CorporationReportUtil.getHome().create();
+
+            vehicleColl = query.list();
+            Collection result = new LinkedList();
+            if (vehicleColl != null){
+            	 iter = vehicleColl.iterator();
+                 Vehicle vehicle;
+                 while (iter.hasNext()) {
+                	 vehicle = (Vehicle) iter.next();
+                	 if (vehicle != null && vehicle.getVehicleData()!= null){
+                		 
+                		 Query queryState=session.createQuery("select s from VehicleState as s where s.vehicle.id="+vehicle.getId());
+                		 List list=queryState.list();
+                		 VehicleState vstate=new VehicleState();
+                		 if(list.iterator().hasNext()){
+                			 vstate = (VehicleState)list.iterator().next();
+                		 }else{
+                		 	 vstate.setState(VehicleStateData.ACTIVE);
+            				 vstate.setStateDate(vehicle.getInclusionDate());
+            			 }
+                		 
+                		 VehicleStatusData statusV=new VehicleStatusData();
+                		 
+                		 statusV.setState(vstate.getData());
+                 		 statusV.setPointAccount(corpReport.getPointAccount(2,vehicle.getId(),userRequest));
+                 		 statusV.setVehicle(vehicle.getVehicleData());
+                 		 statusV.setUnconformities(forestalesUnconformities(vehicle.getId(), "80", null, null, 5, 0, userRequest, messages));
+                		 
+                 		 result.add(statusV);
+                	 }
+                 }
+            }
+
+            listResult = new ListResult(result, total.intValue());
+            
+        } catch (Exception e) {
+			Object[] parameters = {value,attribute,first,count,status};
+             handler.getException(e,"findVehicleWithStatusList",userRequest,parameters);
+             
+        }
+        
+        return listResult;
+            
+    }   
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess"
+     */ 
+    public DriverStatusData findDriverWithStatus(Integer driverId, UserSessionData userRequest, Text messages) throws Exception {
+        ListResult listResult=null;
+        try{    
+            Session session = HibernateUtil.currentSession();
+            CorporationReport corpReport=CorporationReportUtil.getHome().create();
+            CorporationABM corpABM=CorporationABMUtil.getHome().create();
+            
+            String queryStr = " SELECT driver FROM Driver AS driver ";
+            
+            queryStr += UtilityQuery.corporationDivisionsRestictions("driver",userRequest);                
+          
+            queryStr +=" and driver.id="+driverId;
+            
+            Iterator iter=session.createQuery(queryStr).list().iterator();
+            Driver driver = (Driver) iter.next();
+        	if (driver != null && driver.getDriverData()!= null){
+        		 
+        		 DriverStatusData statusD=new DriverStatusData();
+        		 
+        		 statusD.setPointAccount(corpReport.getPointAccount(1,driver.getId(),userRequest));
+        		 statusD.getPointAccount().setMoves(corpReport.getPointMoves(statusD.getPointAccount().getId(),30,false, userRequest));
+        		 statusD.setDriver(driver.getDriverData());
+         		 
+         		 return statusD;
+        	 }
+          
+        } catch (Exception e) {
+			Object[] parameters = {driverId};
+             handler.getException(e,"findVehicleWithStatus",userRequest,parameters);
+             
+        }
+        
+        return null;
+            
+    }   
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */ 
+    public VehicleStatusData findVehicleWithStatus(Integer vehicleId, UserSessionData userRequest, Text messages) throws Exception {
+        ListResult listResult=null;
+        try{    
+            Session session = HibernateUtil.currentSession();
+            CorporationReport corpReport=CorporationReportUtil.getHome().create();
+            CorporationABM corpABM=CorporationABMUtil.getHome().create();
+            
+            String queryStr = " SELECT vehicle FROM Vehicle AS vehicle ";
+            
+            if(userRequest.isDriver()) {
+                queryStr += " WHERE vehicle.corpCountry.pk.corporation.id = "+userRequest.getFilter().getCorporationId();
+                queryStr += " AND vehicle.driver IS NOT null AND vehicle.driver.id = "+String.valueOf(userRequest.getDriverData().getId());            
+            }else {
+                queryStr += UtilityQuery.corporationDivisionsRestictions("vehicle",userRequest);                
+            }
+            queryStr +=" and vehicle.id="+vehicleId;
+            
+            Iterator iter=session.createQuery(queryStr).list().iterator();
+            Vehicle vehicle = (Vehicle) iter.next();
+        	if (vehicle != null && vehicle.getVehicleData()!= null){
+        		 
+        		 VehicleState vstate=corpABM.getOrCreateVehicleState(vehicle.getVehicleData());
+        	
+        		 VehicleStatusData statusV=new VehicleStatusData();
+        		 
+        		 statusV.setState(vstate.getData());
+         		 statusV.setPointAccount(corpReport.getPointAccount(2,vehicle.getId(),userRequest));
+         		 statusV.getPointAccount().setMoves(corpReport.getPointMoves(statusV.getPointAccount().getId(),30,false, userRequest));
+         		 statusV.setVehicle(vehicle.getVehicleData());
+         		 
+         		 statusV.setUnconformities(forestalesUnconformities(vehicle.getId(), "80", null, null, 5, 0, userRequest, messages));
+         		 
+         		 return statusV;
+        	 }
+          
+        } catch (Exception e) {
+			Object[] parameters = {vehicleId};
+             handler.getException(e,"findVehicleWithStatus",userRequest,parameters);
+             
+        }
+        
+        return null;
+            
+    }   
+    
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */ 
+    public FleetStatusData findFleetWithStatusList(Date dateBase,UserSessionData userRequest,Text messages ) throws Exception {
+    	FleetStatusData res=new FleetStatusData();
+        try{    
+            Session session = HibernateUtil.currentSession();
+
+            String querySQLStr = "select v.matricula,c.total,m.description,m.amount,m.date,m.time ,v.id"+ 
+		            		 " from PointAccount as c "+ 
+		            		 " inner join PointMoves as m on(m.account=c.id) "+
+		            		 " inner join Vehicles as v on(v.id=CAST(c.reference as INTEGER))";
+            
+            if(userRequest.isDriver()) {
+            	querySQLStr += " WHERE v.corporation = "+userRequest.getFilter().getCorporationId();
+            	querySQLStr += " AND v.driver IS NOT null AND v.driver = "+String.valueOf(userRequest.getDriverData().getId());            
+            }else {
+            	querySQLStr += UtilityQuery.corporationDivisionsRestictionsSQL("v",userRequest);                
+            }
+            Calendar cal=Calendar.getInstance();
+            cal.setTime(dateBase);
+            cal.add(Calendar.DATE,-8);
+            querySQLStr+=" ORDER BY m.date desc, m.time desc LIMIT 50";
+            Query query = session.createSQLQuery(querySQLStr);
+            res.setMoves(new ArrayList<PointMoveData>());
+            Iterator iter=query.list().iterator();
+            while(iter.hasNext()){
+            	Object[] row=(Object[])iter.next();
+            	String plate=(String) row[0];
+            	Double total=(Double) row[1];
+            	String desc=(String) row[2];
+            	Double amount=(Double) row[3];
+            	Date date=(Date) row[4];
+            	Time time=(Time) row[5];
+            	Integer vehicleId= (Integer)row[6];
+            	cal=Calendar.getInstance();
+            	cal.setTime(date);
+				cal.set(Calendar.HOUR,time.getHours());
+				cal.set(Calendar.MINUTE,time.getMinutes());
+				cal.set(Calendar.SECOND,time.getSeconds());
+					
+            	PointMoveData move=new PointMoveData();
+            	move.setAmount(amount);
+            	move.setReference(plate);
+            	move.setDate(cal);
+            	move.setDescription(desc);
+            	move.setId(vehicleId);
+            	
+            	res.getMoves().add(move);
+            }
+
+            querySQLStr=" select v.id, v.matricula,s.state,s.statedate,s.hours,s.reasoncode,s.typeofpenalty "+ 
+						" from VehicleState as s "+
+						" inner join vehicles as v on(v.id=s.vehicle  and v.exclusiondate is null) ";
+            if(userRequest.isDriver()) {
+            	querySQLStr += " WHERE v.corporation = "+userRequest.getFilter().getCorporationId();
+            	querySQLStr += " AND v.driver IS NOT null AND v.driver = "+String.valueOf(userRequest.getDriverData().getId());            
+            }else {
+            	querySQLStr += UtilityQuery.corporationDivisionsRestictionsSQL("v",userRequest);                
+            }
+            querySQLStr+=" and s.state in ('SUSPENDED_INDETERMINATE','SUSPENDED_HOURS')"; 
+            query = session.createSQLQuery(querySQLStr);
+            res.setSuspendedVehicles(new ArrayList<VehicleStatusData>());
+            iter=query.list().iterator();
+            while(iter.hasNext()){
+            	Object[] row=(Object[])iter.next();
+            	Integer vehicleId=(Integer) row[0];
+            	String plate=(String) row[1];
+            	String state=(String) row[2];
+            	Date stateDate=(Date) row[3];
+            	Integer hours=(Integer) row[4];
+            	Integer reasonCode=(Integer) row[5];
+            	Integer typeOfPenalty=(Integer) row[6];
+            	
+            	VehicleStatusData status=new VehicleStatusData();
+            	status.setVehicle(new VehicleData());
+            	status.getVehicle().setMatricula(plate);
+            	status.getVehicle().setId(vehicleId);
+            	status.setState(new VehicleStateData());
+            	status.getState().setState(state);
+            	status.getState().setHours(hours);
+            	status.getState().setStateDate(stateDate);
+            	status.getState().setReasonCode(reasonCode);
+            	status.getState().setTypeOfPenalty(typeOfPenalty);
+            	
+            	res.getSuspendedVehicles().add(status);
+            }
+            
+            res.setUnconformities(forestalesUnconformities(null, "80", null, null, 5, 0, userRequest, messages));
+            
+        } catch (Exception e) {
+        	e.printStackTrace();
+			Object[] parameters = {};
+             handler.getException(e,"findFleetWithStatusList",userRequest,parameters);
+             
+        }
+        
+        return res;
+            
+    }
+    
+    
+    //select id,resourcekey from divorgitemlevel1s where divorg=10 and char_length(btrim(resourcekey))>0 order by resourcekey
+    /*
+     * int  divOrgCount=userRequest.getFilter().getDivOrgCount();
+        String[] st = userRequest.getFilter().getDivOrgLeaves();
+        
+		if(divOrgCount == 1) {
+            where += " and "+entity+".divOrg1 in ("+st[0]+") ";
+        }
+		
+		if(divOrgCount == 2) {
+			where += " and "+entity+".divOrg1 in ("+st[0]+") ";
+            where += " and "+entity+".divOrg2 in ("+st[1]+") ";
+        }
+		
+		if(divOrgCount == 3) {
+			where += " and "+entity+".divOrg1 in ("+st[0]+") ";
+            where += " and "+entity+".divOrg2 in ("+st[1]+") ";
+            where += " and "+entity+".divOrg3 in ("+st[2]+") ";
+        }
+        
+		
+		String country = (userRequest.getFilter().getDivGeoLeaves(null,null));
+        where += " and "+entity+".country in ("+ country +") ";
+     */
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */ 
+    public ArrayList<ContractorData> findFOSAContractors(UserSessionData userRequest ) throws Exception {
+    	ArrayList<ContractorData> res=new ArrayList<ContractorData>();
+        try{    
+            Session session = HibernateUtil.currentSession();
+
+            String querySQLStr = " select d.id,d.resourcekey from divorgitemlevel1s as d inner join ContractorData as c on( c.sendresume=1 and c.mail is not null and c.id=d.id) ";
+            
+            String[] st = userRequest.getFilter().getDivOrgLeaves();
+            querySQLStr += " where d.id in ("+st[0]+") ";
+            
+            querySQLStr+=" and d.divorg=10 and char_length(btrim(d.resourcekey))>0 order by d.resourcekey ";
+            
+            
+            Query query = session.createSQLQuery(querySQLStr);
+            
+            Iterator<Object[]> iter=query.list().iterator();
+            while(iter.hasNext()){
+            	Object[] row=iter.next();
+            	Integer id=(Integer)row[0];
+            	String name=(String)row[1];
+            	ContractorData data=new ContractorData();
+            	data.setId(id);
+            	data.setName(name);
+            	res.add(data);
+            }
+        
+	       
+           
+            
+        } catch (Exception e) {
+        	e.printStackTrace();
+			Object[] parameters = {};
+             handler.getException(e,"findFOSAContractors",userRequest,parameters);
+             
+        }
+        
+        return res;
+            
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */ 
+    public ArrayList<ContractorPointData> findContractorsPointData(Date startDate,Date endDate,Integer contractorId,UserSessionData userRequest ) throws Exception {
+    	ArrayList<ContractorPointData> res=new ArrayList<ContractorPointData>();
+        try{    
+            Session session = HibernateUtil.currentSession();
+
+            String querySQLStr = "select v.matricula,pm.actualTotal,pm.amount,pm.description,d.resourcekey,pm.date,pm.time "+
+            					 " from PointMoves as pm "+
+ 								 " inner join PointAccount as pa on (pa.id=pm.account) "+
+								 " inner join Vehicles as v on(v.id=CAST(pa.reference as INTEGER) and v.corporation="+userRequest.getCorporationId()+" and v.exclusiondate is null)  "+
+								 " inner join divorgitemlevel1s as d on(d.id=v.divorg1) ";
+            
+           	querySQLStr += UtilityQuery.corporationDivisionsRestictionsSQL("v",userRequest);
+           	
+            querySQLStr+=(contractorId==0?"":" and v.divOrg1="+contractorId);
+            querySQLStr+=" and "+(startDate!=null?" to_date(to_char(pm.date, 'YYYY-MM-DD'), 'YYYY-MM-DD') >=to_date((:start), 'YYYY-MM-DD') ":" 1=1 ");
+            querySQLStr+=" and "+(endDate!=null?" to_date(to_char(pm.date, 'YYYY-MM-DD'), 'YYYY-MM-DD') <to_date((:end), 'YYYY-MM-DD') ":" 1=1 ");
+            
+            Query query = session.createSQLQuery(querySQLStr);
+            
+            if(startDate!=null){
+            	query.setParameter("start", Util.formatHSQL(startDate,0));
+	        }
+	        if(endDate!=null){
+	        	query.setParameter("end", Util.formatHSQL(endDate,1));
+	        }
+        
+	        HashMap<String, HashMap<String, VehiclePointData>> contractorsVehicleMap=new HashMap<String, HashMap<String,VehiclePointData>>();
+            
+            Iterator iter=query.list().iterator();
+            while(iter.hasNext()){
+            	Object[] row=(Object[])iter.next();
+            	String contractor=(String)row[4];
+            	String vehicle=(String)row[0];
+            	if(!contractorsVehicleMap.containsKey(contractor)){
+            		contractorsVehicleMap.put(contractor,new HashMap<String, VehiclePointData>());
+            	}
+            	if(!contractorsVehicleMap.get(contractor).containsKey(vehicle)){
+            		contractorsVehicleMap.get(contractor).put(vehicle, new VehiclePointData());
+            		contractorsVehicleMap.get(contractor).get(vehicle).setPlate(vehicle);
+            	}
+            	
+            	PointMoveData pointMove=new PointMoveData();
+            	Date date=(Date) row[5];
+            	Time time=(Time) row[6];
+            	Calendar cal=Calendar.getInstance();
+            	cal.setTime(date);
+				cal.set(Calendar.HOUR_OF_DAY,time.getHours());
+				cal.set(Calendar.MINUTE,time.getMinutes());
+				cal.set(Calendar.SECOND,time.getSeconds());
+            	
+				pointMove.setDate(cal);
+				pointMove.setDescription((String)row[3]);
+				pointMove.setActualTotal((Double)row[1]);
+				pointMove.setAmount((Double)row[2]);
+				contractorsVehicleMap.get(contractor).get(vehicle).getMoves().add(pointMove);
+            }
+
+            for(String contractorKey:contractorsVehicleMap.keySet()){
+            	ContractorPointData contractorPointData=new ContractorPointData();
+            	contractorPointData.setName(contractorKey);
+            	HashMap<String, ResumePointData> resumeContractorMap=new HashMap<String, ResumePointData>();
+            	for(String vehicleKey:contractorsVehicleMap.get(contractorKey).keySet()){
+            		VehiclePointData vehiclePointData=contractorsVehicleMap.get(contractorKey).get(vehicleKey);
+            		HashMap<String, ResumePointData> resumeMap=new HashMap<String, ResumePointData>();
+            		for(PointMoveData move:vehiclePointData.getMoves()){
+            			if(!resumeMap.containsKey(move.getDescription())){
+            				resumeMap.put(move.getDescription(), new ResumePointData());
+            				resumeMap.get(move.getDescription()).setText(move.getDescription());
+            			}
+            			if(!resumeContractorMap.containsKey(move.getDescription())){
+            				resumeContractorMap.put(move.getDescription(), new ResumePointData());
+            				resumeContractorMap.get(move.getDescription()).setText(move.getDescription());
+            			}
+            			
+            			resumeMap.get(move.getDescription()).setCount(resumeMap.get(move.getDescription()).getCount()+1);
+            			resumeMap.get(move.getDescription()).setPoints(resumeMap.get(move.getDescription()).getPoints()+move.getAmount().intValue());
+            			resumeContractorMap.get(move.getDescription()).setCount(resumeContractorMap.get(move.getDescription()).getCount()+1);
+            			resumeContractorMap.get(move.getDescription()).setPoints(resumeContractorMap.get(move.getDescription()).getPoints()+move.getAmount().intValue());
+            		}
+            		
+            		vehiclePointData.getResume().addAll(resumeMap.values());
+            		Collections.sort(vehiclePointData.getResume(), new Comparator<ResumePointData>() {
+
+						@Override
+						public int compare(ResumePointData o1,ResumePointData o2) {
+							// TODO Auto-generated method stub
+							return o1.getText().compareTo(o2.getText());
+						}
+					});
+            		contractorPointData.getVehicles().add(vehiclePointData);
+            		
+            		Collections.sort(vehiclePointData.getMoves(), new Comparator<PointMoveData>() {
+
+						@Override
+						public int compare(PointMoveData o1,PointMoveData o2) {
+							// TODO Auto-generated method stub
+							return o1.getDate().compareTo(o2.getDate());
+						}
+					});
+            	}
+            	
+            	contractorPointData.getResume().addAll(resumeContractorMap.values());
+            	Collections.sort(contractorPointData.getResume(), new Comparator<ResumePointData>() {
+
+					@Override
+					public int compare(ResumePointData o1,ResumePointData o2) {
+						// TODO Auto-generated method stub
+						return o1.getText().compareTo(o2.getText());
+					}
+				});
+            	
+            	Collections.sort(contractorPointData.getVehicles(), new Comparator<VehiclePointData>() {
+
+					@Override
+					public int compare(VehiclePointData o1,VehiclePointData o2) {
+						// TODO Auto-generated method stub
+						return o1.getPlate().compareTo(o2.getPlate());
+					}
+				});
+            	
+            	res.add(contractorPointData);
+            }
+           
+            Collections.sort(res, new Comparator<ContractorPointData>() {
+
+				@Override
+				public int compare(ContractorPointData o1,ContractorPointData o2) {
+					// TODO Auto-generated method stub
+					return o1.getName().compareTo(o2.getName());
+				}
+			});
+            
+        } catch (Exception e) {
+        	e.printStackTrace();
+			Object[] parameters = {};
+             handler.getException(e,"findContractorsPointData",userRequest,parameters);
+             
+        }
+        
+        return res;
+            
+    }
+    
+    /**
+     * 
+     * @param session
+     * @param attribute
+     * @param queryStr
+     * @param value
+     * @param userRequest
+     * @param status
+     * @return
+     * @throws Exception
+     */
+    public Query getQuery(Session session, int attribute,String queryStr, String value, UserSessionData userRequest, int status) throws Exception {
+    	try{ 
+            //Check data integrity
+    		if (value == null) {
+                throw new InvalidDataException("getQuery","value is null");
+            }
+            if (userRequest == null) {
+                throw new DeslogedException("getQuery","session is null");
+            }
+
+            switch (attribute) {
+                case MATRICULA:
+                    queryStr += " and  lower(matricula) like lower(:value)";
+                    value+="%";
+                    break;
+                case PREFIX:
+                    queryStr += " and  lower(vehicle.optionalInfo.prefix) like lower(:value)";
+                    value+="%";
+                    break;
+                default:
+                    throw new InvalidDataException("getQuery","invalid attribute");
+            }
+            switch (status) {
+               case VehicleData.ACTIVE:
+                   queryStr += " and exclusionDate is null";
+                   break;
+               case VehicleData.EXCLUDED:
+                   queryStr += " and exclusionDate is not null";
+                   break;
+            }
+            
+            Query query = session.createQuery(queryStr);
+            if(value.endsWith("%"))
+                query.setParameter("value", "%" + value);
+            else
+                query.setParameter("value", new Integer(value));
+
+            return query;
+
+    	}catch (Exception e) {
+    		Object[] parameters = {session,attribute,queryStr,value,status};
+   			handler.getException(e, "getQuery", userRequest, parameters);
+    	}
+    	return null;
+    }
+    
+    /**
+     * @param session
+     * @param attribute
+     * @param queryStr
+     * @param value
+     * @param status
+     * @param userRequest
+     * @return
+     * @throws InvalidDataException
+     * @throws DeslogedException
+     * @throws DCException
+     */
+    public Query getQueryWithOrderBy(Session session, int attribute,String queryStr, String value, int status ,UserSessionData userRequest) throws Exception {
+    	try{ 
+            //Check data integrity
+            if (value == null) {
+                throw new InvalidDataException("Class persistence.vehicle.VehicleReport(findVehicleByLike), value name is empty",   "generic.vehicle.vehicledata.valueempty");
+            }
+            if (userRequest == null) {
+                throw new DeslogedException(
+                        "Class persistence.vehicle.VehicleReport(findUserByLike), session data is empty","generic.error.deslogued");
+            }
+
+            
+            switch (attribute) {
+                case MATRICULA:
+                    queryStr += " and  lower(matricula) like lower(:value)";
+                    value+="%";
+                    break;
+                case PREFIX:
+                    queryStr += " and  lower(vehicle.optionalInfo.prefix) like lower(:value)";
+                    value+="%";
+                    break;
+                default:
+                    throw new InvalidDataException(
+                        "Class persistence.vehicle.VehicleReport(findVehicleByLike), attribute name is mot right",
+                        "generic.vehicle.vehicledata.invalidattribute");
+            }
+            
+            switch (status) {
+               case VehicleData.ACTIVE:
+                   queryStr += " and exclusionDate is null";
+                   break;
+               case VehicleData.EXCLUDED:
+                   queryStr += " and exclusionDate is not null";
+                   break;
+            }
+            String orderBy = " order by vehicle.matricula";
+            Query query = session.createQuery(queryStr+orderBy);
+            
+            //Query query = session.createQuery(queryStr);
+        
+            if(value.endsWith("%"))
+                query.setParameter("value", "%" + value);
+            else
+                query.setParameter("value", new Integer(value));
+
+            return query;
+            
+    	}catch (Exception e) {
+       		Object[] parameters = {session,attribute,queryStr,value,status};
+   			handler.getException(e, "getQueryWithOrderBy", userRequest, parameters);
+    	}
+    	return null;
+    }
+    
+    /**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,systemaccess"
+	 */
+	public JJResumeLAData jjResumeLA(Integer year, Integer month, UserSessionData userSessionData) throws Exception{		
+		JJResumeLAData data=new JJResumeLAData();
+		try {
+
+			if (userSessionData == null) {
+				throw new DeslogedException("jjResumeLA","userSessionData = null");
+			}
+		 
+			Session session=HibernateUtil.currentSession();
+			Query query=session.createQuery("select ch from JJOGSumTotal as ch where ch.lineLabel='Total LA' and  ch.snapshot.year="+year+" and ch.snapshot.month="+month+" order by ch.order ");
+            Iterator iter=query.list().iterator();
+            query=session.createQuery("select g from JJGoals as g where g.year="+year+"");
+        	JJGoals goal=(JJGoals)query.list().iterator().next();
+        	
+            if(iter.hasNext()){
+            	JJOGSumTotal ch=(JJOGSumTotal) iter.next();
+            	
+            	data.setTotalAccident( ch.getTotalCrashes());
+            	data.setTotalIncident( ch.getTotalIncidents());
+            	data.setNumberCrashesWithInjuries(ch.getInjured());
+            	data.setTotalMiles(ch.getTotalMiles());
+            	data.setTotalVehicles(ch.getAverageVehicles());
+            	data.setAvMilesPerVehicle(ch.getAverageMiles());
+            	data.setPercentageVehicleInCrashesAP(ch.getAnnualizedProjection());
+            	data.setCpmm(ch.getCpmm());
+            	data.setIpmm(ch.getIpmm());
+            	
+            	data.setCpmmGoal(goal.getCpmm());
+            	data.setIpmmGoal(goal.getIpmm());
+            			
+            }
+			
+
+		} catch (Exception e) {
+			Object[] parameters = {year,month};
+		    handler.getException(e,"jjResumeLA",userSessionData,parameters);
+		}
+		
+		return data;
+	}
+	
+	  /**
+		 * @ejb.interface-method
+		 * @ejb.permission role-name = "administrator,systemaccess"
+		 */
+		public JJGoalsData jjGoals(Integer year, UserSessionData userSessionData) throws Exception{		
+			JJGoalsData data=new JJGoalsData();
+			try {
+
+				if (userSessionData == null) {
+					throw new DeslogedException("jjResumeLA","userSessionData = null");
+				}
+			 
+				Session session=HibernateUtil.currentSession();
+	            Query query=session.createQuery("select g from JJGoals as g where g.year="+year+"");
+	        	JJGoals goal=(JJGoals)query.list().iterator().next();
+	        	data=goal.getData();
+
+			} catch (Exception e) {
+				Object[] parameters = {year};
+			    handler.getException(e,"jjGoals",userSessionData,parameters);
+			}
+			
+			return data;
+		}
+    
+	  /**
+	  * @ejb.interface-method
+	  * @ejb.permission role-name = "administrator,systemaccess"
+	  */
+	public ArrayList<JJOGSumData> jjDataByCountry(Integer year, Integer month, UserSessionData userSessionData) throws Exception{		
+			ArrayList<JJOGSumData> res=new ArrayList<JJOGSumData>();
+			try {
+
+				if (userSessionData == null) {
+					throw new DeslogedException("jjDataByCountry","userSessionData = null");
+				}
+			 
+				Session session=HibernateUtil.currentSession();
+				Query query=session.createQuery("select ch from JJOGSum as ch where ch.snapshot.year="+year+" and ch.snapshot.month="+month+" order by ch.order  ");
+	            Iterator iter=query.list().iterator();
+	         	query=session.createQuery("select g from JJGoals as g where g.year="+year+"");
+            	JJGoals goal=(JJGoals)query.list().iterator().next();
+            
+	            while(iter.hasNext()){
+	            	JJOGSum ch=(JJOGSum) iter.next();
+	            	res.add(ch.getData(goal.getCpmm(),goal.getIpmm()));
+	            }
+
+			} catch (Exception e) {
+				Object[] parameters = {year,month};
+			    handler.getException(e,"jjDataByCountry",userSessionData,parameters);
+			}
+			
+			return res;
+		}
+		
+	
+	
+	  /**
+	  * @ejb.interface-method
+	  * @ejb.permission role-name = "administrator,systemaccess"
+	  */
+	public ArrayList<JJOGSumTotalData> jjDataByMonth(Integer year, Integer month, UserSessionData userSessionData) throws Exception{		
+			ArrayList<JJOGSumTotalData> res=new ArrayList<JJOGSumTotalData>();
+			try {
+
+				if (userSessionData == null) {
+					throw new DeslogedException("jjDataByMonth","userSessionData = null");
+				}
+			 
+				Session session=HibernateUtil.currentSession();
+				Query query=session.createQuery("select ch from JJOGSumTotal as ch where ch.lineLabel='Total LA' and ch.snapshot.year="+year+" and ch.snapshot.month<="+month+" order by ch.snapshot.month  ");
+	            Iterator iter=query.list().iterator();
+	         	query=session.createQuery("select g from JJGoals as g where g.year="+year+"");
+	         	JJGoals goal=(JJGoals)query.list().iterator().next();
+          
+	            while(iter.hasNext()){
+	            	JJOGSumTotal ch=(JJOGSumTotal) iter.next();
+	            	res.add(ch.getData(goal.getCpmm(),goal.getIpmm(),session));
+	            }
+				
+
+			} catch (Exception e) {
+				Object[] parameters = {year,month};
+			    handler.getException(e,"jjDataByMonth",userSessionData,parameters);
+			}
+			
+			return res;
+		}
+	
+	
+	 /**
+	  * @ejb.interface-method
+	  * @ejb.permission role-name = "administrator,systemaccess"
+	  */
+	public ArrayList<JJCrashSubtypesData> jjDataBySubtype(Integer year, Integer month, UserSessionData userSessionData) throws Exception{		
+			ArrayList<JJCrashSubtypesData> res=new ArrayList<JJCrashSubtypesData>();
+			try {
+
+				if (userSessionData == null) {
+					throw new DeslogedException("jjDataBySubtype","userSessionData = null");
+				}
+			 
+				Session session=HibernateUtil.currentSession();
+				Query queryNonRecordable=session.createQuery("select nr from JJCrashNonRecordable as nr where nr.snapshot.year="+year+" and nr.snapshot.month="+month+"");
+				Integer countNonRecordable=0;
+				Iterator iter=queryNonRecordable.list().iterator();
+				if(iter.hasNext()){
+					JJCrashNonRecordable nr=(JJCrashNonRecordable) iter.next();
+					countNonRecordable=nr.getCount();
+				}
+				
+				Query query=session.createQuery("select ch from JJCrashSubtypes as ch where ch.snapshot.year="+year+" and ch.snapshot.month="+month+" order by ch.order ");
+	            iter=query.list().iterator();
+	         
+	            while(iter.hasNext()){
+	            	JJCrashSubtypes ch=(JJCrashSubtypes) iter.next();
+	            	JJCrashSubtypesData data=ch.getData();
+	            	data.setCountNonRecordable(countNonRecordable);
+	            	res.add(data);
+	            }
+				
+
+			} catch (Exception e) {
+				Object[] parameters = {year,month};
+			    handler.getException(e,"jjDataBySubtype",userSessionData,parameters);
+			}
+			
+			return res;
+		}
+	
+	
+	 /**
+	  * @ejb.interface-method
+	  * @ejb.permission role-name = "administrator,systemaccess"
+	  */
+	public ArrayList<JJIncidentByTypeData> jjIncidentByType(Integer year, Integer month, UserSessionData userSessionData) throws Exception{		
+			ArrayList<JJIncidentByTypeData> res=new ArrayList<JJIncidentByTypeData>();
+			try {
+
+				if (userSessionData == null) {
+					throw new DeslogedException("jjIncidentByType","userSessionData = null");
+				}
+			 
+				Session session=HibernateUtil.currentSession();
+				Query query=session.createQuery("select ch from JJIncidentByType as ch where ch.snapshot.year="+year+" and ch.snapshot.month="+month+" order by ch.type ");
+	            Iterator iter=query.list().iterator();
+	            JJIncidentByType total=null;
+	            while(iter.hasNext()){
+	            	JJIncidentByType ch=(JJIncidentByType) iter.next();
+	            	if(!ch.getType().equalsIgnoreCase("total")){
+	            		res.add(ch.getData());	
+	            	}else{
+	            		total=ch;
+	            	}
+	            	
+	            }
+				res.add(total.getData());
+
+			} catch (Exception e) {
+				Object[] parameters = {year,month};
+			    handler.getException(e,"jjIncidentByType",userSessionData,parameters);
+			}
+			
+			return res;
+		}
+	
+	  /**
+		  * @ejb.interface-method
+		  * @ejb.permission role-name = "administrator,systemaccess"
+		  */
+		public ArrayList<JJChSumData> jjDataByChampion(Integer year, Integer month, UserSessionData userSessionData) throws Exception{		
+				ArrayList<JJChSumData> res=new ArrayList<JJChSumData>();
+				try {
+
+					if (userSessionData == null) {
+						throw new DeslogedException("jjDataByCountry","userSessionData = null");
+					}
+				 
+					Session session=HibernateUtil.currentSession();
+					Query query=session.createQuery("select ch from JJChSum as ch where ch.snapshot.year="+year+" and ch.snapshot.month="+month+" order by ch.order  ");
+		            Iterator iter=query.list().iterator();
+		            query=session.createQuery("select g from JJGoals as g where g.year="+year+"");
+	            	JJGoals goal=(JJGoals)query.list().iterator().next();
+	            	
+	            	
+		            while(iter.hasNext()){
+		            	JJChSum ch=(JJChSum) iter.next();
+		            	res.add(ch.getData(goal.getCpmm(),goal.getIpmm()));
+		            	
+		            }
+					
+
+				} catch (Exception e) {
+					Object[] parameters = {year,month};
+				    handler.getException(e,"jjDataByChampion",userSessionData,parameters);
+				}
+				
+				return res;
+			}
+		
+		 /**
+		 * @ejb.interface-method
+		 * @ejb.permission role-name = "administrator,systemaccess"
+		 */
+		public ArrayList<JJOGSumTotalData> jjTotalDataByOP(Integer year, Integer month, UserSessionData userSessionData) throws Exception{		
+			ArrayList<JJOGSumTotalData> res=new ArrayList<JJOGSumTotalData>();
+			try {
+
+				if (userSessionData == null) {
+					throw new DeslogedException("jjTotalDataByOP","userSessionData = null");
+				}
+			 
+				Session session=HibernateUtil.currentSession();
+				Query query=session.createQuery("select ch from JJOGSumTotal as ch where ch.snapshot.year="+year+" and ch.snapshot.month="+month+" order by ch.order  ");
+	            Iterator iter=query.list().iterator();
+	            query=session.createQuery("select g from JJGoals as g where g.year="+year+"");
+            	JJGoals goal=(JJGoals)query.list().iterator().next();
+            	
+	            while(iter.hasNext()){
+	            	JJOGSumTotal ch=(JJOGSumTotal) iter.next();
+	            	if(!(ch.getLineLabel().equals("Total")||ch.getLineLabel().equals("MD&D (w/o Vision Care)")
+	            			||ch.getLineLabel().equals("Total Vision Care")||ch.getLineLabel().equals("MD&D (w/Vision Care)"))){
+	            		res.add(ch.getData(goal.getCpmm(),goal.getIpmm(),session));
+	            	}
+	            }
+				
+
+			} catch (Exception e) {
+				Object[] parameters = {year,month};
+			    handler.getException(e,"jjTotalDataByOP",userSessionData,parameters);
+			}
+			
+			return res;
+		}
+
+		
+		/**
+		  * @ejb.interface-method
+		  * @ejb.permission role-name = "administrator,systemaccess"
+		  */
+		public ArrayList<JJCrashByTypeData> jjCrashBytype(Integer year, Integer month, UserSessionData userSessionData) throws Exception{		
+				ArrayList<JJCrashByTypeData> res=new ArrayList<JJCrashByTypeData>();
+				try {
+
+					if (userSessionData == null) {
+						throw new DeslogedException("jjCrashBytype","userSessionData = null");
+					}
+				 
+					Session session=HibernateUtil.currentSession();
+					
+					
+					Query query=session.createQuery("select ch from JJCrashByType as ch where ch.snapshot.year="+year+" and ch.snapshot.month="+month+" order by ch.order  ");
+		            Iterator iter=query.list().iterator();
+		            
+		            while(iter.hasNext()){
+		            	JJCrashByType ch=(JJCrashByType) iter.next();
+		            	JJCrashByTypeData data=ch.getData();
+		            	res.add(data);
+		            }
+					
+
+				} catch (Exception e) {
+					Object[] parameters = {year,month};
+				    handler.getException(e,"jjCrashBytype",userSessionData,parameters);
+				}
+				
+				return res;
+			}
+		
+		/**
+		  * @ejb.interface-method
+		  * @ejb.permission role-name = "administrator,pointconfupdate"
+		  */
+		public CalculateRetroactiveImpactData pointsCalculateRetroactiveImapact(Collection<PointsDefinitionData> definitions,ArrayList<FringeData> fringers, Integer backDays, UserSessionData userSessionData) throws Exception{		
+			CalculateRetroactiveImpactData res=new CalculateRetroactiveImpactData();
+				try {
+
+					if (userSessionData == null) {
+						throw new DeslogedException("pointsCalculateRetroactiveImapact","userSessionData = null");
+					}
+				 
+					String idsSegRutaDefPoints="0";
+					HashMap<Integer, PointsDefinitionData> hashDefinitions=new HashMap<Integer, PointsDefinitionData>();
+					for(PointsDefinitionData pd:definitions){
+						hashDefinitions.put(pd.getId(), pd);
+						if(pd.getType().equals(PointsDefinitionData.SEG_ROUTE) && pd.getAmount()>0){
+							idsSegRutaDefPoints+=","+pd.getReference();
+						}
+					}
+					
+					
+					Calendar cal=Calendar.getInstance();
+					cal.add(Calendar.DATE,-backDays);
+					Calendar calNow=Calendar.getInstance();
+					Calendar calFirstMonthDay=Calendar.getInstance();
+					calFirstMonthDay.set(Calendar.DATE, 1);
+					
+					Session session=HibernateUtil.currentSession();
+					//Totos los vehiculos con cuentas abiertas
+					Query query=session.createSQLQuery("select distinct v.id from vehicles as v  inner join PointAccount as p on ( CAST(p.reference AS INTEGER)=v.id) "+UtilityQuery.corporationDivisionsRestictionsSQL("v", userSessionData)+" AND v.exclusiondate is null ");
+					
+		            Iterator iter=query.list().iterator();
+		            
+		            //Cantidad de horas que se pierden en penalizaciones
+		            Integer sumStopedHour=0;
+		            //Cantidad total de vehiculos evaluados
+		            Integer sumTotalVehicles=0;
+		            //Cantidad total suspensiones
+		            Integer sumTotalStopedVehicles=0;
+		            //Cantidad total de puntos restados
+		            Double sumTotalLessPointss=0d;
+		            
+		            //Se usa para guardar por horas cuantos vehiculos se suspendieron
+		            HashMap<Integer, Integer> suspendedXHours=new HashMap<Integer, Integer>();
+		            
+		            
+		            while(iter.hasNext()){
+		            	++sumTotalVehicles;
+		            	
+		            	Integer vehicleid =(Integer)iter.next();
+		            	//Busco el estado de la cuenta al inicio
+		            	Query queryAccount=session.createSQLQuery("select p.total,m.actualTotal "+
+		            			" from PointAccount as p "+
+		            			" left outer join pointmoves as m on (m.account=p.id) "+
+		            			" Where m.date > "+ Util.formatSQL(cal.getTime())+" and CAST(p.reference AS INTEGER)= "+vehicleid+" "+
+		            			" ORDER BY m.date asc "+
+		            			" LIMIT 1 ");
+		            	Double total=100d;
+		            	if(queryAccount.list().iterator().hasNext()){
+			            	Object[] row=(Object[])queryAccount.list().iterator().next();
+			            	total=(Double)row[0];
+			            	Double actualTotal=(Double)row[1];
+			            	if(actualTotal!=null){
+			            		total=actualTotal;
+			            	}
+		            		
+		            	}
+		            	
+		            	//Busco todos los eventos de este vehiculo
+			            Query queryEvents=session.createSQLQuery("( (select pd.id as pdid, vc.date as date, 'check' as type "+
+		            			" from vehiclecheckitemsvalues as vi "+
+		            			" inner join  vehiclecheck as vc on (vc.vehiclecheckid=vi.vehiclecheck and  vc.vehicle= "+vehicleid+" )  "+  
+		            			" inner join pointsdefinitions as pd on(CAST(pd.reference AS INTEGER)=vi.item and pd.type='SEG_RUTA' and pd.corporationId="+userSessionData.getCorporationId()+" ) "+
+		            			" where vi.itemValue='2' and vc.date > "+ Util.formatSQL(cal.getTime())+" and vi.item in("+idsSegRutaDefPoints+") "+
+		            			" ORDER BY  vc.date ) "+
+		            			" union "+
+		            			" (select pd.id as pdid, e.fechahora as date, 'speed' as type "+
+		            			" from mobiltrackevents as e "+
+		            			" inner join pointsdefinitions as pd on(pd.type='FOSA_SPEED' and pd.corporationId="+userSessionData.getCorporationId()+") "+
+		            			" where e.vehicle="+vehicleid+" and  e.fechahora > "+ Util.formatSQL(cal.getTime())+" and velGPS > 90 and  velGPS < 100 "+
+		            			" ORDER BY e.fechahora) )"+
+		            			" UNION "+
+		            			" (select pd.id as pdid, e.fechahora as date, 'speed' as type "+
+		            			" from mobiltrackevents as e "+
+		            			" inner join pointsdefinitions as pd on(pd.type='FOSA_SPEED_2' and pd.corporationId="+userSessionData.getCorporationId()+") "+
+		            			" where e.vehicle="+vehicleid+" and  e.fechahora > "+ Util.formatSQL(cal.getTime())+" and velGPS >=100 and  velGPS < 120  "+
+		            			" ORDER BY e.fechahora) "+
+		            			" ORDER BY DATE ASC" );
+			            Iterator iterEvent=queryEvents.list().iterator();
+			            boolean endMonth=false;
+			            boolean stateVehicle=true;
+			            Calendar calStateEnd=Calendar.getInstance(); 
+			            while(iterEvent.hasNext()){
+			            	Object[] row=(Object[])iterEvent.next();
+			            	Integer pdId=(Integer)row[0];
+			            	Date dateEvent=(Date)row[1];
+			            	
+			            	Double amount =hashDefinitions.containsKey(pdId)?hashDefinitions.get(pdId).getAmount():0;
+			            	
+			            	if(amount>0){
+				            	Calendar calAux=Calendar.getInstance();
+				            	calAux.setTime(dateEvent);
+				            	//Controlo cierre de mes 
+				            	if(! endMonth &&calAux.get(Calendar.MONTH)==calFirstMonthDay.get(Calendar.MONTH) && calAux.get(Calendar.DATE)>=calFirstMonthDay.get(Calendar.DATE)){
+				            		total=100d;
+				            		endMonth=true;
+				            	}
+
+				            	if(!stateVehicle){
+				            		if(calStateEnd.compareTo(calAux)<=0){
+				            			stateVehicle=true;
+				            		}
+				            	}
+				            	//Salteo los eventos que se producen mientras esta suspendido el vehiculo
+				            	if(stateVehicle){
+					            	//Resto los puntos
+				            		total-=amount;
+				            		sumTotalLessPointss-=amount;
+				            		
+									for(FringeData fringerAux:fringers){
+										if(total<fringerAux.getAmount() && total+amount>=fringerAux.getAmount() ){
+											//Entra en franja critica 
+											calStateEnd.setTime(dateEvent);
+											Integer time=Integer.valueOf(fringerAux.getTime());
+											calStateEnd.add(Calendar.HOUR, time);
+											stateVehicle=false;
+											++sumTotalStopedVehicles;
+											if(!suspendedXHours.containsKey( time)){
+												suspendedXHours.put(time,0);
+											}
+											sumStopedHour+=time;
+											suspendedXHours.put(time,suspendedXHours.get(Integer.valueOf(fringerAux.getTime()))+1);
+											break;
+										}
+									}
+				            	}
+				            	
+			            	}
+
+			            }
+
+		            }
+				
+		            res.setSumStopedHour(sumStopedHour);
+		            res.setSumTotalLessPointss(sumTotalLessPointss);
+		            res.setSumTotalStopedVehicles(sumTotalStopedVehicles);
+		            res.setSumTotalVehicles(sumTotalVehicles);
+		            Integer[][] aux=new Integer[suspendedXHours.keySet().size()][2];
+		            Integer index=0;
+		            for(Integer hours:suspendedXHours.keySet()){
+		            	aux[index][0]=hours;
+		            	aux[index][1]=suspendedXHours.get(hours);		
+		            	index++;		
+		            }
+		            res.setSuspendedXHours(aux);
+				} catch (Exception e) {
+					Object[] parameters = {};
+				    handler.getException(e,"pointsCalculateRetroactiveImapact",userSessionData,parameters);
+				}
+				
+				return res;
+				 
+			}
+		
+		/**
+		  * @ejb.interface-method
+		  * @ejb.permission role-name = "administrator,systemaccess"
+		  */
+		public ArrayList<JJCrashByChampionData> JJCrashByChampion(Integer year, Integer month, UserSessionData userSessionData) throws Exception{		
+				ArrayList<JJCrashByChampionData> res=new ArrayList<JJCrashByChampionData>();
+				try {
+
+					if (userSessionData == null) {
+						throw new DeslogedException("JJCrashByChampionData","userSessionData = null");
+					}
+				 
+					Session session=HibernateUtil.currentSession();
+					Query query=session.createQuery("select ch from JJCrashByChampion as ch where ch.snapshot.year="+year+" and ch.snapshot.month="+month+" order by ch.order  ");
+		            Iterator iter=query.list().iterator();
+		            
+		            while(iter.hasNext()){
+		            	persistence.report.tables.JJCrashByChampion ch=(persistence.report.tables.JJCrashByChampion) iter.next();
+		            	res.add(ch.getData());
+		            }
+					
+
+				} catch (Exception e) {
+					Object[] parameters = {year,month};
+				    handler.getException(e,"JJCrashByChampionData",userSessionData,parameters);
+				}
+				
+				return res;
+			}
+}

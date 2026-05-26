@@ -1,0 +1,46 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.event.tables" >
+	<class name="VehicleInvolved" table="vehiclesinvolved">
+        
+		<id column="involvedid" name="involvedid">
+            <generator class="sequence">
+            	<param name="sequence">VehicleInvolved_Sequence</param>
+            </generator>
+        </id>
+
+       	<property name="number" 	type="java.lang.Integer"		column="number" />
+
+		<many-to-one name="typeVehicle" class="persistence.datatype.tables.TypeVehicle"			column="vehicletype"/>
+ 		<many-to-one name="behaviourVehicle" class="persistence.datatype.tables.VehicleBehaviour"	column="vehiclebehaviour"/>
+		<property name="behaviourVehicleText" 	type="java.lang.String"		column="behaviourVehicleText" />
+
+       	<property name="hitrun" 	type="java.lang.String"		column="hitrun" />
+
+	    <many-to-one class="persistence.datatype.tables.AccidentFactors"	name="principalFactor"/>
+	    <property name="principalFactorText" 	type="java.lang.String"		column="principalFactorText" />
+
+       	<property name="factortooclose" />
+       	<property name="factorhighspeed" />
+       	<property name="factorsigns" />
+       	<property name="factorturn" />
+       	<property name="factorlight" />
+       	<property name="factorstop" />
+       	<property name="factorother" />
+       	<property name="factorchangelane" />
+       	<property name="factoralcohol" />
+       	<property name="factorovertaking" />
+       	<property name="factorsleep" />
+       	<property name="factordistraction" />
+		<property name="factorConcience" />
+		<property name="factorOtherParking" />
+		<property name="factorOtherCrossing" />
+		<property name="factorOtherStanding" />
+			
+       	<property name="contact" type="java.lang.String"/>
+
+    </class>
+</hibernate-mapping>

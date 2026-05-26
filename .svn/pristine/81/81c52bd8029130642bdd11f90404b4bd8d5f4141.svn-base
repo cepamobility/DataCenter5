@@ -1,0 +1,721 @@
+/*
+ * Created on 27-oct-2005
+ */
+package business.fleet;
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+import java.util.StringTokenizer;
+
+import persistence.fleet.FleetABM;
+import persistence.fleet.FleetABMHome;
+import persistence.fleet.FleetABMUtil;
+import persistence.fleet.FleetReport;
+import persistence.fleet.FleetReportHome;
+import persistence.fleet.FleetReportUtil;
+import business.alert.AlertABMFacade;
+import business.util.ExceptionHandler;
+
+import communication.administration.user.UserSessionData;
+import communication.exception.DeslogedException;
+import communication.exception.InvalidDataException;
+import communication.fleet.tables.ConsumedFuelData;
+import communication.fleet.tables.FleetAccidentData;
+import communication.fleet.tables.FleetData;
+import communication.fleet.tables.FleetDivisionData;
+import communication.fleet.tables.FleetDivisionDetailData;
+import communication.fleet.tables.FleetIncidentData;
+import communication.fleet.tables.OdometerData;
+import communication.fleet.util.RegionBlockData;
+import communication.util.LogActions;
+
+/**
+ * 
+ * @ejb.bean name = "FleetABMFacade" jndi-name = "ejb/FleetABMFacade" type =
+ *           "Stateless" transaction-type = "Container"  
+ * 
+ * @ejb.ejb-ref ejb-name = "FleetABM" ref-name = "ejb/FleetABM" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/FleetABM" ref-name = "FleetABM"
+ * 
+ * @ejb.ejb-ref ejb-name = "FleetReport" ref-name = "ejb/FleetReport" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/FleetReport" ref-name = "FleetReport"
+ * 
+ * @ejb.util generate="physical"
+ * 
+ */
+public abstract class FleetABMFacadeBean  implements javax.ejb.SessionBean {
+
+    private ExceptionHandler handler = new ExceptionHandler(FleetABMFacadeBean.class);
+
+	/**
+	 * Create method
+	 * @ejb.permission role-name = "fleetdelete,fleetupdate,fleetcreate,administrator,driverfleetinsertdata,fleetinsertdata,driverodometer"
+	 * @ejb.create-method
+	 */
+	public void ejbCreate() throws javax.ejb.CreateException {
+
+	}
+	
+	/**
+	 * @ejb.interface-method view-type = "remote"
+	 * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,drivercreate,fleetcreate"
+	 * @param data
+	 * @throws Exception 
+	 */
+	public void fleetCreate(FleetData data,String comment,UserSessionData userRequest) throws Exception {
+		
+        try{	
+            if(userRequest == null) {
+                throw new DeslogedException("fleetCreate","userRequest = null");
+            }
+            if(data == null) {
+                throw new InvalidDataException("fleetCreate","data = null");
+            }
+		
+            String valid = data.validate();
+            if (valid != null) {
+                throw new InvalidDataException("fleetCreate",valid);
+            }
+
+            FleetABMHome home = FleetABMUtil.getHome();
+            FleetABM fleetABM = home.create();		
+            fleetABM.fleetCreate(data, userRequest,comment);
+	
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[0] = data;
+        	parameters[1] = comment;
+            handler.handleException("driverCreate",exception,userRequest, parameters);
+        } 
+	}
+
+	/**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,driverupdate,fleetupdate"
+     * @param data
+     * @param comment
+     * @throws Exception 
+     */
+	public FleetDivisionData fleetDivisionAdd(FleetData data, UserSessionData userRequest, 
+			FleetDivisionData fdd, String comment)
+	throws Exception
+	{
+		  try
+		  { 
+			  FleetABMHome home = FleetABMUtil.getHome();
+	          FleetABM fleetABM = home.create();      
+	          return fleetABM.fleetDivisionAdd(data, userRequest,fdd,comment); 
+		  }
+		  catch (Exception exception) 
+		  {
+			  Object[] parameters = new Object[3];
+			  parameters[0] = data;
+			  parameters[1] = fdd;
+			  parameters[2] = comment;
+			  handler.handleException("fleeDivisionAdd",exception, userRequest,parameters);
+		  } 		
+		  return fdd;
+	}  
+
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,driverupdate,fleetupdate,fleetblockdata"
+     * @param data
+     * @throws Exception 
+     */
+	public void fleetsUpdateBlockPeriod(Collection fleetsData, UserSessionData userSessionData, 
+			RegionBlockData regionBlockData) throws Exception
+	{
+		FleetData fleetData;
+		Iterator it;
+		try
+		{
+			// TODO: Aca validar que la fecha de bloqueo sea mayor o igual que la
+			// fecha de bloqueo que ya estaba seteada, de lo contrario
+			// devolver una excepcion o un error de alerta para que el usuario
+			// confirme si esta seguro.
+			
+			it = fleetsData.iterator();
+			while (it.hasNext()){
+				fleetData = (FleetData)it.next();
+				fleetData.setBlockMonth(regionBlockData.getBlockMonth());
+				fleetData.setBlockYear(regionBlockData.getBlockYear());
+			}
+			FleetABMHome home = FleetABMUtil.getHome();
+	        FleetABM fleetABM = home.create();      
+	        fleetABM.fleetsUpdateBlockPeriod(fleetsData,userSessionData, regionBlockData);
+	    
+			
+			
+		}catch(Exception e)
+		{
+			Object[] parameters = new Object[2];
+			parameters[0] = fleetsData;
+			parameters[1] = regionBlockData;
+			  handler.handleException("fleetsUpdateBlockPeriod",e, userSessionData, parameters);
+		}
+	}
+	
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,driverupdate,fleetupdate"
+     * @param data
+     * @throws Exception 
+     */
+    public void fleetUpdate(FleetData fleet, UserSessionData userSessionData, 
+    		String comment, int action) throws Exception {
+        try{    
+            if(userSessionData == null) {
+                throw new DeslogedException("fleetUpdate","userRequest = null");
+            }
+            if(fleet == null) {
+                throw new InvalidDataException("fleetUpdate","data = null");
+            }
+        
+            String valid = fleet.validate();
+            if (valid != null) {
+                throw new InvalidDataException("fleetUpdate",valid);
+            }
+
+            FleetABMHome home = FleetABMUtil.getHome();
+            FleetABM fleetABM = home.create();      
+            fleetABM.fleetUpdate(fleet, userSessionData,comment,action);
+    
+        } catch (Exception exception) {
+        	Object [] p = new Object [3];
+        	p[0] = fleet;
+        	p[1] = comment;
+        	p[2] = action;
+            handler.handleException("fleetUpdate",exception, userSessionData, p);
+        } 
+    }
+    
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,fleetupdate,fleetdelete"
+     * @param data
+     * @throws Exception 
+     */
+    public void fleetExclude(String fleets,Date exclusionDate, 
+    		String comment,UserSessionData userRequest) throws Exception{ 
+       
+    	FleetABM fleetABM = null; 
+    	try{    
+	        if (userRequest == null) {
+	            throw new DeslogedException("Class business.fleet.FleetABMFacade(fleetUpdate), session data is empty","generic.error.deslogued");
+	        }
+	
+	        FleetReportHome reportHome = FleetReportUtil.getHome();
+	        FleetReport fleetReport = reportHome.create();	
+	        FleetABMHome home = FleetABMUtil.getHome();
+	        fleetABM = home.create();
+	
+	        StringTokenizer tokenizer = new StringTokenizer(fleets,",");
+	        while(tokenizer.hasMoreTokens()) {
+	            String fleetId = tokenizer.nextToken();
+	            FleetData fleetData = fleetReport.findFleetByPrimaryKey(new Integer(fleetId),userRequest);
+	            fleetData.setExclusionDate(exclusionDate);
+	            fleetABM.fleetUpdate(fleetData, userRequest, comment, LogActions.EXCLUDE);
+	        }
+	    } catch (Exception exception) {
+	    	Object[] p = new Object[3];
+	    	p[0] = fleets;
+	    	p[1] = exclusionDate;
+	    	p[2] = comment;
+	        handler.handleException("fleetExclude",exception, userRequest, p);
+	    }
+    }
+    
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,fleetdelete,fleetupdate"
+     * @param data
+     * @throws Exception 
+     */
+    public void fleetInclude(String fleets,
+    		String comment,UserSessionData userRequest) throws Exception{ 
+       
+    	FleetABM fleetABM = null; 
+    	try{    
+	        if (userRequest == null) {
+	            throw new DeslogedException("Class business.fleet.FleetABMFacade(fleetUpdate), session data is empty","generic.error.deslogued");
+	        }
+	
+	        FleetReportHome reportHome = FleetReportUtil.getHome();
+	        FleetReport fleetReport = reportHome.create();
+	
+	        FleetABMHome home = FleetABMUtil.getHome();
+	        fleetABM = home.create();
+	
+	        StringTokenizer tokenizer = new StringTokenizer(fleets,",");
+	        while(tokenizer.hasMoreTokens()) {
+	            String fleetId = tokenizer.nextToken();
+	            FleetData fleetData = fleetReport.findFleetByPrimaryKey(new Integer(fleetId),userRequest);
+	            fleetData.setExclusionDate(null);
+	            fleetABM.fleetUpdate(fleetData, userRequest, comment, LogActions.INCLUDE);
+	        }
+	    } catch (Exception exception) {
+	    	Object[] p = new Object[2];
+	    	p[0] = fleets;
+	    	p[1] = comment;
+	        handler.handleException("fleetInclude",exception, userRequest, p);
+	    }
+    }
+    
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,driverdelete"
+     * @param ids
+     * @param data
+     * @param comment
+     * @throws Exception 
+     */
+    public void fleetDelete(Collection ids, UserSessionData userSessionData, String comment) throws Exception {
+        try{    
+       
+            FleetReportHome reportHome = FleetReportUtil.getHome();
+            FleetReport fleetReport = reportHome.create();      
+            
+            FleetABMHome home = FleetABMUtil.getHome();
+            FleetABM fleetABM = home.create();      
+            Iterator it = ids.iterator();
+            while(it.hasNext()) {
+                Integer fleetId = new Integer((String)it.next());
+                if(!fleetReport.validateDelete(fleetId,userSessionData)) {
+                    throw new InvalidDataException("fleetDelete","fleet can't be deleted");
+                }
+                fleetABM.fleetDelete(fleetId, userSessionData, comment);
+            }
+            
+    
+        } catch (Exception exception) {
+        	Object[] p = new Object[2];
+        	p[0] = ids;
+        	p[1] = comment;
+            handler.handleException("fleetDelete",exception, userSessionData, p);
+        } 
+    }
+
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,fleetupdate,fleetdelete"
+     * @param data
+     * @throws Exception 
+     */
+    public void fleetDeleteDivisions(Collection colIds, UserSessionData userSessionData, String comment) throws Exception {
+        try
+        {        
+            FleetABMHome home = FleetABMUtil.getHome();
+            FleetABM fleetABM = home.create();
+            Iterator it = colIds.iterator();
+            while(it.hasNext()) {
+                fleetABM.deleteDivision(new Integer((String)it.next()),userSessionData, comment);
+            }
+    
+        } catch (Exception exception) {
+        	Object[] p = new Object[2];
+        	p[0] = colIds;
+        	p[1] = comment;
+            handler.handleException("fleetDeleteDivisions",exception, userSessionData, p);
+        }
+    }
+
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,fleetupdate,fleetdelete"
+     * @param data
+     * @throws Exception 
+     */
+    public void fleetExcludeDivisions(Collection colIds,Date exclusionDate, String comment,	UserSessionData userSessionData) throws Exception
+	{
+        try
+        {        
+            FleetABMHome home = FleetABMUtil.getHome();
+            FleetABM fleetABM = home.create();
+            Iterator it = colIds.iterator();
+            while(it.hasNext()) {
+                fleetABM.excludeDivision(new Integer((String)it.next()),userSessionData, comment, exclusionDate);
+            }
+    
+        } catch (Exception exception) {
+        	Object[] p = new Object[3];
+        	p[0] = colIds;
+        	p[1] = exclusionDate;
+        	p[2] = comment;
+            handler.handleException("fleetDeleteDivisions",exception, userSessionData, p);
+        }
+	}
+    
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,fleetupdate,fleetdelete"
+     * @param data
+     * @throws Exception 
+     */
+    public void fleetIncludeDivisions(Collection colIds, String comment, UserSessionData userSessionData) throws Exception
+    {
+        try
+        {        
+            FleetABMHome home = FleetABMUtil.getHome();
+            FleetABM fleetABM = home.create();
+            Iterator it = colIds.iterator();
+            while(it.hasNext()) {
+                fleetABM.includeDivision(new Integer((String)it.next()),userSessionData, comment);
+            }
+    
+        } catch (Exception exception) {
+        	Object[] p = new Object[2];
+        	p[0] = colIds;
+        	p[1] = comment;        		
+            handler.handleException("fleetDeleteDivisions",exception, userSessionData, p);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,fleetinsertdata"
+     * @param id Fleet that will be delete
+     * @param userRequest User logged
+     */
+    public void addAccident(FleetAccidentData accident, UserSessionData userSessionData) throws Exception{
+        try{
+            if(userSessionData == null) {
+                throw new DeslogedException("addAccident","userSessionData == null");
+            }
+            if(accident == null) {
+                throw new InvalidDataException("addAccident","accident == null");
+            }
+            FleetABMHome home = FleetABMUtil.getHome();
+            FleetABM fleetABM = home.create();
+            fleetABM.addAccident(accident,userSessionData);
+        } catch (Exception e) {
+        	Object[]p = new Object[1];
+        	p[0] = accident;
+            handler.handleException("addAccident",e, userSessionData,p);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,fleetinsertdata"
+     * @param id Fleet that will be delete
+     * @param userRequest User logged
+     */
+    public void deleteAccident(Collection accidents, UserSessionData userSessionData) throws Exception{
+        try{
+            if(userSessionData == null) {
+                throw new DeslogedException("deleteAccident","userSessionData == null");
+            }
+            if(accidents == null) {
+                throw new InvalidDataException("deleteAccident","accident == null");
+            }
+            FleetABMHome home = FleetABMUtil.getHome();
+            FleetABM fleetABM = home.create();
+            Iterator it = accidents.iterator();
+            while(it.hasNext()) {
+                fleetABM.deleteAccident(new Integer((String)it.next()),userSessionData);
+            }
+        } catch (Exception e) {
+        	Object[] p = new Object[1];
+        	p[0] = accidents;
+            handler.handleException("deleteAccident",e, userSessionData, p);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,fleetinsertdata"
+     * @param id Fleet that will be delete
+     * @param userRequest User logged
+     */
+    public void addIncident(FleetIncidentData incident, UserSessionData userSessionData) throws Exception{
+        try{
+            if(userSessionData == null) {
+                throw new DeslogedException("addIncident","userSessionData == null");
+            }
+            if(incident == null) {
+                throw new InvalidDataException("addIncident","incident == null");
+            }
+            FleetABMHome home = FleetABMUtil.getHome();
+            FleetABM fleetABM = home.create();
+            fleetABM.addIncident(incident,userSessionData);
+        } catch (Exception e) {
+        	Object[] p = new Object[1];
+        	p[0] = incident;
+            handler.handleException("addIncident",e, userSessionData, p);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,fleetinsertdata"
+     * @param id Fleet that will be delete
+     * @param userRequest User logged
+     */
+    public void deleteIncident(Collection incidents, UserSessionData userSessionData) throws Exception{
+        try{
+            if(userSessionData == null) {
+                throw new DeslogedException("deleteIncident","userSessionData == null");
+            }
+            if(incidents == null) {
+                throw new InvalidDataException("deleteIncident","incident == null");
+            }
+            FleetABMHome home = FleetABMUtil.getHome();
+            FleetABM fleetABM = home.create();
+            Iterator it = incidents.iterator();
+            while(it.hasNext()) {
+                fleetABM.deleteIncident(new Integer((String)it.next()),userSessionData);
+            }
+        } catch (Exception e) {
+        	Object[] p = new Object[1];
+        	p[0] = incidents;
+            handler.handleException("deleteIncident",e,userSessionData,p);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,fleetinsertdata"
+     */
+    public void updateDetail(Collection details, UserSessionData userSessionData,
+    		AlertABMFacade alertABMFacade ) throws Exception {
+       boolean flagalert=false;
+    	try{
+            if(userSessionData == null) {
+                throw new DeslogedException("updateDetail","userSessionData == null");
+            }
+            if(details == null) {
+                throw new InvalidDataException("updateDetail","detail == null");
+            }
+            
+            FleetABMHome home = FleetABMUtil.getHome();
+            FleetABM fleetABM = home.create();          
+            
+            Iterator it = details.iterator();
+            while(it.hasNext()) {
+                FleetDivisionDetailData detail = (FleetDivisionDetailData)it.next();
+                flagalert = fleetABM.updateDetail(detail,userSessionData);
+                /*if (flagalert){
+                	alertABMFacade.stopCorporationReminderAlert(detail,userSessionData);
+                }*/
+            }
+        } catch (Exception e) {
+        	Object[]p= new Object[2];
+        	p[0] = details;
+        	p[1] = alertABMFacade;        	                      
+            handler.handleException("updateDetail",e,userSessionData,p);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,fleetupdate,driverfleetinsertdata,fleetinsertdata"
+     */
+    public void updateOdometer(Collection odometers, UserSessionData userSessionData) throws Exception {
+        try{
+            if(userSessionData == null) {
+                throw new DeslogedException("updateOdometer","userSessionData == null");
+            }
+            if(odometers == null) {
+                throw new InvalidDataException("updateOdometer","detail == null");
+            }
+            FleetABMHome home = FleetABMUtil.getHome();
+            FleetABM fleetABM = home.create();
+            Iterator it = odometers.iterator();
+            while(it.hasNext()) {
+                OdometerData odometer = (OdometerData)it.next();
+                fleetABM.updateOdometer(odometer,userSessionData);
+            }
+        } catch (Exception e) {
+        	Object[] p = new Object[1];
+        	p[0] = odometers;
+            handler.handleException("updateOdometer",e,userSessionData,p);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "driverodometer"
+     */
+    public void insertOwnOdometer(OdometerData odometerData, UserSessionData userSessionData) throws Exception {
+        try{
+            if(userSessionData == null) {
+                throw new DeslogedException("insertOwnOdometer","userSessionData == null");
+            }
+            if(odometerData == null) {
+                throw new InvalidDataException("insertOwnOdometer","detail == null");
+            }
+            Collection fleets = FleetReportUtil.getHome().create().findVehicleFleets(odometerData.getVehicle().getId(),userSessionData);
+            Iterator it = fleets.iterator();
+
+            FleetABMHome home = FleetABMUtil.getHome();
+            FleetABM fleetABM = home.create();
+            while(it.hasNext()) {
+            	Integer fleetId = (Integer)it.next(); 
+            	if(fleetId.intValue()  != FleetData.MONSANTO_FYFLEET_2012 && fleetId.intValue()  != FleetData.MONSANTO_FYFLEET_2013 && fleetId.intValue()  != FleetData.ALLERGAN_FLEET_2014) {
+	                odometerData.setFleet(new FleetData(fleetId));
+	                fleetABM.updateOdometer(odometerData,userSessionData);
+            	}
+            }
+        } catch (Exception e) {
+        	Object[] p = new Object[1];
+        	p[0] = odometerData;
+            handler.handleException("insertOwnOdometer",e,userSessionData,p);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetinsertdata"
+     * @param id Fleet that will be delete
+     * @param userRequest User logged
+     */
+    public void addConsumedFuel(ConsumedFuelData data, Integer fleetId, UserSessionData userSessionData) throws Exception{
+        try{
+            if(userSessionData == null) {
+                throw new DeslogedException("addConsumedFuel","userSessionData == null");
+            }
+            if(data == null) {
+                throw new InvalidDataException("addConsumedFuel","fuel == null");
+            }
+            FleetABMHome home = FleetABMUtil.getHome();
+            FleetABM fleetABM = home.create();
+            fleetABM.addConsumedFuel(data,fleetId,userSessionData);
+            
+        } catch (Exception e) {
+        	Object[] p = new Object[2];
+        	p[0] = data;
+        	p[1] = fleetId;
+            handler.handleException("deleteConsumedFuel",e,userSessionData,p);
+        }
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetinsertdata"
+     * @param id Fleet that will be delete
+     * @param userRequest User logged
+     */
+    public void deleteConsumedFuel(Collection consumedIds, UserSessionData userSessionData) throws Exception{
+        try{
+            if(userSessionData == null) {
+                throw new DeslogedException("deleteConsumedFuel","userSessionData == null");
+            }
+            if(consumedIds == null) {
+                throw new InvalidDataException("deleteConsumedFuel","consumedId == null");
+            }
+            FleetABMHome home = FleetABMUtil.getHome();
+            FleetABM fleetABM = home.create();
+            Iterator it = consumedIds.iterator();
+            while(it.hasNext()) {
+                fleetABM.deleteConsumedFuel(new Integer((String)it.next()),userSessionData);
+            }
+            
+        } catch (Exception e) {
+        	Object[] p = new Object [1];
+        	p[0] = consumedIds;
+            handler.handleException("deleteConsumedFuel",e,userSessionData,p);
+        }
+    }
+
+    /**
+     * @ejb.interface-method view-type = "remote"
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,driverupdate,fleetupdate"
+     * @param data
+     * @throws Exception 
+     */
+    public void fleetAddVehicles(Integer fleetId, Collection vehicles, String comment,
+    		UserSessionData userSessionData) throws Exception {
+        try{
+            FleetABMHome home = FleetABMUtil.getHome();
+            FleetABM fleetABM = home.create();
+            fleetABM.addVehicle(fleetId,vehicles,comment,userSessionData);
+            
+        } catch (Exception e) {
+        	Object[]p = new Object[3];
+        	p[0] = fleetId;
+        	p[1] = vehicles;
+        	p[2] = comment;
+            handler.handleException("fleetAddVehicles",e,userSessionData,p);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetinsertdata"
+     */
+    public void deleteCollectiveData(Integer fleetId, Integer periodFrom, Integer yearFrom, Integer periodTo, Integer yearTo, UserSessionData userSessionData) throws Exception {
+        try{
+            FleetABMHome home = FleetABMUtil.getHome();
+            FleetABM fleetABM = home.create();
+            fleetABM.deleteCollectiveData(fleetId, periodFrom, yearFrom, periodTo, yearTo,userSessionData);
+            
+        } catch (Exception e) {
+        	Object[]p = {fleetId, periodFrom, yearFrom, periodTo, yearTo};
+            handler.handleException("deleteCollectiveData",e,userSessionData,p);
+        }
+    }
+
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fleetinsertdata"
+     */
+    public void fillEvents(Integer period, Integer year, Collection<Integer[]> values, UserSessionData userSessionData) throws Exception {
+        try{
+            FleetABM fleetABM = FleetABMUtil.getHome().create();
+            FleetReport fleetReport = FleetReportUtil.getHome().create();
+            Iterator<Integer[]> it = values.iterator();
+            while(it.hasNext()) {
+            	Integer[] value = it.next();
+            	FleetDivisionDetailData detail = fleetReport.getLastDivisionValue(value[0],period,year,userSessionData);
+            	boolean insert = false;
+            	if(detail == null) {
+            		detail = new FleetDivisionDetailData(new FleetDivisionData(value[0]));
+            		insert = true;
+            	} else if(detail.getPeriod().intValue() != period.intValue() || detail.getYear().intValue() != year.intValue()) {
+            		detail.setVehicles(0);
+            		detail.setNearmiss(0);
+            		detail.setMiles(0);
+            		insert = true;
+            	}
+        		detail.setPeriod(period);
+        		detail.setYear(year);
+        		detail.setAccidents(value[1]);
+        		detail.setIncidents(value[2]);
+        		if(insert) {
+        			fleetABM.updateDetail(detail, userSessionData);
+        		}else {
+        			fleetABM.updateDivisionDetail(detail, userSessionData);
+        		}
+            }
+            
+        } catch (Exception e) {
+        	Object[]p = {period,year,values};
+            handler.handleException("fillEvents",e,userSessionData,p);
+        }
+    }
+}

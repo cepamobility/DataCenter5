@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.datatype.tables">
+    <class name="DamageSchema" table="datatypedamageschema">
+    
+        <id	column="resourceBundleId"	name="resourceBundleId"	type="java.lang.String">
+            <generator class="native" />
+        </id>
+        <set name="damageSchemaValues" inverse="true">
+        	<key column="resourceBundleId" />
+        	<one-to-many class="DamageSchema"/>
+        </set>
+        <property name="oldId" />
+    </class>
+</hibernate-mapping>

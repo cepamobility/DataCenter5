@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.datatype.tables">
+    <class name="EmailAddress" table="emailaddress">
+        <id name="address" column="address" type="java.lang.String">
+            <generator class="assigned">
+            </generator>
+        </id>
+        <property 	name="password"		type="java.lang.String"	column="password" 		not-null="true"/>
+ 		<property	name="date"			type="java.util.Date"	column="date"			not-null="true"/>
+        <property 	name="sended"		type="java.lang.Integer"	column="sended" 		not-null="true"/>
+ 		
+  	</class>
+</hibernate-mapping>

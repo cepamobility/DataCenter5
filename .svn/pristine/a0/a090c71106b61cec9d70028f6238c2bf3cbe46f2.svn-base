@@ -1,0 +1,34 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.activity.tables">
+    <class name="ActivityAttendance" table="activityattendance">
+
+		 <id column="attendanceId" name="attendanceId">
+            <generator class="sequence">
+            	<param name="sequence">ActivityAttendance_Sequence</param>
+            </generator>
+        </id>
+
+        <property name="activity" type="java.lang.Integer" column="activity" />
+        <property name="corporationId" type="java.lang.Integer" column="corporation" />
+		<property name="divOrgItemId" type="java.lang.Integer" column="divorg" />
+		<property name="firstName" type="java.lang.String" column="firstname" />
+		<property name="lastName" type="java.lang.String" column="lastname" />
+		<property name="ci" type="java.lang.String" column="corporationid" />
+		<property name="birthDate" type="java.lang.String" column="birthdate" />
+		<property name="sex" type="java.lang.String" column="sex" />
+		<property name="phone" type="java.lang.String" column="phone" />
+		<property name="email" type="java.lang.String" column="email" />
+		<property name="signature" type="java.lang.String" column="signature" length="20000" />
+		<property name="city" type="java.lang.String" column="city" />
+        <property name="linked" type="java.lang.Boolean" not-null="true" >
+			<column name="linked" default="false" />
+		</property>
+        <property name="proccessed" type="java.lang.Boolean" not-null="true" >
+			<column name="proccessed" default="false" />
+		</property>
+  	</class>
+</hibernate-mapping>

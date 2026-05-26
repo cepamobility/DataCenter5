@@ -1,0 +1,307 @@
+<%@page language="java" 
+	errorPage="../exception.jsp" 
+	import="business.*"
+	import="business.activity.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.activity.schedule.*" 	
+ 	import="presentation.translator.web.vehicle.*"
+ 	import="communication.administration.user.*" 	
+ 	import="communication.datatype.tables.ActivityTypeDataType"
+	import="business.vehicle.VehicleReportFacade"
+	import="java.util.*"	
+	import="org.apache.struts.action.DynaActionForm"
+	import="communication.activity.tables.*"
+%>
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+<%!
+	RequestDispatcher dispatcher; 
+	Text messages; SystemAccess sys;
+	UserSessionData userSessionData; 
+	VehicleCheckData vehicleCheck;
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	userSessionData=sys.getUserSessionData();	
+	
+	String check = Util.checkPermission(sys,SecurityConstants.EDIT_VEHICLE);
+	String check1 = Util.checkPermission(sys,SecurityConstants.MODIFY_VEHICLE);	
+	String check2 = Util.checkPermission(sys,SecurityConstants.CHECKLIST_VEHICLE);	
+	
+	if (check!=null) { 
+		response.sendRedirect(request.getContextPath()+check);	
+	}else if (check1!=null) { 
+		response.sendRedirect(request.getContextPath()+check1);	
+	} else if (check2!=null) { 
+		response.sendRedirect(request.getContextPath()+check2);	
+	}else {
+		messages=sys.getText();
+	
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+
+		String[] vehicleData = {"","",""};
+		String idVehicle = null;
+		if(request.getParameter("type") != null && request.getParameter("type").equals("edit")) {
+		    String checkId = request.getParameter("check");
+		    if(Util.empty(checkId)) {
+		        checkId = String.valueOf(session.getAttribute("check"));
+		    }
+		    if(!Util.empty(checkId)) {
+				vehicleCheck = sys.getVehicleReportFacade().findVehicleCheck(new Integer(checkId),userSessionData);
+				idVehicle = String.valueOf(vehicleCheck.getVehicle().getId());
+			    vehicleData[0] = vehicleCheck.getVehicle().getMatricula();
+			    vehicleData[1] = vehicleCheck.getVehicle().getTrade().getResourceBundleId();
+			    vehicleData[2] = vehicleCheck.getVehicle().getModel();
+		    }
+		}else {
+			idVehicle = request.getParameter("id");
+			vehicleData = sys.getVehicleReportFacade().findVehicleCheckListData(new Integer(idVehicle),sys.getUserSessionData());
+		}
+		
+%>	
+<html:html>
+<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+
+<body>
+	<center>
+	<html:form action="/CimsaCheckList">
+	<html:hidden property="vehicle" value='<%=idVehicle%>' />
+	<table width="768" border="0" cellspacing="0" cellpadding="0">  
+		<tr class="guide1">
+			<%
+				String page14 = "../component/titlecomponent.jsp?title="+messages.getText("generic.activity.form.truckchecklist");
+			%>
+			<jsp:include  page='<%=page14 %>' />
+  		</tr>
+      	<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+		<tr> 
+			<td height="40" colspan="3" valign="middle">
+				<%
+					String page13 = "../component/utilityboxtop.jsp?title="+messages.getText("generic.activity.form.tranningonthejob.proofdata");
+				%>
+				<jsp:include  page='<%=page13 %>' />
+				<table width="100%" height="60" border="0" cellpadding="0" cellspacing="0">
+   	 				<tr> 
+       					<td width="50%" align="left" class="linetwo">        
+   							<%= messages.getText("generic.activity.date")%><%=" ( "+messages.getText("generic.messages.dateformat")+" ) "%>
+						</td>
+						<td width="50%" align="right" class="linetwo">
+						<%
+						String date = "";
+						String month = "";
+						String year = "";
+						if (vehicleCheck != null && vehicleCheck.getDate() != null){
+							Calendar c = Calendar.getInstance();
+							c.setTime(vehicleCheck.getDate());
+							date = String.valueOf(c.get(Calendar.DATE));
+							month = String.valueOf(c.get(Calendar.MONTH)+1);
+							year = String.valueOf(c.get(Calendar.YEAR));							
+						}
+						
+						%>
+							<html:text style="width:30;" property="date" styleClass="input" value='<%=((vehicleCheck == null) ? "" : date) %>' />&nbsp;/&nbsp;                
+							<html:text style="width:30;" property="month" styleClass="input" value='<%=((vehicleCheck == null) ? "" : month) %>' />&nbsp;/&nbsp; 
+							<html:text style="width:60;" property="year" styleClass="input" value='<%=((vehicleCheck == null) ? "" : year) %>' />&nbsp;           		    		
+						</td>
+   					</tr>
+					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+     				<tr> 
+        				<td width="50%" align="left" class="linetwo">        
+       						<%= messages.getText("generic.driver.name")%>
+						</td>
+						<td width="50%" align="right" class="linetwo">		
+							<html:text property="name" styleClass="input"  style="width:200;"  
+							value='<%=(vehicleCheck == null) ? "" : vehicleCheck.getName() %>'/>                                     
+        				</td>
+     				</tr>
+				</table>
+				<jsp:include  page="../component/utilityboxbottom.jsp" />
+			</td>
+		</tr>  
+      	<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+<%		CheckListData checkList = sys.getVehicleReportFacade().getCheckList(CheckListData.CIMSA_CHECKLIST,sys.getUserSessionData());
+		Iterator points = checkList.getSortPoints();
+%>		<tr>
+			<td valign="top" width="100%">
+				<table width="100%" height="60" border="0" cellpadding="0" cellspacing="0">
+					<tr>
+<%		for(int i = 0; i < 3; i++) {
+    		if(i == 1) {
+%>    		    		<td width="2%"></td>
+<%    		}else {
+%>						<td width="49%" valign="top">
+							<table width="100%" height="60" border="0" cellpadding="0" cellspacing="0">
+<%				
+				for(int j = 0; j < 5; j++) {
+				    PointData point = (PointData)points.next();
+%>								<tr>
+									<td valign="top">
+										<%
+											String page12 = "../component/utilityboxtop.jsp?title="+messages.getText(point.getText());
+										%>
+										<jsp:include  page='<%=page12 %>' />
+										<table width="100%" height="60" border="0" cellpadding="0" cellspacing="0">
+<%					if(point.getId().intValue() == 750) {
+%>	  										<tr class="linetwo">  
+												<td width="60%">
+					        						<%= messages.getText("generic.activity.form.vehiclecheck.plate")%>
+												</td>
+												<td width="40%" align="right">
+													<%=(vehicleData[0] == null || vehicleData[0].length() == 0) ? "---" : vehicleData[0] %>
+												</td>
+											</tr>
+			      							<tr>
+												<jsp:include  page="../component/spaceline.jsp" />
+									  		</tr>
+											<tr class="linetwo">
+												<td width="60%">
+       												<%=messages.getText("generic.activity.form.tranningonthejob.trade")%>
+												</td>
+												<td width="40%" align="right">
+													<%=(vehicleData[1] == null || vehicleData[1].length() == 0) ? "---" : messages.getText(vehicleData[1]) %>
+												</td>
+											</tr>
+			      							<tr>
+												<jsp:include  page="../component/spaceline.jsp" />
+									  		</tr>
+											<tr class="linetwo">
+												<td width="60%">
+		   											<%= messages.getText("generic.vehicle.model")%>
+												</td>	
+												<td width="40%" align="right">
+													<%=(vehicleData[2] == null || vehicleData[2].length() == 0) ? "---" : vehicleData[2] %>
+												</td>
+											</tr>	
+			      							<tr>
+												<jsp:include  page="../component/spaceline.jsp" />
+									  		</tr>
+<%					}
+					Iterator items = point.getSortItems();
+					while(items.hasNext()) {
+						ItemData item = (ItemData)items.next();
+						int value = -1;
+						if(vehicleCheck != null) {
+							String checkValue = vehicleCheck.getValueFromItem(item.getId()).trim();
+							value = (checkValue == null) ? -1 : Integer.parseInt(checkValue);
+						}
+%>											<tr class="linetwo">
+												<td width="60%">
+		   											<%=messages.getText(item.getText())%>
+												</td>	
+												<td width="40%" align="right">
+<%						switch(item.getId().intValue()) {
+							case 4802: case 4803: case 4804: case 4805: case 4806:	
+%>													<select name="<%="item-"+String.valueOf(item.getId())%>" >	    				
+														<option value="-1">...</option>
+														<option value="10" <%=(value == 10) ? "selected" : "" %>>10</option>
+														<option value="8" <%=(value == 8) ? "selected" : "" %>>8</option>
+														<option value="6" <%=(value == 6) ? "selected" : "" %>>6</option>
+														<option value="4" <%=(value == 4) ? "selected" : "" %>>6</option>
+													</select>
+<%								break;
+							case 4770:	
+%>													<select name="<%="item-"+String.valueOf(item.getId())%>" >	    				
+														<option value="-1">...</option>
+														<option value="1" <%=(value == 1) ? "selected" : "" %>>Refresco</option>
+														<option value="2" <%=(value == 2) ? "selected" : "" %>>Agua</option>
+														<option value="3" <%=(value == 3) ? "selected" : "" %>>JDV</option>
+														<option value="4" <%=(value == 4) ? "selected" : "" %>>CFDLA</option>
+														<option value="5" <%=(value == 5) ? "selected" : "" %>>No tiene</option>
+													</select>
+<%								break;
+							case 4795:	
+%>													<input type="text" name="<%="item-"+String.valueOf(item.getId())%>" value=" <%=(value == -1) ? "" : value %>">	    				
+<%								break;
+							default:  
+%>													<select name="<%="item-"+String.valueOf(item.getId())%>" >	    				
+														<option value="-1">...</option>
+														<option value="1" <%=(value == 1) ? "selected" : "" %>><%=messages.getText("generic.messages.rigth")%></option>
+														<option value="2" <%=(value == 2) ? "selected" : "" %>><%=messages.getText("generic.messages.wrong")%></option>
+													</select>
+<%								break;
+						}
+%>													
+												</td>
+											</tr>
+<%						if(items.hasNext()) {	
+%>			      							<tr>
+												<jsp:include  page="../component/spaceline.jsp" />
+									  		</tr>
+<%						}
+					}
+%>										</table>
+										<jsp:include  page="../component/utilityboxbottom.jsp" />
+									</td>	
+								</tr>	
+<%					if(j < 4) {	
+%>     							<tr>
+									<jsp:include  page="../component/spaceline.jsp" />
+						  		</tr>
+<%					}
+				}
+%>							</table>
+						</td>
+<%			 
+			}
+		}
+%>					</tr>
+				</table>
+			</td>
+		</tr>	
+	  	<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+		<tr> 
+			<td height="40" colspan="3" valign="middle">
+				<%
+					String page11 = "../component/utilitybox2top.jsp?title="+messages.getText("generic.activity.observations");
+				%>
+				
+				<jsp:include  page='<%=page11 %>' />
+				<table width="100%" height="60" border="0" cellpadding="0" cellspacing="0">
+		            <tr> 
+              			<td bgcolor="#f9f9f9">
+              				<strong>
+              					<font color="#FF0000" size="1" face="Arial, Helvetica, sans-serif"> 
+				                	<html:textarea property="obs" cols="100" rows="5" />
+                				</font>
+                			</strong>
+                		</td>
+		            </tr>
+		        </table>
+				<jsp:include  page="../component/utilitybox2bottom.jsp" />
+			</td>
+		</tr>  
+      	<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+	   	<tr>   		
+	   		<td align="right">
+	   			<html:submit styleClass="input"><%=messages.getText("generic.messages.accept")%></html:submit>	 		                             
+	 			<html:cancel styleClass="input"><%=messages.getText("generic.messages.cancel")%></html:cancel >
+           	</td>                 							
+   	  	</tr>              
+	</table>
+	</html:form>
+	</center>
+</body>
+</html:html>
+<%
+	}
+%>

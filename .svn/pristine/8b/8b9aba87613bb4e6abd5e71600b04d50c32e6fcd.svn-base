@@ -1,0 +1,268 @@
+<%@page language="java"
+	errorPage="../exception.jsp"
+	import="java.util.*"
+	import="java.util.LinkedList"
+	import="business.*"
+	import="business.driver.*" 
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.util.*"
+	import="communication.administration.corporation.tables.*"			
+	import="communication.administration.user.tables.*"
+	import="communication.driver.tables.*"
+	import="communication.event.tables.*"
+	import="communication.activity.tables.*"
+	import="communication.vehicle.tables.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.driver.*"
+ 	import="communication.util.DateValue"
+ %>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<html:html>
+<%! RequestDispatcher dispatcher; String context;String pathView; 
+	String pathMsg; String pathSearch; 
+	Text messages; String pathLanguage;
+	SystemAccess sys; DriverData data; 
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	
+	String check = Util.checkPermission(sys,SecurityConstants.MODIFY_DRIVER);
+	
+	// Permiso para Test de Gabinete Psicotecnico:
+	String check2 = Util.checkPermission(sys,SecurityConstants.TESTS_DRIVER);
+	
+	if(check!=null && check2!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		messages=sys.getText();
+
+		pathLanguage="/util/jsp/language.jsp";
+	
+
+		dispatcher=request.getRequestDispatcher(pathLanguage);
+		dispatcher.include(request,response);
+	
+		context=request.getContextPath();
+		pathMsg="/util/jsp/message.jsp";
+	
+		dispatcher=request.getRequestDispatcher(pathMsg);
+		dispatcher.include(request,response);
+
+		String id=(String)request.getParameter("id");
+		if(id==null){
+			id=(String)request.getAttribute("id");
+			request.removeAttribute("id");
+		}
+		if(id==null){
+			id=(String)session.getAttribute("id");
+			session.removeAttribute("id");
+		}
+		if(id!=null){	
+			data=sys.getDriverReportFacade().findDriverByPrimaryKey(new Integer(id), sys.getUserSessionData());
+		}
+		pathView="./view.jsp?id="+id;
+		session.setAttribute("url","driver/DriverView.jsp?id="+id);
+			
+		if(data!=null){
+			DriverForm driverForm=DriverUtil.createDriverForm(data,DriverUtil.VIEW,messages);
+			session.setAttribute("DriverCreateForm",driverForm);
+%>
+
+<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+
+<script>
+	function deleteTest(checksForm,form){
+		var elements=checksForm.elements;
+		for(i=0;i<elements.length;i++){
+			var element=elements[i];
+			if(element.type.toLowerCase()=="checkbox"){
+				if(element.checked){
+					if(form.list.value == ""){
+						form.list.value=element.value;
+					}else{
+						form.list.value=form.list.value+"<"+element.value;
+					}	
+				}	
+			} 
+		}
+		if(element.value.length>0){
+			form.submit();
+		}
+	}
+</script>
+<head/>
+<html:form action="/DeleteAptitudTest">
+	<html:hidden property="driver" value='<%=String.valueOf(data.getId())%>'/>
+	<html:hidden property="list"/>
+</html:form>
+<body bgcolor="#FFFFFF">
+	<table width="650" align='center' cellpadding="0" cellspacing="0">
+		<tr class="guide1">
+			<jsp:include  page='<%="../component/titlecomponent.jsp?colspan=5&title="+messages.getText("web.driver.editing")+"  "+data.getLastName()+","+data.getFirstName()%>' />
+		</tr>
+		<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+		<tr>
+			<td width="100%" colspan="5">
+				<form name="checks">
+				<table width="100%" cellpadding="0" cellspacing="0">
+					<tr>
+						<td valign="top">
+							<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.driver.aptitudtest")%>' />
+							<table width="100%" cellpadding="0" cellspacing="0">
+								<tr>
+									<td width='5%' class="guide2" align="center">&nbsp;</td>
+									<td width='21%' class="guide2" align="center">
+										<%=messages.getText("driver.aptitudtest.date")%>
+									</td>
+   									<td width='21%'	class="guide2" align="center">
+   										<%=messages.getText("driver.aptitudtest.apt")%>
+   									</td>
+				    				<td width='21%'	class="guide2" align="center">
+				    					<%=messages.getText("driver.aptitudtest.expiry")%>
+				    				</td>
+<%			if(sys.getCorporationId() == CorporationData.WEYERHAEUSER) {
+%>				    				<td width='21%'	class="guide2" align="center">
+				    					<%=messages.getText("driver.aptitudtest.type")%>
+				    				</td>
+<%			}
+%>								</tr>
+								</tr>
+<%			Collection tests = data.getAptitudTest();
+			Collections.sort((List)tests);
+			if(tests.size() == 0) {
+%>								<tr>
+									<td colspan="5">
+										<span class="linetwo"><%=messages.getText("driver.aptitudtest.nodata")%></span>
+									</td>								
+								</tr>
+<%			}else {
+    			Iterator itTests = tests.iterator();
+    			boolean lineone = false;
+    			while(itTests.hasNext()) {
+    			    AptitudTestData test = (AptitudTestData)itTests.next();
+%>								<tr align=center class='<%=(lineone) ? "lineone" : "linetwo"%>'>
+									<td class='<%=(lineone) ? "lineone" : "linetwo"%>' align="center">
+										<input type="checkbox" value='<%=String.valueOf(test.getDate().getTime())%>'>
+									</td>
+						            <td class='<%=(lineone) ? "lineone" : "linetwo"%>' align="center"><%=Util.formatDate(test.getDate())%> </td>
+<%					String isApt = (test.isApt()) ? messages.getText("generic.messages.yes") : messages.getText("generic.messages.no");
+					if(test.isPending()) {
+						isApt = messages.getText("generic.messages.pending");
+					}
+%>					                <td class='<%=(lineone) ? "lineone" : "linetwo"%>' align="center"><%=isApt%> </td>
+						            <td class='<%=(lineone) ? "lineone" : "linetwo"%>' align="center"><%=Util.formatDate(test.getExpiry())%> </td>						                
+<%					if(sys.getCorporationId() == CorporationData.WEYERHAEUSER) {
+%>				    				<td class='<%=(lineone) ? "lineone" : "linetwo"%>' align="center">
+				    					<%=(test.isExternal()) ? messages.getText("driver.aptitudtest.external") : messages.getText("driver.aptitudtest.cepa")%>
+				    				</td>
+<%					}
+%>								</tr>
+<%    				lineone = !lineone;
+	   			}
+			}
+%>								<tr>
+									<td colspan="4" class="linetwo" align="right">
+										<input type="button" value='<%=messages.getText("generic.messages.delete")%>' class="input" onclick="javascript:deleteTest(document.forms['checks'],document.forms['DeleteAptitudTestForm']);"/>
+									</td>
+								</tr>	
+							</table>
+							<jsp:include page="../component/utilityboxbottom.jsp"/>	
+						</td>
+			   		</tr>
+			   	</table>
+			   	</form>
+			</td>
+		</tr>			
+		<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+		<tr>
+			<td width="100%" colspan="5">
+				<html:form action="/AddAptitudTest">
+					<html:hidden property="driver" value='<%=String.valueOf(data.getId())%>'/>
+					<table width="100%" cellpadding="0" cellspacing="0">
+						<tr>
+							<td valign="top">
+								<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("driver.aptitudtest.new")%>' />
+								<table width="100%" cellpadding="0" cellspacing="0">
+									<tr>
+				              			<th align="left" valign="middle" class="linetwo"><%=messages.getText("driver.aptitudtest.date")+" ( "+messages.getText("generic.supportmaterial.reports.format")+": dd/mm/aaaa )" %><span class="required">*</span></th>
+			       						<td align="right" class="linetwo">
+			       							<jsp:include  page='<%="../component/dateComponent.jsp?index=1&day=testDate&month=testMonth&year=testYear&form=AddAptitudTestForm" %>' />
+					          			</td>
+									</tr>
+									<tr>
+										<jsp:include  page="../component/spaceline.jsp" />
+							  		</tr>
+									<tr>
+										<th class="linetwo" align="left"><%=messages.getText("driver.aptitudtest.apt")%><span class="required">*</span></th>
+										<td class="linetwo" align="right">
+											<html:select property="apt" styleClass="input">
+												<html:option value="yes"><%=messages.getText("generic.messages.yes")%></html:option>
+												<html:option value="no"><%=messages.getText("generic.messages.no")%></html:option>
+												<% if (sys.getUserSessionData().getFilter().getCorporationId().intValue() == CorporationData.FORESTALORIENTAL){ %>												
+												<html:option value="pending"><%=messages.getText("generic.messages.pending")%></html:option>
+												<% } %>
+											</html:select>
+		          						</td>
+									</tr>
+									
+									<tr>
+										<jsp:include  page="../component/spaceline.jsp" />
+							  		</tr>
+									<tr>
+				              			<th align="left" valign="middle" class="linetwo"><%=messages.getText("driver.aptitudtest.expiry")+" ( "+messages.getText("generic.supportmaterial.reports.format")+": dd/mm/aaaa )" %><span class="required">*</span></th>
+			       						<td align="right" class="linetwo">
+			       							<jsp:include  page='<%="../component/dateComponent.jsp?index=2&day=expiryDate&month=expiryMonth&year=expiryYear&form=AddAptitudTestForm" %>' />
+					          			</td>
+									</tr>
+<%		if(sys.getCorporationId() == CorporationData.WEYERHAEUSER) {
+%>									
+									<tr>
+										<jsp:include  page="../component/spaceline.jsp" />
+							  		</tr>
+									<tr>
+										<th class="linetwo" align="left"><%=messages.getText("driver.aptitudtest.external")%><span class="required">*</span></th>
+										<td class="linetwo" align="right">
+											<html:select property="external" styleClass="input">
+												<html:option value="1"><%=messages.getText("generic.messages.yes")%></html:option>
+												<html:option value="0"><%=messages.getText("generic.messages.no")%></html:option>
+											</html:select>
+		          						</td>
+									</tr>
+<%		}else {
+%>									
+									<html:hidden property="external" value="0" />
+<%		}
+%>									
+									<tr>
+										<jsp:include  page="../component/spaceline.jsp" />
+							  		</tr>
+									<tr>
+										<td colspan="3" class="linetwo" align="right">
+											<html:submit value='<%=messages.getText("generic.messages.save")%>' styleClass="input"/>
+											<html:cancel value='<%=messages.getText("generic.messages.cancel")%>' styleClass="input"/>
+										</td>
+									</tr>	
+								</table>
+								<jsp:include page="../component/utilityboxbottom.jsp"/>	
+							</td>
+				   		</tr>
+				   	</table>
+			   	</html:form>
+			</td>
+		</tr>			
+<%		}else {
+%>		<jsp:include  page='<%="/util/allowedData.jsp?message=driver.error.access.driver" %>'/>
+<%		}
+	}
+%>
+</body>
+</html:html>

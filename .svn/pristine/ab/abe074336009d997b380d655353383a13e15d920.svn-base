@@ -1,0 +1,224 @@
+<%@page import="persistence.datatype.tables.GeneralDataType"%>
+<%@page import="communication.administration.corporation.tables.InstructorRegistryData"%>
+<%@page import="presentation.translator.web.dpa.InstructorRegistryForm"%>
+<%@page import="presentation.translator.web.dpa.DPACheckListXLSForm"%>
+<%@page import="communication.datatype.DataTypeConstants"%>
+
+<%@page language="java" 
+	errorPage="../exception.jsp" 
+	import="business.*"
+	import="business.activity.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.activity.schedule.*" 	
+ 	import="presentation.translator.web.vehicle.*"
+ 	import="communication.administration.user.*" 	
+ 	import="communication.datatype.tables.ActivityTypeDataType"
+	import="business.vehicle.VehicleReportFacade"
+	import="java.util.*"	
+	import="org.apache.struts.action.DynaActionForm"
+	import="communication.activity.tables.*"
+%>
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+<%!
+	RequestDispatcher dispatcher; 
+	Text messages; SystemAccess sys;
+	UserSessionData userSessionData; 
+	VehicleCheckData vehicleCheck;
+	
+	VehicleData vehicleData;
+	String idReferido;
+	String mode;
+	String id;
+	Iterator iter;
+	Iterator iterDT;
+
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	userSessionData=sys.getUserSessionData();	
+
+	
+	
+	String check = Util.checkPermission(sys,SecurityConstants.VEHICLE_SEARCH);
+	
+	if (check!=null) { 
+		response.sendRedirect(request.getContextPath()+check);	
+	}else {
+		messages=sys.getText();
+	
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+
+		String href = (String)request.getParameter("href");
+		id=(String)request.getParameter("id");
+		
+		InstructorRegistryForm form=new InstructorRegistryForm();
+				 
+		if(request.getAttribute("InstructorRegistryForm")!=null){
+	form=(InstructorRegistryForm) request.getAttribute("InstructorRegistryForm");
+		}
+		
+		session.setAttribute("InstructorRegistryForm", form);
+		Date ed=new Date();
+		Calendar cal=Calendar.getInstance();
+		cal.setTime(ed);
+		cal.add(Calendar.MONTH,-1);
+		Date sd=cal.getTime();
+		iter=sys.getCorporationReportFacade().listInstructorRegistry(sd, ed, userSessionData).iterator();
+		iterDT=sys.getDataTypeReportFacade().findAll(DataTypeConstants.DPA_INSTRUCTOR_REGISTRY, sys.getUserSessionData()).iterator();
+%>	
+
+<%@page import="business.vehicle.VehicleReportFacadeBean"%>
+
+<html:html>
+
+<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+
+<head>
+	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+<script type="text/javascript">
+
+
+</script>
+ 
+
+<body>
+	 
+	<center>
+	<html:form action="/InstructorRegistry" styleId="InstructorRegistry" >
+		
+		<table width="768" border="0" cellspacing="0" cellpadding="0">  
+			<tr class="guide1">
+			<%
+				String page14 = "../component/titlecomponent.jsp?title="+messages.getText("generic.messages.checklistexport");
+			%>
+				<jsp:include  page='<%=page14%>' />
+  			</tr>
+      		<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+  			</tr>
+		<tr> 
+			<td height="40" colspan="3" valign="middle">
+<%
+	String page13 = "../component/utilityboxtop.jsp?title="+messages.getText("generic.dpa.intructorregistry");
+%>
+				<jsp:include  page='<%=page13%>' />
+				<table width="100%" height="60" border="0" cellpadding="0" cellspacing="0">
+   	 				<tr> 
+       					<td align="left" class="texts">        
+   							Inspector
+						</td>
+						<td align="left" class="texts">        
+   							<%=sys.getUserSessionData().getFullName()%>
+						</td> 
+   					</tr>
+   					<tr> 
+       					<td align="left" class="texts">        
+   							Data
+						</td>
+						<td align="left" class="texts">        
+   							<html:text style="width:30;"   property="dateDay" styleClass="input"  />&nbsp;/&nbsp;                
+							<html:text style="width:30;"  property="dateMonth" styleClass="input"  />&nbsp;/&nbsp; 
+							<html:text style="width:60;"  property="dateYear" styleClass="input"  />&nbsp;  
+						</td> 
+   					</tr>
+   					<tr> 
+       					<td align="left" class="texts">        
+   							Actividade
+						</td>
+						<td align="left" class="texts">        
+   							<html:select  styleId="selType" property="type" >
+									<html:option value="0"><%=messages.getText("generic.messages.select")%></html:option>
+							 	<%
+							 		while(iterDT.hasNext()){
+							 						 						 			GeneralDataType item=(GeneralDataType) iterDT.next();
+							 	%>
+									<html:option value="<%=item.getResourceBundleId()%>"><%=messages.getText( item.getResourceBundleId())%></html:option>
+								<%
+									}
+								%>	
+							</html:select>  
+						</td> 
+   					</tr>
+   					
+   						
+   					
+				</table>
+				
+				<jsp:include  page="../component/utilityboxbottom.jsp" />
+			</td>
+		</tr>  
+      	<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+  		</tr>
+  		<td height="40" colspan="3" valign="middle">
+<%
+	String page15 = "../component/utilityboxtop.jsp?title="+messages.getText("generic.dpa.unconformity");
+%>
+				<jsp:include  page='<%=page15%>' />
+				<table width="100%" height="60" border="0" cellpadding="0" cellspacing="0">
+   	 				<tr> 
+       					<td align="left" class="texts">        
+   							Inspector
+						</td>
+						<td align="left" class="texts">        
+   							Data
+						</td> 
+						<td align="left" class="texts">        
+   							Actividade
+						</td>
+						<td align="left" class="texts">        
+   							Cantidade
+						</td>
+						<td align="left" class="texts">        
+   							Obs.
+						</td>
+   					</tr>
+   					<%
+   						while(iter.hasNext()){
+   					   					   						InstructorRegistryData data=(InstructorRegistryData)iter.next();
+   					%>
+   					<tr> 
+   						<td align="left" class="texts">        
+   							<%=data.getLoginname()%>
+						</td>
+   						<td align="left" class="texts">        
+   							<%=Util.formatDate(data.getDate())%>
+						</td>
+						<td align="left" class="texts">        
+   							<%=messages.getText(data.getType())%>
+						</td>
+						<td align="left" class="texts">        
+   							<%=data.getCount()%>
+						</td>
+						<td align="left" class="texts">        
+   							<%=data.getComment()%>
+						</td>
+						
+       				</tr>
+       				 
+       				<%}%>
+   						
+				</table>
+				
+				<jsp:include  page="../component/utilityboxbottom.jsp" />
+			</td>
+		</tr>  
+  	</table>
+	</html:form>
+	</center>
+	</body>
+	
+</html:html>
+<%
+	}
+%>

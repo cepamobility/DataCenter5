@@ -1,0 +1,162 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>Documento sem t&iacute;tulo</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+
+<body leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
+<table width="559" height="962" border="0" align="center" cellpadding="0" cellspacing="0">
+  <tr> 
+    <td height="76" colspan="4"> 
+      <table width="90%" border="0" align="center" cellpadding="0" cellspacing="0">
+        <tr> 
+          <td><div align="center"><font size="5" face="Arial, Helvetica, sans-serif"><strong></strong></font></div>
+            <div align="center"></div>
+            <table width="91%" height="63" border="0" align="center" cellpadding="0" cellspacing="0" bgcolor="3B6692">
+              <tr> 
+                <td height="63" align="center" valign="middle"> <font color="#FFFFFF" size="5" face="Arial, Helvetica, sans-serif"><strong><em>User 
+                  Manual </em></strong></font><br> <font color="#FFFFFF" size="4" face="Arial, Helvetica, sans-serif"><strong><font size="2">BASIC 
+                  INSTRUCTIONS ON ACCESS AND USE</font></strong></font><font color="#FFFFFF" size="3" face="Arial, Helvetica, sans-serif"><strong></strong></font></td>
+              </tr>
+            </table></td>
+        </tr>
+      </table>
+      <div align="right"> </div></td>
+  </tr>
+  <tr valign="top"> 
+    <td height="20" colspan="5"> <hr color="#3B6692"noshade> <div align="center"> 
+      </div></td>
+  </tr>
+  <tr valign="top"> 
+    <td height="866" colspan="5"> 
+      <table width="100%" border="0" cellspacing="0" cellpadding="0">
+        <tr> 
+          <td><font face="Arial, Helvetica, sans-serif"><strong>FLEETS</strong></font></td>
+        </tr>
+        <tr> 
+          <td>&nbsp;</td>
+        </tr>
+        <tr> 
+          <td height="19"><font size="4" face="Arial, Helvetica, sans-serif">Fleets/Management</font></td>
+        </tr>
+        <tr> 
+          <td height="19"><font size="2" face="Arial, Helvetica, sans-serif">&nbsp; 
+            </font></td>
+        </tr>
+        <tr> 
+          <td height="152"> <table width="90%" height="135" border="1" align="center" cellpadding="0" cellspacing="0" bordercolor="#3B6692">
+              <tr> 
+                <td height="133"> <div align="justify"></div>
+                  <div align="justify"></div>
+                  <div align="justify"> 
+                    <table width="90%" border="0" align="center" cellpadding="0" cellspacing="0">
+                      <tr> 
+                        <td width="30%" height="108"><img src="/datacenter/util/imgs/mn_menu_9_en.jpg" width="151" height="108"></td>
+                        <td width="3%">&nbsp;</td>
+                        <td width="67%"><div align="justify"> <font size="2" face="Arial, Helvetica, sans-serif">Allows 
+                            users to create, edit and delete general or collective 
+                            fleets in the Data Center.</font></div></td>
+                      </tr>
+                    </table>
+                  </div></td>
+              </tr>
+            </table></td>
+        </tr>
+        <tr> 
+          <td><font size="4" face="Arial, Helvetica, sans-serif">Fleets/Input 
+            Mileage and Collective Events</font></td>
+        </tr>
+        <tr> 
+          <td>&nbsp;</td>
+        </tr>
+        <tr> 
+          <td height="301"> <table width="90%" height="528" border="1" align="center" cellpadding="0" cellspacing="0" bordercolor="#3B6692">
+              <tr> 
+                <td height="526"> <div align="justify"></div>
+                  <div align="justify"></div>
+                  <div align="justify"> 
+                    <table width="90%" border="0" align="center" cellpadding="0" cellspacing="0">
+                      <tr> 
+                        <td width="30%" height="178"><img src="/datacenter/util/imgs/mn_menu_10_en.jpg" width="152" height="178"></td>
+                        <td width="3%">&nbsp;</td>
+                        <td width="67%"><div align="justify"> 
+                            <div align="justify"><font size="2" face="Arial, Helvetica, sans-serif">Here 
+                              users can select the fleet for which they will input 
+                              collective or individual mileage data for a specific 
+                              period. To carry out this action a search is required. 
+                              This element can replace the data sent to the CEPA 
+                              Data Center by the client Company on a monthly basis. 
+                              <br>
+                              This application also allows users to input events 
+                              reported collectively (events reported by means 
+                              other than forms). </font> </div>
+                          </div></td>
+                      </tr>
+                      <tr> 
+                        <td height="386" colspan="3"> <p><font size="2" face="Arial, Helvetica, sans-serif">Description 
+                            of the process used to input collective mileage:</font> 
+                          </p>
+                          <ul>
+                            <li> 
+                              <div align="justify"><font size="2" face="Arial, Helvetica, sans-serif">	
+                                Select the name of the fleet (through a search);</font></div>
+                            </li>
+                            <li> 
+                              <div align="justify"><font size="2" face="Arial, Helvetica, sans-serif"> 
+                                Select the period for which the data will be reported;</font></div>
+                            </li>
+                            <li> 
+                              <div align="justify"><font size="2" face="Arial, Helvetica, sans-serif">	
+                                Click on the name of the fleet;</font></div>
+                            </li>
+                            <li> 
+                              <div align="justify"><font size="2" face="Arial, Helvetica, sans-serif"> 
+                                For each Division the user must inform number 
+                                of vehicles, mileage, accidents and incidents 
+                                for the selected period. Then click on &quot;Save&quot;.</font></div>
+                            </li>
+                          </ul>
+                          <p align="justify"><font size="2" face="Arial, Helvetica, sans-serif">Description 
+                            of the process used to input collective events: On 
+                            the same collective mileage input screen, fill in 
+                            the fields below with accident and incident data, 
+                            including: Division, Classification, Quantity, etc.</font></p>
+                          <p><font size="2" face="Arial, Helvetica, sans-serif"> 
+                            Description of the process to input individual mileage:</font></p>
+                          <ul>
+                            <li> 
+                              <div align="justify"><font size="2" face="Arial, Helvetica, sans-serif"> 
+                                Select the name of the fleet (through a search); 
+                                </font></div>
+                            </li>
+                            <li> 
+                              <div align="justify"><font size="2" face="Arial, Helvetica, sans-serif">	
+                                Select the period for which the data will be reported;</font></div>
+                            </li>
+                            <li><font size="2" face="Arial, Helvetica, sans-serif"> 
+                              Click on the name of the fleet;</font></li>
+                            <li> 
+                              <div align="justify"><font size="2" face="Arial, Helvetica, sans-serif"> 
+                                Enter current odometer reading, number of accidents 
+                                and incidents for each vehicle.</font></div>
+                            </li>
+                          </ul></td>
+                      </tr>
+                    </table>
+                  </div></td>
+              </tr>
+            </table></td>
+        </tr>
+        <tr>
+          <td height="19">&nbsp;</td>
+        </tr>
+        <tr>
+          <td height="19"><div align="center"><font size="1" face="Arial, Helvetica, sans-serif"><a href="layout.jsp?refer=/manual/english/manual1_en.htm" style="color:black;text-decoration:none">Back 
+              to Contens</a></font></div></td>
+        </tr>
+      </table></td>
+  </tr>
+</table>
+</body>
+</html>

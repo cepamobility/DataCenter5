@@ -1,0 +1,534 @@
+<%@page language="java" 
+errorPage="../exception.jsp"
+	import="java.util.*"
+	import="business.*"
+	import="business.event.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.event.tables.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<script language="JavaScript" type="text/javascript">
+function doSubmit() {
+	document.forms[2].submit();
+}
+function submitPagination(page,all) {
+	document.forms[2].all.value = all;
+	document.forms[2].pageNum.value = page;
+	document.forms[2].submit();
+}
+function setAction(form,action){
+	form.action.value=action;
+}
+function deleteIFConfirm(form,msg){
+
+	var elements=form.elements;
+	var length=elements.length;
+	var i;
+	var valueCheckboxParamList="";
+	var separator="<";
+		
+	for(i=0;i<length;i++){
+		var element=elements[i];
+		if(element.type.toLowerCase()=="checkbox"){
+			if(element.checked){
+				if(valueCheckboxParamList==""){
+					valueCheckboxParamList=element.value;
+				}else{
+					valueCheckboxParamList=element.value+"<"+valueCheckboxParamList;
+				}	
+			}	
+		} 
+	}
+	form.event.value=valueCheckboxParamList;
+	if(valueCheckboxParamList.length>0){
+		if(confirm(msg)){
+			form.submit();
+		}
+	}
+}
+</script>
+<html>
+<%!
+	RequestDispatcher dispatcher; String context;
+	Text messages; SystemAccess sys;
+	Integer pageNum; boolean all; int pageSize; 
+	String value;String type;String status;String country;String folioNumber;
+%>
+<%
+	
+	sys=(SystemAccess)session.getAttribute("SystemAccess");
+	String check = null;
+	if(sys.getUserSessionData().isDriver()) {
+	    check = Util.checkPermission(sys,SecurityConstants.DRIVER_VIEW_EVENT_LIST);
+	}else {
+	    check = Util.checkPermission(sys,SecurityConstants.VIEW_EVENT_LIST);
+	}
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		session.setAttribute("url","event/EventList.jsp");
+
+		context=request.getContextPath();
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+	
+		messages=sys.getText();
+	
+		session.setAttribute("target","EventList");
+
+		session.removeAttribute("FineForm");
+		session.removeAttribute("EventForm");
+		session.removeAttribute("AccidentForm");
+		session.removeAttribute("FineSuperviseForm");
+		session.removeAttribute("EventSuperviseForm");
+
+		UserReportFacade userReport = sys.getUserReportFacade();
+		if(request.getParameter("pageNum")!=null){
+			pageNum=new Integer(request.getParameter("pageNum"));
+		}else{
+			pageNum=new Integer(1);
+		}
+		value = "";
+		if(request.getParameter("value")!=null){
+			value = request.getParameter("value");
+		}		
+		type = "0";
+		if(request.getParameter("type")!=null){
+		    type = request.getParameter("type");
+		}		
+		status = "0";
+		if(request.getParameter("status")!=null){
+			status = request.getParameter("status");
+		}		
+		country = "0";
+		if(request.getParameter("country")!=null){
+			country = request.getParameter("country");
+		}		
+		pageSize = 10;
+		if(request.getParameter("pageSize")!=null){
+			pageSize = Integer.parseInt(request.getParameter("pageSize"));
+		}		
+		int first = 0;
+		int count = pageSize;
+		all=!Util.empty(request.getParameter("all")) && request.getParameter("all").equals("true");
+		if(all) {
+		    count=-1;
+		}else{
+		    first=(pageNum.intValue()-1)*pageSize;
+		}
+
+		String link = request.getContextPath()+"/event/EventList.jsp";
+
+		folioNumber = "0";
+		if(request.getParameter("folioNumber")!=null){
+			folioNumber = request.getParameter("folioNumber");
+			if (!Util.isNumber(folioNumber)){
+				folioNumber = "0";
+			}
+		}	
+		ListResult result = sys.getEventReportFacade().findEventList(value,Integer.parseInt(type),
+				first,count,Integer.parseInt(status),Integer.parseInt(country),
+				Integer.parseInt(folioNumber),sys.getUserSessionData());
+		
+		int corporationId = sys.getUserSessionData().getFilter().getCorporationId().intValue();
+		
+		//Elimino de la session los datos del formulario de eventos porque sigue en la session y cuando entran a crear tiene todos
+		//los datos guardados
+		session.removeAttribute("NewEventForm");
+		session.removeAttribute("EventForm");
+%>
+
+
+	<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	<style type="text/css">
+<!--
+body {
+	margin-left: 0px;
+	margin-top: 0px;
+	margin-right: 0px;
+	margin-bottom: 0px;
+}
+-->
+</style><head>
+		<META http-equiv="Cache-Control" content="no-cache">
+		<META http-equiv="Pragma" content="no-cache">
+		<META http-equiv="Expires" content="-1">		
+	</head>
+
+<body bgcolor="#FFFFFF">
+	<table width="800" border="0" align="center" cellpadding="0" cellspacing="0">
+		<tr class="guide1">
+			<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText("generic.data.event.pl")%>' />
+  		</tr>
+      	<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+      	</tr>
+      	<tr>
+        	<td width="50%">
+				<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.messages.search")%>' />
+				<table width="100%" border="0" cellpadding="0" cellspacing="0">
+					<tr>
+						<td width="100%">
+							<form action="layout.jsp?refer=/event/EventList.jsp" method="post">
+								<table class="texts" width="100%" height="100%" border="0" cellpadding="0" cellspacing="0">
+									<tr>
+<% 						if(sys.getUserSessionData().isDriver()) {
+%>										<td>
+											<input type="hidden" name="pageNum" value='<%=String.valueOf(pageNum)%>'/>    
+	 										<input type="hidden" name="all" <%=(all) ? "value='all'" : "" %>/>    
+											<input type="hidden" name="value" value='<%=sys.getUserSessionData().getDriverData().getLastName()%>'>    
+										</td>
+<% 						}else{
+%>										<td>
+											<input type="hidden" name="pageNum" value='<%=String.valueOf(pageNum)%>'/>    
+	 										<input type="hidden" name="all" <%=(all) ? "value='all'" : "" %>/>    	
+											<span class="texts"><%=messages.getText("generic.event.eventdata.firstorlastname")%></span>
+										</td>
+										<td>
+											<input type="text" name="value" value='<%=value%>'  width="30" class="input">    
+										</td>
+<%						} 
+%>	
+										
+										
+									</tr>  
+	      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+									<tr>
+										<td>
+											<span class="texts"><%=messages.getText("generic.event.eventdata.type")%></span>
+										</td>
+										<td>
+											<select name="type" class="input" width="100%">
+												<option value="0" class="input">
+													<%=messages.getText("generic.messages.all.pl")%>
+												</option>
+												<option value='<%=String.valueOf(EventDataType.ACCIDENT)%>' <%=(type.equals(String.valueOf(EventDataType.ACCIDENT)))? "selected" : "" %> class="input">
+													<%=messages.getText("generic.event.accident")%>
+												</option>
+												<option value='<%=String.valueOf(EventDataType.INCIDENT)%>' <%=(type.equals(String.valueOf(EventDataType.INCIDENT)))? "selected" : "" %> class="input">
+													<%=messages.getText("generic.event.incident")%>
+												</option>
+<%						if(sys.isCorporation(new int[]{CorporationData.MONSANTO,CorporationData.WEYERHAEUSER})) {
+%>												<option value='<%=String.valueOf(EventDataType.NEARMISS)%>' <%=(type.equals(String.valueOf(EventDataType.NEARMISS)))? "selected" : "" %> class="input">
+													<%=messages.getText("generic.event.nearmiss")%>
+												</option>
+<%						}
+%>												<option value='<%=String.valueOf(EventDataType.FINE)%>' <%=(type.equals(String.valueOf(EventDataType.FINE)))? "selected" : "" %> class="input">
+													<%=messages.getText("generic.event.fine")%>
+												</option>
+											</select>
+										</td>
+									</tr>  
+	      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+									<tr>
+										<td>
+											<span class="texts"><%=messages.getText("generic.event.eventdata.status")%></span>
+										</td>
+										<td>
+											<select name="status" class="input" >
+												<option value="0" class="input">
+													<%=messages.getText("generic.messages.all.pl")%>
+												</option>
+												<option value='<%=String.valueOf(EventMainAttributes.PENDING_SUPERVISION)%>' <%=(status.equals(String.valueOf(EventMainAttributes.PENDING_SUPERVISION)))? "selected" : "" %> class="input">
+													<%=messages.getText("generic.event.eventdata.pendingsupervision")%>
+												</option>
+												<option value='<%=String.valueOf(EventMainAttributes.SUPERVISED)%>' <%=(status.equals(String.valueOf(EventMainAttributes.SUPERVISED)))? "selected" : "" %> class="input">
+													<%=messages.getText("generic.event.eventdata.supervised")%>
+												</option>
+<%						if(corporationId != CorporationData.PEPSICO) {
+%>												<option value='<%=String.valueOf(EventMainAttributes.PENDING_RECOMENDATION)%>' <%=(status.equals(String.valueOf(EventMainAttributes.PENDING_RECOMENDATION)))? "selected" : "" %> class="input">
+													<%=messages.getText("generic.event.eventdata.pendingrecomendation")%>
+												</option>
+<%						}
+%>											</select>
+										</td>
+									</tr>  
+	      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+									<tr>
+										<td>
+											<span class="texts"><%=messages.getText("corporation.country")%></span>
+										</td>
+										<td>
+											<select name="country" class="input" >
+												<option value="0" class="input">
+													<%=messages.getText("generic.messages.all.pl")%>
+												</option>
+<%		Iterator countryIt = sys.getUserSessionData().getFilter().getCountries();
+		while(countryIt.hasNext()) {
+		    GeoItemAttribute countryAttr = (GeoItemAttribute)countryIt.next();
+		    String selected = (countryAttr.getId().intValue() == Integer.parseInt(country)) ? "selected" : "";
+%>												<option value='<%=String.valueOf(countryAttr.getId())%>' class="input" <%=selected%> >
+													<%=messages.getText(countryAttr.getName())%>
+												</option>
+<%		}
+%>												
+											</select>
+										</td>
+									</tr>
+									
+									  
+	      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+<%		if (corporationId == CorporationData.CIMSA){ %>
+	      							<tr>
+										<td>
+											<span class="texts"><%=messages.getText("generic.events.folioNumber")%></span>
+										</td>
+										<td>
+											<input type="text" name="folioNumber" value='<%=folioNumber%>' width="30" class="input">
+										</td>
+									</tr>
+									<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+<% 		} %>
+									<tr>  
+										<td colspan="2" align="right">
+	   										<input type="hidden" name="pageSize" value='<%=pageSize%>'/>    
+											<input name="button" type="button" onClick="javascript:doSubmit();" value='<%=messages.getText("generic.messages.search")%>' class="input"/>	
+										</td>	
+									</tr>  
+								</table>	
+							</form>			
+						</td>
+					</tr>
+				</table>			
+   				<jsp:include page="../component/utilityboxbottom.jsp"/>	
+			</td>
+        	<td width="16">&nbsp;</td>
+        	<td width="50%" valign="top">
+				<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.messages.options")%>' />
+				<table width="100%" height="100%" border="0" cellpadding="0" cellspacing="0" class="texts">
+<%		if(sys.getUserSessionData().isDriver()) {
+			if(sys.getUserSessionData().checkPermission(SecurityConstants.DRIVER_CREATE_EVENT)) {	
+%>					<tr>
+   						<td>
+   							<img align="middle" border="0" src="/datacenter/util/imgs/icon1.jpg" width="12">&nbsp;
+   							<span class="texts">
+   								<a class="texts" href="layout.jsp?refer=/event/SelectVehicle.jsp?form=new">
+   									<%=messages.getText("generic.messages.addevent")%>
+   								</a>
+   							</span>
+   						</td>
+   					</tr>
+ <%			}	
+		}else {
+			if(sys.getUserSessionData().checkPermission(SecurityConstants.CREATE_EVENT)) {
+				if(sys.isCorporation(new int[]{CorporationData.BAYER_MX,CorporationData.WEYERHAEUSER})) {
+%>					<tr>
+						<td>
+							<img align="middle" border="0" src="/datacenter/util/imgs/icon1.jpg" width="12">&nbsp;
+							<span class="texts">
+								<a class="texts" href="layout.jsp?refer=/driver/DriverSearch.jsp?link=layout.jsp?refer=/event/SelectVehicle.jsp&title=generic.event.selectdriver&form=old">
+									<%=messages.getText("generic.messages.addevent")%>						
+								</a>
+							</span>
+						</td>
+					</tr>
+					
+<%				} else if(sys.isCorporation(new int[]{CorporationData.SYNGENTA_BR})){
+%>										<tr>
+											<td>
+												<img align="middle" border="0" src="/datacenter/util/imgs/icon1.jpg" width="12">&nbsp;
+												<span class="texts">
+													<a class="texts" href="layout.jsp?refer=/driver/DriverSearch.jsp?link=layout.jsp?refer=/event/SelectVehicle.jsp&title=generic.event.selectdriver&form=new">
+														<%=messages.getText("generic.messages.addevent")%>						
+													</a>
+												</span>
+											</td>
+										</tr>
+<%				}else {
+%>	
+					<tr>
+						<td>
+							<img align="middle" border="0" src="/datacenter/util/imgs/icon1.jpg" width="12">&nbsp;
+							<span class="texts">
+								<a class="texts" href="layout.jsp?refer=/driver/DriverSearch.jsp?link=layout.jsp?refer=/event/SelectVehicle.jsp&title=generic.event.selectdriver&form=new">
+									<%=messages.getText("generic.messages.addevent")+" "+messages.getText("generic.messages.addevent.post2016")%>						
+								</a>
+							</span>
+						</td>
+					</tr>	
+					<tr><td>&nbsp;</td></tr>
+					<tr>
+						<td>
+							<img align="middle" border="0" src="/datacenter/util/imgs/icon1.jpg" width="12">&nbsp;
+							<span class="texts">
+								<a class="texts" href="layout.jsp?refer=/driver/DriverSearch.jsp?link=layout.jsp?refer=/event/SelectVehicle.jsp&title=generic.event.selectdriver&form=old">
+									<%=messages.getText("generic.messages.addevent")+" "+messages.getText("generic.messages.addevent.ant2016")%>						
+								</a>
+							</span>
+						</td>
+					</tr>
+<%				}
+			}	
+%>					<tr><td>&nbsp;</td></tr>
+<%			if(sys.getUserSessionData().checkPermission(SecurityConstants.CREATE_FINE)) {	
+%>					<tr>
+						<td>
+							<img align="middle" border="0" src="/datacenter/util/imgs/icon1.jpg" width="12">&nbsp;
+							<span class="texts">
+								<a class="texts" href="layout.jsp?refer=/driver/DriverSearch.jsp?link=layout.jsp?refer=/event/selectVehicleFine.jsp&title=generic.event.selectdriver">
+									<%=messages.getText("generic.messages.addfine")%>					
+								</a>
+							</span>
+						</td>
+					</tr>	
+					<tr><td>&nbsp;</td></tr>
+					<tr>
+						<td>
+							<img align="middle" border="0" src="/datacenter/util/imgs/icon1.jpg" width="12">&nbsp;
+							<span class="texts">
+								<a class="texts" href="layout.jsp?refer=/vehicle/VehicleSearch.jsp?link=layout.jsp?refer=/vehicle/fineVehicleDrivers.jsp&title=generic.event.selectvehicle">
+									<%=messages.getText("generic.messages.addfinevehicle")%>					
+								</a>
+							</span>
+						</td>
+					</tr>	
+<%			}	
+		}	
+%>				</table>
+				<jsp:include page="../component/utilityboxbottom.jsp"/>	
+			</td>
+      	</tr>
+      	<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+      	</tr>
+      	<tr>
+        	<td colspan="3">
+				<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("web.event.eventlist")%>' />
+				<table width='100%' border="0" align='center' cellpadding="0" cellspacing="0">
+      				<tr>
+        				<td width="100%">
+<%		int total = result.getTotal();
+		String lastColumn = "corporation.country";
+		boolean contractor = false;
+		if(sys.getUserSessionData().getFilter().getCorporationId().intValue() == CorporationData.FORESTALORIENTAL) {
+		    contractor = true;
+		    lastColumn = "corporation.tile.contractors";	
+		}
+		if(sys.getUserSessionData().getFilter().getCorporationId().intValue() == CorporationData.KLABIN) {
+		    contractor = true;
+		    lastColumn = "corporation.klabin.unit";	
+		}
+%>		    				<html:form action="/Eventdelete"  >
+		    					<table width="100%" border="0" name="drivers">
+              						<tr align="center">
+<%		if(sys.getUserSessionData().checkPermission(SecurityConstants.DELETE_DRIVER)) {	
+%>	              						<td width='5%' class="guide2"></td>
+<%		}																
+%>							            <td width='15%' class="guide2"><%=messages.getText("generic.event.eventdata.date")%></td>
+							            <td width='35%'	class="guide2"><%=messages.getText("generic.event.eventdata.driver")%></td>
+							            <td width='15%'	class="guide2"><%=messages.getText("generic.event.eventdata.type")%></td>
+							            <td width='15%'	class="guide2"><%=messages.getText("generic.event.eventdata.status")%></td>
+							            <td width='15%'	class="guide2"><%=messages.getText(lastColumn)%></td>
+              						</tr>
+<%		if(total == 0) {
+%>
+              						<tr align="left">
+	              						<td colspan="5">
+											<%=messages.getText("generic.messages.notresult")%>
+										</td>
+									</tr>
+<%		}else {
+			Collection elements = result.getElements();
+			Collections.sort((List)elements);
+			Iterator iter = elements.iterator();
+			int counter = 0;
+			boolean linetwo = true;
+			while(iter.hasNext() && (counter < pageSize || all)){
+				counter++;
+				EventListData event=(EventListData)iter.next();
+%>									<tr align=center align="right" class='<%=(linetwo) ? "linetwo" : "lineone" %>'>                
+<%				if(sys.getUserSessionData().checkPermission(SecurityConstants.DELETE_EVENT)) {
+%>	            						<td width='5%' align="center"><input type='checkbox' name='<%=String.valueOf(event.getId())%>' value='<%=String.valueOf(event.getId())%>' ></td>
+<%				}
+				if(sys.getUserSessionData().checkPermission(SecurityConstants.EDIT_EVENT) || (sys.getUserSessionData().isDriver() && sys.getUserSessionData().checkPermission(SecurityConstants.DRIVER_EVENT_EDIT))) {
+%>					                	<td width='15%' align="right">
+<%					String eventLink = (event.getType() == EventDataType.FINE) ? "layout.jsp?refer=/event/FineView.jsp?fine="+String.valueOf(event.getId()) : "layout.jsp?refer=/event/EventView.jsp?eventId="+String.valueOf(event.getId());
+%>											<a href='<%=eventLink%>'>
+												<%=Util.formatDate(event.getDate())%> 
+											</a>
+										</td>
+<%				}else{
+%>						            	<td width='15%' align="right"><%=Util.formatDate(event.getDate())%></td>
+<%				}
+%>		          						<td width='35%' align="right">
+		            						 <%=event.getDriverName()+" "+event.getDriverLastName()%> 
+	              						</td>
+<%				String eventType = "generic.event.accident";
+				switch(event.getType()) {
+					case EventDataType.INCIDENT:
+					    eventType = "generic.event.incident";
+					    break;
+					case EventDataType.NEARMISS:
+					    eventType = "generic.event.nearmiss";
+					    break;
+					case EventDataType.FINE:
+					    eventType = "generic.event.fine";
+					    break;
+				}					    
+%>					                	<td width='15%' align="right"><%=messages.getText(eventType)%> </td>
+<%				String statusValue = "";
+				switch(event.getStatus().intValue()) {
+					case EventMainAttributes.PENDING_SUPERVISION:
+					    statusValue = "generic.event.eventdata.pendingsupervision";
+					    break;
+					case EventMainAttributes.SUPERVISED:
+					    statusValue = "generic.event.eventdata.supervised";
+					    break;
+					case EventMainAttributes.PENDING_RECOMENDATION:
+					    statusValue = "generic.event.eventdata.pendingrecomendation";
+					    break;
+				}
+%>					                	<td width='15%' align="right"><%=messages.getText(statusValue)%> </td>
+					                	<td width='15%' align="right"><%=(contractor) ? event.getDivOrg() : messages.getText(event.getCountry())%> </td>
+		                			</tr>
+<%	
+			linetwo = !linetwo;
+		}
+		}					
+%>								</table>
+        	      				<html:hidden property="event" />
+            				</html:form>
+            			</td>
+            		</tr>
+   					<tr>
+       					<td class="linetwo" align="right">
+<%		if(total > 0 && sys.getUserSessionData().checkPermission(SecurityConstants.DELETE_EVENT)) {	%>
+   							<input name="button2" type="button" onClick="javascript:setAction(document.forms[3],'delete');deleteIFConfirm(document.forms[3],'<%=messages.getText("generic.event.confirmdelete")%>');" value='<%=messages.getText("generic.messages.delete")%>' class="input"/>
+<%		}															
+%>	            		</td>
+              		</tr>
+<%		if(total > 0) {	
+			Hashtable paginationParameters = new Hashtable();
+			paginationParameters.put("value",value);
+			paginationParameters.put("type",type);
+			paginationParameters.put("status",status);
+			paginationParameters.put("advanced","false");
+			session.setAttribute("paginationParameters",paginationParameters);
+%>     				<tr>
+        				<td>
+        					<jsp:include page='<%="../util/pagination2.jsp?size="+pageSize+"&num="+String.valueOf(pageNum)+"&total="+String.valueOf(total)+"&link="+link%>' />        
+        				</td>
+      				</tr>
+<%		}
+%>          	</table>		
+   				<jsp:include page="../component/utilityboxbottom.jsp"/>	
+			</td>
+      	</tr>
+      	<tr>
+			<jsp:include  page="../component/spaceline.jsp" />
+      	</tr>
+    </table>
+</body>
+<%	}
+%>	
+</html>

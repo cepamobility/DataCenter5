@@ -1,0 +1,222 @@
+package persistence.util;
+
+import java.util.HashSet;
+import java.util.Iterator;
+
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.user.UserSessionData;
+
+public class UtilityQuery {
+	
+	/**
+	 * 
+	 * @param entity
+	 * @param userRequest
+	 * @return
+	 *  
+	 */
+	public static String corporationDivisionsRestictions(String entity,UserSessionData userRequest) {
+		if(userRequest.isHorizontalAccess()){
+			return "where 1=1 ";
+		}
+		String where = " where "+entity+".corpCountry.pk.corporation.id = "+userRequest.getFilter().getCorporationId();
+        String[] st = userRequest.getFilter().getDivOrgLeaves();
+
+		int  divOrgCount=userRequest.getFilter().getDivOrgCount();
+		if(divOrgCount == 1) {
+			// StringTokenizer strtok = new StringTokenizer(st[0],",");		
+			
+            where += " and "+entity+".divOrg1.id in ("+st[0]+") ";
+        }
+		
+		if(divOrgCount == 2) {
+			where += " and "+entity+".divOrg1.id in ("+st[0]+") ";
+            where += " and "+entity+".divOrg2.id in ("+st[1]+") ";
+        }
+		
+		if(divOrgCount == 3) {
+			where += " and "+entity+".divOrg1.id in ("+st[0]+") ";
+            where += " and "+entity+".divOrg2.id in ("+st[1]+") ";
+            where += " and "+entity+".divOrg3.id in ("+st[2]+") ";
+        }
+        
+         where += " and "+entity+".corpCountry.pk.country.id in ("+userRequest.getFilter().getDivGeoLeaves(null,null)+") ";
+		
+        return where;
+	}
+	
+	/**
+	 * 
+	 * @param entity
+	 * @param userRequest
+	 * @return
+	 *  
+	 */
+	public static String corporationDivisionsRestictionsSQL(String entity,UserSessionData userRequest) {
+		
+		String where = " where "+entity+".corporation = "+userRequest.getFilter().getCorporationId();
+		
+		int  divOrgCount=userRequest.getFilter().getDivOrgCount();
+        String[] st = userRequest.getFilter().getDivOrgLeaves();
+        
+		if(divOrgCount == 1) {
+            where += " and "+entity+".divOrg1 in ("+st[0]+") ";
+        }
+		
+		if(divOrgCount == 2) {
+			where += " and "+entity+".divOrg1 in ("+st[0]+") ";
+            where += " and "+entity+".divOrg2 in ("+st[1]+") ";
+        }
+		
+		if(divOrgCount == 3) {
+			where += " and "+entity+".divOrg1 in ("+st[0]+") ";
+            where += " and "+entity+".divOrg2 in ("+st[1]+") ";
+            where += " and "+entity+".divOrg3 in ("+st[2]+") ";
+        }
+        
+		
+		String country = (userRequest.getFilter().getDivGeoLeaves(null,null));
+        where += " and "+entity+".country in ("+ country +") ";
+        
+        
+		
+        return where;
+	}	
+	
+	public static String corporationRestrictionsSQL(Integer[][] divOrgs, Integer[] divGeos, String entity, UserSessionData userSessionData) {
+		String where = " WHERE "+entity+".corporation = "+userSessionData.getFilter().getCorporationId();
+		
+		int divOrgCount=userSessionData.getFilter().getDivOrgCount();
+
+		HashSet<Integer>[] set = new HashSet[3];
+		for(int i = 0; i < divOrgCount; i++) {
+			set[i] = new HashSet<Integer>();
+			if(divOrgs != null && divOrgs.length > 0 && divOrgs.length > i) {
+				if(divOrgs[i] != null && divOrgs[i].length > 0) {
+					for(int j = 0; j < divOrgs[i].length; j++) {
+						set[i].add(divOrgs[i][j]); // Para evitar repetidos
+					}
+                }
+            }
+        }
+			
+        String[] st = userSessionData.getFilter().getDivOrgLeaves(set);
+        
+		if(divOrgCount == 1) {
+            where += " and "+entity+".divOrg1 in ("+st[0]+") ";
+        }
+		
+		if(divOrgCount == 2) {
+			where += " and "+entity+".divOrg1 in ("+st[0]+") ";
+            where += " and "+entity+".divOrg2 in ("+st[1]+") ";
+        }
+		
+		if(divOrgCount == 3) {
+			where += " and "+entity+".divOrg1 in ("+st[0]+") ";
+            where += " and "+entity+".divOrg2 in ("+st[1]+") ";
+            where += " and "+entity+".divOrg3 in ("+st[2]+") ";
+        }
+        
+		HashSet<Integer> countrySet = new HashSet<Integer>();
+		if(divGeos != null) {
+			for(int j = 0; j < divGeos.length; j++) {
+				countrySet.add(divGeos[j]); // Para evitar repetidos
+            }
+        }
+        where += " and "+entity+".country in ("+userSessionData.getFilter().getDivGeoLeaves(null,null,countrySet)+") ";
+
+        return where;
+    }   
+
+
+	public static String filterDivs(Integer[][] divOrgs, Integer[] divGeos, String entity, UserSessionData userSessionData) {
+		String conditions = " WHERE "+entity+".corporation = "+userSessionData.getFilter().getCorporationId();
+		
+        if(divOrgs != null && divOrgs.length > 0) {
+            for(int j = 0; j < divOrgs.length; j++) {
+                HashSet<Integer> set = new HashSet<Integer>();
+                if(divOrgs[j] != null && divOrgs[j].length > 0) {
+                	conditions += " and "+entity+".divorg"+String.valueOf(j+1)+" in (";
+                    for(int i = 0; i < divOrgs[j].length; i++) {
+                    	if(!set.contains(divOrgs[j][i])) {
+                    		set.add(divOrgs[j][i]); // Para evitar repetidos
+                    		conditions += divOrgs[j][i] + ","; 
+                    	}
+                    }
+                	conditions = conditions.substring(0, conditions.length()-1)+")";
+                }
+            }
+        }   
+		    
+        if(divGeos != null) {
+            if(divGeos != null && divGeos.length > 0) {
+            	conditions += " and "+entity+".country in (";
+                for(int i = 0; i < divGeos.length; i++) {
+                	conditions += divGeos[i];
+                	conditions += (i == divGeos.length-1) ? ")" : ",";
+                }
+            }
+        }     		    
+        
+        return conditions;
+	}
+
+
+	public static String getCorporationKey(int corporationId) {
+		switch(corporationId) {
+			case CorporationData.MONSANTO:
+				return "country,divorg2,divorg3";
+			case CorporationData.JJ:  case CorporationData.SYNGENTA: case CorporationData.ALLERGAN:
+				return "country,divorg1,divorg2";
+			case CorporationData.BAYER: case CorporationData.COVESTRO: case CorporationData.DOW: case CorporationData.ASTRAZENECA:
+				return "country,divorg1";
+		}
+		return null;
+	}
+
+	public static String[] getCorporationKey(String var, int corporationId) {
+		String[] keys = {"","",""};
+		switch(corporationId) {
+			case CorporationData.MONSANTO:
+				keys[0] = "country,divorg2,divorg3";
+				keys[2] = "country,divorg2,divorg3";
+				break;
+			case CorporationData.JJ:  case CorporationData.SYNGENTA: case CorporationData.ALLERGAN:
+				keys[0] = "country,divorg1,divorg2";
+				keys[2] = "country,divorg1,divorg2";
+				break;
+			case CorporationData.COVESTRO: case CorporationData.DOW: case CorporationData.ASTRAZENECA:
+				keys[0] = "country,divorg1";
+				keys[2] = "country,divorg1";
+				break;
+			case CorporationData.BAYER:
+				keys[0] = "country,d3.divorgitemlevel2,d2.divorgitemlevel3";
+				keys[1] = " JOIN divorgitemlevel1s d1 ON d1.id = "+var+".divorg2 JOIN divorgitemlevel2s d2 ON d2.id = d1.divorgitemlevel2 JOIN divorgitemlevel1s d3 ON d3.id = "+var+".divorg1 "; 
+				keys[2] = "country,divorgitemlevel2,divorgitemlevel3";
+				break;
+			case CorporationData.SYNGENTA_BR:
+				keys[0] = "country,divorg1,d1.divorgitemlevel2";
+				keys[1] = " JOIN divorgitemlevel1s d1 ON d1.id = "+var+".divorg2 "; 
+				keys[2] = "country,divorg1,divorgitemlevel2";
+				break;
+		}
+		return keys;
+	}
+
+
+	public static String getCorporationFleetKey(int corporationId) {
+		switch(corporationId) {
+			case CorporationData.MONSANTO:
+				return "country,divorg21,divorg31";
+			case CorporationData.JJ: case CorporationData.SYNGENTA: case CorporationData.ALLERGAN:
+				return "country,divorg11,divorg21";
+			case CorporationData.COVESTRO: case CorporationData.DOW: case CorporationData.ASTRAZENECA: 
+				return "country,divorg11";
+			case CorporationData.SYNGENTA_BR:  
+				return "country,divorg11,divorg22";
+			case CorporationData.BAYER: 
+				return "country,divorg12,divorg23";
+		}
+		return null;
+	}
+}

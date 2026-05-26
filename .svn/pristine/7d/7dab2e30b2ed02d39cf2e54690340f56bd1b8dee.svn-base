@@ -1,0 +1,31 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.administration.corporation.tables" >
+    <class
+        name="InstructorRegistry"
+        table="instructorregistry"
+    >
+
+        <id
+            name="id"
+            column="id"
+            type="java.lang.Integer"
+        >
+            <generator class="native">
+            </generator>
+        </id>
+
+	    <property column="date" name="date" type="java.util.Date" not-null="true" />
+        <property column="comment" name="comment" type="java.lang.String"  />
+        <property column="type" name="type" type="java.lang.String" />
+        <property column="count" name="count" />
+        <property column="loginname" name="loginname" type="java.lang.String" />
+        
+    </class>
+
+</hibernate-mapping>

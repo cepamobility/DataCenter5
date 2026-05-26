@@ -1,0 +1,284 @@
+package communication.driver.report;
+
+import java.io.Serializable;
+import java.util.Date;
+
+import communication.administration.corporation.tables.CorporationData;
+
+public class HistoryPointDataType implements Comparable, Serializable {
+	
+    protected Integer id;
+    protected String firstname;
+    protected String lastname;
+    protected String country;
+    protected Date birthdate;
+    protected Date exclusiondate;
+    protected String contract;
+    protected String corporationId;
+    protected String divorg1;
+    protected String divorg2;
+    protected String divorg3;
+    protected String divorg4;
+    
+    protected Date lastUpdate = null;
+    protected int status;
+    
+    protected Date date;
+    protected String type;
+    protected String clasification;   
+    protected String result;
+	private Double total;
+	private Double points;
+	private Integer definition;
+	private Integer reference;
+
+    public HistoryPointDataType(Object[] data) {
+        id = (Integer)data[0];
+        firstname = (String)data[1];
+        lastname = (String)data[2];
+        birthdate = (Date)data[3];
+        exclusiondate = (Date)data[4];
+        contract = (String)data[5];
+        corporationId = (String)data[6];
+        date = (Date)data[7];
+        type = (String)data[8];
+        clasification = (String)data[9];   
+        result = (String)data[10];
+        country = (String)data[11];
+        reference = (Integer)data[12];
+        total = (Double)data[13];
+        if(data.length > 14) {
+            divorg1 = (String)data[14];
+        }
+        if(data.length > 15) {
+            divorg2 = (String)data[15];
+        }
+        if(data.length > 16) {
+            divorg3 = (String)data[16];
+        }
+        if(data.length > 17) {
+            divorg4 = (String)data[17];
+        }
+    }
+
+    public HistoryPointDataType(Object[] objects, Double amount, Integer definition,Integer category, String description, int corporation) {
+		this(objects); 
+		clasification = "point.definition."+description.toLowerCase();
+		type = (corporation == CorporationData.BAYER && category == 0) ? "points.category."+description.toLowerCase() : "bayer.points.category"+category;
+		result = "";
+		points = amount;
+		this.definition = definition;
+	}
+
+	public Date getBirthdate() {
+        return birthdate;
+    }
+
+    public String getClasification() {
+        return clasification;
+    }
+
+    public String getContract() {
+        return contract;
+    }
+
+    public String getCountry() {
+        return country;
+    }
+
+    public Date getDate() {
+        return date;
+    }
+
+    public String getDivorg1() {
+        return divorg1;
+    }
+
+    public String getDivorg2() {
+        return divorg2;
+    }
+
+    public String getDivorg3() {
+        return divorg3;
+    }
+
+    public Date getExclusiondate() {
+        return exclusiondate;
+    }
+
+    public String getFirstname() {
+        return firstname;
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public String getLastname() {
+        return lastname;
+    }
+
+    public Date getLastUpdate() {
+        return lastUpdate;
+    }
+
+    public String getResult() {
+        return result;
+    }
+
+    public int getStatus() {
+        return status;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setBirthdate(Date birthdate) {
+        this.birthdate = birthdate;
+    }
+
+    public void setClasification(String clasification) {
+        this.clasification = clasification;
+    }
+
+    public void setContract(String contract) {
+        this.contract = contract;
+    }
+
+    public void setCountry(String country) {
+        this.country = country;
+    }
+
+    public void setDate(Date date) {
+        this.date = date;
+    }
+
+    public void setDivorg1(String divorg1) {
+        this.divorg1 = divorg1;
+    }
+
+    public void setDivorg2(String divorg2) {
+        this.divorg2 = divorg2;
+    }
+
+    public void setDivorg3(String divorg3) {
+        this.divorg3 = divorg3;
+    }
+
+    public void setExclusiondate(Date exclusiondate) {
+        this.exclusiondate = exclusiondate;
+    }
+
+    public void setFirstname(String firstname) {
+        this.firstname = firstname;
+    }
+
+    public void setId(Integer id) {
+        this.id = id;
+    }
+
+    public void setLastname(String lastname) {
+        this.lastname = lastname;
+    }
+
+    public void setLastUpdate(Date lastUpdate) {
+        this.lastUpdate = lastUpdate;
+    }
+
+    public void setResult(String result) {
+        this.result = result;
+    }
+
+    public void setStatus(int status) {
+        this.status = status;
+    }
+
+    public void setType(String type) {
+        this.type = type;
+    }
+
+    public int compareTo(Object o) {
+        HistoryPointDataType data = (HistoryPointDataType)o;
+        if(!id.equals(data.id)) {
+            return id.compareTo(data.id);
+        }
+        if(definition != null && data.definition != null) {
+	        if(!definition.equals(data.definition)) {
+	            return definition.compareTo(data.definition);
+	        }
+        }
+        if(!date.equals(data.date)) {
+            return date.compareTo(data.date);
+        }
+        if(!type.equals(data.type)) {
+            return type.compareTo(data.type);
+        }
+        return 0;
+    }
+    
+    public boolean equals(Object obj) {
+    	try {
+    		if (obj instanceof HistoryDataType) {
+    			HistoryDataType last = (HistoryDataType)obj;
+    			return id.equals(last.id) && date.equals(last.date) && type.equals(last.type) && clasification.equals(last.clasification); 
+    		}
+    	}catch (Exception e) {
+			e.printStackTrace();
+		}
+        return false;
+    }
+
+	public String getDivorg4() {
+		return divorg4;
+	}
+
+	public void setDivorg4(String divorg4) {
+		this.divorg4 = divorg4;
+	}
+
+	public String getCorporationId() {
+		return corporationId;
+	}
+
+	public void setCorporationId(String corporationId) {
+		this.corporationId = corporationId;
+	}
+
+	public Double getTotal() {
+		return total;
+	}
+
+	public void setTotal(Double total) {
+		this.total = total;
+	}
+
+	public Integer getDefinition() {
+		return definition;
+	}
+
+	public void setDefinition(Integer definition) {
+		this.definition = definition;
+	}
+
+	public Double getPoints() {
+		return points;
+	}
+
+	public void setPoints(Double points) {
+		this.points = points;
+	}
+
+	public Integer getReference() {
+		return reference;
+	}
+
+	public void setReference(Integer reference) {
+		this.reference = reference;
+	}
+
+	public String getKey() {
+		return id+"-"+reference;
+	}
+}
+

@@ -1,0 +1,399 @@
+<%@page language="java" 
+	errorPage="../exception.jsp"
+	import="java.util.*"
+	import="business.*"
+	import="business.fleet.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.fleet.tables.*"
+	import="communication.administration.corporation.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+
+<html:html>
+<%
+	RequestDispatcher dispatcher; 
+	String context;
+	Text messages; 
+	SystemAccess sys;
+	Integer pageNum; 
+	boolean all; 
+	int pageSize; 
+	String value;
+	String type;
+	String title;
+	String status;
+	String url;
+	boolean encargado = false;
+	int periodType; // 0 monthly , 1 quarter
+	
+	sys=(SystemAccess)session.getAttribute("SystemAccess");
+	String check = null;
+	if(sys.getUserSessionData().isDriver()) {
+		check = Util.checkPermission(sys,SecurityConstants.DRIVER_FLEET_INSERT_DATA);
+	}else {
+		check = Util.checkPermission(sys,SecurityConstants.FLEET_INSERT_DATA);
+	}
+	if(check != null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+
+		// Si tiene permiso para bloquear datos (Es Encargado de Cuenta o Adminstrador)
+		// le puedo permitir ingresar datos por mas que la cuenta este
+		// bloqueada en un periodo:
+		check = Util.checkPermission(sys,SecurityConstants.FLEET_INSERT_BLOCKED_DATA);
+		if (check == null){
+			encargado = true;
+		}else{
+			encargado = false;			
+		}
+		//System.out.println("Encargado = "+encargado);
+		
+	    title = "generic.fleet.insertdata";
+	    url = "fleet/FleetSearch.jsp?title="+title;
+	    
+		type = "0";
+		if(request.getParameter("type")!=null){
+		    type = request.getParameter("type");
+			url += "&type="+type;
+		}
+	    
+		context = request.getContextPath();
+		dispatcher = request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+	
+		messages=sys.getText();
+	
+		session.setAttribute("target","FleetList");
+		if(request.getParameter("pageNum")!=null){
+			pageNum=new Integer(request.getParameter("pageNum"));
+			url += "&pageNum="+pageNum;
+		}else{
+			pageNum=new Integer(1);
+		}
+
+		value = "";
+		if(request.getParameter("value")!=null){
+			value = request.getParameter("value");
+			url += "&value="+value;
+		}
+		status = String.valueOf(FleetData.ACTIVE);
+		if (request.getParameter("status") != null) {
+			status = request.getParameter("status");
+			url += "&status="+status;
+		}
+				
+		pageSize = 10;
+		if(request.getParameter("pageSize")!=null){
+			pageSize = Integer.parseInt(request.getParameter("pageSize"));
+			url += "&pageSize="+pageSize;
+		}		
+		int first = 0;
+		int count = pageSize;
+		all=!Util.empty(request.getParameter("all")) && request.getParameter("all").equals("true");
+		if(all) {
+		    count=-1;
+		}else{
+		    first=(pageNum.intValue()-1)*pageSize;
+		}
+		
+		session.setAttribute("url",url);
+		FleetReportFacade fleetReportFacade = sys.getFleetReportFacade();
+		session.setAttribute("fleetSearchList",fleetReportFacade.findFleetList(
+				value,Integer.parseInt(type),first,count,
+				sys.getUserSessionData(),Integer.parseInt(status)));
+%>
+
+	<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	<style type="text/css">	</style>
+	<head>
+		<META http-equiv="Cache-Control" content="no-cache">
+		<META http-equiv="Pragma" content="no-cache">
+		<META http-equiv="Expires" content="-1">		
+	</head>
+	
+<script language="javascript" type="text/javascript">
+function submit(fleet) {
+	document.forms[2].fleet.value = fleet;
+	document.forms[2].submit();
+}
+function submitPagination(page,all) {
+	document.forms['pagination'].all.value = all;
+	document.forms['pagination'].pageNum.value = page;
+	document.forms['pagination'].submit();
+}
+
+function validateBlock(form1, form2, id, period, year, blockMonth, 
+	blockMonthName, blockYear, periodType,encargado) 
+{
+	
+	// We validate block data period, if the period type for the fleet is month
+	// we block all data before that month and year, if the period type is quarter
+	// we block all data before the quarter that contains the blockMonth.
+	
+	form1.fleet.value = id;	
+	var elements=form2.elements;
+	var length=elements.length;
+	for( i = 0 ; i < length ; i++){
+		var element = elements[i];
+		if( element.name == period ){
+			form1.period.value = element.value;
+		}
+		if(element.name == year){
+			form1.year.value = element.value;
+		}
+	}
+	// alert("Gus, Period:  "+form1.period.value);
+	// Si es encargado le permito ingresar datos por mas que la 
+	// cuenta este bloqueada para el periodo
+	if (encargado == true){
+		// Es encargado
+		form1.submit();
+	}else{
+		// No es encargado, valido periodo de bloqueo:
+		if (periodType == 0) 
+		{	
+			// Monthly
+			if ( (form1.year.value > blockYear) || 
+				(form1.year.value == blockYear && form1.period.value > blockMonth) ) {
+				form1.submit();
+			}else {
+				// Blocked Period
+				alert ('<%=messages.getText("generic.fleet.blockedPeriod")%> ' + blockMonthName + ' - ' + blockYear);
+			}
+		}else{
+			// Quarter
+			if (form1.year.value > blockYear){				
+				form1.submit();
+			}
+			else if ( (form1.year.value == blockYear) && (form1.period.value > blockMonth))
+			{	
+				// alert ("Periodo: "+form1.period.value + " - BlockMonth: "+blockMonth)	;
+				form1.submit();
+			}else {
+				// Blocked Period
+				alert ('<%= messages.getText("generic.fleet.blockedPeriod")%> '+ blockMonthName + ' - ' + blockYear);
+			}
+		}
+	}
+}
+
+
+</script>
+<body bgcolor="#FFFFFF">
+		<table width="600" border="0" align="center" cellpadding="0" cellspacing="0">
+			<tr class="guide1">
+				<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText(title)%>' />
+	  		</tr>
+	      	<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+      		</tr>
+	      	<tr>
+    	    	<td width="100%" colspan="5">
+					<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.messages.search")%>' />
+					<table width="100%" border="0" cellpadding="0" cellspacing="0">
+						<tr>
+							<td width="100%">
+								<form action="layout.jsp?refer=/fleet/FleetSearch.jsp" name="pagination" method="post">
+									<table width="100%" border="0" cellpadding="0" cellspacing="0">
+										<tr>
+											<td>
+												<input type="hidden" name="pageNum" value='<%=String.valueOf(pageNum)%>'/>    
+	 											<input type="hidden" name="all" <%=(all) ? "value='all'" : "" %>/>    
+												<span class="input"><%=messages.getText("generic.fleet.fleetsearch.name")%></span>
+											</td>
+											<td>
+												<input type="text" name="value" value='<%=value%>'  width="100%"class="input">    
+											</td>
+										</tr>  
+<%								if(sys.getUserSessionData().getFilter().getCorporationId().intValue() != CorporationData.JJ) {
+%>		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>
+											<td>
+												<span class="input"><%=messages.getText("generic.fleet.fleetdata.type")%></span>
+											</td>
+											<td>
+												<select name="type" class="input" width="100%">
+													<option value="0" class="input">
+														<%=messages.getText("generic.messages.all.pl")%>
+													</option>
+													<option value='<%=String.valueOf(FleetData.INDIVIDUAL)%>' <%=(type.equals(String.valueOf(FleetData.INDIVIDUAL)))? "selected" : "" %> class="input">
+														<%=messages.getText("generic.fleet.individual")%>
+													</option>
+													<option value='<%=String.valueOf(FleetData.COLECTIVE)%>' <%=(type.equals(String.valueOf(FleetData.COLECTIVE)))? "selected" : "" %> class="input">
+														<%=messages.getText("generic.fleet.colective")%>
+													</option>
+												</select>
+											</td>											
+										</tr>  
+<%								}
+%>		      							<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+										<tr>  
+											<td colspan="2" align="right">
+	   											<input type="hidden" name="pageSize" value='<%=pageSize%>'/>    
+												<input name="button" type="submit" value='<%=messages.getText("generic.messages.search")%>' class="input"/>	
+											</td>	
+										</tr>  
+									</table>	
+								</form>			
+							</td>
+						</tr>
+					</table>			
+   					<jsp:include page="../component/utilityboxbottom.jsp"/>	
+				</td>
+    	  	</tr>
+      		<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+	      	</tr>
+    	  	<tr>
+        		<td colspan="3">
+					<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("web.fleet.fleetlist")%>' />
+					<form name="values">					
+					<table width='100%' border="0" align='center' cellpadding="0" cellspacing="0">
+      					<tr>
+        					<td width="100%">
+<%!		String uid; int pageMax; int contIter; int total;
+%>
+<%		ListResult col=(ListResult)session.getAttribute("fleetSearchList");
+		total = col.getTotal();
+		if(col!=null && col.getElements().isEmpty()){
+%>			    				<table width="100%" border="0">
+            	  					<tr align="center">
+					    	            <td width='24%'	class="guide2"><%=messages.getText("generic.fleet.fleetsearch.period")%></td>
+						                <td width='24%' class="guide2"><%=messages.getText("generic.fleet.fleetsearch.name")%></td>
+						                <td width='48%'	class="guide2"><%=messages.getText("generic.fleet.fleetdata.description")%></td>
+              						</tr>
+            	  					<tr>
+            	  						<td colspan="3" class="linetwo">
+    	      								<%=messages.getText("generic.messages.notresult")%>
+            	  						</td>
+            	  					</tr>
+	            				</table>
+<%		}else {
+			if(col!=null){
+				Iterator iter=col.getElements().iterator();
+				contIter=0;
+%>	          					<table width="100%" border="0">
+       	        					<tr align="center">
+						                <td width='24%'	class="guide2"><%=messages.getText("generic.fleet.fleetsearch.period")%></td>
+						                <td width='24%' class="guide2"><%=messages.getText("generic.fleet.fleetsearch.name")%></td>
+						                <td width='48%'	class="guide2"><%=messages.getText("generic.fleet.fleetdata.description")%></td>
+               						</tr>
+           						</table>
+              					<table width="100%" >
+<%				while(iter.hasNext() && (contIter<pageSize || all)){
+					contIter++;
+					FleetMainAttributes fleet=(FleetMainAttributes)iter.next();
+					Calendar instance = sys.getFleetReportFacade().getLastPeriod(fleet.getId(),sys.getUserSessionData(),fleet.getType().intValue());
+%>	            					<tr align=center align="right" class="linetwo">
+						                <td width='24%' align="right">
+      										<select name="period<%=fleet.getId()%>" class="input" style="width:60"  >
+<% 					if(fleet.getPeriod().equals(FleetData.BY_QUARTER)) {
+						periodType = 1;
+						for(int i = 1; i <= 4; i++) {
+%>												<option value='<%=(i*3)%>' <%=(instance.get(Calendar.MONTH) < i*3 && (i-1)*3 <= instance.get(Calendar.MONTH)) ? "selected" : ""%>><%="Q"+i%></option>
+<% 						}
+ 					}else {
+ 						periodType = 0;
+    					for(int i = 1; i <= 12; i++) { 
+%>												<option value='<%=i%>' <%=(instance.get(Calendar.MONTH)+1 == i) ? "selected" : ""%>><%=messages.getText("generic.month."+i)%></option>
+<% 						}
+					}
+%>
+											</select>
+      										<select name="year<%=fleet.getId()%>" class="input"  >
+<%					for(int i = instance.get(Calendar.YEAR) - 10; i <= instance.get(Calendar.YEAR) + 10; i++) {
+%>												<option value='<%=i%>' <%=(instance.get(Calendar.YEAR) == i) ? "selected" : ""%>><%=i%></option>
+<%					}
+%>											</select>
+										</td>
+<%					//System.out.println("Period Type: "+periodType);
+					// Si el mes de bloqueo es Null ponemos 1
+					//System.out.println("GUS: "+fleet.getBlockMonth());
+					int blockMonth = (fleet.getBlockMonth() == null)?1:fleet.getBlockMonth().intValue();
+					//System.out.print("BlockMonth: "+blockMonth + " - ");
+					// Si el año de bloqueo es Null ponemos 1990
+					int blockYear =  (fleet.getBlockYear() == null)?1990:fleet.getBlockYear().intValue();
+					//System.out.println("BlockYear: "+blockYear);
+
+					String form1 = "document.forms[" + ((fleet.getType().intValue() == FleetData.COLECTIVE) ? "'InsertColective'" : "'Odometers'")+"]"; // decia forms 2 y 3
+					String form2 = "document.forms['values']";
+					
+%>
+						                <td width='24%' align="right">
+						                	<%
+						                		String href1 = "javascript:validateBlock(" + form1 + "," + form2 + "," +
+						                				fleet.getId()+",'period" +String.valueOf(fleet.getId())+"','year" + 
+						                				String.valueOf(fleet.getId()) + "'," + blockMonth + ",'" + 
+						                				messages.getText("generic.month."+blockMonth) + "'," + blockYear + 
+						                				"," + periodType + "," + encargado + ")"; 
+						                	%>
+						                	<a href="<%=href1%>">
+						                		<%=fleet.getName()%> 
+											</a>
+										</td>
+          								<td width='48%' align="right"><%=fleet.getDescription()%></td>
+			      					</tr>
+<%				}
+%>	      						</table>
+          					</td>
+      					</tr>
+	      				<tr>
+    	    				<td>
+<%			Hashtable paginationParameters = new Hashtable();
+			paginationParameters.put("value",value);
+			paginationParameters.put("type",type);
+			paginationParameters.put("status",String.valueOf(2));			
+			session.setAttribute("paginationParameters",paginationParameters);
+			String page1 = "../util/pagination2.jsp?size="+pageSize+"&num="+String.valueOf(pageNum)+"&total="+String.valueOf(total);
+%>        				
+        						<jsp:include page='<%=page1%>' />        
+        					</td>
+      					</tr>
+<%			}			
+		}	
+%>					</table>
+					</form>
+   					<jsp:include page="../component/utilityboxbottom.jsp"/>	
+				</td>
+    	  	</tr>
+	    </table>
+	    
+	    
+<form name="InsertColective" action="layout.jsp?refer=/fleet/InsertColective.jsp" method="post">
+	<input type="hidden" name="fleet" />	
+	<input type="hidden" name="period" />	
+	<input type="hidden" name="year" />	
+</form>
+	
+<% 
+	String odometersAction = "";
+	if (sys.getUserSessionData().getFilter().getCorporationId().intValue() == CorporationData.EQUITAL || 
+	   sys.getUserSessionData().getFilter().getCorporationId().intValue() == CorporationData.POLICIA  ||
+	   sys.getUserSessionData().getFilter().getCorporationId().intValue() == CorporationData.DEMO  ||
+	   sys.getUserSessionData().getFilter().getCorporationId().intValue() == CorporationData.DEMO_FORESTAL ) 
+	{
+		odometersAction = "layout.jsp?refer=/fleet/odometersFuel.jsp" ;
+	}else{
+		odometersAction = "layout.jsp?refer=/fleet/Odometers.jsp";
+	}
+%>
+<form name="Odometers" action='<%=odometersAction%>' method="post">
+	<input type="hidden" name="fleet" />	
+	<input type="hidden" name="period" />	
+	<input type="hidden" name="year" />	
+</form>
+
+	</body>
+<%
+	}	
+%>	
+</html:html>

@@ -1,0 +1,222 @@
+<%@page import="communication.administration.corporation.tables.CorporationData"%>
+<%@page import="communication.security.SecurityConstants"%>
+<%@ page language="java"
+	errorPage="../exception.jsp"
+	import="business.*"
+	import="java.util.*"
+	import="communication.language.Text"
+	import="java.net.InetAddress"
+	import="communication.administration.bookmark.tables.BookmarkData"
+%>
+<%!
+	SystemAccess sys;
+	Text messages;
+%>
+<%
+	sys=(SystemAccess)session.getAttribute("SystemAccess");
+	messages=sys.getText();
+	boolean home = (request.getParameter("home") == null) ? false : Boolean.parseBoolean(request.getParameter("home"));
+	boolean reporter = (request.getParameter("reporter") == null) ? false : Boolean.parseBoolean(request.getParameter("reporter"));
+	if(session.getAttribute("Bookmark") != null) {
+	    BookmarkData bookmark = (BookmarkData)session.getAttribute("Bookmark");
+	    boolean doBookmark1 = request.getParameter("bookmark") == null || !Boolean.parseBoolean(request.getParameter("bookmark"));
+	    boolean doBookmark2 = session.getAttribute("url") == null || !session.getAttribute("url").equals("bookmark.jsp");	    
+	    if(doBookmark1 && doBookmark2) {
+		    if(bookmark.getTol() == 1) {
+		        bookmark.incrementTol();
+	    	}else{
+	        	session.removeAttribute("Bookmark");
+	    	}
+	    }
+	}
+	
+	String image = (sys.isCorporation(CorporationData.BAYER_MX)) ? "top_01_bayer.gif" : "top_01.gif";
+%>
+	<script type="text/javascript">
+	function openAddBookmark(){
+		window.open('./user/addBookmarkItem.jsp?level=1','', 'toolbar=no,location=no,directories=no,status=no,menubar=no,scrollbars=auto,width=400,height=240');	
+	}
+
+	
+	</script>
+	<table width="100%" height="90px" border="0" cellpadding="0" cellspacing="0" id="topo">
+        <tr>
+        	<td  width="100%" colspan="6" background="./imgs/top_bg2.gif" align="left" NOWRAP>
+				<div style="width:744px" align="left">
+					<img src='<%="./imgs/"+image%>'  align="absbottom">
+					<span style=" font-family: Verdana, Arial, Helvetica, sans-serif; font-size: 75%; color: white; font-weight: bold;"><%=messages.getText("generic.messages.welcome")+" "+sys.getUserSessionData().getFilter().getFirstName()+" "+sys.getUserSessionData().getFilter().getLastName()%></span>
+				</div>
+        	</td>
+        	<td width="100%" colspan="2" background="./imgs/top_bg2.gif" align="right" >
+				<img src='<%="./imgs/logo"+String.valueOf(sys.getUserSessionData().getFilter().getCorporationId())+".jpg"%>' 
+					align="absbottom" 
+					alt="<%=sys.getUserSessionData().getFilter().getCorporationName()%>"
+					title="<%=sys.getUserSessionData().getFilter().getCorporationName()%>"
+					>
+			</td>
+        </tr>
+        <tr>
+        	<td width="17%" height="21" rowspan="2" class="bgTop">
+        		<img src="./imgs/top_1.gif" width="149" height="21" align="top">
+        	</td>
+            <td width="12%" height="21" class="bgTop">
+<%		if(!reporter) {
+%>				<a href="javascript:sweeptoggle('contract')" class="style2" id="bgHide" onClick="javascript:ShowHide(0)" ><%=messages.getText("generic.messages.hidemenu")%></a>
+				<a href="javascript:sweeptoggle('expand')" class="style2" id="bgShow"  onclick="javascript:ShowHide(1)" <%=(home) ? "style=\"display: none;\"" : "" %> ><%=messages.getText("generic.messages.showmenu")%></a>            
+<%		}
+%>			</td>
+            <td width="12%" height="21" class="bgTop" >
+<%		if(!reporter) {
+%>            	<div id="menu_parent" align="center">
+            		<span class="style2">
+            			<%=messages.getText("generic.messages.preferences")%>
+            		</span>
+            	</div>
+<%		}
+%>          </td>
+            <div id="menu_child" style="position: absolute; background: #e2e1e1; visibility:hidden;">
+<%			if(sys.getUserSessionData().getFilter().getCorporationId().intValue() == communication.administration.corporation.tables.CorporationData.JJ) { 
+%>				<a href="" style="display: block; width: 200px; height:5; text-align:left; vertical-align:middle; font-weight: bold" class="myinfoConfig">
+				</a>
+				<a href="javascript:openChangePassword(500,400)" style="display: block; width: 150px; height:20; text-align:left; vertical-align:middle;" class="myinfoConfig">
+					&nbsp;<%=messages.getText("generic.user.changepassword")%>
+				</a>
+<%			}else {
+%>				<a href="" style="display: block; width: 200px; height:5; text-align:left; vertical-align:middle; font-weight: bold" class="myinfoConfig">
+				</a>
+				<a href="javascript:openChangePassword(350,240)" style="display: block; width: 150px; height:20; text-align:left; vertical-align:middle;" class="myinfoConfig">
+					&nbsp;<%=messages.getText("generic.user.changepassword")%>
+				</a>
+<%			} 
+			if(sys.getUserSessionData().isMultipleCorporation()) {
+%>				<a href="" style="display: block; width: 200px; height:5; text-align:left; vertical-align:middle; font-weight: bold" class="myinfoConfig">
+				</a>
+				<a href="javascript:openChangeCorporation()" style="display: block; width: 150px; height:20; text-align:left; vertical-align:middle;" class="myinfoConfig">
+					&nbsp;<%=messages.getText("generic.user.changecorporation")%>
+				</a>
+<%			}
+			if(!(sys.isCorporation(CorporationData.BAYER_MX) && sys.getUserSessionData().isGerente())) {
+%>				<a href="" style="display: block; width: 200px; height:5; text-align:left; vertical-align:middle; font-weight: bold" class="myinfoConfig">
+				</a>
+				<a style="display: block; width: 150px; height:25; text-align:left; vertical-align:middle;"  class="myinfoConfig" href="javascript:openChangeLanguage()">
+					&nbsp;<%=messages.getText("generic.user.changelanguage")%>
+				</a>
+<%			}
+%>			</div>
+			<script type="text/javascript">
+				at_attach("menu_parent", "menu_child", "hover", "y", "pointer");
+			</script>
+			<td width="12%" height="21" align="center" class="bgTop">
+<%			if(sys.isCorporation(CorporationData.BAYER_MX)) {
+%>				<a href="http://sp-coll-bbts.bayernet.com/sites/220582/OM/Fleet/Road/road_enero/estadisticas-Bayer.html" target="_blank">
+					<span class="style2">
+						Estadísticas Generales
+					</span>
+				</a>
+<%			} else if(!reporter) {
+%>				<a href="layout.jsp?refer=/lastSearch.jsp">
+					<span class="style2">
+						<%=messages.getText("generic.messages.lastsearch")%>					
+					</span>				
+				</a>			
+<%			}
+%>			</td>
+			<td width="12%" height="21" align="center" class="bgTop">
+<%		if(false) {
+%>				<a href="layout.jsp?refer=/history.jsp">
+					<span class="style2">
+						<%=messages.getText("generic.messages.history")%>					
+					</span>				
+				</a>			
+<%		}
+%>			</td>
+<%		String[][] bookmark = sys.getUserReportFacade().getBookmark(sys.getUserSessionData());
+		boolean showBookmark = bookmark.length > 0 || session.getAttribute("Bookmark") != null;
+%>			<td width="12%" height="21" align="center" class="bgTop">
+<%			if(!reporter) {
+%>            	<div id="menu_bookmark" align="center">
+					<span class="style2">
+						<%=(showBookmark) ? messages.getText("generic.messages.bookmark") : ""%>					
+					</span>				
+				</div>			
+<%			}
+%>			</td>
+<%		if(showBookmark) {
+%>			<div id="menu_items" style="position: absolute; background: #e2e1e1; visibility:hidden;">
+<%			if(session.getAttribute("Bookmark") != null) {
+%>				<a href="" style="display: block; width: 200px; height:5; text-align:left; vertical-align:middle; background: #c1c1c1; font-weight: bold" class="myinfoConfig">
+				</a>
+				<a href="javascript:openAddBookmark()" style="display: block; width: 200px; height:20; text-align:left; vertical-align:middle; background: #c1c1c1; font-weight: bold" class="myinfoConfig">
+					&nbsp;<%=messages.getText("generic.bookmark.additem")%>
+				</a>
+<%			}
+			if(bookmark.length > 0) {
+%>				<a href="" style="display: block; width: 200px; height:5; text-align:left; vertical-align:middle; background: #c1c1c1; font-weight: bold" class="myinfoConfig">
+				</a>
+				<a href="layout.jsp?refer=bookmarks.jsp" style="display: block; width: 200px; height:20; text-align:left; vertical-align:bottom; background: #c1c1c1;  font-weight: bold" class="myinfoConfig">
+					&nbsp;<%=messages.getText("generic.bookmark.modify")%>
+				</a>
+<%			}
+			for(int i = 0; i < bookmark.length; i++) { 
+%>				<a href="" style="display: block; width: 200px; height:5; text-align:left; vertical-align:middle; font-weight: bold" class="myinfoConfig">
+				</a>
+				<a href='<%="layout.jsp?refer=/bookmark.jsp?id="+bookmark[i][0]%>' style="border:medium; display: block; width: 200px; height:20;  vertical-align:middle; text-align:left; " class="myinfoConfig">
+					&nbsp;<%=bookmark[i][1]%>
+				</a>
+<%			}
+%>			</div>
+			<script type="text/javascript">
+				at_attach("menu_bookmark", "menu_items", "hover", "y", "pointer");
+			</script>
+<%		}
+%>
+
+<%	
+	if(sys.isCorporation(CorporationData.MONTES_DE_PLATA) || sys.getUserSessionData().isCepaUser() || sys.getUserSessionData().getFilter().getLoginName().equalsIgnoreCase("xmethol")
+			|| sys.getUserSessionData().getFilter().getLoginName().equalsIgnoreCase("dbonilla")
+			|| sys.isCorporation(CorporationData.FORESTALORIENTAL) )
+	if(sys.isCorporation(CorporationData.MONTES_DE_PLATA) || sys.isCorporation(CorporationData.FORESTALORIENTAL) || sys.isCorporation(CorporationData.JJ)){
+%>
+<td width="12%" height="21" align="center" class="bgTop">
+				<a href="#" onclick="javascript:document.getElementById('wrt').submit()">
+					<span class="style2">
+						<%="Web Report Tools"%>					
+					</span>				
+				</a>	
+			 
+</td>
+<%  }
+%>
+
+		 
+		
+			<td width="12%" height="21" align="center" class="bgTop">
+<%		if(!reporter) {
+%>				<a href="layout.jsp?refer=/reportError.jsp">
+					<span class="style2">
+						<%=messages.getText("generic.messages.reporterror")%>					
+					</span>				
+				</a>			
+<%		}
+%>			</td>
+			<td width="9%" height="21" align="right" class="bgTop">
+				<a href="#"  onClick="javascript:document.forms[0].submit()">
+					<span class="style2">
+						<%=messages.getText("generic.messages.logout")%>	
+						<% 
+						System.out.println("Server Name: "+
+								java.net.InetAddress.getByName(request.getServerName() )														
+							); 
+						
+						InetAddress inetAddress = InetAddress.getLocalHost();
+						String ip = inetAddress.getHostAddress();
+						System.out.println("Server IP: "+ip);
+						%>				
+					</span>				
+				</a>			
+			</td>
+            <td width="1%" height="21" align="right" class="bgTop">
+            	<span class="style2" >&nbsp;</span>            
+            </td>
+		</tr>
+	</table>

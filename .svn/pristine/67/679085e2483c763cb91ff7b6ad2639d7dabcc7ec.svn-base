@@ -1,0 +1,150 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>Documento sem t&iacute;tulo</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+
+<body leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
+<table width="559" border="0" align="center" cellpadding="0" cellspacing="0">
+  <tr> 
+    <td height="79" colspan="4"> <table width="90%" border="0" align="center" cellpadding="0" cellspacing="0">
+        <tr> 
+          <td><div align="center"><font size="5" face="Arial, Helvetica, sans-serif"><strong></strong></font></div>
+            <div align="center"></div>
+            <table width="91%" height="63" border="0" align="center" cellpadding="0" cellspacing="0" bgcolor="3B6692">
+              <tr> 
+                <td height="63" align="center" valign="middle"> <font color="#FFFFFF" size="5" face="Arial, Helvetica, sans-serif"><strong><em>Manual 
+                  de Usuario</em></strong></font><br> <font color="#FFFFFF" size="2" face="Arial, Helvetica, sans-serif"><strong>INSTRUCCIONES 
+                  B&Aacute;SICAS DE ACCESO Y USO</strong></font></td>
+              </tr>
+            </table></td>
+        </tr>
+      </table>
+      <div align="right"> </div></td>
+  </tr>
+  <tr valign="top"> 
+    <td height="21" colspan="5"> <hr color="#3B6692"noshade></td>
+  </tr>
+  <tr> 
+    <td colspan="5"> <div align="center"> 
+        <table width="95%" border="0" cellspacing="0" cellpadding="0">
+          <tr> 
+            <td bgcolor="#E9E9E9"><font size="4" face="Arial, Helvetica, sans-serif"><strong>MENU</strong></font></td>
+          </tr>
+          <tr> 
+            <td bgcolor="#E9E9E9">&nbsp;</td>
+          </tr>
+          <tr> 
+            <td height="16" bgcolor="#E9E9E9"> <blockquote> 
+                <div align="left"><font size="2" face="Arial, Helvetica, sans-serif">En 
+                  el lado izquierdo de la pantalla el sistema exhibe los botones 
+                  del Men&uacute;.</font></div>
+              </blockquote></td>
+          </tr>
+          <tr> 
+            <td height="27" bgcolor="#E9E9E9"> <blockquote> 
+                <div align="left"><font size="2" face="Arial, Helvetica, sans-serif">En 
+                  las p&aacute;ginas siguientes analizaremos cada una de las utilidades 
+                  del sistema.</font></div>
+              </blockquote></td>
+          </tr>
+          <tr> 
+            <td bgcolor="#E9E9E9"> <div align="left"></div></td>
+          </tr>
+          <tr> 
+            <td bgcolor="#E9E9E9"> <table width="100%" border="0" cellspacing="0" cellpadding="0">
+                <tr> 
+                  <td width="5%">&nbsp;</td>
+                  <td width="95%"><div align="center"><img src="/datacenter/util/imgs/mn_menu_es.jpg" width="152" height="302"></div></td>
+                </tr>
+              </table></td>
+          </tr>
+          <tr> 
+            <td bgcolor="#E9E9E9">&nbsp;</td>
+          </tr>
+          <tr> 
+            <td bgcolor="#E9E9E9"><table width="90%" border="0" align="center" cellpadding="0" cellspacing="0">
+                <tr> 
+                  <td height="35"> <div align="justify"> 
+                      <ul>
+                        <li> <em><strong><font size="2" face="Arial, Helvetica, sans-serif">Conductores</font></strong></em><font size="2" face="Arial, Helvetica, sans-serif">: 
+                          Ingresar, editar y consultar datos dos condutores. As&iacute; 
+                          como el historial y la fecha de vencimiento de las licencias 
+                          de conducir.</font></li>
+                      </ul>
+                    </div></td>
+                </tr>
+                <tr> 
+                  <td><div align="justify"> 
+                      <ul>
+                        <li><font size="2" face="Arial, Helvetica, sans-serif"><strong><em>Eventos:</em></strong> 
+                          Ingresar y consultar multas, accidentes e incidentes 
+                          e visualizar datos estad&iacute;sticos. </font></li>
+                      </ul>
+                    </div></td>
+                </tr>
+                <tr> 
+                  <td><div align="justify"> 
+                      <ul>
+                        <li> <font size="2" face="Arial, Helvetica, sans-serif"><strong><em>Flotas:</em></strong> 
+                          Ingresar y consultar datos de millaje/ kilometraje de 
+                          la flota. Tambi&eacute;n est&aacute; la opci&oacute;n 
+                          de Veh&iacute;culos, donde es posible ingresar, editar 
+                          y consultar datos sobre los veh&iacute;culos de la flota</font></li>
+                      </ul>
+                    </div></td>
+                </tr>
+                <tr> 
+                  <td><div align="justify"> 
+                      <ul>
+                        <li><font size="2" face="Arial, Helvetica, sans-serif"><strong><em>Actividades:</em></strong> 
+                          Ingresar, editar y consultar informaciones referentes 
+                          a las actividades realizadas (entrenamientos, evaluaciones, 
+                          etc). </font></li>
+                      </ul>
+                    </div></td>
+                </tr>
+                <tr> 
+                  <td><div align="justify"> 
+                      <ul>
+                        <li><font size="2" face="Arial, Helvetica, sans-serif"><em><strong> 
+                          Administraci&oacute;n:</strong></em> Para uso exclusivo 
+                          de CEPA permite editar todos los &iacute;tems y usuarios 
+                          de una corporaci&oacute;n.</font></li>
+                      </ul>
+                    </div></td>
+                </tr>
+                <tr> 
+                  <td><div align="justify"> 
+                      <ul>
+                        <li><font size="2" face="Arial, Helvetica, sans-serif"><strong><em>Consultas: 
+                          </em></strong>Consulta y visualizaci&oacute;n de diversos 
+                          datos estat&iacute;sticos como APMM y Eventos.</font></li>
+                      </ul>
+                    </div></td>
+                </tr>
+              </table></td>
+          </tr>
+          <tr> 
+            <td bgcolor="#E9E9E9"><div align="justify"></div></td>
+          </tr>
+          <tr> 
+            <td bgcolor="#E9E9E9">&nbsp;</td>
+          </tr>
+          <tr> 
+            <td bgcolor="#E9E9E9">&nbsp;</td>
+          </tr>
+        </table>
+      </div></td>
+  </tr>
+  <tr>
+    <td height="19" colspan="5">&nbsp;</td>
+  </tr>
+  <tr> 
+    <td height="19" colspan="5"><div align="center"><font size="1" face="Arial, Helvetica, sans-serif"><a href="layout.jsp?refer=/manual/spanish/manual1_es.htm" style="color:black;text-decoration:none">Volver 
+        al &Iacute;ndice</a></font></div></td>
+  </tr>
+</table>
+</body>
+</html>

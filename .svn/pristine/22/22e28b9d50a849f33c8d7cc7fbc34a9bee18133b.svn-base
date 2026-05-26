@@ -1,0 +1,430 @@
+package communication.security;
+
+import java.io.File;
+import java.io.Serializable;
+import java.net.InetAddress;
+import java.util.Calendar;
+
+import communication.administration.corporation.tables.CorporationData;
+
+public class SecurityConstants implements Serializable {
+
+    public static final String ACCESS_TO_SYSTEM = "systemaccess";
+
+    public static final String VIEW_USER_LIST = "userview";
+
+    public static final String CREATE_USER = "usercreate";
+
+    public static final String EDIT_USER = "useredit";
+
+    public static final String DELETE_USER = "userdelete";
+
+    public static final String CHANGE_PASSWORD_USER = "userchangepassword";
+
+    public static final String MODIFY_USER = "userupdate";
+
+    public static final String CHANGE_USER_ACCESS = "userupdateaccess";
+
+    public static final String CREATE_CORPORATION = "corporationcreate";
+
+    public static final String EDIT_CORPORATION = "corporationedit";
+
+    public static final String MODIFY_CORPORATION = "corporationmodify";
+
+    public static final String DELETE_CORPORATION = "corporationdelete";
+
+    public static final String ADMINISTRATOR = "administrator";
+
+    /**
+     * Constantes para Drivers:
+     */
+    public static final String VIEW_DRIVER_LIST = "driverview";
+
+    public static final String CREATE_DRIVER = "drivercreate";
+
+    public static final String EDIT_DRIVER = "driveredit";
+
+    public static final String DELETE_DRIVER = "driverdelete";
+
+    public static final String MODIFY_DRIVER = "driverupdate";
+    
+    /**
+     * Constante para ingreso de Tests para Drivers:
+     * Test de Alcholemia y Gabinete Psicotecnico (Forestales)
+     */
+    public static final String TESTS_DRIVER = "drivertests";
+
+    /*
+     * Constante para controlar la subida de archivos de Drivers
+     */
+    public static final String UPLOAD_DRIVER = "driverupload";
+    
+    /**
+     * Constante para controlar la subida de conducciones comentadas de CIMSA
+     */
+    public static final String UPLOAD_CD_CIMSA="uploadcdcimsa";
+    
+    /*
+     * Constante para controlar la subida de archivos de Eventos
+     */
+    public static final String UPLOAD_EVENT = "eventupload";
+   
+    
+    /**
+     * Constante para ver la Consulta HRD y PHRD
+     */
+    public static final String HRD_PHRD_QUERY = "hrdphrdquery";
+    public static final String HRD_BRASIL_QUERY = "hrdbrasilquery";
+    public static final String HRD_ARGENTINA_QUERY = "hrdargentinaquery";
+    
+    /**
+     * Constante para Alertas
+     */
+    public static final String ALERT_VIEW = "alertview";
+    
+    public static final String CHANGE_PERMISSIONS = "userpermission";
+    
+    /* Vehicles */
+    public static final String VIEW_VEHICLE_LIST = "vehicleview";    
+    
+    public static final String DELETE_VEHICLE = "vehicledelete";    
+    
+    public static final String EDIT_VEHICLE = "vehicleedit";
+    
+    public static final String MODIFY_VEHICLE = "vehicleupdate";
+    
+    public static final String CREATE_VEHICLE = "vehiclecreate";    
+    
+    public static final String CHECKLIST_VEHICLE ="vehiclechecklist";
+    
+    public static final String UPLOAD_VEHICLE = "vehicleupload";
+    
+    public static final String DPACHECKLIST = "dpachecklist";
+
+    /*
+     * Constantes de Actividades:
+     */
+    public static final String CREATE_CEPASCHEDULEACTIVITY = "cepascheduleactivitycreate";
+    
+    public static final String CREATE_CEPASCHEDULEACTIVITYREGISTRY = "cepascheduleactivityregistrycreate";    
+    
+    public static final String EDIT_CEPASCHEDULEACTIVITY = "cepascheduleactivityedit";
+    
+    public static final String EDIT_CEPASCHEDULEACTIVITYREGISTRY = "cepascheduleactivityregistryedit";
+    
+    public static final String MODIFY_CEPASCHEDULEACTIVITY = "cepascheduleactivityupdate";
+
+    public static final String DELETE_CEPASCHEDULEACTIVITY = "cepascheduleactivitydelete";
+    
+    public static final String DELETE_CEPASCHEDULEACTIVITYREGISTRY = "cepascheduleactivityregistrydelete";
+    
+    public static final String VIEW_CEPASCHEDULE_ACTIVITY_LIST= "cepascheduleactivityviewlist";
+    
+    public static final String VIEW_CEPASCHEDULE_ACTIVITY= "cepascheduleactivityview";
+
+    public static final String SUPERVISE_CEPASCHEDULEACTIVITY = "cepascheduleactivitysupervise";
+    
+    public static final String CREATE_CD_ACTIVITY = "cdactivitycreate";
+    
+    public static final String MODIFY_CD_ACTIVITY = "cdactivitymodify";
+    
+    public static final String DELETE_CD_ACTIVITY = "cdactivitydelete";    
+    
+    public static final String VIEW_CEPASYSTEM_PREVISTA = "viewcepasystem";    
+
+    /*
+     * Constantes del eLearning: 
+     */
+    public static final String VIEW_ELEARNING_LIST = "elearninglist";
+    
+    /*
+     * Constantes de Eventos:
+     */
+    public static final String CREATE_EVENT = "eventcreate";    
+
+    public static final String CREATE_FINE = "finecreate";    
+
+    public static final String VIEW_EVENT_LIST = "eventview";
+    
+    public static final String EDIT_EVENT = "eventedit";
+
+    public static final String DELETE_EVENT = "eventdelete";    
+
+    public static final String SUPERVISE_EVENT = "eventsupervise";
+    
+    public static final String DRIVER_SEARCH = "driversearch";
+    
+    public static final String VEHICLE_SEARCH = "vehiclesearch";
+    
+    public static final String MODIFY_FINE = "fineupdate";
+    
+    public static final String MODIFY_EVENT = "eventupdate";
+
+    /* Constantes de Flotas */
+    public static final String CREATE_FLEET = "fleetcreate";    
+
+    public static final String EDIT_FLEET = "fleetedit";    
+
+    public static final String DELETE_FLEET = "fleetdelete";    
+
+    public static final String MODIFY_FLEET = "fleetupdate";
+    
+    public static final String VIEW_FLEET_LIST = "fleetview";
+    
+    public static final String FLEET_INSERT_DATA = "fleetinsertdata";
+    
+    /* Permiso para Bloquear el ingreso de datos de una flota */
+    public static final String FLEET_BLOCK_DATA = "fleetblockdata";
+    /* Permiso para Ingresar datos en una flota por mas que esta este bloqueada */
+    public static final String FLEET_INSERT_BLOCKED_DATA = "fleetinsertblockeddata";
+    
+    /* Fin Constantes de Flotas */
+    
+    public static final String SEND_RECOMENDATION = "sendrecomendation";
+
+    public static final String QUERY = "query";
+
+    public static final String DRIVER_VIEW_OWN_DATA = "driverviewowndata";
+    
+    public static final String DRIVER_MODIFY_OWN_DATA = "driverupdateowndata";
+    
+    public static final String DRIVER_VIEW_EVENT_LIST = "drivereventview";
+    
+    public static final String DRIVER_CREATE_FINE = "drivercreatefine";
+
+    public static final String DRIVER_CREATE_EVENT = "drivercreateevent";
+
+    public static final String DRIVER_EVENT_EDIT = "drivereventedit";
+
+    public static final String DRIVER_VIEW_VEHICLE = "drivervehicleview";
+    
+    public static final String DRIVER_VEHICLE_EDIT = "drivervehicleedit";
+    
+    public static final String DRIVER_CREATE_VEHICLE = "drivercreatevehicle";
+
+    public static final String DRIVER_MODIFY_EVENT = "drivereventupdate";
+
+    public static final String DRIVER_FLEET_INSERT_DATA = "driverfleetinsertdata";
+
+    public static final String DRIVER_EDIT_VEHICLE = "drivervehicleedit";
+
+    public static final String DRIVER_MODIFY_VEHICLE = "drivervehicleupdate";
+    
+    public static final String DRIVER_INSERT_ODOMETER = "driverodometer";
+
+    public static final String CREATE_GROUP = "groupcreate";
+
+    public static final String VIEW_GROUP_LIST = "viewgrouplist";
+
+    public static final String DELETE_GROUP = "groupdelete";
+
+    public static final String EDIT_GROUP = "groupedit";
+
+    public static final String MODIFY_GROUP = "groupupdate";
+    
+    public static final String VIEW_RECOMENDATION = "viewrecomendation";
+    
+    public static final String DRIVER_BAYER_DATA = "driverbayerdata";
+    
+    /* Constantes para Reportes */
+    
+    /**
+     * VIEW_REPORT: Permite ver reportes en Material de Soporte
+     */
+    public static final String VIEW_REPORT = "viewreport";
+    /**
+     * ADD_REPORT: Permite agregar reportes y cepa tips al sistema.
+     */
+    public static final String ADD_REPORT = "addreport";
+    /**
+     * VIEW_REPORT_JOHNSON: Permite ver reportes en Material de Soporte
+     */
+    public static final String VIEW_REPORT_JOHNSON = "viewreportjohnson";
+    
+    /* Fin de Constantes para Reportes */
+    
+    /**
+     * Constantes para Documentos
+     */
+    /**
+     * VIEW_DOCUMENT: Permite ver documentos en Material de Soporte
+     */
+    public static final String VIEW_DOCUMENT = "viewdocument";
+    /**
+     * ADD_DOCUMENT: Permite agregar documentos al sistema.
+     */
+    public static final String ADD_DOCUMENT = "adddocument";
+    /**
+     * Fin Constantes para Documentos
+     */
+    
+    /* Constante par Relevamiento de Rutas */
+    /**
+     * VIEW_ROUTES: Permite ver los documentos de Relevamiento de Rutas
+     */
+    public static final String VIEW_ROUTES = "viewroutes";
+    /**
+     * ADD_ROUTES: Permite agregar documentos de Relevamiento de Rutas
+     */
+    public static final String ADD_ROUTES = "addroutes";
+    
+    /* Constantes para la Investigación de Accidentes */
+    /**
+     * VIEW_ACCIDENT_INVESTIGATION: Permite ver los reportes de Investigación de Accidentes
+     */
+    public static final String VIEW_ACCIDENT_INVESTIGATION = "viewaccidentinvestigation";
+    /**
+     * ADD_ACCIDENT_INVESTIGATION: Permite agregar los reportes de Investigación de Accidentes.
+     */
+    public static final String ADD_ACCIDENT_INVESTIGATION = "addaccidentinvestigation";
+    
+    /**
+     * IMESEVI PERMISSIONS
+     */
+    public static final String IMESEVI_VIEW_PARTICIPANT = "imeseviparticipantview";
+    public static final String IMESEVI_UPDATE_PARTICIPANT = "imeseviparticipantupdate";
+    public static final String IMESEVI_VIEW_ACTIVITY = "imeseviactivityview";
+    public static final String IMESEVI_UPDATE_ACTIVITY = "imeseviactivityupdate";
+
+    /**
+     * Permisos para Actualizacion Masiva de Conductores
+     */
+    public static final String CSV_UPDATE_DRIVERS_BATCH = "csvupdatedriversbatch";
+    /**
+     * Permisos para Actualizacion Masiva de Vehiculos
+     */
+    public static final String CSV_UPDATE_VEHICLES_BATCH = "csvupdatevehiclesbatch";
+    
+     /**
+     * Permisos para Reporter J&J
+     */
+    public static final String JJ_REPORTER = "jjreporter";
+    
+    
+    // TODO PABLO
+    /* Directorios Auxiliares JBoss5.1 */
+    public static final String DATACENTER5_WAR_DIRECTORY = (SecurityConstants.isWindowsOS())?// (SecurityConstants.isWindowsOS()) ?
+    		//"C:/jboss51/datacenter/datacenter5.war/":
+    		//"/home/jboss51/datacenter/datacenter5.war/";
+    		"C:/jboss51/datacenter/datacenter5.war/" :// "C:/jboss51/datacenter/datacenter5.war/":
+    		"/home/jboss51/datacenter/datacenter5.war/";
+   //(String DATACENTER5_WAR_DIRECTORY = (SecurityConstants.isPabloChaoNotebook()))?
+    		
+     
+    
+    public static final String DATACENTER5_LINK_DIRECTORY = "../datacenter5/";
+   
+    // TODO PABLO
+    public static final String IMAGES_WAR_DIRECTORY = (SecurityConstants.isWindowsOS()) ?
+    	"C:/jboss51/datacenter/images.war/"://"C:/jboss51/datacenter/images.war/":
+    	"/home/jboss51/datacenter/images.war/";
+    
+    public static final String IMAGES_LINK_DIRECTORY = "../images/";
+    public static final String DATACENTER5_WEYERHAUSER_IMAGE_DIRECTORY = "../datacenter5/weyerhauser/pictures/";    
+  
+    
+       
+    /**
+     * Archivo donde se lee un mensaje para cargar en el login, indicando cuando se hará
+     * un mantenimiento del sistema.
+     */
+    public static final String MANTENIMIENTO_FILE = DATACENTER5_WAR_DIRECTORY + "mantenimiento.txt";
+    
+    /* EndPoints WebServices */
+    public static final String WS_ASSESSMENT_DC5 = (!SecurityConstants.isProductionServer()) ?
+    			"http://webservices.cepasafedrive.com/WebServices2/AssessmentWSEJB?wsdl":
+    			"http://webservices.cepasafedrive.com/WebServices2/AssessmentWSEJB?wsdl";
+    
+    
+    public static final String SERVER_PRODUCTION_IP = "74.124.197.17";
+//	public static final String SERVER_PRODUCTION_IP = "52.67.137.38";
+	public static final String SERVER_LOCAL_IP = "127.0.0.1";
+	public static final String SERVER_LOCAL_IP2 = "127.0.0.2";
+	 /**
+     * IPs de Producción:
+     */
+    public static final String DC5_PRODUCTION_IP = "74.124.197.17"; // Dominio dc5.cepasafedrive.com
+//	public static final String DC5_PRODUCTION_IP = "52.67.137.38";
+    public static final String CEPADC_PRODUCTION_IP = "72.32.53.128"; // Dominio cepadc.com
+
+	/**
+	 * Sistemas Operativos donde se ejecuta el sistema:
+	 */
+	public static final String LINUX = "Linux";
+	public static final String WINDOWS = "Windows";
+
+	public static final String APPJJ_DIRECTORY = (SecurityConstants.isWindowsOS()) ? "C:/safefleet/app/" : "/home/safefleet/app/";
+	public static final String APPCEPA_DIRECTORY =  (SecurityConstants.isWindowsOS()) ? "C:/safefleet/app/cepaapp/" : "/home/safefleet/app/cepaapp/";
+	public static final String APPJJ_URL =  "http://www.cepadc.com/safefleet/";
+	public static final String APPCEPA_URL =  "http://www.cepadc.com/safefleet/cepaapp/";
+
+	public static final Object LOGIN_REPORTERJJ_MX = "e97a92e55bb29c84ce6a92bf982a11bf";
+	public static final Object LOGIN_REPORTERJJ_ARG = "fd0f2f9703d45c16b2ec17cbc61bad63";
+
+	
+	public static final String ASSESMENT_USER="jrodriguez";
+	public static final String ASSESMENT_PASSWORD="Fernando13";
+	
+	/**
+	 * Verifica que sistema operativo se esta utilizando.
+	 * Devuelve true si es Windows y false en caso contrario (Linux).
+	 * @return
+	 */
+	public static boolean isWindowsOS(){
+		String sSistemaOperativo = System.getProperty("os.name");
+		if (sSistemaOperativo.contains(WINDOWS)){
+			return true;
+		}
+		return false;
+	}
+	
+	/**
+	 * TODO PABLO
+	 * Revisar: http://stackoverflow.com/questions/473446/java-current-machine-name-and-logged-in-user
+	 * @return
+	 */
+	public static boolean isPabloChaoNotebook(){
+		String sPablo = System.getProperty("user.name"); // por ejemplo numero de mac o nombre del equipo
+		if (sPablo.contains("PabloChao-PC")){  
+			return true;
+		}
+		return false; 
+	}
+	
+	/**
+	 * Devuelve true si estoy en el servidor de produccion y false
+	 * en caso contario.
+	 * @return
+	 */
+	public static boolean isProductionServer(){
+		try{
+/*			InetAddress inetAddress = InetAddress.getLocalHost();
+			String ip = inetAddress.getHostAddress();
+			System.out.println("Server IP: " + ip);
+			if (ip.equalsIgnoreCase(SecurityConstants.SERVER_PRODUCTION_IP) ||
+				ip.equalsIgnoreCase(SecurityConstants.CEPADC_PRODUCTION_IP)){
+				return true;
+			}else{
+				return false;
+			}*/
+			return new File("/home/ubuntu/").exists() && !new File("/home/cepadc5/testing").exists();
+		}catch (Exception e){
+			e.printStackTrace();
+			return false;
+		}
+	}
+
+	public static Calendar getNow(int corporationId) {
+		// TODO Auto-generated method stub
+		if(isProductionServer()){
+			//Todas las de uruguay
+			if(CorporationData.MONTES_DE_PLATA==corporationId || CorporationData.FORESTALORIENTAL==corporationId){
+				//Calculo diferencia horaria con uruguay
+				Calendar cal=Calendar.getInstance();
+				cal.add(Calendar.HOUR, -3);	
+				return cal;
+			}
+		}
+		return Calendar.getInstance();
+	}
+ }

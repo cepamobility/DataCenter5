@@ -1,0 +1,913 @@
+package communication.activity.tables;
+
+import java.io.Serializable;
+
+import business.SystemAccess;
+
+import communication.administration.corporation.tables.CountryData;
+import communication.administration.corporation.util.Util;
+import communication.datatype.tables.ActivityStateDataType;
+
+public class CEPAActivityConstants implements Serializable {
+	/**
+		 * 
+		 */
+
+	private static final long serialVersionUID = 1L;
+
+	// Tipo de actividad
+
+	public final static String BTW1 = "datatype.scheduledactivitytype.btw1";
+
+	public final static String BTW2 = "datatype.scheduledactivitytype.btw2";
+
+	public final static String BTW3 = "datatype.scheduledactivitytype.btw3";
+	public final static String BTW3_ABBOTT_ANDES = "datatype.scheduledactivitytype.btw3abbandes";
+
+	public final static String HEAVY_VEHICLES_REPETITION = "datatype.scheduledactivitytype.heavyvehiclesrepetition";
+	public final static String PICKUP_REMOLQUE = "datatype.scheduledactivitytype.pickupremolque";
+	
+	public final static String BTW2SPV = "datatype.scheduledactivitytype.btw2spv";
+	public final static String BTW24x4 = "datatype.scheduledactivitytype.btw2-4x4";
+	public final static String BTW4x4 = "datatype.scheduledactivitytype.btw-4x4";
+	public final static String BTW2LIVIANO_SKIDCAR = "generic.activity.form.btw2liviano.skidcar";
+	public final static String BTW1_PRACTICO = "datatype.scheduledactivitytype.btw1practico";
+	public final static String BTW3_PRACTICO = "datatype.scheduledactivitytype.btw3practico";
+	public final static String BTW1_TEORICO = "datatype.scheduledactivitytype.btw1teorico";
+	public final static String BTW3_PISTA = "datatype.scheduledactivitytype.btw3pista";
+
+	public final static String BTW3UPDATE = "datatype.scheduledactivitytype.btw3update";
+
+	public final static String EBTW = "datatype.scheduledactivitytype.ebtw";
+	public final static String EBTW_TEORICO = "datatype.scheduledactivitytype.ebtwteorico";
+	public final static String EBTW_PISTA = "datatype.scheduledactivitytype.ebtwpista";
+	public static final String EBTW_PISTA_MX = "datatype.scheduledactivitytype.ebtwpistamx";
+	/**
+	 * FOSA tiene 3 BTW3: Curso, Repeticion y Renovacion.
+	 */ 
+	public final static String BTW3RENOVACION = "datatype.scheduledactivitytype.btw3-renovacion";
+	public final static String BTW3SEGUNDARENOVACION = "datatype.scheduledactivitytype.btw3-2nda-renovacion";
+	public final static String BTW3TERCERARENOVACION = "datatype.scheduledactivitytype.btw3-3ra-renovacion";
+	public final static String BTW3CUARTARENOVACION = "datatype.scheduledactivitytype.btw3-4ta-renovacion";
+	
+	 
+	public final static String BTWTHAILAND = "datatype.scheduledactivitytype.btwthailand";
+
+	public final static String TRANINGONTHEJOB = "datatype.scheduledactivitytype.trainingonthejob";
+	public final static String TRANINGONTHEJOB_PESADOS = "datatype.scheduledactivitytype.trainingonthejobpesados";
+	
+	public final static String TDS = "datatype.scheduledactivitytype.tds"; // Abbott Brasil, Curso TDS
+
+	public final static String MINITRANINGONTHEJOB = "datatype.scheduledactivitytype.minitrainingonthejob";
+
+	public final static String EVALUACIONENCABINA = "datatype.scheduledactivitytype.evaluacionencabina";
+	public final static String EVALUACIONINICIALCEPA = "datatype.scheduledactivitytype.evaluacioninicialcepa";
+	public final static String ENTRENAMIENTOENCABINA2 = "datatype.scheduledactivitytype.entrenamientoencabina2";
+	public final static String ENTRENAMIENTOENCABINA4 = "datatype.scheduledactivitytype.entrenamientoencabina4";
+	public final static String ENTRENAMIENTOENCABINA8 = "datatype.scheduledactivitytype.entrenamientoencabina8";
+
+	public final static String INDUCTIONTRAINING2 = "datatype.scheduledactivitytype.inductiontraining2";
+	public final static String INDUCTION_NEW_FUNCTIONARY = "datatype.scheduledactivitytype.inductionnewfunctionary";
+
+	public final static String BTWONBOARD = "datatype.scheduledactivitytype.btwonboard";
+	public final static String BTW2ONBOARD = "datatype.scheduledactivitytype.btw2onboard";
+
+	public final static String BTWONBOARD_V2 = "datatype.scheduledactivitytype.btwonboard2";
+	public final static String BTW2ONBOARD_V2 = "datatype.scheduledactivitytype.btw2onboard2";
+
+	public final static String BTWUTILITARIOREBOQUE = "datatype.scheduledactivitytype.btwutilitarioreboque";
+	public final static String REBOQUE = "datatype.scheduledactivitytype.reboque";
+
+	public final static String MANUALDETRANSPORTE = "datatype.scheduledactivitytype.manualdetransporte";
+	public final static String MANUALDETRANSPORTE2 = "datatype.scheduledactivitytype.manualdetransporte2";
+	/****************************************************************************
+	 * Actividades con Formulario Evaluacion en Cabina Pesados, checklist 14
+	 * 
+	 */
+	public final static String EVALUACIONENCABINAPESADO = "datatype.scheduledactivitytype.evaluacionencabinapesado";
+	/**
+	 * El CURSOPESADOS tiene el mismo formulario que evaluacionencabinapesados
+	 * pero con otro nombre. Se creo en ppio para Castrol.
+	 */
+	public final static String CURSOPESADOS = "datatype.scheduledactivitytype.cursopesados";
+	/**
+	 * El BTW Pesados con Evaluacion en Cabina tiene el mismo formulario que
+	 * evaluacionencabinapesados pero con otro nombre. Se creo en ppio para
+	 * Castrol.
+	 */
+	public final static String BTWPESADOSCONEVALUACIONENCABINA = "datatype.scheduledactivitytype.btwpesadosconevaluacionencabina";
+	/**
+	 * Fin Actividades con Formulario Evaluacion en Cabina Pesados, checklist 14
+	 * 
+	 ****************************************************************************/
+
+	public final static String BTW_PROVISIONAL="datatype.scheduledactivitytype.provisionalbtw";
+	
+	/**
+	 * Curso HRD
+	 */
+	public final static String HRD = "datatype.scheduledactivitytype.hrd";
+	/**
+	 * Curso Special Day Of Training
+	 */
+	public final static String SPECIALDAYOFTRAINING = "datatype.scheduledactivitytype.specialdayoftraining";
+
+	/* Commentary Drives: */
+	public final static String COMMENTARYDRIVE = "datatype.scheduledactivitytype.commentarydrive";
+
+	public final static String COMMENTARYDRIVEOTHER = "datatype.scheduledactivitytype.commentarydriveother";
+	
+	/* Comentary Driver Special xa J&J */
+	public final static String COMMENTARYDRIVEOTHERSPECIAL = "datatype.scheduledactivitytype.commentarydriveotherspecial";
+
+	public final static String COMMENTARYDRIVEARGENTINA = "datatype.scheduledactivitytype.commentarydriveargentina";
+	public final static String COMMENTARYDRIVEARGENTINA_NUEVO = "datatype.scheduledactivitytype.commentarydriveargentinanuevo";
+
+	public final static String COMMENTARYDRIVEHIGHRISK = "datatype.scheduledactivitytype.commentarydriverisk";
+
+	public final static String COMMENTARYDRIVECAYACO = "datatype.scheduledactivitytype.commentarydrivecayaco";
+
+	public final static String COMMENTARYDRIVENALCO = "datatype.scheduledactivitytype.commentarydrivenalco";
+
+	public final static String COMMENTARYDRIVE_INSTRUCTORES = "datatype.scheduledactivitytype.instructorcommentarydrive";
+
+	public final static String COMMENTARYDRIVE_NOVARTIS = "datatype.scheduledactivitytype.commentarydrivenovartis";
+	public final static String COMMENTARYDRIVE_JJ2 = "datatype.scheduledactivitytype.commentarydrivejj2";
+	/* Fin Commentary Drives: */
+
+	// Actividades Migradas, no se pueden crear, son solo para mostrar las
+	// actividades viejas,
+	// Estas actividades no son mas actividades sino funcionalidades dentro del
+	// driver, por eso
+	// no se pueden crear mas como actividades:
+	public final static String SEGUIMIENTOENRUTA = "datatype.scheduledactivitytype.seguimientoenruta";
+	public final static String GABINETEPSICOTECNICO = "datatype.scheduledactivitytype.gabinetepsicotecnico";
+	// public final static String PESADOS1 =
+	// "datatype.scheduledactivitytype.pesados1";
+
+	public final static String MONITORS = "datatype.scheduledactivitytype.monitors";
+
+	public final static String MONITORS2 = "datatype.scheduledactivitytype.monitors2";
+	
+	public final static String MONITORS2_REFRESHMENT = "datatype.scheduledactivitytype.monitors2refreshment";
+
+	public final static String HIDRO = "datatype.scheduledactivitytype.hidro";
+
+	public final static String MULTIPLICADOR_CEPA = "datatype.scheduledactivitytype.multiplicadorsolocepa";
+	public final static String MULTIPLICADOR_DEFENSIVE = "datatype.scheduledactivitytype.multiplicadordefensive";
+
+	public final static String COPILOT = "datatype.scheduledactivitytype.copilot";
+
+	/* Cursos para la Escuela de Conduccion */
+	public final static String PRINCIPIANTE = "datatype.scheduledactivitytype.principiante";
+	public final static String PRINCIPIANTE_REFRESH = "datatype.scheduledactivitytype.principiante.refreshment";
+	public final static String AVANZADO = "datatype.scheduledactivitytype.avanzado";
+	/* Fin Cursos para la Escuela de Conduccion */
+
+	/* Cursos Preventivos Pesados */
+	public final static String PREVENTIVO_PESADOS_2 = "datatype.scheduledactivitytype.preventivopesados2";
+	public final static String PREVENTIVO_PESADOS_4 = "datatype.scheduledactivitytype.preventivopesados4";
+	public final static String PREVENTIVO_PESADOS_8 = "datatype.scheduledactivitytype.preventivopesados8";
+	/* Fin Cursos Preventivos Pesados */
+
+	public final static String PREVENTIVO_LIVIANOS_2 = "datatype.scheduledactivitytype.preventivolivianos2";
+
+	public final static String PREVENTIVO_LIVIANOS_4 = "datatype.scheduledactivitytype.preventivolivianos4";
+
+	public final static String PREVENTIVO_LIVIANOS_8 = "datatype.scheduledactivitytype.preventivolivianos8";
+
+	public final static String HEAVY1_2 = "datatype.scheduledactivitytype.heavy1-2";
+
+	public final static String HEAVY3_4 = "datatype.scheduledactivitytype.heavy3-4";
+
+	public final static String ADVANCED_DRIVING = "datatype.scheduledactivitytype.advanceddriving";
+
+	/**
+	 * Mercancias Peligrosas (Actualizado 3/5/2010)
+	 */
+	public final static String DANGEROUS_MATERIALS = "datatype.scheduledactivitytype.dangerousmaterials";
+	/**
+	 * Mercancias Peligrosas Renovación (Actualizado 3/5/2010)
+	 */
+	public final static String DANGEROUS_MATERIALS_RENEWAL = "datatype.scheduledactivitytype.dangerousmaterialsrenewal";
+
+	public final static String ELEVATORS = "datatype.scheduledactivitytype.elevators";
+
+	public final static String PERSONAL_SECURITY = "datatype.scheduledactivitytype.personalsecurity";
+
+	public final static String MOTORCYCLE = "datatype.scheduledactivitytype.motorcycle";
+
+	public final static String ACTIVITY_4X4 = "datatype.scheduledactivitytype.4x4";
+
+	/**
+	 * Charla de Seguridad General...
+	 */
+	public final static String GENERAL_SAFETY_SPEECH = "datatype.scheduledactivitytype.generalsafetyspeech";
+	public final static String SAFETY_SPEECH = "datatype.scheduledactivitytype.safetyspeech";
+	public final static String INTERNAL_SAFETY_SPEECH = "datatype.scheduledactivitytype.internalsafetyspeech";
+	public final static String SAFE_FLEET_MULTIPLIER_SPEECH = "datatype.scheduledactivitytype.speechsafefleetmultiplier";
+	
+
+	public final static String CENAPRA_ACTIVITY = "datatype.scheduledactivitytype.cenapraactivity";
+
+	public final static String INDUCTION_TRAINING = "datatype.scheduledactivitytype.inductiontraining";
+
+	public final static String DEMO_DIGI_CAM = "datatype.scheduledactivitytype.demodigicam";
+
+	/**
+	 * Charla de Seguridad
+	 */
+	public final static String SECURITY_TALK = "datatype.scheduledactivitytype.securitytalk";
+	public final static String SECURITY_TALK_KIDS = "datatype.scheduledactivitytype.kidsecuritytalk";
+	public final static String SECURITY_TALK_PMF = "datatype.scheduledactivitytype.pmfsecuritytalk";
+
+	public final static String UTV = "datatype.scheduledactivitytype.utv";
+
+	public final static String RADAR = "datatype.scheduledactivitytype.radar";
+
+	public final static String TRAINING_DIGI_CAM = "datatype.scheduledactivitytype.trainingdigicam";
+
+	
+	public final static String BITREN = "datatype.scheduledactivitytype.bitren";
+	public final static String BITREN_UPDATE = "datatype.scheduledactivitytype.bitren.update";
+	
+	public final static String CLEAT = "datatype.scheduledactivitytype.cleat";
+	public final static String BASIC_UNITS = "datatype.scheduledactivitytype.basicunits";
+	
+	/**
+	 * Solo FOSA: Charla Post Accidente
+	 */
+	public final static String POST_ACCIDENT_TALK = "datatype.scheduledactivitytype.postaccidenttalk";
+
+	public final static String REPORTERJJ_SELFEVALUATION = "datatype.scheduledactivitytype.reporterjj.selfevaluation";
+	public final static String REPORTERJJ_COMMENTARYDRIVE = "datatype.scheduledactivitytype.reporterjj.commentarydrive";
+	
+	/**
+	 * Actividad: Conferencia, Conference, Palestra
+	 */
+	// public final static String CONFERENCE =
+	// "datatype.scheduledactivitytype.conference";
+	/**
+	 * Curso de Primeros Auxilios
+	 */
+	public final static String FIRST_AID = "datatype.scheduledactivitytype.firstaid";
+	
+	
+	/**
+	 * Curso de Terceros: Primeros Auxilios
+	 */
+	public final static String CURSO_DE_TERCEROS_PRIMEROS_AUXILIOS = "datatype.scheduledactivitytype.cursodeterceros.primerosauxilios";
+	/**
+	 * Curso de Terceros: Combate de Incendios
+	 */
+	public final static String CURSO_DE_TERCEROS_COMBATE_DE_INCENDIOS = "datatype.scheduledactivitytype.cursodeterceros.combatedeincendios";
+	
+	/**
+	 * CURSO TEORICO 8 HORAS VEHICULOS PESADOS
+	 */
+	public final static String TEORICO_8_HORAS_PESADOS = "datatype.scheduledactivitytype.teorico8horaspesados";
+	/**
+	 * CURSO TEORICO 8 HORAS VEHICULOS LIVIANOS
+	 */
+	public final static String TEORICO_8_HORAS_LIVIANOS = "datatype.scheduledactivitytype.teorico8horaslivianos";
+
+	
+	/**
+	 * Curso Realizado por Terceros (Monsanto) traido del DC4 pero aun activo
+	 */
+	public final static String OUT_TRAINING = "datatype.scheduledactivitytype.outtraining";
+	
+	public final static String OUT_TRAINING_LIVIANOS = "datatype.scheduledactivitytype.outtraininglivianos";
+	public final static String OUT_TRAINING_PESADOS = "datatype.scheduledactivitytype.outtrainingpesados";
+
+	public final static String OUT_TRAINING_BTW = "datatype.scheduledactivitytype.outtrainingbtw";
+	public final static String OUT_TRAINING_EVALUACIONENCABINA = "datatype.scheduledactivitytype.outtrainingevaluacionencabina";
+
+	public final static String BTW3_LIVIANOS_VIA_PUBLICA = "datatype.scheduledactivitytype.btw3livianosviapublica";
+	
+	
+	/**
+	 * Charla interna de Seguridad - J&J
+	 */
+	public final static String INTERNAL_SECURITY_TALK = "datatype.scheduledactivitytype.internalsecuritytalk";
+	
+	/**
+	 * Curso Parking and Backing
+	 */
+	public final static String PARKING_AND_BACKING = "datatype.scheduledactivitytype.parkingandbacking";
+	
+	public final static String BUS_HEAVY = "datatype.scheduledactivitytype.busheavy";
+
+	/**
+	 * Nuevas Actividades para Tablets
+	 */
+	public final static String BTW1_NEW_FORM_TABLET = "tablet.form.btw1.livianos";
+	public final static String BTW2_NEW_FORM_TABLET = "tablet.form.btw2.livianos";
+	public final static String EVALUACION_EN_CABINA_TABLET = "tablet.form.evaluacionencabina";
+	public final static String TRAINING_ON_THE_JOB_TABLET = "tablet.form.toj";
+	public final static String PHRD_TABLET = "tablet.form.phrd";
+	public final static String SPECIALDAYOFTRAINING_TABLET = "tablet.form.specialdayoftraining";
+	public final static String BTW1ONBOARD_TABLET = "tablet.form.btw1onboard";
+	public final static String BTW2ONBOARD_TABLET = "tablet.form.btw2onboard";
+	public final static String BTW2UPM = "tablet.form.btw2upm";
+	public final static String BTW1_PESADOS_ONBOARD_TABLET = "tablet.form.btw1pesadosonboard";
+	public final static String BTW1_ECONOMIC_TABLET = "tablet.form.btw1.economic";
+	public final static String TOJ_ECONOMIC_TABLET = "tablet.form.toj.economic";
+	public final static String BTW4X4_ONBOARD_TABLET = "tablet.form.btw4X4.onboard";
+	public final static String TRAINING_ON_THE_JOB_4X4_TABLET = "tablet.form.toj4X4";
+	public final static String TRANSIT_BEHAVIOUR_TABLET = "tablet.form.transitbehaviour";
+	public final static String SAFE_DRIVE_TABLET = "tablet.form.safedrive";
+	public final static String BTW3_VIA_PUBLICA_TABLET = "tablet.form.btw3.viapublica";
+	
+	// Fin Tipo de actividad
+
+	// Estado de la actividad
+
+	public final static String PREVISTA = "datatype.scheduledactivitystate.prevista";
+
+	public final static String ENSUPERVISION = "datatype.scheduledactivitystate.ensupervision";
+
+	public final static String DICTADA = "datatype.scheduledactivitystate.dictada";
+
+	public final static String PESADOS_1 = "datatype.scheduledactivitytype.pesados1";
+
+	public final static String ASSESSMENT = "datatype.scheduledactivitytype.assessment";
+
+	// Fin Estado de la actividad
+
+	/**
+	 * Notas o Calificaciones de las Actividades:
+	 */
+	public final static String APRUVED = "generic.activity.note.apruved";
+	public final static String NOTAPRUVED = "generic.activity.note.notapruved";
+	public final static String APRUVEDWITHOBSERVATIONS = "generic.activity.note.apruvedwithobservations";
+	public final static String THEORETICALPENDING = "generic.activity.note.theoreticalpending";
+	public final static String PRACTICEPENDING = "generic.activity.note.practicepending";
+	public final static String WITHOUTNOTE = "generic.activity.note.withoutnote";
+
+	// Ctes relativas a tiempo de vigencia de cursos, en años
+
+	public final static int BTW1TIMEEXPIRY = 3;
+
+	// public final static int BTW2TIMEEXPIRY=2;
+	public final static int BTW2TIMEEXPIRY = 3;
+
+	public final static int BTW3TIMEEXPIRY = 1; // TODO: VER
+
+	public final static int HRDTIMEEXPIRY = 0;
+
+	public final static int TRANINGONTHEJOBTIMEEXPIRY = 3;
+
+	public final static int EVALUACIONENCABINATIMEEXPIRY = 3;
+	public final static int EVALUACIONENCABINATIMEEXPIRYFOREST = 1;
+
+	public final static int SPECIALDAYOFTRAININGTIMEEXPIRY = 0;
+
+	public final static int COMMENTARYDRIVETIMEEXPIRY = 0;
+
+	public final static int MULTIPLICADORES = 0;
+	public final static int POBLACION_META = 1;
+	public final static int FORMADORES = 2;
+	public final static int MULTIPLICADORES_OLD = 3;
+	public final static int MULTIPLICADORES_NEW = 4;
+	public final static int REPLICADORES = 5;
+	public final static int POBLACION_META_OLD = 6;
+	public final static int FORMADORES_VIEJO = 7;
+
+	/**
+	 * Mercancias Peligrosas, Vencimiento 5 años. (Actualizado al 3/5/2010)
+	 */
+	public final static int DANGEROUS_MATERIALS_EXPIRY = 5;
+
+	public final static String CENAPRA_MULTIPLICADORES = "datatype.scheduledactivitytype.cenapramultiplicadores2";
+	public final static String CENAPRA_MULTIPLICADORES_OLD = "datatype.scheduledactivitytype.cenapramultiplicadores";
+	public final static String CENAPRA_MULTIPLICADORES_NEW = "datatype.scheduledactivitytype.cenapramultiplicadoresnew";
+
+	public final static String CENAPRA_POBLACION_META = "datatype.scheduledactivitytype.cenaprapoblacionmeta2";
+	public final static String CENAPRA_POBLACION_META_OLD = "datatype.scheduledactivitytype.cenaprapoblacionmeta";
+
+	public final static String CENAPRA_FORMADORES = "datatype.scheduledactivitytype.cenapraformadores";
+	public final static String CENAPRA_FORMADORES_VIEJO = "datatype.scheduledactivitytype.cenapraformadoresviejo";
+
+	public final static String CENAPRA_RELICADORES = "datatype.scheduledactivitytype.cenaprareplicadores";
+	// Fin ctes de tiempo de vigencia de cursos
+
+	/**
+	 * CEPA System Livianos
+	 * Para Pepsico es: Entrenadores
+	 */
+    public final static String CEPA_SYSTEM_COURSE_1_LIVIANOS = "datatype.cepasystemactivity.course1";  
+    /**
+     * CEPA System Pesados
+     */
+    public final static String CEPA_SYSTEM_COURSE_1_PESADOS = "datatype.cepasystemactivity.course1.pesados";        
+    public final static String RECERTIFICACION_CEPA_SYSTEM = "datatype.cepasystemactivity.recertificacion";        
+
+    public final static String CEPA_SYSTEM__LIVIANOS_PESADOS = "datatype.cepasystemactivity.livianos.pesados";  
+
+    /**
+     * CEPA System Entrenadores
+     * Para Pepsico es : CEPA System Pepsico
+     */
+    public final static String CEPA_SYSTEM_COURSE_2_ENTRENADORES = "datatype.cepasystemactivity.course2";  
+    /**
+     * CEPA System CEPA
+     * Para Pespisco es: CEPA System Conductores
+     */
+    public final static String CEPA_SYSTEM_COURSE_2_CEPA = "datatype.cepasystemactivity.course2.cepa";        
+
+    /**
+     * CURSOS DE PACIFIC RUBIALES
+     */
+    public final static String CHARLA_SENSIBILIZACION="datatype.scheduledactivitytype.charlasensibilizacion";
+    public final static String SOCIALIZACION_STANDARD_SEGURIDAD="datatype.scheduledactivitytype.standardseguridad";
+
+	public static final String PROVISIONAL_BTW = "datatype.scheduledactivitytype.provisionalbtw";
+	
+	public static final String PREVENTIVO_LIVIANOS_TEORIA = "datatype.scheduledactivitytype.prevliviteo";
+	public static final String PREVENTIVO_LIVIANOS_PRACTICO = "datatype.scheduledactivitytype.prevlivipra";
+	public static final String PREVENTIVO_LIVIANOS_TEORICOPRACTICO = "datatype.scheduledactivitytype.prevliviteopra";
+	public static final String PREVENTIVO_MEDIANOS_TEORIA = "datatype.scheduledactivitytype.prevmedteo";
+	public static final String PREVENTIVO_MEDIANOS_PRACTICO = "datatype.scheduledactivitytype.prevmedpra";
+	public static final String PREVENTIVO_PESADOS_TEORIA = "datatype.scheduledactivitytype.prevpesteo";
+	public static final String PREVENTIVO_PESADOS_PRACTICO = "datatype.scheduledactivitytype.prevpespra";
+	public static final String PREVENTIVO_PESADOS_TEORICOPRACTICO = "datatype.scheduledactivitytype.prevpesteopra";
+
+	public static final String COMMENTARYDRIVE_RENOVATION = "datatype.scheduledactivitytype.commentaryrenovation.jj";
+	public static final String INITIAL_FOREIGN_EVALUATION = "datatype.scheduledactivitytype.initialforeignevaluation";
+
+	public static final String FEEDBACK_LINE_MANAGER = "datatype.scheduledactivitytype.feedbacklinemanager";
+
+	private static final Object EVALUACIONPLANAUTOCEPA = "datatype.scheduledactivitytype.evaluacionplanautocepa";
+
+	public static String getViewLink(CEPAActivityScheduleRegistryData  activity, String driver, SystemAccess sys) {
+		String id = String.valueOf(activity.getActivity().getActivityId());
+		if(activity != null && activity.getActivity() != null  && activity.getActivity().getState() != null && !activity.getActivity().getState().getResourceBundleId().equals(ActivityStateDataType.DICTADA)) {
+			return "layout.jsp?refer=/activity/schedule/CEPAActivityScheduleView.jsp?id="+id;
+		} else {
+			String activityType = activity.getActivity().getType().getResourceBundleId();
+			if(activity != null && activity.getActivity() != null && activity.getActivity().getIsOld() && !activityType.equals(COMMENTARYDRIVEOTHER)) {
+				return "ActivityReportOld.do?idDriver="+driver+"&output=HTML&idActivity="+id;
+			}else if (!activity.getActivity().getIsOld() && (activityType.equals(COMMENTARYDRIVEOTHER) || !activity.getActivity().getDefinition().isHaveIndividualReport())){
+				String value = "layout.jsp?refer=/activity/schedule/AddCEPAActivityScheduleRegistry.jsp?idDriver="+driver+"&idActivity="+id+"&enabled=false&page=/driver/DriverView.jsp";
+				if(sys.getUserSessionData().isGerente()) {
+					if (activityType.equalsIgnoreCase(CEPA_SYSTEM_COURSE_1_LIVIANOS)) {
+						value = "layout.jsp?refer=/activity/schedule/cdsView.jsp?idDriver="+ driver+"&idActivity="+id+"&check=40";
+					} else if (activityType.equalsIgnoreCase(CEPA_SYSTEM_COURSE_1_PESADOS)
+									|| activityType.equalsIgnoreCase(RECERTIFICACION_CEPA_SYSTEM)) {
+						value = "layout.jsp?refer=/activity/schedule/cdsView.jsp?idDriver="+ driver+"&idActivity="+ id+"&check=35";
+					} else if (activityType.equalsIgnoreCase(CEPA_SYSTEM_COURSE_2_ENTRENADORES) || 
+							activityType.equalsIgnoreCase(CEPA_SYSTEM_COURSE_2_CEPA)) {
+						value = "layout.jsp?refer=/activity/schedule/cdsView.jsp?idDriver="+ driver+"&idActivity="+ id+"&check=36";
+					} else if (activityType.equalsIgnoreCase(CEPA_SYSTEM__LIVIANOS_PESADOS)) {
+						value = "layout.jsp?refer=/activity/schedule/cdsView.jsp?idDriver="+ driver+"&idActivity="+ id+"&check=94";
+					} 
+				}
+				if(activityType.equalsIgnoreCase(BTW_PROVISIONAL)){
+					value = "ActivityProvisionalBTW.do?idDriver="+ driver+"&date="+Util.formatDate(activity.getActivity().getDate())+"&result="+activity.getNote();
+				}
+				return value;
+			}else if(activityType.equals(COMMENTARYDRIVEARGENTINA)) {
+				return "layout.jsp?refer=/activity/schedule/CommentaryDriveArgentinaView.jsp?idDriver="+driver+"&idActivity="+id+"&enabled=false";
+			}else if (activityType.equals(COMMENTARYDRIVE_NOVARTIS)) { 
+				return "layout.jsp?refer=/activity/schedule/cdNovartisView.jsp?idDriver="+driver+"&idActivity="+id+"&enabled=false";
+			}else if (activityType.equals(COMMENTARYDRIVE_JJ2)) { 
+				return "layout.jsp?refer=/activity/schedule/cdJJ2View.jsp?idDriver="+driver+"&idActivity="+id+"&enabled=false";
+			}else if (activityType.equals(COMMENTARYDRIVE_RENOVATION)
+					|| activity.getActivity().getType().getResourceBundleId().equals(INITIAL_FOREIGN_EVALUATION)) { 
+				return "layout.jsp?refer=/activity/schedule/RenovationJJView.jsp?idDriver="+driver+"&idActivity="+id+"&enabled=false";
+			}else if(activity.getActivity().hasNewReports()){ 
+				return "ActivityReportVersion2.do?driver="+driver+"&type=1&activity="+id;
+			}else{ 
+				return "ActivityReportNew.do?idDriver="+driver+"&output=HTML&idActivity="+id;
+			} 
+		}
+	}
+	/**
+	 * 
+	 * @param definition
+	 * @param idDriver
+	 * @param idActivity
+	 * @param enabled
+	 * @param isEdit
+	 * @param back
+	 * @return
+	 */
+	public static String getPageToRedirect(
+			CEPAActivityDefinitionData definition, String idDriver,
+			String idActivity, String enabled, boolean isEdit, String back) {
+		String activityType = definition.getResourceKeyName().trim();
+
+		if (activityType.equals(COMMENTARYDRIVE) 
+				|| activityType.equals(COMMENTARYDRIVE_INSTRUCTORES)
+				|| activityType.equals(COMMENTARYDRIVEOTHER) 
+				|| activityType.equals(COMMENTARYDRIVEOTHERSPECIAL)
+				) {
+			// commentarydrive para Monsanto y demas Corporaciones
+
+			if (!isEdit) {
+				return "CommentaryDriveForm.jsp?idDriver=" + idDriver
+						+ "&enabled=" + enabled + "&idActivity=" + idActivity;
+			} else {
+				return "CommentaryDriveForm.jsp?idDriver=" + idDriver
+						+ "&idActivity=" + idActivity + "&enabled=" + enabled
+						+ "&page=" + back;
+			}
+
+		} else if (activityType.equals(BTW1) 
+				|| activityType.equals(BTW4x4)
+				|| activityType.equals(EBTW_PISTA)
+				|| activityType.equals(BTW1_PRACTICO)) {
+			// Si es BTW1 o BTW4x4:
+
+			if (!isEdit) {
+				return "btw1.jsp?idDriver=" + idDriver + "&idActivity="
+						+ idActivity;
+			} else {
+				return "btw1Edit.jsp?idDriver=" + idDriver + "&idActivity="
+						+ idActivity;
+			}
+
+		} else if (activityType.equals(BTW2) || activityType.equals(BTW3_ABBOTT_ANDES) || activityType.equals(BTW24x4)) {
+
+			// Si es BTW2 o BTW2 4x4
+			if (!isEdit) {
+				return "btw2.jsp?idDriver=" + idDriver + "&idActivity="
+						+ idActivity;
+			} else {
+				return "btw2Edit.jsp?idDriver=" + idDriver + "&idActivity="
+						+ idActivity;
+			}
+
+		} else if (activityType.equals(EBTW)){
+
+			// Si es ebtw
+			if (!isEdit) {
+				return "ebtw.jsp?idDriver=" + idDriver + "&idActivity="
+				+ idActivity;
+			} else {
+				return "ebtw.jsp?idDriver=" + idDriver + "&idActivity="
+				+ idActivity;
+			}
+
+		} else if (activityType.equals(BTW1) || activityType.equals(BTW4x4)) {
+
+		} else if (activityType.equals(TRANINGONTHEJOB)
+				|| activityType.equals(MINITRANINGONTHEJOB)
+				|| activityType.equals(TDS)
+				|| activityType.equals(BTW3_PRACTICO)
+		) {
+
+			// Traning on the job
+			return "TranningOnTheJobForm.jsp?idDriver=" + idDriver
+					+ "&idActivity=" + idActivity + "&columns=" + 3;
+
+		} else if (activityType.equals(HRD)) {
+
+			// HRD
+			return "TranningOnTheJobForm.jsp?idDriver=" + idDriver
+					+ "&idActivity=" + idActivity + "&columns=" + 3;
+
+		} else if (activityType.equals(SPECIALDAYOFTRAINING) 
+				|| activityType.equals(BTWUTILITARIOREBOQUE)
+				|| activityType.equals(REBOQUE)) {
+
+			// Jornada especial de entrenamiento
+			return "TranningOnTheJobForm.jsp?idDriver=" + idDriver
+					+ "&idActivity=" + idActivity + "&columns=" + 3;
+
+		} else if (activityType.equals(EVALUACIONENCABINA) 
+				|| activityType.equals(EVALUACIONINICIALCEPA)
+				|| activityType.equals(EVALUACIONPLANAUTOCEPA)) {
+//			return "EvaluacionCabinaForm.jsp?idDriver=" + idDriver + "&idActivity=" + idActivity + "&columns=" + 3;
+			return "TranningOnTheJobForm.jsp?idDriver=" + idDriver + "&idActivity=" + idActivity + "&columns=" + 3;
+		} else if (activityType.equals(ENTRENAMIENTOENCABINA2)
+				|| activityType.equals(ENTRENAMIENTOENCABINA4)
+				|| activityType.equals(ENTRENAMIENTOENCABINA8)
+				|| activityType.equals(BTW2ONBOARD)
+				|| activityType.equals(BTW2ONBOARD_V2)
+				|| activityType.equals(BTW3_LIVIANOS_VIA_PUBLICA)) {
+
+			// Evaluacion en cabina
+			return "TranningOnTheJobForm.jsp?idDriver=" + idDriver
+					+ "&idActivity=" + idActivity + "&columns=" + 3;
+
+		} else if (activityType.equals(INDUCTIONTRAINING2)) {
+
+			// Induction Training
+			return "TranningOnTheJobForm.jsp?idDriver=" + idDriver
+					+ "&idActivity=" + idActivity + "&columns=" + 3;
+
+		} else if (activityType.equals(BTWONBOARD) || activityType.equals(BTWONBOARD_V2)) {
+
+			// BTW On Board
+			return "TranningOnTheJobForm.jsp?idDriver=" + idDriver
+					+ "&idActivity=" + idActivity + "&columns=" + 3;
+
+		} else if (activityType.equals(BTW3) || activityType.equals(BTW3UPDATE)
+				|| activityType.equals(BTW3RENOVACION) || activityType.equals(BITREN) 
+				|| activityType.equals(BITREN_UPDATE) || activityType.equals(PICKUP_REMOLQUE) || activityType.equals(BUS_HEAVY)) {
+
+			// BTW3
+			return "btw3Form.jsp?idDriver=" + idDriver + "&idActivity="
+					+ idActivity + "&columns=" + 3;
+
+		} else if (activityType.equals(BTWTHAILAND)) {
+
+			// BTW Thailand
+			if (!isEdit) {
+				return "BtwThailand.jsp?idDriver=" + idDriver + "&idActivity="
+						+ idActivity + "&columns=" + 3 + "&enabled=" + enabled;
+			} else {
+				return "BtwThailand.jsp?idDriver=" + idDriver + "&idActivity="
+						+ idActivity + "&columns=" + 3 + "&enabled=" + enabled
+						+ "&page=" + back;
+			}
+
+		} else if (activityType.equals(HIDRO)) {
+
+			// Hidroquímicos
+			return "GenericForm.jsp?idDriver=" + idDriver + "&idActivity="
+					+ idActivity;
+
+		} else if (activityType.equals(MONITORS)
+				|| activityType.equals(MULTIPLICADOR_CEPA)) {
+
+			// Monitores
+			return "Monitors1.jsp?idDriver=" + idDriver + "&idActivity="
+					+ idActivity + "&columns=" + 1;
+
+		} else if (activityType.equals(MONITORS2) ||
+				(activityType.equals(MONITORS2_REFRESHMENT))) {
+
+			// Monitores2
+			return "MonitorsForm.jsp?idDriver=" + idDriver + "&idActivity="
+					+ idActivity + "&columns=" + 1;
+
+		} else if (activityType.equals(EVALUACIONENCABINAPESADO)
+				|| activityType.equals(CURSOPESADOS)
+				|| activityType.equals(BTWPESADOSCONEVALUACIONENCABINA)) {
+
+			// Si es Evaluacion en Cabina para Vehiculos Pesados:
+			if (!isEdit) {
+				return "CabinEvaluationHeavy.jsp?idDriver=" + idDriver
+						+ "&idActivity=" + idActivity + "&columns=" + 1
+						+ "&enabled=" + enabled;
+			} else {
+				return "CabinEvaluationHeavy.jsp?idDriver=" + idDriver
+						+ "&idActivity=" + idActivity + "&columns=" + 1
+						+ "&enabled=" + enabled + "&page=" + back;
+			}
+
+		} else if (activityType.equals(PRINCIPIANTE)
+				|| activityType.equals(PRINCIPIANTE_REFRESH)
+				|| activityType.equals(AVANZADO)) {
+
+			// Escuela de Conduccion CEPA:
+			// Formulario Principiante, Refrshement y Avanzado
+			if (!isEdit) {
+				return "SchoolForm.jsp?idDriver=" + idDriver + "&idActivity="
+						+ idActivity + "&enabled=" + enabled;
+			} else {
+				return "SchoolForm.jsp?idDriver=" + idDriver + "&idActivity="
+						+ idActivity + "&enabled=" + enabled + "&page=" + back;
+			}
+
+		} else if (activityType.equals(PREVENTIVO_PESADOS_2)
+				|| activityType.equals(PREVENTIVO_PESADOS_4)
+				|| activityType.equals(PREVENTIVO_PESADOS_8)
+				|| activityType.equals(PREVENTIVO_LIVIANOS_TEORIA)
+				|| activityType.equals(PREVENTIVO_MEDIANOS_TEORIA)
+				||activityType.equals(PREVENTIVO_PESADOS_TEORIA)
+				|| activityType.equals(PREVENTIVO_LIVIANOS_2)
+				|| activityType.equals(PREVENTIVO_LIVIANOS_4)
+				|| activityType.equals(PREVENTIVO_LIVIANOS_8)) {
+
+			// Cursos: Programa Preventivo Pesados, Programa Preventivo Livianos
+			return "CursoPreventivo.jsp?idDriver=" + idDriver + "&idActivity="
+					+ idActivity;
+
+		} else if (activityType.equals(HEAVY1_2)
+				|| activityType.equals(HEAVY3_4)
+				|| activityType.equals(ADVANCED_DRIVING)
+				|| activityType.equals(ELEVATORS)
+				|| activityType.equals(PERSONAL_SECURITY)
+				|| activityType.equals(MOTORCYCLE)
+				|| activityType.equals(ACTIVITY_4X4)
+				|| activityType.equals(FIRST_AID)				
+				) {
+
+			// CEPA: Otros cursos de CEPA:
+			return "GenericForm.jsp?idDriver=" + idDriver + "&idActivity="
+					+ idActivity;
+
+		} else if (activityType.equals(CURSO_DE_TERCEROS_COMBATE_DE_INCENDIOS) 
+				|| activityType.equals(CURSO_DE_TERCEROS_PRIMEROS_AUXILIOS)){
+			
+			// Cursos de Terceros no dictados por CEPA: 
+			return "GenericForm.jsp?idDriver=" + idDriver + "&idActivity="
+			+ idActivity;
+
+			
+		} else if (activityType.equals(COMMENTARYDRIVEARGENTINA)) {
+
+			// Curso: Commentary Drive Monsanto Argentina
+			return "CommentaryDriveArgentinaForm.jsp?idDriver=" + idDriver
+					+ "&enabled=" + enabled + "&idActivity=" + idActivity;
+
+		} else if (activityType.equals(COMMENTARYDRIVEARGENTINA_NUEVO)) {
+
+			// Curso: Commentary Drive Monsanto Argentina
+			return "CDArgentinaForm.jsp?idDriver=" + idDriver
+					+ "&enabled=" + enabled + "&idActivity=" + idActivity;
+
+		} else if (activityType.equals(COMMENTARYDRIVE_NOVARTIS)) {
+
+			if(!isEdit) {
+				return "cdNovartisForm.jsp?idDriver=" + idDriver + "&enabled=" + enabled + "&idActivity=" + idActivity;
+			}else {
+				return "cdNovartisView.jsp?idDriver=" + idDriver + "&enabled=" + enabled + "&idActivity=" + idActivity;
+			}
+
+		} else if (activityType.equals(COMMENTARYDRIVE_JJ2)) {
+			if(!isEdit) {
+				return "cdJJ2Form.jsp?idDriver=" + idDriver + "&enabled=" + enabled + "&idActivity=" + idActivity;
+			}else {
+				return "cdJJ2View.jsp?idDriver=" + idDriver + "&enabled=" + enabled + "&idActivity=" + idActivity;
+			}
+
+		} else if (activityType.equals(COMMENTARYDRIVENALCO)) {
+			if(!isEdit) {
+				// Curso: Commentary Drive Argentina
+				return "CommentaryDriveNalcoForm.jsp?idDriver=" + idDriver + "&enabled=" + enabled + "&idActivity=" + idActivity;
+			}else {
+				return "CommentaryDriveNalcoView.jsp?idDriver=" + idDriver + "&enabled=" + enabled + "&idActivity=" + idActivity;
+			}
+
+		} else if (activityType.equals(COMMENTARYDRIVEHIGHRISK)) {
+
+			// Cursos: CommentaryDriverRisk
+			return "CommentaryDriveRiskForm.jsp?idDriver=" + idDriver
+					+ "&enabled=" + enabled + "&idActivity=" + idActivity;
+
+		} else if (activityType.equals(INDUCTION_TRAINING)
+				|| activityType.equals(DEMO_DIGI_CAM)
+				|| activityType.equals(CHARLA_SENSIBILIZACION)
+				|| activityType.equals(SOCIALIZACION_STANDARD_SEGURIDAD)				
+				|| activityType.equals(SECURITY_TALK_KIDS)
+				|| activityType.equals(SECURITY_TALK_PMF)
+				|| activityType.equals(SECURITY_TALK)) {
+
+			// Cursos: Induction Training, Demo Digi Cam, Security Talk
+			return "simpleForm.jsp?idDriver=" + idDriver + "&idActivity="
+					+ idActivity;
+
+		} else if (activityType.equals(ASSESSMENT)) {
+
+			// Cursos: Induction Training, Demo Digi Cam, Security Talk
+			return "resultForm.jsp?idDriver=" + idDriver + "&idActivity="
+					+ idActivity;
+		} else if (activityType.equals(UTV)
+				|| activityType.equals(POST_ACCIDENT_TALK)) {
+			return "GenericForm.jsp?idDriver=" + idDriver + "&idActivity="
+					+ idActivity;
+
+		} else if (activityType.equals(RADAR)) {
+			return "radar.jsp?idDriver=" + idDriver + "&idActivity="
+					+ idActivity;
+
+		} else if (activityType.equals(COMMENTARYDRIVECAYACO)) {
+			return "cdCayaco.jsp?idDriver=" + idDriver + "&idActivity="
+					+ idActivity;
+
+		} else if (activityType.equalsIgnoreCase(TEORICO_8_HORAS_LIVIANOS)
+				|| activityType.equalsIgnoreCase(TEORICO_8_HORAS_PESADOS)) {
+
+			// Teòrico 8 horas pesados y livianos:
+			return "GenericForm.jsp?idDriver=" + idDriver + "&idActivity="
+					+ idActivity;
+		} else if (activityType.equalsIgnoreCase(CEPA_SYSTEM_COURSE_1_LIVIANOS)) {
+			return "cds.jsp?check=40&idDriver=" + idDriver + "&idActivity="
+					+ idActivity;
+		} else if (activityType.equalsIgnoreCase(CEPA_SYSTEM__LIVIANOS_PESADOS)) {
+			return "cds.jsp?check=94&idDriver=" + idDriver + "&idActivity=" + idActivity;
+		} else if (activityType.equalsIgnoreCase(CEPA_SYSTEM_COURSE_1_PESADOS) 
+				|| activityType.equalsIgnoreCase(RECERTIFICACION_CEPA_SYSTEM)) {
+
+			return "cds.jsp?check=35&idDriver=" + idDriver + "&idActivity="
+					+ idActivity;
+		} else if (activityType.equalsIgnoreCase(CEPA_SYSTEM_COURSE_2_ENTRENADORES) || 
+				activityType.equalsIgnoreCase(CEPA_SYSTEM_COURSE_2_CEPA)) {
+			
+			return "cds.jsp?check=36&idDriver=" + idDriver + "&idActivity="
+					+ idActivity;
+
+		} else if (activityType.equals(DANGEROUS_MATERIALS)
+				|| activityType.equals(DANGEROUS_MATERIALS_RENEWAL)) {
+
+			// Mercancias Peligrosas y Mercancias Peligrosas Renovación.
+			return "DangerousMaterials.jsp?idDriver=" + idDriver + "&idActivity=" + idActivity;
+			
+			// return "GenericForm.jsp?idDriver=" + idDriver + "&idActivity="
+			//		+ idActivity;
+
+		} else if (activityType.equals(EBTW_TEORICO)){
+			// eBTW solo Teorico
+				return "GenericForm.jsp?idDriver=" + idDriver + "&idActivity="
+					+ idActivity;
+		}else if (activityType.equals(PARKING_AND_BACKING)){
+
+			// Parcking and Backing
+			return "GenericForm.jsp?idDriver=" + idDriver + "&idActivity=" + idActivity;
+		
+		}else if (activityType.equalsIgnoreCase(BTW1_NEW_FORM_TABLET)
+				|| activityType.equalsIgnoreCase(BTW3_VIA_PUBLICA_TABLET)
+				|| activityType.equalsIgnoreCase(TRAINING_ON_THE_JOB_TABLET)
+				|| activityType.equalsIgnoreCase(TRAINING_ON_THE_JOB_4X4_TABLET)
+				|| activityType.equalsIgnoreCase(SPECIALDAYOFTRAINING_TABLET)
+				|| activityType.equalsIgnoreCase(BTW1ONBOARD_TABLET)
+				|| activityType.equalsIgnoreCase(TRANSIT_BEHAVIOUR_TABLET)
+				|| activityType.equalsIgnoreCase(BTW2ONBOARD_TABLET)
+				|| activityType.equalsIgnoreCase(BTW1_PESADOS_ONBOARD_TABLET)
+				|| activityType.equalsIgnoreCase(PHRD_TABLET)
+				|| activityType.equalsIgnoreCase(BTW1_ECONOMIC_TABLET)
+				|| activityType.equalsIgnoreCase(SAFE_DRIVE_TABLET)
+				|| activityType.equalsIgnoreCase(TOJ_ECONOMIC_TABLET)
+				|| activityType.equalsIgnoreCase(BTW4X4_ONBOARD_TABLET)
+				|| activityType.equalsIgnoreCase(EVALUACION_EN_CABINA_TABLET)){
+			// TABLETS> uruguay calle F
+			// Nuevo formulario de BTW1
+			return "Btw1NewForm.jsp?idDriver=" + idDriver + "&idActivity=" + idActivity;
+  	  
+		}else if (activityType.equalsIgnoreCase(BTW2_NEW_FORM_TABLET) || activityType.equalsIgnoreCase(BTW2UPM) ){
+			// TABLETS>
+			// Nuevo formulario de BTW1
+			return "Btw2NewForm.jsp?idDriver=" + idDriver + "&idActivity=" + idActivity;
+  	  
+		
+		} else if (activityType.equals(PREVENTIVO_LIVIANOS_PRACTICO)
+				|| activityType.equals(PREVENTIVO_LIVIANOS_TEORICOPRACTICO)
+				|| activityType.equals(PREVENTIVO_MEDIANOS_PRACTICO)
+				|| activityType.equals(PREVENTIVO_PESADOS_PRACTICO)
+				|| activityType.equals(PREVENTIVO_PESADOS_TEORICOPRACTICO)) {
+
+			// Evaluacion en cabina
+			return "TranningOnTheJobForm.jsp?idDriver=" + idDriver
+					+ "&idActivity=" + idActivity + "&columns=" + 3;
+			
+		}else if (activityType.equals(COPILOT)){
+			
+			return "GenericForm.jsp?idDriver=" + idDriver + "&idActivity="
+					+ idActivity;
+		} else if (activityType.equals(COMMENTARYDRIVE_RENOVATION) || activityType.equals(INITIAL_FOREIGN_EVALUATION)) { //pablo
+
+			   if(!isEdit) {
+			    return "RenovationJJForm.jsp?idDriver=" + idDriver + "&enabled=" + enabled + "&idActivity=" + idActivity;
+			   }else {
+			    return "RenovationJJView.jsp?idDriver=" + idDriver + "&enabled=" + enabled + "&idActivity=" + idActivity;
+			   }
+		} else if (activityType.equals(REPORTERJJ_COMMENTARYDRIVE)) { //pablo
+		    return "cd.jsp?idDriver=" + idDriver + "&idActivity=" + idActivity;
+		} else {
+		
+			// Otros cursos no definidos:
+			return "GenericForm.jsp?idDriver=" + idDriver + "&idActivity=" + idActivity;
+		}
+		// return null;
+		return null;
+	}
+
+	public static boolean isForestalCommonActivity(String activity) {
+		if(activity == null) {
+			return false;
+		}
+		return activity.equals("datatype.scheduledactivitytype.btw3-renovacion") || 
+		activity.equals("datatype.scheduledactivitytype.btw3-3ra-renovacion") ||
+		activity.equals("datatype.scheduledactivitytype.btw3-2nda-renovacion") || 
+		activity.equals("datatype.scheduledactivitytype.btwonboard2") || 
+		activity.equals("datatype.scheduledactivitytype.btw2onboard2") || 
+		activity.equals("datatype.scheduledactivitytype.btw2onboard") || 
+		activity.equals("tablet.form.btw1.livianos") || 
+		activity.equals("tablet.form.btw1onboard") || 
+		activity.equals("datatype.scheduledactivitytype.btw1") || 
+		activity.equals("tablet.form.btw2.livianos") || 
+		activity.equals("tablet.form.btw2upm") || 
+		activity.equals("datatype.scheduledactivitytype.btw2") || 
+		activity.equals("datatype.scheduledactivitytype.btw3") || 
+		activity.equals(DANGEROUS_MATERIALS) ||
+		activity.equals("datatype.scheduledactivitytype.btw3update") || 
+		activity.equals("datatype.scheduledactivitytype.bitren") || 
+		activity.equals("datatype.scheduledactivitytype.bitren.update") || 
+		activity.equals("datatype.scheduledactivitytype.ebtw") || 
+		activity.equals("datatype.scheduledactivitytype.evaluacionencabina") || 
+		activity.equals("tablet.form.evaluacionencabina") || 
+		activity.equals("datatype.scheduledactivitytype.evaluacionencabinapesado") || 
+		activity.equals("datatype.scheduledactivitytype.gabinetepsicotecnico") || 
+		activity.equals("datatype.scheduledactivitytype.busheavy") || 
+		activity.equals(CEPAActivityConstants.TRANINGONTHEJOB_PESADOS) ||
+		activity.equals(CEPAActivityConstants.BTW3CUARTARENOVACION) ||
+		activity.equals(CEPAActivityConstants.CLEAT) ||
+		activity.equals(CEPAActivityConstants.BTW3_VIA_PUBLICA_TABLET) ||
+		activity.equals("datatype.scheduledactivitytype.pesados1"); 
+	}
+}

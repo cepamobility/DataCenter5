@@ -1,0 +1,35 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.cenapra.log" >
+    <class name="CENAPRAActivityLog" table="cenapraactivitylog">
+		
+       <composite-id class="CENAPRAActivityLogPK" name="pk" >
+	        <key-property	name="activity"	type="java.lang.Integer"	column="activity"/>
+	        <key-property	name="userId"		type="java.lang.String"		column="userid"/>
+	        <key-property	name="date"			type="java.util.Date"		column="date"/>
+       </composite-id>
+        
+        <property	name="activityDate" type="java.util.Date" column="activitydate"/>    
+
+       	<property	name="corporation"	type="java.lang.Integer"	column="corporation" />
+        <property	name="country"		type="java.lang.Integer"	column="country" />
+        
+        <property	name="divOrg1" type="java.lang.Integer"	 column="divorg1" />
+        <property	name="divOrg2" type="java.lang.Integer"	 column="divorg2" />
+        <property	name="divOrg3" type="java.lang.Integer"	 column="divorg3" />
+
+        <property name="type" type="java.lang.String" 	column="type" />
+        <property name="state" type="java.lang.String" 	column="state" />
+      
+        <property	name="city" type="java.lang.String" column="city"/>
+        <property	name="instructor" type="java.lang.String" column="instructor"/>
+
+        <property	name="observations" type="text" column="observations"/>
+	
+	 </class>
+
+</hibernate-mapping>

@@ -1,0 +1,17 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.cenapra.tables" >
+    <class name="CENAPRACorrectAnswer" table="cenapracorrectanswers">
+		
+       <composite-id class="CENAPRACorrectAnswerPK" name="pk" >
+	        <key-property	name="checkList"	type="java.lang.Integer"	column="checklist"/>
+	        <key-property	name="item"	type="java.lang.Integer"	column="item"/>
+       </composite-id>
+
+	 </class>
+
+</hibernate-mapping>

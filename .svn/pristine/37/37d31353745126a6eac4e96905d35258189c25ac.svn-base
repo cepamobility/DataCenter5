@@ -1,0 +1,169 @@
+package communication.administration.corporation.tables;
+
+import java.io.Serializable;
+
+public class PointsDefinitionData implements Serializable {
+
+	private static final long serialVersionUID = 1L;
+	
+	/*Puntos conductores, desarrollo inicial Bayer MX*/
+	public static final String AGE = "AGE";
+	public static final String LICENSE_AGE_LESS = "LICENSE_AGE_LESS";
+	public static final String LICENSE_AGE_BETWEEN = "LICENSE_AGE_BETWEEN";
+	public static final String COMPANY_AGE_LESS = "COMPANY_AGE_LESS";
+	
+	public static final String FINE = "FINE";
+	public static final String FATAL_ACCIDENT = "FATAL_ACCIDENT";
+	public static final String INJURED_ACCIDENT = "INJURED_ACCIDENT";
+	public static final String INJURED_ACCIDENT_WLOSTDAY = "INJURED_ACCIDENT_WLOSTDAY";
+	public static final String ACCIDENT_WITH_DAMAGE = "ACCIDENT_WITH_DAMAGE";
+	public static final String ACCIDENT_WITH_ENVIRONMENT_DAMAGE = "ACCIDENT_WITH_ENVIRONMENT_DAMAGE";
+	public static final String ACCIDENT = "ACCIDENT";
+	public static final String ACTIVITY = "ACTIVITY";
+	public static final String ASSIGNED = "ASSIGNED";
+	public static final String ASSIGNED_EBTW = "ASSIGNED_EBTW";
+	public static final String ASSIGNED_ASSESSMENT = "ASSIGNED_ASSESSMENT";
+	public static final String ASSIGNED_ELEARNING = "ASSIGNED_ELEARNING";
+	public static final String ASSIGNED_OTHER = "ASSIGNED_OTHER";
+	
+	public static final String EVENTO_NOEVITABLE = "BYMX_NO_EVITABLE"; //5 puntos
+	public static final String EVENTO_EVITABLE_MENORCOSTO = "BYMX_EVITABLE_MENORCOSTO";
+	public static final String EVENTO_EVITABLE = "BYMX_EVITABLE"; //20 puntos
+	public static final String EVENTO_EVITABLE_FATAL = "BYMX_EVITABLE_FATAL"; //50 puntos
+	public static final String EVENTO_EVITABLE_LESION = "BYMX_EVITABLE_LESION"; // 25 puntos
+	public static final String EVENTO_EVITABLE_COSTO = "BYMX_EVITABLE_COSTO"; //25 puntos
+	public static final String EVENTO_EVITABLE_FATAL_COSTO = "BYMX_EVITABLE_FATAL_COSTO"; // 55 puntos 
+	public static final String EVENTO_EVITABLE_LESION_COSTO = "BYMX_EVITABLE_LESION_COSTO"; // 30 puntos
+	public static final String TWO_ACCIDENT_YEAR = "TWO_ACCIDENT_YEAR";
+	public static final String THREE_ACCIDENT_YEAR = "THREE_ACCIDENT_YEAR";
+
+	/*Puntos Vehiculos, desarrollo inicial FOSA*/
+	public static final String SEG_ROUTE = "SEG_RUTA";
+	public static final String MANUAL = "MANUAL";
+	public static final String MANUAL_MONTH = "END_MONTH";
+	public static final String FOSA_SPEED = "FOSA_SPEED";
+	public static final String FOSA_SPEED_2 = "FOSA_SPEED_2";
+	public static final String FOSA_SPEED_ZONA = "FOSA_SPEED_ZONA";
+	public static final String FOSA_SPEED_PROHIBIDA = "FOSA_SPEED_ZONA_PROHIBIDA";
+	
+	/*Puntos Conductores, desarrollo inicial MDP*/
+	public static final String SEG_ROUTE_MDP = "SEG_RUTA";
+	public static final String MDP_SPEED = "MDP_SPEED";
+	public static final String MDP_SPEED_2 = "MDP_SPEED_2";
+
+	public static final String NEW_ACCIDENT_WITH_DAMAGE = "NEW_ACCIDENT_WITH_DAMAGE";
+
+	public static final String ATROPELLAMIENTO = "ATROPELLAMIENTO";
+	public static final String VUELCO = "VUELCO";
+	public static final String COLISION_FRONTAL = "COLISION_FRONTAL";
+	public static final String COLISION_LATERAL = "COLISION_LATERAL";
+	public static final String COLISION_TRASERA = "COLISION_TRASERA";
+	public static final String COLISION_TRANSVERSAL = "COLISION_TRANSVERSAL";
+	public static final String OBJETO_FIJO = "OBJETO_FIJO";
+	public static final String COLISION_ANIMAL = "COLISION_ANIMAL";
+	public static final String ACCIDENTE_LABORAL_CON_BAJA = "ACCIDENTE_LABORAL_CON_BAJA";
+	public static final String ACCIDENTE_LABORAL_SIN_BAJA = "ACCIDENTE_LABORAL_SIN_BAJA";
+	public static final String ACCIDENTE_LABORAL_NO_CONFORME = "ACCIDENTE_LABORAL_NO_CONFORME";
+
+	public static final Integer CATEGORY_ACCIDENT = 2;
+
+	public static final Integer ACCIDENTE_LABORAL_CON_BAJA_ID = 300;
+	public static final Integer ACCIDENTE_LABORAL_SIN_BAJA_ID = 301;
+	public static final Integer ACCIDENTE_LABORAL_NO_CONFORME_ID = 302;
+
+	
+	private Integer id;
+    private Double amount;
+	private String type;
+	private Integer corporationId;
+	private String reference;
+	private String description;
+	private String description2;
+	private String condition;
+	private Integer category;
+	
+	public PointsDefinitionData() {
+	}
+
+	public PointsDefinitionData(Integer definition) {
+		id = definition;
+	}
+	
+	public String getDescription2() {
+		return description2;
+	}
+	public void setDescription2(String description2) {
+		this.description2 = description2;
+	}
+	public Integer getId() {
+		return id;
+	}
+	public void setId(Integer id) {
+		this.id = id;
+	}
+	public Double getAmount() {
+		return amount;
+	}
+	public void setAmount(Double amount) {
+		this.amount = amount;
+	}
+	public String getType() {
+		return type;
+	}
+	public void setType(String type) {
+		this.type = type;
+	}
+	public Integer getCorporationId() {
+		return corporationId;
+	}
+	public void setCorporationId(Integer corporationId) {
+		this.corporationId = corporationId;
+	}
+	public String getReference() {
+		return reference;
+	}
+	public void setReference(String reference) {
+		this.reference = reference;
+	}
+	public String getDescription() {
+		return description;
+	}
+	public void setDescription(String description) {
+		this.description = description;
+	}
+	
+	public void pound(int age, int corporation) {
+		if(corporation == CorporationData.BAYER_MX){
+			if(age > 1) {
+				amount = 0.0;
+			}
+		}else if(corporation != CorporationData.MONTES_DE_PLATA){
+			if(age > 0) {
+				switch(age) {
+					case 1:
+						amount = amount * 0.5;
+						break;
+					default:
+						amount = amount * 0;
+				}
+			}
+		}
+	}
+	
+	public void setCondition(String condition) {
+		this.condition = condition;
+	}
+	
+	public String getCondition() {
+		return condition;
+	}
+	
+	public void setCategory(Integer category) {
+		this.category = category;
+	}
+
+	public Integer getCategory() {
+		return category;
+	}
+
+}

@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+
+<!DOCTYPE hibernate-mapping PUBLIC
+    "-//Hibernate/Hibernate Mapping DTD 3.0//EN" 
+    "http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.activity.tables" >
+    <class name="PointObservation" table="pointobservations">
+    
+	 	<id column="idobservation" name="idObservation">
+            <generator class="sequence"> 
+            	<param name="sequence">PointObservation_Sequence</param>
+            </generator>
+        </id>
+        
+        <property	name="text" type="java.lang.String" column="text"/>                		        		
+        <property	name="textReport" type="java.lang.String" column="textReport"/>                		        		        
+
+		<property name="obsOrder" type="integer">
+		    <column name="obsOrder" default="-1"/>
+		</property>
+     
+   </class>
+</hibernate-mapping>

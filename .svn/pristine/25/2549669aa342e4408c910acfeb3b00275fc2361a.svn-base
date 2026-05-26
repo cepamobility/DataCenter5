@@ -1,0 +1,740 @@
+package persistence.event;
+
+
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.Map;
+
+import javax.ejb.SessionBean;
+
+import org.hibernate.HibernateException;
+import org.hibernate.classic.Session;
+import org.jboss.logging.Logger;
+
+import persistence.administration.corporation.tables.Corporation;
+import persistence.administration.corporation.tables.CorporationCountry;
+import persistence.administration.corporation.tables.CorporationCountryPK;
+import persistence.administration.corporation.tables.Country;
+import persistence.driver.DriverABMBean;
+import persistence.event.tables.Event;
+import persistence.event.tables.EventAbstract;
+import persistence.event.tables.EventFile;
+import persistence.event.tables.Fine;
+import persistence.event.tables.Travel;
+import persistence.hibernate.HibernateUtil;
+import persistence.log.LoggerFormatting;
+import persistence.log.event.EventLog;
+import persistence.travel.tables.CheckPoint;
+import persistence.util.ExceptionHandler;
+
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.CountryData;
+import communication.administration.corporation.tables.GeoItemData;
+import communication.administration.corporation.tables.GeoLabelData;
+import communication.administration.corporation.tables.ItemAttribute;
+import communication.administration.corporation.tables.ItemData;
+import communication.administration.corporation.tables.LabelItemData;
+import communication.administration.group.tables.GroupLineData;
+import communication.administration.user.UserSessionData;
+import communication.event.tables.EventDataType;
+import communication.event.tables.FineDataType;
+import communication.exception.CommunicationProblemException;
+import communication.exception.DCException;
+import communication.exception.DeslogedException;
+import communication.exception.InvalidDataException;
+import communication.travel.tables.CheckPointData;
+import communication.travel.tables.TravelDataType;
+import communication.util.LogActions;
+
+
+/**
+ * @ejb.bean name="EventABM"
+ *           display-name="Name for EventABM"
+ *           description="Description for EventABM"
+ *           jndi-name="ejb/EventABM"
+ *           type="Stateless"
+ *           view-type="both"
+ */
+public abstract class EventABMBean implements SessionBean {
+	
+    /**
+     * Logger for this class
+     */
+    private Logger logger=Logger.getLogger(DriverABMBean.class);
+    private LoggerFormatting logFormatting=new LoggerFormatting();
+    private ExceptionHandler handler = new ExceptionHandler(EventABMBean.class);
+
+    /**
+     * Init transaction
+     * @ejb.create-method
+     * @ejb.permission role-name = "administrator,eventcreate,finecreate,eventdelete,eventsupervise,eventupdate,drivercreatefine,drivercreateevent,drivereventupdate"
+     */
+    public void ejbCreate()
+    throws javax.ejb.CreateException {
+    }
+	
+	/**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventcreate,drivercreateevent"
+	 *@return Asigned Primery Key
+	 */
+	public Integer createEvent(EventDataType data, UserSessionData userRequest, String comment) throws Exception{
+		return createEvent(data,userRequest,comment,false);
+	}
+	
+	/**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventcreate,drivercreateevent"
+	 *@return Asigned Primery Key
+	 */
+	public Integer createEvent(EventDataType data, UserSessionData userRequest, String comment, boolean withDriverData)	throws Exception{
+		
+		if (userRequest == null) {
+			throw new DeslogedException("Has ocurred error in class persistence.event.EventABM(createEvent), session data is empty","generic.error.deslogued");
+		}
+
+		if (data == null) {
+			throw new InvalidDataException("Has ocurred error in class persistence.event.EventABM(createEvent), user data is empty","generic.event.eventdata.isempty");
+		}
+		
+		try{
+            
+            Session session = HibernateUtil.currentSession();
+            
+			String msg = validateCreateEvent(data);
+			if(msg != null){
+				throw new InvalidDataException("Has ocurred error in class persistence.event.EventABM",msg); 
+			}
+			
+			//msg=securityValidation(itemDataSet,countryData,userRequest);		
+			if(msg!=null){
+				throw new InvalidDataException("Has ocurred error in class persistence.event.EventABM, security exception", msg);
+			}
+            
+            if(userRequest.isDriver()) {
+                if(!data.getDriver().getId().equals(userRequest.getDriverData().getId())) {
+                    throw new InvalidDataException("createEvent","Invalid driver");
+                }
+            }   
+            EventAbstract event = new Event(data,session,userRequest.isForest(),withDriverData);
+			Integer id = (Integer) session.save(event);	
+			
+			
+			EventLog log = new EventLog(userRequest.getFilter().getLoginName(),new Date(),LogActions.CREATE,(Event)event,comment);
+            session.save(log);
+            
+            return id;
+           
+		
+        } catch(Exception e){
+        	Object[] p = new Object[2];
+        	p[0] = data;
+        	p[1] = comment;
+            handler.getException(e,"createEvent",userRequest,p);
+        }
+        return null;
+	}
+	
+	/**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,finecreate,drivercreatefine"
+     *@return Asigned Primery Key
+     */
+    public Integer createFine(FineDataType data, UserSessionData userRequest, boolean withDriverData)
+        throws CommunicationProblemException, DeslogedException, InvalidDataException{
+        
+                
+        if(userRequest.isDriver()) {
+            if(!data.getDriver().getId().equals(userRequest.getDriverData().getId())) {
+                throw new InvalidDataException("createEvent","Invalid driver");
+            }
+        }
+
+        try{
+            
+            Session session = HibernateUtil.currentSession();
+                        
+            EventAbstract event = new Fine(data,session,withDriverData);
+            Integer fineId = (Integer)session.save(event);            
+            event.setId(fineId);
+            
+            EventLog log = new EventLog(userRequest.getFilter().getLoginName(),new Date(),LogActions.CREATE,(Fine)event,"comment");
+            session.save(log);
+
+            return event.getId();
+            
+        } catch(HibernateException he){
+            logger.error(logFormatting.formattingText(he,"eventCreate(EventDataType, UserSessionData)","HibernateException",userRequest.getFilter().getLoginName()), he);
+            throw new CommunicationProblemException("Has ocurred error in persistence.event.eventABM, HibernateException","generic.error.hibernate");
+        } catch(InvalidDataException ide){
+            throw ide;
+        } catch(Exception e){
+            e.printStackTrace();
+            logger.error(logFormatting.formattingText(e,"eventCreate(EventDataType, UserSessionData)","Exception",userRequest.getFilter().getLoginName()),e);
+            throw new DCException(e);
+        }
+        
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,finecreate,drivercreatefine"
+     *@return Asigned Primery Key
+     */
+    public Integer createFine(FineDataType data, UserSessionData userRequest)
+        throws CommunicationProblemException, DeslogedException, InvalidDataException{
+    	return createFine(data,userRequest,false);
+    }
+    
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventdelete"
+     *@return Asigned Primery Key
+     */
+    public void deleteEvent(Integer eventId, UserSessionData userRequest, String comment)
+        throws Exception{
+        
+        if (userRequest == null) {
+            throw new DeslogedException("Has ocurred error in class persistence.event.EventABM(deleteEvent), session data is empty","generic.error.deslogued");
+        }
+
+        if (eventId == null) {
+            throw new InvalidDataException("Has ocurred error in class persistence.event.EventABM(deleteEvent), event data is empty","generic.event.eventdata.isempty");
+        }
+        
+        try{
+            
+            Session session = HibernateUtil.currentSession();
+            EventAbstract eventAbstract = (EventAbstract)session.load(EventAbstract.class, eventId);
+
+                     
+            session.delete(eventAbstract);            
+		
+            EventLog log = null;
+            int type = eventAbstract.getMainAttributes().getType();
+            if(type == EventDataType.FINE) {
+                Fine fine = (Fine)session.load(Fine.class, eventId);
+                log = new EventLog(userRequest.getFilter().getLoginName(),new Date(),LogActions.DELETE,fine,"comment");
+            }else {
+                Event event = (Event)session.load(Event.class, eventId);
+                log = new EventLog(userRequest.getFilter().getLoginName(),new Date(),LogActions.DELETE,event, comment);
+            }
+                 
+            session.save(log);
+        } catch(Exception e){
+        	Object[] p = new Object[2];
+        	p[0] = eventId;
+        	p[1] = comment;
+            handler.getException(e,"deleteEvent",userRequest,p);
+        	
+        }
+        
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventsupervise,eventupdate,drivereventupdate"
+     *@return Asigned Primery Key
+     */
+    public void updateEvent(EventDataType data, UserSessionData userRequest,String comment)
+        throws Exception{
+        
+        if (userRequest == null) {
+            throw new DeslogedException("updateEvent","generic.error.deslogued");
+        }
+
+        if (data == null) {
+            throw new InvalidDataException("updateEvent","generic.event.eventdata.isempty");
+        }
+        
+        if(userRequest.isDriver()) {
+            if(!data.getDriver().getId().equals(userRequest.getDriverData().getId())) {
+                throw new InvalidDataException("updateEvent","Invalid driver");
+            }
+            if(data.getStatus().intValue() != EventDataType.PENDING_SUPERVISION) {
+                throw new DeslogedException("updateEvent","Invalid action");
+            }
+        }
+
+        try{
+            
+            Session session = HibernateUtil.currentSession();
+            
+            String msg=validateCreateEvent(data);
+            if(msg!=null){
+                throw new InvalidDataException("Has ocurred error in class persistence.event.EventABM",msg); 
+            }
+            
+            //Event event = (Event)session.load(Event.class, data.getId());
+            Event event;
+            if (userRequest.isForest() || userRequest.getCorporationId() == CorporationData.CIMSA){
+            	event = new Event(data,session,true);
+            }else{
+            	event = new Event(data,session,false);
+            }
+            /* Actualizo lo damages para las Forestales 
+            if (userRequest.isForest()){
+            	Set setDamages = event.getEventDamages();
+            	Iterator it = setDamages.iterator();
+            	while (it.hasNext()){
+            		EventDamage ed = (EventDamage)it.next();
+            		EventDamage ed2 = (EventDamage)session.load(EventDamage.class, ed.getId());
+            		if (!data.getEventDamages().contains(ed2)){
+            			session.delete(ed2);
+            		}
+            	}            	
+            }*/            
+            //event.setEventData(data,session);
+
+            
+            session.update(event);            
+            
+            EventLog log = new EventLog(userRequest.getFilter().getLoginName(),new Date(),
+            		LogActions.UPDATE,event,comment);
+            session.save(log);
+
+        } catch(Exception e){
+        	Object[] p = new Object[2];
+        	p[0] = data;
+        	p[1] = comment;
+            handler.getException(e,"updateEvent",userRequest,p);
+        }
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,fineupdate,drivereventupdate"
+     *@return Asigned Primery Key
+     */
+    public void updateFine(FineDataType data, UserSessionData userRequest)
+        throws Exception{
+        
+       
+        
+        if(userRequest.isDriver()) {
+            if(!data.getDriver().getId().equals(userRequest.getDriverData().getId())) {
+                throw new InvalidDataException("updateFine","Invalid driver");
+            }
+            if(data.getStatus().intValue() != EventDataType.PENDING_SUPERVISION) {
+                throw new DeslogedException("updateFine","Invalid action");
+            }
+        }
+        try{
+            
+            Session session = HibernateUtil.currentSession();            
+                      
+            Fine event = new Fine(data,session);
+            session.update(event);            
+            
+            EventLog log = new EventLog(userRequest.getFilter().getLoginName(),new Date(),LogActions.UPDATE,event,"comment");
+            session.save(log);
+
+        } catch(Exception e){
+        	Object[] p = new Object[1];
+        	p[0] = data;        	
+            handler.getException(e,"updateFine",userRequest,p);
+        }
+        
+    }
+    
+    /**
+     * 
+     * @param data
+     * @return
+     */
+    @SuppressWarnings("unused")
+	private String validateAccidentData(EventDataType data){
+        String resourceKey=null;
+        return resourceKey;
+    }
+    
+    private String validateCreateEvent(EventDataType data){
+		String resourceKey=null;
+/*		CirculationDirectionDataType circulationdirectiondt=data.getCirculationDirection();
+		ConditionRoutDataType conditionroutdt=data.getConditionRout();
+		ClimateDataType climatedt=data.getClimate();
+		ConsequenceDataType consequencedt=data.getConsecuence();
+//		int quantitydayunfitwork=data.getQuantitydayunfitwork();
+		Float cost=data.getCostrepair();
+		StateOfEmployeeDataType stateofemployeedt=data.getStateOfEmployee();
+		LightingDataType lightingdt=data.getLighting();
+		
+		if(conditionroutdt==null){
+			resourceKey="persistence.datatype.conditionrout.isempty";
+		}
+		else{
+			if(conditionroutdt.getResourceBundleId()==null){
+				resourceKey="persistence.datatype.conditionrout.resourcekey.isempty";
+			}
+		}
+
+		if(circulationdirectiondt==null){
+			resourceKey="persistence.datatype.circulationdirection.isempty";
+		}
+		else{
+			if(circulationdirectiondt.getResourceBundleId()==null){
+				resourceKey="persistence.datatype.circulationdirection.resourcekey.isempty";
+			}
+		}
+		
+		if(climatedt==null){
+			resourceKey="persistence.datatype.climate.isempty";
+		}
+		else{
+			if(climatedt.getResourceBundleId()==null){
+				resourceKey="persistence.datatype.climate.resourcekey.isempty";
+			}
+		}
+
+		if(consequencedt==null){
+			resourceKey="persistence.datatype.consequence.isempty";
+		}
+		else{
+			if(consequencedt.getResourceBundleId()==null){
+				resourceKey="persistence.datatype.consequence.resourcekey.isempty";
+			}
+		}
+
+		if(stateofemployeedt==null){
+			resourceKey="persistence.datatype.stateofemployee.isempty";
+		}
+		else{
+			if(stateofemployeedt.getResourceBundleId()==null){
+				resourceKey="persistence.datatype.stateofemployee.resourcekey.isempty";
+			}
+		}
+
+		if(lightingdt==null){
+			resourceKey="persistence.datatype.lighting.isempty";
+		}
+		else{
+			if(lightingdt.getResourceBundleId()==null){
+				resourceKey="persistence.datatype.lighting.resourcekey.isempty";
+			}
+		}
+		
+		if(cost==null){
+			resourceKey="persistence.datatype.eventdatatype.costrepair.isempty";		
+		}
+	*/	
+		return resourceKey;
+	}
+	
+	
+	/**
+	 * 
+	 * @param itemDataSet
+	 * @param countryData
+	 * @param userRequest
+	 * @return
+	 */
+	@SuppressWarnings("unused")
+	private String securityValidation(Collection itemDataSet,CountryData countryData, UserSessionData userRequest){
+		String resourceKey=null;
+			try{
+				Session session = HibernateUtil.currentSession();
+				//Check country integrity 
+				Corporation corporation=(Corporation)session.load(Corporation.class,userRequest.getFilter().getCorporationId());
+				Country country=(Country)session.load(Country.class,countryData.getId());
+				CorporationCountryPK pk=new CorporationCountryPK(country,corporation); 
+				CorporationCountry corporationcountry=(CorporationCountry)session.load(CorporationCountry.class,pk);
+				if(corporationcountry==null){
+					resourceKey="security.messages.invalidcountry";
+				}
+				
+				//Check DivOrg Integrity
+                Map ids=new HashMap();
+                Map countryIds=new HashMap();
+				Iterator it=userRequest.getFilter().getGroupLines().iterator();
+				while(it.hasNext()){
+					GroupLineData groupLineData=(GroupLineData)it.next();
+                    LabelItemData[] lids = groupLineData.getDivOrgs();
+					for(int i = 0; i < lids.length;i++){
+                        LabelItemData lid = lids[0];
+                        Iterator it0 = lid.getItemIterator();
+                        while(it0.hasNext()) {
+                            ItemData itemData = (ItemData)it0.next();
+                            if(itemData.getSubItems()==null){
+                                ids.put(itemData.getId(),itemData.getId());
+                            }else {
+                                Iterator it1 = itemData.getSubItems().getItemIterator();
+                                while(it1.hasNext()) {
+                                    itemData = (ItemData)it1.next();
+                                    if(itemData.getSubItems()==null){
+                                        ids.put(itemData.getId(),itemData.getId());
+                                    }else {
+                                        Iterator it2 = itemData.getSubItems().getItemIterator();
+                                        while(it2.hasNext()) {
+                                            itemData = (ItemData)it2.next();
+                                            ids.put(itemData.getId(),itemData.getId());
+                                        }
+                                    }
+                                }
+                            }
+						}
+                    }
+                    GeoLabelData lid = groupLineData.getCountry();
+                    Iterator it0 = lid.getItemIterator();
+                    while(it0.hasNext()) {
+                        GeoItemData itemData = (GeoItemData)it0.next();
+                        if(itemData.getSubItems()==null){
+                            ids.put(itemData.getId(),itemData.getId());
+                        }else {
+                            Iterator it1 = itemData.getSubItems().getItemIterator();
+                            while(it1.hasNext()) {
+                                itemData = (GeoItemData)it1.next();
+                                if(itemData.getSubItems()==null){
+                                    ids.put(itemData.getId(),itemData.getId());
+                                }else {
+                                    Iterator it2 = itemData.getSubItems().getItemIterator();
+                                    while(it2.hasNext()) {
+                                        itemData = (GeoItemData)it2.next();
+                                        ids.put(itemData.getId(),itemData.getId());
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+				Iterator iter =itemDataSet.iterator();
+				while(iter.hasNext() && resourceKey == null){
+					ItemAttribute itemLevel1Attr=(ItemAttribute)iter.next();
+					if( ids.get(itemLevel1Attr.getId()) == null){
+						resourceKey="security.message.invaliddivorgitemlevel1{"+itemLevel1Attr.getId()+" "+itemLevel1Attr.getName()+"}";
+					}
+				}
+				
+				if(countryIds.get(country.getId())==null){
+					resourceKey="security.message.invalidcountry";
+				}
+			}
+			catch(HibernateException he){
+				he.printStackTrace();
+				resourceKey="generic.error.hibernate";
+			}
+			
+		return resourceKey;
+	}
+	
+	/**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventcreate,drivercreateevent"
+	 *@return Asigned Primery Key
+	 */
+	public void createTravel(TravelDataType data, UserSessionData userSessionData) throws Exception{
+		if (userSessionData == null) {
+			throw new DeslogedException("createTravel","generic.error.deslogued");
+		}
+		if (data == null) {
+			throw new InvalidDataException("createTravel","generic.event.eventdata.isempty");
+		}
+		try{
+            Session session = HibernateUtil.currentSession();
+            Travel travel = new Travel(data,session);
+			session.save(travel);	
+        } catch(Exception e){
+        	Object[] p = new Object[1];
+        	p[0] = data;
+            handler.getException(e,"createTravel",userSessionData,p);
+        }
+	}
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventdelete"
+     *@return Asigned Primery Key
+     */
+    public void deleteTravel(Integer travelId, UserSessionData userRequest) throws Exception{
+        if (userRequest == null) {
+            throw new DeslogedException("deleteTravel","generic.error.deslogued");
+        }
+        if (travelId == null) {
+            throw new InvalidDataException("deleteTravel","generic.event.eventdata.isempty");
+        }
+        try{
+            Session session = HibernateUtil.currentSession();
+            Travel travel = (Travel)session.load(Travel.class, travelId);
+            session.delete(travel);            
+        } catch(Exception e){
+        	Object[] p = new Object[1];
+        	p[0] = travelId;
+            handler.getException(e,"deleteTravel",userRequest,p);
+        }
+    }
+
+	/**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventcreate,drivercreateevent"
+	 *@return Asigned Primery Key
+	 */
+	public void udpateTravel(TravelDataType data, UserSessionData userSessionData) throws Exception{
+		if (userSessionData == null) {
+			throw new DeslogedException("createTravel","generic.error.deslogued");
+		}
+		if (data == null) {
+			throw new InvalidDataException("createTravel","generic.event.eventdata.isempty");
+		}
+		try{
+            Session session = HibernateUtil.currentSession();
+            Travel travel = (Travel)session.load(Travel.class, data.getId());
+            travel.setData(data,session);
+			session.update(travel);	
+        } catch(Exception e){
+        	Object[] p = new Object[1];
+        	p[0] = data;
+            handler.getException(e,"udpateTravel",userSessionData,p);
+        }
+	}
+
+	/**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventcreate,drivercreateevent"
+	 *@return Asigned Primery Key
+	 */
+	public void udpateTravelConfirmation(TravelDataType data, UserSessionData userSessionData) throws Exception{
+		if (userSessionData == null) {
+			throw new DeslogedException("udpateTravelConfirmation","generic.error.deslogued");
+		}
+		if (data == null) {
+			throw new InvalidDataException("udpateTravelConfirmation","generic.event.eventdata.isempty");
+		}
+		try{
+            Session session = HibernateUtil.currentSession();
+            Travel travel = (Travel)session.load(Travel.class, data.getId());
+        	if(travel.getState() == TravelDataType.PENDING) {
+        		data.setStatus(TravelDataType.STARTED);
+        	}
+            travel.setLeaveData(data);
+			session.update(travel);	
+        } catch(Exception e){
+        	Object[] p = new Object[1];
+        	p[0] = data;
+            handler.getException(e,"udpateTravelConfirmation",userSessionData,p);
+        }
+	}
+	
+	/**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventcreate,drivercreateevent"
+	 *@return Asigned Primery Key
+	 */
+	public void createCheckPoint(CheckPointData data, Integer travelId, UserSessionData userSessionData) throws Exception {
+		if (userSessionData == null) {
+			throw new DeslogedException("createCheckPoint","generic.error.deslogued");
+		}
+		if (data == null) {
+			throw new InvalidDataException("createCheckPoint","generic.event.eventdata.isempty");
+		}
+		try{
+            Session session = HibernateUtil.currentSession();
+            CheckPoint checkPoint = new CheckPoint(data,travelId,session);
+			session.save(checkPoint);	
+        } catch(Exception e){
+        	Object[] p = new Object[1];
+        	p[0] = data;
+            handler.getException(e,"createCheckPoint",userSessionData,p);
+        }
+	}
+
+	/**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventcreate,drivercreateevent"
+	 *@return Asigned Primery Key
+	 */
+	public void updateCheckPoint(CheckPointData data, UserSessionData userSessionData) throws Exception {
+		if (userSessionData == null) {
+			throw new DeslogedException("updateCheckPoint","generic.error.deslogued");
+		}
+		if (data == null) {
+			throw new InvalidDataException("updateCheckPoint","generic.event.eventdata.isempty");
+		}
+		try{
+            Session session = HibernateUtil.currentSession();
+            CheckPoint checkPoint = (CheckPoint)session.load(CheckPoint.class,data.getId());
+            checkPoint.updateData(data);
+			session.update(checkPoint);	
+        } catch(Exception e){
+        	Object[] p = new Object[1];
+        	p[0] = data;
+            handler.getException(e,"updateCheckPoint",userSessionData,p);
+        }
+	}
+
+	/**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventcreate,drivercreateevent"
+	 *@return Asigned Primery Key
+	 */
+	public void closeTravel(TravelDataType data, UserSessionData userSessionData) throws Exception{
+		if (userSessionData == null) {
+			throw new DeslogedException("closeTravel","generic.error.deslogued");
+		}
+		if (data == null) {
+			throw new InvalidDataException("closeTravel","generic.event.eventdata.isempty");
+		}
+		try{
+            Session session = HibernateUtil.currentSession();
+            Travel travel = (Travel)session.load(Travel.class, data.getId());
+            travel.setCloseData(data);
+			session.update(travel);	
+        } catch(Exception e){
+        	Object[] p = new Object[1];
+        	p[0] = data;
+            handler.getException(e,"closeTravel",userSessionData,p);
+        }
+	}
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventupdate"
+     *@return Asigned Primery Key
+     */
+	public void deleteFile(Integer id, UserSessionData userSessionData) throws Exception {
+		try {
+            Session session = HibernateUtil.currentSession();
+			EventFile file = (EventFile)session.load(EventFile.class, id);
+			session.delete(file);
+        } catch(Exception e){
+        	Object[] p = {id};
+            handler.getException(e,"deleteFile",userSessionData,p);
+        }
+	}
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventupdate"
+     *@return Asigned Primery Key
+     */
+	public Integer createFile(Integer eventId, UserSessionData userSessionData) throws Exception {
+		try {
+            Session session = HibernateUtil.currentSession();
+			EventFile eventFile = new EventFile();
+			eventFile.setEvent(eventId);
+			Integer id = (Integer)session.save(eventFile);
+			return id;
+        } catch(Exception e){
+        	Object[] p = {eventId};
+            handler.getException(e,"createFile",userSessionData,p);
+        }
+		return null;
+	}
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventupdate"
+     *@return Asigned Primery Key
+     */
+	public void saveFile(Integer id, String name, UserSessionData userSessionData) throws Exception {
+		try {
+            Session session = HibernateUtil.currentSession();
+			EventFile eventFile = (EventFile)session.load(EventFile.class, id);
+			eventFile.setName(name);
+			session.save(eventFile);
+        } catch(Exception e){
+        	Object[] p = {name};
+            handler.getException(e,"saveFile",userSessionData,p);
+        }
+	}
+}

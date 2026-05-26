@@ -1,0 +1,397 @@
+<%@page import="org.apache.struts.action.DynaActionForm"%>
+<%@page language="java" 
+	errorPage="../../exception.jsp"
+	import="business.*"
+	import="business.activity.*"
+	import="business.administration.user.*"
+	import="communication.datatype.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.activity.tables.*"
+	import="communication.util.*"
+	import="communication.driver.tables.*"
+	import="communication.datatype.tables.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.activity.schedule.*" 	
+ 	import="communication.administration.user.*" 	
+ 	import="communication.datatype.tables.ActivityTypeDataType"
+	import="business.activity.ActivityReportFacade"
+	import="business.datatype.*"
+	import="java.util.*"	
+	import="org.apache.struts.action.DynaActionForm"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<%!
+	RequestDispatcher dispatcher; 
+	Text messages; SystemAccess sys;
+	UserSessionData userSessionData; 
+	ActivityReportFacade activityReport;
+	String enabled, url, idDriver, idActivity;
+	int columns;
+	DriverMainAttributes driver;
+	CEPAActivityScheduleRegistryData registryData;
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	userSessionData=sys.getUserSessionData();	
+	String check = Util.checkPermission(sys,SecurityConstants.CREATE_CEPASCHEDULEACTIVITYREGISTRY);	
+	String check1 = Util.checkPermission(sys,SecurityConstants.CREATE_CD_ACTIVITY);		
+	if ((check!=null) && (check1!=null)) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		messages=sys.getText();
+	
+	
+		//session.setAttribute("url","activity/schedule/CEPAActivityScheduleView.jsp");
+		url = "activity/schedule/CEPAActivityScheduleView.jsp";
+		userSessionData.setUrl("activity/schedule/CEPAActivityScheduleView.jsp");
+		
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+
+		idActivity =(String)request.getParameter("idActivity");
+		idDriver = (String)request.getParameter("idDriver");
+		if(!Util.empty(idDriver)){
+	driver = sys.getDriverReportFacade().findDriverMainData(Integer.valueOf(idDriver),sys.getUserSessionData());
+		}
+		
+		ActivityReportFacade activityReport = sys.getActivityReportFacade();
+		registryData = activityReport.getCompleteResult(new Integer(idActivity),new Integer(idDriver),sys.getUserSessionData());		
+		String instructor = "";
+		String plate = "";
+		String trade = "";
+		String initialHr = "";
+		String initialMinute = "";
+		String finalHr = "";
+		String finalMinute = "";
+		String initialKm = "";
+		String finalKm = "";
+		if(session.getAttribute("ActivityRegistryForm") != null) {
+		    DynaActionForm form = (DynaActionForm)session.getAttribute("ActivityRegistryForm");
+		    instructor = form.getString("instructor");
+		    plate = form.getString("plate");
+		    trade = form.getString("trade");
+	initialHr = form.getString("initialHr");
+	
+	initialMinute = form.getString("initialMinute");
+	finalHr = form.getString("finalHr");
+	finalMinute = form.getString("finalMinute");
+		}else {
+		    instructor = registryData.getInstructor();
+		    plate = (registryData.getPlate() != null) ? registryData.getPlate() : "";
+		    trade = registryData.getTrade();
+		    Calendar c = Calendar.getInstance();
+	if(registryData.getInitialHr() != null) {
+	    c.setTime(registryData.getInitialHr());
+	    initialHr = (registryData.getInitialHr() != null) ? String.valueOf(c.get(Calendar.HOUR_OF_DAY)) : "";
+	    initialMinute = (registryData.getInitialHr() != null) ? String.valueOf(c.get(Calendar.MINUTE)) : "";
+	}
+	if(registryData.getFinalHr() != null) {
+	    c.setTime(registryData.getFinalHr());
+	    finalHr = (registryData.getFinalHr() != null) ? String.valueOf(c.get(Calendar.HOUR_OF_DAY)) : "";
+	    finalMinute = (registryData.getFinalHr() != null) ? String.valueOf(c.get(Calendar.MINUTE)) : "";
+	}
+		}
+		
+		DataTypeReportFacade reportDataType = sys.getDataTypeReportFacade();
+		
+		int checkListId = Integer.parseInt(request.getParameter("check"));
+		CheckListData checkList = activityReport.findCheckList(new Integer(checkListId),userSessionData);	
+		Collection points = checkList.getPoints();
+		Collections.sort((List)points);
+		Iterator pointIt = points.iterator();
+%>
+<!-- cds.jsp -->
+	
+<%@page import="communication.administration.corporation.tables.CorporationData"%>
+<%@page import="communication.administration.RoleData"%><script type="text/javascript">
+		function showObservations(result,observations) {
+			var form = document.forms['ActivityRegistryForm'];
+			if(form.elements[result].selectedIndex == 0) {
+				document.getElementById(observations).style.display = 'none'; 
+			}else {
+				document.getElementById(observations).style.display = 'block'; 
+			}
+		}
+	</script>
+	<html:form action = "/CDSRegistryCreate" method="post">
+		<html:hidden property="idActivity" value='<%=idActivity%>' />
+		<html:hidden property="idDriver" value='<%=idDriver%>' />
+		<html:hidden property="url" value='<%=url%>' />
+		<html:hidden property="classNumber" value='<%=String.valueOf(checkListId)%>'/>
+		<center>
+	  		<table width="750" border="0" cellpadding="0" cellspacing="0">
+				<tr>
+					<td align="center">
+						<table width="100%" border="0" cellpadding="0" cellspacing="0">
+	    					<tr> 
+	      						<td width="9">
+							      	<img src="/datacenter/util/imgs/titulo_left.gif" width="9" height="40">
+								</td>
+	      						<th width="500" background="/datacenter/util/imgs/bg2.gif" align="center">
+									<font color="#FFFFFF" size="4" face="Arial, Helvetica, sans-serif">
+										<%=messages.getText("generic.activity.form.formulario")%>
+	            					</font>
+	      						</th>
+	      						<td width="9">
+							      	<img src="/datacenter/util/imgs/titulo_right.gif" width="9" height="40">
+	      						</td>
+	    					</tr>
+	  					</table>
+					</td>
+				</tr>
+				<tr>
+		        	<td height="10"><img src="x" width="1" height="1"></td>
+				</tr>
+				<tr>
+					<td>
+						<table width="100%" height="100%" border="0" align="center" cellpadding="0" cellspacing="0">  				
+							<tr class="guide1">
+								<td width="19" height="30" ><img src="/datacenter/util/imgs/left.jpg" width="19" height="30"></td>
+			   		  		  	<td height="30" class="guide1"></td>
+								<td width="19" height="30" ><img src="/datacenter/util/imgs/right.jpg" width="19" height="30"></td>
+			  				</tr>
+							<tr>
+								<td class="leftLine">&nbsp;</td>
+      							<td height="6"><img src="x" width="1" height="1"></td>
+      							<td class="rightLine">&nbsp;</td>
+							</tr>  					  					
+  							<tr>
+  								<td class="leftLine">&nbsp;</td>
+  								<td>
+									<table width="100%" border="0" cellpadding="0" cellspacing="0">
+										<tr>
+											<th class="linetwo" align="left"><%=messages.getText("generic.data.driver")+": "%></th>
+											<td class="linetwo" align="right"><%=driver.getFirstName()+" "+driver.getLastName()%></td>
+										</tr>
+										<tr>
+					        				<td height="5"><img src="x" width="1" height="1"></td>
+										</tr>
+										<tr>
+											<th class="linetwo" align="left"><%=messages.getText("generic.activity.instructor")+": "%></th>
+											<td class="linetwo" align="right">
+<%
+	if(checkListId == 36 && sys.getCorporationId() == CorporationData.CIMSA && sys.getUserSessionData().getRole().getName().equals(RoleData.CDS)) {
+%>												<%=userSessionData.getFilter().getFirstName()+" "+userSessionData.getFilter().getLastName()%>
+													<html:hidden property="instructor" value='<%=userSessionData.getFilter().getFirstName()+" "+userSessionData.getFilter().getLastName()%>' />
+<%
+	}else {
+	if(checkListId == 36 && userSessionData.getDriverData() != null) {
+%>												<%=userSessionData.getDriverData().getFirstName()+" "+userSessionData.getDriverData().getLastName()%>
+												<html:hidden property="instructor" value='<%=userSessionData.getDriverData().getFirstName()+" "+userSessionData.getDriverData().getLastName()%>' />
+<%
+	}else {
+%>												<html:text property="instructor" value='<%=instructor%>' style="width:250;" styleClass="input"/>	
+<%
+		}
+		}
+	%>											</td>
+										</tr>
+									</table>
+			        			</td>        
+								<td class="rightLine">&nbsp;</td>
+							</tr>	
+			  				<tr>
+			                  	<td height="11" valign="top"><img src="/datacenter/util/imgs/left_base.gif" width="19" height="11"></td>
+			  				  	<td class="centerBase"></td>
+			  				  	<td valign="top" height="11"><img src="/datacenter/util/imgs/right_base.gif" width="19" height="11"></td>
+							</tr>
+	  					</table>
+					</td>
+				</tr>
+				<tr>
+		        	<td height="10"><img src="x" width="1" height="1"></td>
+				</tr>
+				<tr>
+					<td align="center">
+						<table width="100%" border="0" cellpadding="0" cellspacing="0">
+<%
+	while(pointIt.hasNext()) {	
+		PointData point = (PointData) pointIt.next();
+%>							<tr>
+								<td width="49%">
+									<table width="100%" height="100%" border="0" align="center" cellpadding="0" cellspacing="0">  				
+										<tr class="guide1">
+											<td width="19" height="30" ><img src="/datacenter/util/imgs/left.jpg" width="19" height="30"></td>
+					   		  		  		<td height="30" class="guide1"></td>
+											<td width="19" height="30" ><img src="/datacenter/util/imgs/right.jpg" width="19" height="30"></td>
+					  					</tr>
+  										<tr>
+											<td class="leftLine">&nbsp;</td>
+        									<td height="6"><img src="x" width="1" height="1"></td>
+        									<td class="rightLine">&nbsp;</td>
+  										</tr>  					  					
+    									<tr>
+    										<td class="leftLine">&nbsp;</td>
+    										<td>
+												<table width="100%" height="100%" border="0" align="center" cellpadding="0" cellspacing="0">  				
+<%
+  					Collection items = point.getItems();
+  				  						Collections.sort((List)items);
+  				  						Iterator itemIt = items.iterator();
+  				  						if(itemIt.hasNext()) {
+  				  							ItemData item = (ItemData)itemIt.next();
+  				  							String selected1 = "selected";
+  				  							String selected2 = "";
+  				  							String display = "none";
+  				  							String comment = "";
+  				  							if(registryData != null) {
+  				  								Integer valueItem = registryData.getValueFromItem(item);
+  				  								int value = (valueItem == null) ? 0 : valueItem.intValue();
+  				  								if(value == 2) {
+  				  									selected1 = "";
+  				  									selected2 = "selected";
+  				  									display = "block";
+  				  									comment = registryData.getPointComment(point);
+  				  								}
+  				  							}
+  				%>													<tr class="linetwo">
+														<td align="left" width="100%">
+															<table width="100%">
+																<tr class="linetwo">
+																	<td align="left" >
+																		<%=messages.getText(item.getText())%>
+																	</td>
+																	<td align="right">
+																		<select name='<%="item"+String.valueOf(item.getId())%>' onchange="showObservations('<%="item"+String.valueOf(item.getId())%>','<%="point"+String.valueOf(item.getId())%>')" >
+																			<option value="1" <%=selected1%>><%=messages.getText("cepasystem.result.satisfactied")%></option>
+																			<option value="2" <%=selected2%>><%=messages.getText("cepasystem.result.unsatisfactied")%></option>
+																		</select>
+																	</td>
+																</tr>
+															</table>
+														</td>
+													</tr>
+													<tr><td>&nbsp;</td></tr>
+													<tr>
+														<td align="left" width="100%">
+															<div id = '<%="point"+String.valueOf(item.getId())%>' style="display: <%=display%>; ">
+																<table>
+																	<tr>
+																		<td class="linetwo" align="left" valign="top" >
+																			<%=messages.getText("generic.activity.form.commentarydrive.comments")%>
+																		</td>
+																	</tr>
+																	<tr>
+																		<td class="input" align="right" valign="top" colspan="2" >
+																			<textarea name='<%="pointComment"+String.valueOf(point.getId())%>' cols="60" rows="3"><%=comment%></textarea>
+																		</td>
+																	</tr>
+																</table>
+															</div>
+														</td>
+													</tr>	
+<%
+		}
+	%>    											</table>	
+											</td>    									
+    										<td class="rightLine">&nbsp;</td>
+										</tr>	
+						  				<tr>
+						                  	<td height="11" valign="top"><img src="/datacenter/util/imgs/left_base.gif" width="19" height="11"></td>
+						  				  	<td class="centerBase"></td>
+						  				  	<td valign="top" height="11"><img src="/datacenter/util/imgs/right_base.gif" width="19" height="11"></td>
+									 	</tr>
+                      				</table>
+    							</td>
+							</tr>
+							<tr>
+		        				<td height="10"><img src="x" width="1" height="1"></td>
+							</tr>
+<%
+	}
+%>						</table>
+					</td>
+				</tr>
+				<tr>
+		        	<td height="10"><img src="x" width="1" height="1"></td>
+				</tr>
+				<tr>
+					<td align="center">
+						<table width="100%" height="100%" border="0" align="center" cellpadding="0" cellspacing="0">  				
+							<tr class="guide1">
+								<td width="19" height="30" ><img src="/datacenter/util/imgs/left.jpg" width="19" height="30"></td>
+		   		  		  		<td height="30" class="guide1"></td>
+								<td width="19" height="30" ><img src="/datacenter/util/imgs/right.jpg" width="19" height="30"></td>
+		  					</tr>
+							<tr>
+								<td class="leftLine">&nbsp;</td>
+     							<td height="6"><img src="x" width="1" height="1"></td>
+     							<td class="rightLine">&nbsp;</td>
+							</tr>  					  					
+ 							<tr>
+ 								<td class="leftLine">&nbsp;</td>
+ 								<td>
+			    					<table width="100%" border="0" cellpadding="0" cellspacing="0">
+            							<tr> 
+              								<td align="left" class="linetwo"><%=messages.getText("generic.activity.note")%></td>
+              								<td align="right" class="linetwo"> 
+		              							<select name="note" class="input">              		
+	           			  							<option value='<%=CEPAActivityNoteDataType.APRUVED%>' class="input" <%=(registryData != null && registryData.getNote().equals(CEPAActivityNoteDataType.APRUVED)) ? "selected" : ""%>><%=messages.getText(CEPAActivityNoteDataType.APRUVED)%></option>
+	           			  							<option value='<%=CEPAActivityNoteDataType.NOT_APRUVED%>' class="input" <%=(registryData != null && registryData.getNote().equals(CEPAActivityNoteDataType.NOT_APRUVED)) ? "selected" : ""%>><%=messages.getText(CEPAActivityNoteDataType.NOT_APRUVED)%></option>
+		        								</select> 
+		      								</td>
+            							</tr>
+            							<tr><td>&nbsp;</td></tr>
+            							<tr>
+              								<td align="left" class="linetwo"><%=messages.getText("generic.messages.observations")%></td>
+            							</tr>
+			    						<tr>
+					       					<td valign="top" align="left" colspan="2">
+					       						<font size="1" face="Arial, Helvetica, sans-serif"> 
+													<html:textarea property="obs" style="width:80%" cols="60" rows="3" styleClass="input" value='<%=(registryData != null && registryData.getObs() != null) ? registryData.getObs() : ""%>'></html:textarea>
+												</font>	        	
+					        				</td> 		             
+					    				</tr>
+					    			</table>
+			        			</td>        
+								<td class="rightLine">&nbsp;</td>
+							</tr>	
+			  				<tr>
+			                  	<td height="11" valign="top"><img src="/datacenter/util/imgs/left_base.gif" width="19" height="11"></td>
+			  				  	<td class="centerBase"></td>
+			  				  	<td valign="top" height="11"><img src="/datacenter/util/imgs/right_base.gif" width="19" height="11"></td>
+						 	</tr>
+           				</table>
+			    	 </td>
+			   	</tr>
+				<tr>
+		        	<td height="10"><img src="x" width="1" height="1"></td>
+				</tr>
+				<tr>
+		        	<td height="10" align="right">
+		        		<html:submit value='<%=messages.getText("generic.messages.save")%>' styleClass="input"/>
+		        		<html:cancel value='<%=messages.getText("generic.messages.cancel")%>' styleClass="input"/>
+		        		<html:button property="pdf" value='<%=messages.getText("generic.messages.PDF")%>' styleClass="input" onclick="document.forms['CepaSystemReportForm'].submit();" />
+<%
+	if(registryData.getActivity().getDefinition().getResourceKeyName().equals(CEPAActivityConstants.CEPA_SYSTEM_COURSE_2_ENTRENADORES) ||
+	registryData.getActivity().getDefinition().getResourceKeyName().equals(CEPAActivityConstants.CEPA_SYSTEM_COURSE_2_ENTRENADORES)) {
+%>						<html:button property="certificate" value='<%=messages.getText("generic.cepasystem.certificate")%>' styleClass="input" onclick="document.forms['CepaSystemCertificateForm'].submit();" />
+<%
+	}
+%>					</td>
+				</tr>
+			</table>
+		</center>
+	</html:form>
+
+  
+  <form name="FormCD" method="post" action='layout.jsp?refer=/activity/schedule/CEPAActivityScheduleView.jsp?id=<%=idActivity%>' >
+  </form>
+  
+  <html:form action="/CepaSystemCertificate" method="post" >
+	<html:hidden property="date" value='<%=Util.formatDate(registryData.getDate())%>' />	
+	<html:hidden property="driver" value='<%=driver.getFirstName()+" "+driver.getLastName()%>' />
+  </html:form>
+  <html:form action="/CepaSystemReport" method="post" >
+	<html:hidden property="activity" value='<%=idActivity%>' />	
+	<html:hidden property="driver" value='<%=idDriver%>' />
+  </html:form>
+  
+<%	}
+%>
+

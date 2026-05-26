@@ -1,0 +1,1360 @@
+/*
+ * Created on 27-oct-2005
+ */
+package business.driver;
+
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.StringTokenizer;
+
+import org.hibernate.classic.Session;
+
+import persistence.activity.ActivityABM;
+import persistence.activity.ActivityABMUtil;
+import persistence.activity.ActivityReport;
+import persistence.activity.ActivityReportUtil;
+import persistence.administration.corporation.CorporationReport;
+import persistence.administration.corporation.CorporationReportUtil;
+import persistence.administration.tables.TransporterLink;
+import persistence.administration.user.UserABM;
+import persistence.administration.user.UserABMHome;
+import persistence.administration.user.UserABMUtil;
+import persistence.driver.DriverABM;
+import persistence.driver.DriverABMHome;
+import persistence.driver.DriverABMUtil;
+import persistence.driver.DriverReport;
+import persistence.driver.DriverReportHome;
+import persistence.driver.DriverReportUtil;
+import persistence.driver.tables.DriverLogistic;
+import persistence.hibernate.HibernateUtil;
+import persistence.vehicle.VehicleABM;
+import persistence.vehicle.VehicleABMUtil;
+import persistence.vehicle.VehicleReportUtil;
+import business.administration.corporation.CorporationABMFacade;
+import business.administration.corporation.CorporationABMFacadeUtil;
+import business.util.ExceptionHandler;
+import business.util.MemoryLog;
+import communication.activity.tables.CEPAActivityScheduleData;
+import communication.activity.tables.CEPAActivityScheduleRegistryData;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.CountryData;
+import communication.administration.corporation.tables.DivOrgData;
+import communication.administration.corporation.tables.ItemData;
+import communication.administration.user.UserSessionData;
+import communication.driver.tables.AlcoholControlData;
+import communication.driver.tables.AptitudTestData;
+import communication.driver.tables.DriverBayerData;
+import communication.driver.tables.DriverData;
+import communication.driver.tables.DriverLogisticData;
+import communication.driver.tables.DriverPrizeData;
+import communication.driver.tables.TelematicControlData;
+import communication.driver.tables.UnconformityData;
+import communication.exception.CommunicationProblemException;
+import communication.exception.DeslogedException;
+import communication.exception.InvalidDataException;
+import communication.security.SecurityConstants;
+import communication.util.LogActions;
+import communication.vehicle.tables.VehicleData;
+
+/** 
+ * 
+ * @ejb.bean name = "DriverABMFacade" jndi-name = "ejb/DriverABMFacade" type =
+ *           "Stateless" transaction-type = "Container"  
+ * 
+ * @ejb.ejb-ref ejb-name = "DriverABM" ref-name = "ejb/DriverABM" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/DriverABM" ref-name = "DriverABM"
+ * 
+ * @ejb.ejb-ref ejb-name = "DriverReport" ref-name = "ejb/DriverReport" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/DriverReport" ref-name = "DriverReport"
+ * 
+ * @ejb.ejb-ref ejb-name = "UserABM" ref-name = "ejb/UserABM" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/UserABM" ref-name = "UserABM"
+ * 
+ * @ejb.ejb-ref ejb-name = "VehicleABM" ref-name = "ejb/VehicleABM" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/VehicleABM" ref-name = "VehicleABM"
+ * 
+ * @ejb.ejb-ref ejb-name = "VehicleReport" ref-name = "ejb/VehicleReport" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/VehicleReport" ref-name = "VehicleReport"
+ * 
+ * @ejb.ejb-ref ejb-name = "CorporationReport" ref-name = "ejb/CorporationReport" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/CorporationReport" ref-name = "CorporationReport"
+ * 
+ * @ejb.ejb-ref ejb-name = "ActivityReport" ref-name = "ejb/ActivityReport" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/ActivityReport" ref-name = "ActivityReport"
+ * 
+ * @ejb.ejb-ref ejb-name = "ActivityABM" ref-name = "ejb/ActivityABM" view-type =
+ *              "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/ActivityABM" ref-name = "ActivityABM"
+ * 
+ * @ejb.util generate="physical"
+ * 
+ */
+public abstract class DriverABMFacadeBean  implements javax.ejb.SessionBean {
+
+    private ExceptionHandler handler = new ExceptionHandler(DriverABMFacadeBean.class);
+
+	/**
+	 * Create method
+	 * @ejb.permission role-name = "driverdelete,driverupdate,drivercreate,administrator,drivertests,driverupdateowndata,driverbayerdata,jjreporter"
+	 * @ejb.create-method
+	 */
+	public void ejbCreate() throws javax.ejb.CreateException {
+
+	}
+	
+	/**
+	 * @ejb.interface-method view-type = "remote"
+	 * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,drivercreate,drivertests"
+	 * @param data
+	 * @throws Exception 
+	 */
+	public void driverCreate(DriverData data,String comment,UserSessionData userSessionData) throws Exception {
+		
+        DriverABM driverABM = null;
+        try{	
+            if(userSessionData == null) {
+                throw new DeslogedException("Class business.driver.DriverABMFacade(userCreate), session data is empty","generic.error.deslogued");
+            }
+            if(data == null) {
+                throw new InvalidDataException("Class business.driver.DriverABMFacade(userCreate), driver data is empty","generic.driver.driverdata.isempty");
+            }
+		
+            String valid = data.validate(userSessionData);
+            if (valid != null) {
+                throw new InvalidDataException("Class business.driver.DriverABMFacade(driverCreate), invalid user data",valid);
+            }
+
+            DriverABMHome home = DriverABMUtil.getHome();
+            driverABM = home.create();		
+            Integer id = driverABM.driverCreate(data, userSessionData,comment);
+            data.setId(id);
+            
+            if(userSessionData.isPointCorporation())
+            	CorporationABMFacadeUtil.getHome().create().addDriver(data, userSessionData);
+            
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[0] = data;
+        	parameters[1] = comment;
+            handler.handleException("driverCreate",exception, userSessionData, parameters);
+        } 
+	}
+
+	/**
+	 * @ejb.interface-method view-type = "remote"
+	 * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,drivercreate,drivertests"
+	 * @param data
+	 * @throws Exception 
+	 */
+	public void driverCreate(DriverData data,String comment,boolean[] corporations,UserSessionData userSessionData) throws Exception {
+		
+        DriverABM driverABM = null;
+        try{	
+            if(userSessionData == null) {
+                throw new DeslogedException("Class business.driver.DriverABMFacade(userCreate), session data is empty","generic.error.deslogued");
+            }
+            if(data == null) {
+                throw new InvalidDataException("Class business.driver.DriverABMFacade(userCreate), driver data is empty","generic.driver.driverdata.isempty");
+            }
+		
+            String valid = data.validate(userSessionData);
+            if (valid != null) {
+                throw new InvalidDataException("Class business.driver.DriverABMFacade(driverCreate), invalid user data",valid);
+            }
+
+            DriverABMHome home = DriverABMUtil.getHome();
+            driverABM = home.create();		
+            Integer id = driverABM.driverCreate(data, userSessionData,comment);
+            data.setId(id);
+            if(userSessionData.isPointCorporation())
+            	CorporationABMFacadeUtil.getHome().create().addDriver(data, userSessionData);
+
+           	replicateDrivers(data,comment,corporations,userSessionData);
+            
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[0] = data;
+        	parameters[1] = comment;
+            handler.handleException("driverCreate",exception, userSessionData, parameters);
+        } 
+	}
+
+	/**
+	 * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,driverdelete"
+	 * @param data
+	 * @throws InvalidDataException
+	 * @throws CommunicationProblemException
+	 * @throws DeslogedException
+	 */
+	public void driverDelete(DriverData data, String comment,UserSessionData userSessionData)	throws Exception {
+		DriverABM driverABM = null;
+		try {
+		    if (userSessionData == null) {
+		        throw new DeslogedException("Class business.driver.DriverABMFacade(driverDelete), session data is empty","generic.error.deslogued");
+		    }
+		    if (data == null) {
+		        throw new InvalidDataException("Class bisiness.driver.DriverABMFacade(driverDelete), driver data is empty","generic.driverdata.isempty");
+		    }
+		
+        	UserABMHome userABMHome = UserABMUtil.getHome();
+        	UserABM userABM = userABMHome.create();
+        	userABM.deleteUserByDriver(data.getId(), userSessionData);
+        	
+        	DriverABMHome home = DriverABMUtil.getHome();
+		    driverABM = home.create();
+		    driverABM.driverDelete(data, userSessionData, comment);
+
+		    DriverReport driverReport = DriverReportUtil.getHome().create();
+            if(userSessionData.getCorporationId() == CorporationData.FORESTALES) {
+				Integer[] driverLinks = DriverReportUtil.getHome().create().getDriverLink(data.getId(), userSessionData);
+				if(driverLinks != null) {
+					for(int i = 0; i < driverLinks.length; i++) {
+						if(driverLinks[i] != null) {
+	    	                DriverData driverData = driverReport.findDriverByPrimaryKey(new Integer(driverLinks[i]),userSessionData);
+	    	                driverABM.driverDelete(driverData, userSessionData, comment);
+						}
+					}
+				}
+
+            }
+
+		} catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[0] = data;
+        	parameters[1] = comment;
+            handler.handleException("driverDelete",exception, userSessionData, parameters);
+        } 
+	}
+
+	/**
+	 * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,driverupdate,driverupdateowndata,driverbayerdata"
+	 * 
+	 * @param data
+	 * @throws InvalidDataException
+	 * @throws CommunicationProblemException
+	 * @throws DeslogedException
+	 */
+	public void driverUpdate(DriverData data,String comment,UserSessionData userSessionData) throws Exception {
+	    MemoryLog.getInstance().log(MemoryLog.START,"driverUpdate",getClass());
+        try{	
+            if (userSessionData == null) {
+                throw new DeslogedException("driverUpdate","session = null");
+            }
+            if (data == null) {
+                throw new InvalidDataException("driverUpdate","data = null");
+            }
+
+            String valid = data.validate(userSessionData);
+            if (valid != null) {
+                throw new InvalidDataException("driverUpdate",valid);
+            }
+	
+            DriverABMHome home = DriverABMUtil.getHome();
+            DriverABM driverABM = home.create();
+		
+			// Nueva funcionalidad para todas las empresas menos FOSA y WEYERHAEUSER
+			// Si cambian las divisiones organizacionales del vehículos se cambian las del conductor
+			boolean changed = false;
+			Integer[] divOrgs = null;
+			Collection vehicles = null;
+			if(userSessionData.getCorporationId() != CorporationData.WEYERHAEUSER && 
+					userSessionData.getCorporationId() != CorporationData.FORESTALORIENTAL &&
+					(!userSessionData.hasPermission(SecurityConstants.DRIVER_BAYER_DATA) || userSessionData.isAdministrator())) {
+				// Si estoy en BAYER y actualizo "algunos datos" del conductor directamente (no las divorgs)
+				// entonces no hago nada con los vehiculos.
+				
+				vehicles = VehicleReportUtil.getHome().create().findDriversVehicles(userSessionData, data.getId());
+				if(vehicles != null && vehicles.size() > 0) {
+					DriverReport driverReport = DriverReportUtil.getHome().create();
+					divOrgs = data.getDivOrgIds();
+					changed = driverReport.hasChangedDivisions(data.getId(),divOrgs,userSessionData);
+				}
+			}
+
+			driverABM.driverUpdate(data, userSessionData, comment, LogActions.UPDATE);
+			
+			if(changed && (userSessionData.checkPermission(SecurityConstants.MODIFY_VEHICLE)
+					|| userSessionData.checkPermission(SecurityConstants.DRIVER_MODIFY_VEHICLE))) {
+				VehicleABM vehicleABM = VehicleABMUtil.getHome().create();
+				Iterator it = vehicles.iterator();
+				while(it.hasNext()) {
+					VehicleData vehicle = (VehicleData)it.next();
+					vehicleABM.updateDivisions(vehicle.getId(),divOrgs,userSessionData);
+				}
+			}
+
+			if(userSessionData.isDriver()) {
+                DriverReportHome reportHome = DriverReportUtil.getHome();
+                DriverReport driverReport = reportHome.create();
+                DriverData driverData = driverReport.findDriverByPrimaryKey(data.getId(),userSessionData);
+                userSessionData.setDriver(driverData);                
+            }
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[0] = data;
+        	parameters[1] = comment;
+            handler.handleException("DrvierABMFacadeBean: driverUpdate",exception, userSessionData, parameters);
+        } 
+        MemoryLog.getInstance().log(MemoryLog.START,"driverUpdate",getClass());
+	}
+	
+	/**
+	 * @ejb.interface-method view-type = "remote"
+	 * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,drivercreate,drivertests"
+	 * @param data
+	 * @throws Exception 
+	 */
+	public void replicateDrivers(DriverData data,String comment,boolean[] corporations,UserSessionData userSessionData) throws Exception {
+		
+        CorporationReport corporationReport = null;
+        try{	
+        	corporationReport = CorporationReportUtil.getHome().create();
+        	Integer[] links = corporationReport.getTransporterLink(((ItemData)((DivOrgData)data.getDivOrgsIterator().next()).getDivOrgLevels().getItemIterator().next()).getId(),userSessionData);
+        	
+            DriverABM driverABM = DriverABMUtil.getHome().create();
+            Integer[] driverLinks = new Integer[4];
+            driverLinks[0] = data.getId();
+            		
+            if(links[0] != null && corporations[0]) {
+            	data.replaceDivOrg(1,links[0],null,null);
+            	data.replaceDivGeo(null,TransporterLink.FOSA_REGION,TransporterLink.FOSA_COUNTRY);
+            	data.setCorporation(new CorporationData(CorporationData.FORESTALORIENTAL,"",null,null,null,null));
+            	Integer id = driverABM.driverCreate(data, userSessionData,comment);
+                if(userSessionData.isPointCorporation()) {
+                	data.setId(id);
+                	CorporationABMFacadeUtil.getHome().create().addDriver(data, userSessionData);
+                }
+            	driverLinks[1] = id;
+            }
+            
+            if(links[2] != null && corporations[2]) {
+            	data.replaceDivOrg(1,links[2],null,null);
+            	data.replaceDivGeo(null,TransporterLink.MDP_REGION,TransporterLink.MDP_COUNTRY);
+            	data.setCorporation(new CorporationData(CorporationData.MONTES_DE_PLATA,"",null,null,null,null));
+            	Integer id = driverABM.driverCreate(data, userSessionData,comment);
+            	data.setId(id);
+            	CorporationABMFacadeUtil.getHome().create().addDriver(data, userSessionData);
+            	driverLinks[3] = id;
+            }
+
+            if(links[1] != null && corporations[1]) {
+            	data.replaceDivOrg(1,TransporterLink.WEYERHAEUSER_DESTINY,null,null);
+            	data.addDivOrg(TransporterLink.WEYERHAEUSER_PRODUCT_ID,TransporterLink.WEYERHAEUSER_PRODUCT_NAME,TransporterLink.WEYERHAEUSER_PRODUCT,null,null);
+            	data.addDivOrg(TransporterLink.WEYERHAEUSER_TRANSPORTER_ID,TransporterLink.WEYERHAEUSER_TRANSPORTER_NAME,links[1],null,null);
+            	data.replaceDivGeo(null,TransporterLink.WEYERHAEUSER_REGION,TransporterLink.WEYERHAEUSER_COUNTRY);
+            	data.setCorporation(new CorporationData(CorporationData.WEYERHAEUSER,"",null,null,null,null));
+            	Integer id = driverABM.driverCreate(data, userSessionData,comment);
+                if(userSessionData.isPointCorporation()) {
+                	data.setId(id);
+                	CorporationABMFacadeUtil.getHome().create().addDriver(data, userSessionData);
+                }
+            	driverLinks[2] = id;
+            }
+            
+            
+            driverABM.saveDriverLinks(driverLinks,userSessionData);
+	
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[0] = data;
+        	parameters[1] = comment;
+            handler.handleException("driverCreate",exception, userSessionData, parameters);
+        } 
+	}
+
+	/**
+	 * @ejb.interface-method view-type = "remote"
+	 * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,drivercreate,drivertests"
+	 * @param data
+	 * @throws Exception 
+	 */
+	public void copyDriver(DriverData data,String comment,int corporation,UserSessionData userSessionData) throws Exception {
+		
+        CorporationReport corporationReport = null;
+        try{	
+        	corporationReport = CorporationReportUtil.getHome().create();
+        	Integer[] links = corporationReport.getTransporterLink(((ItemData)((DivOrgData)data.getDivOrgsIterator().next()).getDivOrgLevels().getItemIterator().next()).getId(),userSessionData);
+        	
+            DriverABM driverABM = DriverABMUtil.getHome().create();
+            Integer[] driverLinks = {data.getId(),null,null,null};
+            Integer[] currentLinks = DriverReportUtil.getHome().create().getDriverLink(data.getId(), userSessionData);
+            for(int i = 0; i < 3; i++)
+            	driverLinks[i+1] = currentLinks[i];
+            
+            Collection aptitudTests = data.getAptitudTest();
+            data.setAptitudTest(new LinkedList());
+            Integer id = null;
+            Integer divOrg = null;
+            switch(corporation) {
+            	case CorporationData.FORESTALORIENTAL:
+            		divOrg = links[0]; 
+            		if(divOrg == null) 
+            			divOrg = TransporterLink.FOSA_TRANSPORTER;
+                	data.replaceDivOrg(1,divOrg,null,null);
+                	data.replaceDivGeo(null,TransporterLink.FOSA_REGION,TransporterLink.FOSA_COUNTRY);
+                	data.setCorporation(new CorporationData(CorporationData.FORESTALORIENTAL,"",null,null,null,null));
+                	id = driverABM.driverCreate(data, userSessionData,comment);
+                    if(userSessionData.isPointCorporation()) {
+                    	data.setId(id);
+                    	CorporationABMFacadeUtil.getHome().create().addDriver(data, userSessionData);
+                    }
+                	driverLinks[1] = id;
+            		break;
+            	case CorporationData.WEYERHAEUSER:
+            		divOrg = links[1]; 
+            		if(divOrg == null) 
+            			divOrg = TransporterLink.WEYERHAEUSER_TRANSPORTER;
+                	data.replaceDivOrg(1,TransporterLink.WEYERHAEUSER_DESTINY,null,null);
+                	data.addDivOrg(TransporterLink.WEYERHAEUSER_PRODUCT_ID,TransporterLink.WEYERHAEUSER_PRODUCT_NAME,TransporterLink.WEYERHAEUSER_PRODUCT,null,null);
+                	data.addDivOrg(TransporterLink.WEYERHAEUSER_TRANSPORTER_ID,TransporterLink.WEYERHAEUSER_TRANSPORTER_NAME,divOrg,null,null);
+                	data.replaceDivGeo(null,TransporterLink.WEYERHAEUSER_REGION,TransporterLink.WEYERHAEUSER_COUNTRY);
+                	data.setCorporation(new CorporationData(CorporationData.WEYERHAEUSER,"",null,null,null,null));
+                	id = driverABM.driverCreate(data, userSessionData,comment);
+                    if(userSessionData.isPointCorporation()) {
+                    	data.setId(id);
+                    	CorporationABMFacadeUtil.getHome().create().addDriver(data, userSessionData);
+                    }
+                	driverLinks[2] = id;
+            		break;
+            	case CorporationData.MONTES_DE_PLATA:
+            		divOrg = links[2]; 
+            		if(divOrg == null) 
+            			divOrg = TransporterLink.MDP_TRANSPORTER;
+                	data.replaceDivOrg(1,divOrg,null,null);
+                	data.replaceDivGeo(null,TransporterLink.MDP_REGION,TransporterLink.MDP_COUNTRY);
+                	data.setCorporation(new CorporationData(CorporationData.MONTES_DE_PLATA,"",null,null,null,null));
+                	id = driverABM.driverCreate(data, userSessionData,comment);
+                	data.setId(id);
+                	CorporationABMFacadeUtil.getHome().create().addDriver(data, userSessionData);
+                	driverLinks[3] = id;
+            		break;
+            }
+            driverABM.updateDriverLinks(driverLinks,userSessionData);
+    
+            if(id != null && aptitudTests != null) {
+            	Iterator it = aptitudTests.iterator();
+            	while(it.hasNext()) {
+            		AptitudTestData test = (AptitudTestData) it.next();
+            		driverABM.createAptitudTest(id, test, userSessionData);
+            	}
+            }
+	
+            ActivityReport activityReport = ActivityReportUtil.getHome().create();
+            Collection activities = activityReport.findActivityByDriver(userSessionData, data.getId(), true);
+            if(activities != null) {
+        		ActivityABM activityABM = ActivityABMUtil.getHome().create();
+            	Iterator it = activities.iterator();
+            	while(it.hasNext()) {
+            		CEPAActivityScheduleRegistryData activityRegistry = (CEPAActivityScheduleRegistryData) it.next();
+            		CEPAActivityScheduleData activity = (CEPAActivityScheduleData)activityRegistry.getActivity();
+                    Integer[] activityLinks = {activity.getActivityId(),data.getId(),null,null,null};
+                    currentLinks = activityReport.getActivityLink(activity.getActivityId(), data.getId(), userSessionData);
+                    for(int i = 0; i < 3; i++)
+                    	activityLinks[i+2] = currentLinks[i];
+            		Integer newActivityId = null;
+                    switch(corporation) {
+	                	case CorporationData.FORESTALORIENTAL:
+	                		activity.replaceDivOrg(1,divOrg,null,null);
+	                		activity.replaceDivGeo(null,TransporterLink.FOSA_REGION,TransporterLink.FOSA_COUNTRY);
+	                		activity.setCorpooration(new CorporationData(CorporationData.FORESTALORIENTAL,"",null,null,null,null));
+	                		newActivityId = activityABM.createCEPAScheduleActivity(activity,comment,userSessionData);
+	                    	activityLinks[2] = newActivityId;
+	                		break;
+	                	case CorporationData.WEYERHAEUSER:
+	                		activity.replaceDivOrg(1,TransporterLink.WEYERHAEUSER_DESTINY,null,null);
+	                		activity.addDivOrg(TransporterLink.WEYERHAEUSER_PRODUCT_ID,TransporterLink.WEYERHAEUSER_PRODUCT_NAME,TransporterLink.WEYERHAEUSER_PRODUCT,null,null);
+	                		activity.addDivOrg(TransporterLink.WEYERHAEUSER_TRANSPORTER_ID,TransporterLink.WEYERHAEUSER_TRANSPORTER_NAME,divOrg,null,null);
+	                    	activity.replaceDivGeo(null,TransporterLink.WEYERHAEUSER_REGION,TransporterLink.WEYERHAEUSER_COUNTRY);
+	                    	activity.setCorpooration(new CorporationData(CorporationData.WEYERHAEUSER,"",null,null,null,null));
+	                		newActivityId = activityABM.createCEPAScheduleActivity(activity,comment,userSessionData);
+	                    	activityLinks[3] = newActivityId;
+	                		break;
+	                	case CorporationData.MONTES_DE_PLATA:
+	                		activity.replaceDivOrg(1,divOrg,null,null);
+	                		activity.replaceDivGeo(null,TransporterLink.MDP_REGION,TransporterLink.MDP_COUNTRY);
+	                		activity.setCorpooration(new CorporationData(CorporationData.MONTES_DE_PLATA,"",null,null,null,null));
+	                		newActivityId = activityABM.createCEPAScheduleActivity(activity,comment,userSessionData);
+	                    	activityLinks[4] = newActivityId;
+	                		break;
+	                }
+                    activityABM.updateActivityLinks(activityLinks,userSessionData);
+        			activityABM.replicateActivityResult(activity.getActivityId(),data.getId(),newActivityId,id,userSessionData);
+
+            	}
+            }
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[0] = data;
+        	parameters[1] = comment;
+            handler.handleException("driverCreate",exception, userSessionData, parameters);
+        } 
+	}
+
+	/**
+	 * @ejb.interface-method view-type = "remote"
+	 * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,drivercreate,drivertests"
+	 * @param data
+	 * @throws Exception 
+	 */
+	public void updateForstalDrivers(DriverData data,String comment,UserSessionData userSessionData) throws Exception {
+		
+        try{	
+    	    MemoryLog.getInstance().log(MemoryLog.START,"driverUpdate",getClass());
+            if (userSessionData == null) {
+                throw new DeslogedException("driverUpdate","session = null");
+            }
+            if (data == null) {
+                throw new InvalidDataException("driverUpdate","data = null");
+            }
+
+            String valid = data.validate(userSessionData);
+            if (valid != null) {
+                throw new InvalidDataException("driverUpdate",valid);
+            }
+	
+            DriverABM driverABM = DriverABMUtil.getHome().create();
+   			driverABM.driverUpdate(data, userSessionData, comment, LogActions.UPDATE);
+
+            if(userSessionData.getCorporationId() == CorporationData.FORESTALES) {
+	        	Integer[] links = DriverReportUtil.getHome().create().getDriverLink(data.getId(),userSessionData);
+	        	CorporationReport corporationReport = CorporationReportUtil.getHome().create();
+	        	Integer[] transporterlinks = corporationReport.getTransporterLink(((ItemData)((DivOrgData)data.getDivOrgsIterator().next()).getDivOrgLevels().getItemIterator().next()).getId(),userSessionData);
+	        	
+	            for(int i = 0; i < links.length; i++) {
+		        	if(links[i] != null) {
+		            	data.setId(links[i]);
+		            	driverABM.driverUpdateForestales(data, transporterlinks[i], userSessionData, comment, LogActions.UPDATE);
+		            }
+	            }
+            }            
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[0] = data;
+        	parameters[1] = comment;
+            handler.handleException("updateForstalDrivers",exception, userSessionData, parameters);
+        } 
+	}
+
+	/**
+	 * @ejb.interface-method view-type = "remote"
+	 * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,driverupdate"
+	 * @param data
+	 * @throws Exception 
+	 */
+	public void changeTemporal(Integer driverId, UserSessionData userSessionData) throws Exception {
+        try{	
+        	DriverReport driverReport = DriverReportUtil.getHome().create();
+        	DriverData driver = driverReport.findDriverByPrimaryKey(driverId, userSessionData);
+        	driver.setTemporal(false);
+            DriverABM driverABM = DriverABMUtil.getHome().create();
+   			driverABM.driverUpdate(driver, userSessionData, "Change Temporal Value", LogActions.CHANGE_TEMPORAL);
+            if(userSessionData.getCorporationId() == CorporationData.FORESTALES) {
+            	Integer[] dlinks = driverReport.getDriverLink(driver.getId(), userSessionData); 
+            	if(dlinks == null || (dlinks[0] == null && dlinks[1] == null && dlinks[2] == null)) {
+					boolean[] corporations = {true,true,true};
+            		replicateDrivers(driver, "Replicated From Tablet", corporations, userSessionData);
+            	} else {
+    	        	CorporationReport corporationReport = CorporationReportUtil.getHome().create();
+    	        	Integer[] transporterlinks = corporationReport.getTransporterLink(((ItemData)((DivOrgData)driver.getDivOrgsIterator().next()).getDivOrgLevels().getItemIterator().next()).getId(),userSessionData);
+    	        	
+    	            for(int i = 0; i < dlinks.length; i++) {
+    		        	if(dlinks[i] != null) {
+    		            	driver.setId(dlinks[i]);
+    		            	driverABM.driverUpdateForestales(driver, transporterlinks[i], userSessionData, "Change Temporal Value", LogActions.CHANGE_TEMPORAL);
+    		            }
+    	            }
+
+            	}
+            }
+        } catch (Exception exception) {
+        	Object[] parameters = {driverId};
+            handler.handleException("changeTemporal",exception, userSessionData, parameters);
+        } 
+	}
+	
+	/**
+	 * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,driverupdate,driverupdateowndata,driverbayerdata"
+	 * 
+	 * @param data
+	 * @throws InvalidDataException
+	 * @throws CommunicationProblemException
+	 * @throws DeslogedException
+	 */
+	public void driverBayerUpdate(DriverBayerData data,String comment,UserSessionData userSessionData) throws Exception {
+	    MemoryLog.getInstance().log(MemoryLog.START,"driverBayerUpdate",getClass());
+        try{	
+            if (userSessionData == null) {
+                throw new DeslogedException("driverBayerUpdate","session = null");
+            }
+            if (data == null) {
+                throw new InvalidDataException("driverBayerUpdate","data = null");
+            }
+
+            DriverABMHome home = DriverABMUtil.getHome();
+            DriverABM driverABM = home.create();
+			driverABM.driverBayerUpdate(data, userSessionData, comment, LogActions.UPDATE);
+
+			
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[0] = data;
+        	parameters[1] = comment;
+            handler.handleException("DrvierABMFacadeBean: driverBayerUpdate",exception, userSessionData, parameters);
+        } 
+        MemoryLog.getInstance().log(MemoryLog.START,"driverBayerUpdate",getClass());
+	}
+
+    /**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,driverupdate"
+     * 
+     * @param data
+     * @throws InvalidDataException
+     * @throws CommunicationProblemException
+     * @throws DeslogedException
+     */
+    public void driverExclude(String drivers,Date exclusionDate, String comment,UserSessionData userSessionData) throws Exception {
+        DriverABM driverABM = null; 
+        try{    
+            if (userSessionData == null) {
+                throw new DeslogedException("Class business.driver.DriverABMFacade(driverUpdate), session data is empty","generic.error.deslogued");
+            }
+
+            DriverReportHome reportHome = DriverReportUtil.getHome();
+            DriverReport driverReport = reportHome.create();
+
+            DriverABMHome home = DriverABMUtil.getHome();
+            driverABM = home.create();
+
+            StringTokenizer tokenizer = new StringTokenizer(drivers,",");
+            while(tokenizer.hasMoreTokens()) {
+                String driverId = tokenizer.nextToken();
+                DriverData driverData = driverReport.findDriverByPrimaryKey(new Integer(driverId),userSessionData);
+                driverData.setExclusionDate(exclusionDate);
+                driverABM.driverUpdate(driverData, userSessionData, comment, LogActions.EXCLUDE);
+                
+                if(userSessionData.getCorporationId() == CorporationData.FORESTALES) {
+    				Integer[] driverLinks = DriverReportUtil.getHome().create().getDriverLink(new Integer(driverId), userSessionData);
+    				if(driverLinks != null) {
+    					for(int i = 0; i < driverLinks.length; i++) {
+    						if(driverLinks[i] != null) {
+		    	                driverData = driverReport.findDriverByPrimaryKey(new Integer(driverLinks[i]),userSessionData);
+		    	                driverData.setExclusionDate(exclusionDate);
+		    	                driverABM.driverUpdate(driverData, userSessionData, comment, LogActions.EXCLUDE);
+    						}
+    					}
+    				}
+
+                }
+                
+                if(userSessionData.getFilter().getCorporationId().intValue() == CorporationData.MONSANTO && driverData.getCountryName().equals(CountryData.ARGENTINA)) {
+                	UserABM userABM = UserABMUtil.getHome().create();
+                	userABM.deleteDriverUser(driverData.getId(),userSessionData);
+                }
+            }
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[3];
+        	parameters[0] = drivers;
+        	parameters[1] = exclusionDate;
+        	parameters[2] = comment;        	
+            handler.handleException("driverExclude",exception, userSessionData, parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,driverupdate"
+     * 
+     * @param data
+     * @throws InvalidDataException
+     * @throws CommunicationProblemException
+     * @throws DeslogedException
+     */
+    public void driverInclude(String drivers,String comment,UserSessionData userSessionData) throws Exception {
+        DriverABM driverABM = null; 
+        try{    
+            if (userSessionData == null) {
+                throw new DeslogedException("Class business.driver.DriverABMFacade(driverUpdate), session data is empty","generic.error.deslogued");
+            }
+
+            DriverReportHome reportHome = DriverReportUtil.getHome();
+            DriverReport driverReport = reportHome.create();
+
+            DriverABMHome home = DriverABMUtil.getHome();
+            driverABM = home.create();
+
+            StringTokenizer tokenizer = new StringTokenizer(drivers,",");
+            while(tokenizer.hasMoreTokens()) {
+                String driverId = tokenizer.nextToken();
+                DriverData driverData = driverReport.findDriverByPrimaryKey(new Integer(driverId),userSessionData);
+                driverData.setExclusionDate(null);
+                driverABM.driverUpdate(driverData, userSessionData, comment, LogActions.INCLUDE);
+
+                if(userSessionData.getCorporationId() == CorporationData.FORESTALES) {
+    				Integer[] driverLinks = DriverReportUtil.getHome().create().getDriverLink(new Integer(driverId), userSessionData);
+    				if(driverLinks != null) {
+    					for(int i = 0; i < driverLinks.length; i++) {
+    						if(driverLinks[i] != null) {
+		    	                driverData = driverReport.findDriverByPrimaryKey(new Integer(driverLinks[i]),userSessionData);
+		    	                driverData.setExclusionDate(null);
+		    	                driverABM.driverUpdate(driverData, userSessionData, comment, LogActions.INCLUDE);
+    						}
+    					}
+    				}
+
+                }
+            }
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[0] = drivers;
+        	parameters[1] = comment;
+            handler.handleException("driverInclude",exception, userSessionData, parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,driverupdate"
+     */
+    public void driverHRD(Integer driverId, String hrd, Date date, String comment, int action, UserSessionData userSessionData) throws Exception {
+        try{    
+            if (userSessionData == null) {
+                throw new DeslogedException("session NULL","generic.error.deslogued");
+            }
+
+            DriverData driverData = DriverReportUtil.getHome().create().findDriverByPrimaryKey(driverId,userSessionData);
+            if(action == LogActions.MARK_HRD) {
+            	driverData.setIdDallas(hrd);
+            	driverData.setAuthorizateDate(date);
+            	driverData.setAuthorizateWho(userSessionData.getFilter().getLoginName());
+            	driverData.setFederativeEntity(comment);
+            }else {
+            	driverData.setIdDallas(null);
+            	driverData.setAuthorizateDate(null);
+            	driverData.setAuthorizateWho(userSessionData.getFilter().getLoginName());
+            	driverData.setFederativeEntity(comment);
+            }
+            DriverABMUtil.getHome().create().driverUpdate(driverData, userSessionData, comment, action);
+        } catch (Exception exception) {
+        	Object[] parameters = {driverId};
+            handler.handleException("driverHRD",exception, userSessionData, parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,drivercreate"
+     */
+    public void createDrivers(Collection drivers, UserSessionData userSessionData, String notes) throws Exception {
+        DriverABM driverABM = null;
+        DriverData data = null;
+        String valid = null;
+        try{    
+        	
+            if(userSessionData == null) {
+                throw new DeslogedException("createDrivers","userSessionData = null");
+            }
+            if(drivers == null) {
+                throw new InvalidDataException("createDrivers","drivers = null");
+            }
+
+            DriverABMHome home = DriverABMUtil.getHome();
+            driverABM = home.create();
+            
+            Iterator it = drivers.iterator();
+            CorporationData corp = new CorporationData(userSessionData.getFilter().getCorporationId(),null,null,null,null,null);
+            while(it.hasNext()) {
+                data = (DriverData)it.next();
+                data.setCorporation(corp);
+                valid = data.validate(userSessionData);
+                if (valid != null) {
+                	System.out.println("Invalid Data Exception: "+
+                			data.getFirstName()+" "+data.getLastName());
+                    throw new InvalidDataException("createDrivers",valid);
+                }                  
+                Integer id = driverABM.driverCreate(data, userSessionData,"Inserted by file. "+notes);
+                if(userSessionData.isPointCorporation()) {
+                	data.setId(id);
+                	CorporationABMFacadeUtil.getHome().create().addDriver(data, userSessionData);
+                }
+            }
+    
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[1];
+        	parameters[0] = drivers;
+            handler.handleException("createDrivers",exception, userSessionData, parameters);
+        } 
+    }
+    
+    /**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,driveredit"
+	 * @param userRequest User logged
+	 */
+	public void driverLogisticCreate(DriverLogisticData data, UserSessionData userRequest) throws Exception {
+		
+		try{
+			  DriverABMHome home = DriverABMUtil.getHome();
+	          home.create().driverLogisticCreate(data,userRequest);
+        } catch (Exception e) {
+        	Object[] parameters = new Object[1];
+        	parameters[0] = data;
+            handler.handleException("driverLogisticCreate",e, userRequest, parameters);
+        } 
+    }
+
+    /**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,driveredit"
+	 * @param userRequest User logged
+	 */
+	public void driverLogisticUpdate(Integer driver, String activity, DriverLogisticData data, UserSessionData userRequest) throws Exception {
+		
+		try{
+			  DriverABMHome home = DriverABMUtil.getHome();
+	          home.create().driverLogisticUpdate(driver, activity, data,userRequest);
+        } catch (Exception e) {
+        	Object[] parameters = new Object[1];
+        	parameters[0] = data;
+            handler.handleException("driverLogisticUpdate",e, userRequest, parameters);
+        } 
+    }
+
+    /**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,driveredit"
+	 * @param userRequest User logged
+	 */
+	public void driverLogisticDelete(Collection<String[]> logistics, UserSessionData userRequest) throws Exception {
+		
+		try{
+			  DriverABM home = DriverABMUtil.getHome().create();
+			  Iterator<String[]> it = logistics.iterator();
+			  while(it.hasNext()) {
+				  String[] values = it.next();
+				  home.driverLogisticDelete(new Integer(values[0]), values[1], userRequest);
+			  }
+        } catch (Exception e) {
+        	Object[] parameters = new Object[1];
+        	parameters[0] = logistics;
+            handler.handleException("driverLogisticDelete",e, userRequest, parameters);
+        } 
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,drivercreate"
+     */
+    public Hashtable createDrivers(Hashtable drivers, UserSessionData userSessionData) throws Exception {
+        DriverABM driverABM = null;
+        try{    
+            if(userSessionData == null) {
+                throw new DeslogedException("createDrivers","userSessionData = null");
+            }
+            if(drivers == null) {
+                throw new InvalidDataException("createDrivers","drivers = null");
+            }
+
+            Enumeration it = drivers.elements();
+            CorporationData corp = new CorporationData(userSessionData.getFilter().getCorporationId(),null,null,null,null,null);
+            while(it.hasMoreElements()) {
+                DriverData data = (DriverData)it.nextElement();
+                data.setCorporation(corp);
+                String valid = data.validate(userSessionData);
+                if (valid != null) {
+                    throw new InvalidDataException("createDrivers",valid);
+                }
+    
+                DriverABMHome home = DriverABMUtil.getHome();
+                driverABM = home.create();      
+                Integer id = driverABM.driverCreate(data, userSessionData,"Inserted by file");
+                data.setId(id);
+                if(userSessionData.isPointCorporation()) {
+                	CorporationABMFacadeUtil.getHome().create().addDriver(data, userSessionData);
+                }
+            }
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[1];
+        	parameters[0] = drivers;
+        		
+            handler.handleException("createDrivers",exception, userSessionData, parameters);
+        } 
+        return drivers;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,drivertests"
+     */
+    public void createAptitudTest(Integer driverId, AptitudTestData test, UserSessionData userSessionData) throws Exception {
+        DriverABM driverABM = null;
+        try{    
+            if(userSessionData == null) {
+                throw new DeslogedException("createAptitudTest","userSessionData = null");
+            }
+            if(driverId == null) {
+                throw new InvalidDataException("createAptitudTest","driverId = null");
+            }
+            DriverABMHome home = DriverABMUtil.getHome();
+            driverABM = home.create();      
+            driverABM.createAptitudTest(driverId,test,userSessionData);
+
+            if(userSessionData.getCorporationId() == CorporationData.FORESTALES) {
+	            DriverReport driverReport = DriverReportUtil.getHome().create();
+	        	Integer[] links = driverReport.getDriverLink(driverId,userSessionData);
+	
+	        	for(int i = 0; i < links.length; i++) {
+		            if(links[i] != null) {
+		                driverABM.createAptitudTest(links[i],test,userSessionData);
+		            }
+	        	}
+            }
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[0] = driverId;
+        	parameters[1] =  test;
+            handler.handleException("createAptitudTest",exception, userSessionData, parameters);
+        } 
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,drivertests"
+     */
+    public void deleteAptitudTest(Integer driverId, Collection tests, UserSessionData userSessionData) throws Exception {
+        DriverABM driverABM = null;
+        try{    
+            if(userSessionData == null) {
+                throw new DeslogedException("deleteAptitudTest","userSessionData = null");
+            }
+            if(driverId == null) {
+                throw new InvalidDataException("deleteAptitudTest","driverId = null");
+            }
+            DriverABMHome home = DriverABMUtil.getHome();
+            driverABM = home.create();      
+            
+            DriverReport driverReport = DriverReportUtil.getHome().create();
+
+            Iterator it = tests.iterator();
+            while(it.hasNext()) {
+	        	String date = (String)it.next();
+	        	driverABM.deleteAptitudTest(driverId,date,userSessionData);
+
+	
+            	if(userSessionData.getCorporationId() == CorporationData.FORESTALES) {
+		        	Integer[] links = driverReport.getDriverLink(driverId,userSessionData);
+	            	for(int i = 0; i < links.length; i++) {
+	    	            if(links[i] != null) {
+	    	                driverABM.deleteAptitudTest(links[i],date,userSessionData);
+	    	            }
+	            	}
+	            }
+            }
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[0] = driverId;
+        	parameters[1] = tests;
+            handler.handleException("deleteAptitudTest",exception, userSessionData, parameters);
+        } 
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,drivertests"
+     */
+    public void createAlcoholControl(Integer driverId, AlcoholControlData data, UserSessionData userSessionData) throws Exception {
+        DriverABM driverABM = null;
+        try{    
+            if(userSessionData == null) {
+                throw new DeslogedException("createAlcoholControl","userSessionData = null");
+            }
+            if(driverId == null) {
+                throw new InvalidDataException("createAlcoholControl","driverId = null");
+            }
+            DriverABMHome home = DriverABMUtil.getHome();
+            driverABM = home.create();      
+            driverABM.createAlcoholControl(driverId,data,userSessionData);
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[0] = driverId;
+        	parameters[1] = data;
+            handler.handleException("createAlcoholControl",exception, userSessionData, parameters);
+        } 
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,drivertests"
+     */
+    public void deleteAlcoholControl(Integer driverId, Collection controls, UserSessionData userSessionData) throws Exception {
+        DriverABM driverABM = null;
+        try{    
+            if(userSessionData == null) {
+                throw new DeslogedException("deleteAlcoholControl","userSessionData = null");
+            }
+            if(driverId == null) {
+                throw new InvalidDataException("deleteAlcoholControl","driverId = null");
+            }
+            DriverABMHome home = DriverABMUtil.getHome();
+            driverABM = home.create();      
+            
+            Iterator it = controls.iterator();
+            while(it.hasNext()) {
+                driverABM.deleteAlcoholControl(driverId,(String)it.next(),userSessionData);
+            }
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[0] = driverId;
+        	parameters[1] = controls;
+            handler.handleException("deleteAlcoholControl",exception, userSessionData, parameters);
+        } 
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,drivertests"
+     */
+    public void createDriverPrize(Integer driverId, DriverPrizeData prize, UserSessionData userSessionData) throws Exception {
+        DriverABM driverABM = null;
+        try{    
+            if(userSessionData == null) {
+                throw new DeslogedException("createDriverPrize","userSessionData = null");
+            }
+            if(driverId == null) {
+                throw new InvalidDataException("createDriverPrize","driverId = null");
+            }
+            DriverABMHome home = DriverABMUtil.getHome();
+            driverABM = home.create();      
+            driverABM.createDriverPrize(driverId,prize,userSessionData);
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[0] = driverId;
+        	parameters[1] = prize;
+        	handler.handleException("createDriverPrize",exception, userSessionData, parameters);
+        } 
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,drivertests"
+     */
+    public void deleteDriverPrize(Integer driverId, Collection prizes, UserSessionData userSessionData) throws Exception {
+        DriverABM driverABM = null;
+        try{    
+            if(userSessionData == null) {
+                throw new DeslogedException("deleteDriverPrize","userSessionData = null");
+            }
+            if(driverId == null) {
+                throw new InvalidDataException("deleteDriverPrize","driverId = null");
+            }
+            DriverABMHome home = DriverABMUtil.getHome();
+            driverABM = home.create();      
+            
+            Iterator it = prizes.iterator();
+            while(it.hasNext()) {
+                driverABM.deleteDriverPrize(driverId,(String)it.next(),userSessionData);
+            }
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[0] = driverId;
+        	parameters[1] = prizes;
+            handler.handleException("deleteDriverPrize",exception, userSessionData, parameters);
+        } 
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate"
+     */
+    public void createUnconformity(Integer driverId, UnconformityData unconformity, UserSessionData userSessionData) throws Exception {
+    	VehicleABM vehicleABM = null;
+        try{    
+            if(userSessionData == null) {
+                throw new DeslogedException("createUnconformity","userSessionData = null");
+            }
+            if(driverId == null) {
+                throw new InvalidDataException("createUnconformity","driverId = null");
+            }
+            DriverABMUtil.getHome().create().createUnconformity(driverId,unconformity,userSessionData);
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[0] = driverId;
+        	parameters[1] =  unconformity;
+            handler.handleException("createUnconformity",exception, userSessionData, parameters);
+        } 
+    }
+
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate"
+     */
+    public void deleteUnconformity(Collection unconformities, UserSessionData userSessionData) throws Exception {
+        try{    
+            if(userSessionData == null) {
+                throw new DeslogedException("deleteUnconformity","userSessionData = null");
+            }
+            DriverABM driverABM = DriverABMUtil.getHome().create();      
+            
+            Iterator it = unconformities.iterator();
+            while(it.hasNext()) {
+            	driverABM.deleteUnconformity((String)it.next(),userSessionData);
+            }
+        } catch (Exception exception) {
+        	Object[] parameters = new Object[2];
+        	parameters[1] = unconformities;
+            handler.handleException("deleteUnconformity",exception, userSessionData, parameters);
+        } 
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate"
+     */
+    public void addProvisionalBTW(Integer driver,String result,Date btwDate,UserSessionData userSessionData) throws Exception {
+        try{
+        	Calendar c = Calendar.getInstance();
+        	c.setTime(btwDate);
+        	c.set(Calendar.HOUR_OF_DAY, 23);
+        	c.set(Calendar.MINUTE, 59);
+        	c.add(Calendar.DATE, 15);
+        	DriverABMUtil.getHome().create().addProvisionalBTW(driver,c.getTime(),result,btwDate,userSessionData);
+        }catch(Exception e) {
+			Object[] parameters = {driver,result,btwDate};
+			handler.handleException("addProvisionalBTW",e,userSessionData,parameters);
+        }
+    }
+    
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate"
+     */
+    public void deleteProvisionalBTW(Integer driver,Date expiry,UserSessionData userSessionData) throws Exception {
+        try{
+        	DriverABMUtil.getHome().create().deleteProvisionalBTW(driver,expiry,userSessionData);
+        }catch(Exception e) {
+			Object[] parameters = {driver,expiry};
+			handler.handleException("deleteProvisionalBTW",e,userSessionData,parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,driverupload"
+     */
+    public void addTelematicControl(TelematicControlData telematicControlData,UserSessionData userSessionData) throws Exception {
+        try{
+        	DriverABMUtil.getHome().create().addTelematicControl(telematicControlData,userSessionData);
+        }catch(Exception e) {
+			Object[] parameters = {telematicControlData};
+            handler.handleException("addTelematicControl",e,userSessionData,parameters);
+        }
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,driverupload"
+     */
+    public void addTelematicControls(Collection<TelematicControlData> telematicControls,UserSessionData userSessionData) throws Exception {
+        try{
+        	DriverABM driverABM = DriverABMUtil.getHome().create();
+        	Iterator<TelematicControlData> it = telematicControls.iterator();
+        	while(it.hasNext())
+        		driverABM.addTelematicControl(it.next(),userSessionData);
+        }catch(Exception e) {
+			Object[] parameters = {telematicControls};
+            handler.handleException("addTelematicControls",e,userSessionData,parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,driverupload"
+     * Guarda una coleccion de controles telematicos.
+     */
+    public void addManyTelematicControls(Collection<TelematicControlData> telematicControls,UserSessionData userSessionData) throws Exception {
+        try{
+        	DriverABM abm = DriverABMUtil.getHome().create();
+        	TelematicControlData telematicControlData;
+        	if (telematicControls != null && telematicControls.size() > 0){
+        		Iterator<TelematicControlData> it = telematicControls.iterator();
+        		while (it.hasNext()){
+        			telematicControlData = it.next();
+        			if (telematicControlData != null && userSessionData != null)
+        				abm.addTelematicControl(telematicControlData,userSessionData);
+        		}
+        	}        	
+        }catch(Exception e) {
+			Object[] parameters = {telematicControls};
+            handler.handleException("addManyTelematicControl",e,userSessionData,parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate"
+     */
+    public void updateTelematicControl(TelematicControlData telematicControlData,UserSessionData userSessionData) throws Exception {
+        try{
+        	DriverABMUtil.getHome().create().updateTelematicControl(telematicControlData,userSessionData);
+        }catch(Exception e) {
+			Object[] parameters = {telematicControlData};
+            handler.handleException("updateTelematicControl",e,userSessionData,parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate"
+     */
+    public void deleteTelematicControl(String[] controlIds,UserSessionData userSessionData) throws Exception {
+        try{
+        	DriverABM driverABM = DriverABMUtil.getHome().create();
+        	for(int i = 0; i < controlIds.length; i++) 
+        		driverABM.deleteTelematicControl(new Integer(controlIds[i]),userSessionData);
+        }catch(Exception e) {
+			Object[] parameters = {controlIds};
+            handler.handleException("deleteTelematicControl",e,userSessionData,parameters);
+        }
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate"
+     */
+    public void unificateDrivers(Integer origin, Integer destiny, boolean delete, String comment, UserSessionData userSessionData) throws Exception {
+        try{
+        	Integer[] driverLink = new Integer[4];
+        	driverLink[0] = destiny;
+        	DriverABM driverABM = DriverABMUtil.getHome().create();
+        	driverABM.unificateDrivers(origin,destiny,delete,comment,userSessionData);
+        	boolean updateLinks = false;
+        	if(userSessionData.getCorporationId() == CorporationData.FORESTALES) {
+        		DriverReport driverReport = DriverReportUtil.getHome().create();
+        		Integer[] linksOrigin = driverReport.getDriverLink(origin, userSessionData);
+        		Integer[] linksDestiny = driverReport.getDriverLink(destiny, userSessionData);
+        		
+        		for(int i = 0; i < 3; i++) {
+    				driverLink[i+1] = linksDestiny[i];
+        			if(linksOrigin[i] != null && linksDestiny[i] != null) {
+        	        	driverABM.unificateDrivers(linksOrigin[i],linksDestiny[i],delete,comment,userSessionData);
+        			} else if(linksOrigin[i] != null) {
+        				driverLink[i+1] = linksOrigin[i];
+        				updateLinks = true;
+        			}
+        		}
+        		if(updateLinks) {
+        			driverABM.updateDriverLinks(driverLink,userSessionData);
+        		}
+        		if(delete) {
+        			driverABM.deleteDriverLinks(origin,userSessionData);
+        		}
+        	}
+        }catch(Exception e) {
+			Object[] parameters = {origin,destiny,delete,comment};
+            handler.handleException("unificateDrivers",e,userSessionData,parameters);
+        }
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,driverupload"
+     */
+    public void sendRegistryTelematicControl(Integer id, TelematicControlData telematicControlData,String body,String to,String subject, UserSessionData userSessionData) throws Exception {
+    	try{
+    		DriverABM driverABM = DriverABMUtil.getHome().create();
+    		
+    		driverABM.sendRegistryTelematicControl(id, telematicControlData, body, to, subject, userSessionData);
+    		
+         }catch(Exception e) {
+			Object[] parameters = {};
+            handler.handleException("sendRegistryTelematicControl",e,userSessionData,parameters);
+        }
+    }
+  
+
+    public void loadDriverPoints(UserSessionData userSessionData) throws Exception {
+    	try {
+    		DriverReport driverReport = DriverReportUtil.getHome().create();
+    		CorporationABMFacade corporationABM = CorporationABMFacadeUtil.getHome().create();
+    		Collection drivers = driverReport.findDriverByCorporationId(null,userSessionData);
+    		Iterator it = drivers.iterator();
+    		while(it.hasNext()) {
+    			DriverData driver = (DriverData) it.next();
+    			corporationABM.addDriver(driver, userSessionData);
+    		}
+    	}catch(Exception e) {
+			Object[] parameters = {};
+            handler.handleException("loadDriverPoints",e,userSessionData,parameters);
+        }
+    }
+ 
+	/**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,driverview"
+	 * @param data Driver that will be created 
+	 * @param userRequest User logged
+	 */
+	public void updateMigrationPlanActivity (Integer planId, Integer activity, boolean done, UserSessionData userSessionData) throws Exception {
+		try{
+    		DriverABMUtil.getHome().create().updateMigrationPlanActivity (planId, activity, done, userSessionData);
+         }catch(Exception e) {
+			Object[] parameters = {planId, activity, done};
+            handler.handleException("updateMigrationPlanActivity",e,userSessionData,parameters);
+        }
+    }
+
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,cepascheduleactivitycreate,cepascheduleactivityupdate,jjreporter"
+	 * @param data Driver that will be created 
+	 * @param userRequest User logged
+	 */
+	public void completeMitigationPlanActiviy(Integer driver, String activityDefinition, UserSessionData userSessionData) throws Exception {
+		try{
+    		DriverABMUtil.getHome().create().completeMitigationPlanActiviy(driver, activityDefinition, userSessionData);
+        }catch(Exception e) {
+			Object[] parameters = {driver, activityDefinition};
+           handler.handleException("completeMitigationPlanActiviy",e,userSessionData,parameters);
+       }
+   }
+}
+    

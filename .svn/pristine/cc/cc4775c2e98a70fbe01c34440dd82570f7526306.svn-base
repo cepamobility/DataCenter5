@@ -1,0 +1,135 @@
+<%@page import="communication.administration.dpa.UnconformityDPAData"%>
+<%@page import="communication.driver.tables.DriverData"%>
+<%@page language="java" 
+	errorPage="../exception.jsp" 
+	import="business.*"
+	import="business.activity.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.activity.schedule.*" 	
+ 	import="presentation.translator.web.vehicle.*"
+ 	import="communication.administration.user.*" 	
+ 	import="communication.datatype.tables.ActivityTypeDataType"
+	import="business.vehicle.VehicleReportFacade"
+	import="java.util.*"	
+	import="org.apache.struts.action.DynaActionForm"
+	import="communication.activity.tables.*"
+	import="business.vehicle.VehicleReportFacadeBean"
+%>
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+<%!
+	RequestDispatcher dispatcher; 
+	Text messages; SystemAccess sys;
+	UserSessionData userSessionData; 
+	VehicleCheckData vehicleCheck;
+%>
+<%
+	sys = (SystemAccess)session.getAttribute("SystemAccess");
+	userSessionData=sys.getUserSessionData();	
+	
+	
+	String check = Util.checkPermission(sys,SecurityConstants.VIEW_VEHICLE_LIST);
+	
+	if (check!=null) { 
+		response.sendRedirect(request.getContextPath()+check);	
+	}else {
+		messages=sys.getText();
+	
+		dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+		dispatcher.include(request,response);
+
+		String unconformityId = (String)request.getParameter("id");
+		
+	 	UnconformityDPAData unconformityData = sys.getCorporationReportFacade().findUnconformityDPAById(sys.getUserSessionData(), Integer.valueOf(unconformityId));
+%>	
+
+
+<html:html>
+	<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+	</head>
+
+	<body>
+		<center>
+			<html:form action="/DPASendUnconformityReport" method="post" >
+				<html:hidden property="unconformityId" value='<%=unconformityId%>' />	
+					<table width="700" border="0" cellspacing="2" cellpadding="2">  
+					<tr> 
+						<td height="40" colspan="3" valign="middle">
+							
+							
+<%		if(unconformityData != null) {
+			String unconformityFile = messages.getText("Unconformity_File")+"_"+unconformityId+".pdf";
+%>										<html:hidden property="unconformityFileName" value='<%=unconformityFile%>' />	
+										<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.dpa.unconformity.title")%>' />
+										<table width="100%" height="60" border="0" cellpadding="0" cellspacing="0">
+						   	 				<tr class="lineone"> 
+						       					<th width="50%" align="left" class="lineone">        
+						   							<%= messages.getText("generic.sendemail.attachment")%>
+												</th>
+												<td width="50%" align="right" class="lineone">
+													<%=unconformityFile%>                                     
+												</td>
+						   					</tr>
+						   	 				<tr> 
+						       					<td width="50%" align="left" class="texts">        
+						   							<%= messages.getText("generic.sendemail.address")%>
+												</td>
+												<td width="50%" align="right" class="linetwo">
+													<html:text property="address" styleClass="input" size="50"></html:text>                                     
+												</td>
+						   					</tr>
+						   	 				<tr> 
+						       					<td width="50%" align="left" class="texts">        
+						   							<%= messages.getText("generic.sendemail.subject")%>
+												</td>
+												<td width="50%" align="right" class="linetwo">
+													<html:text property="subject" styleClass="input" size="50"></html:text>                                     
+												</td>
+						   					</tr>
+						   	 				
+						   	 				<tr> 
+						       					<td width="50%" align="left" class="texts">        
+						   							<%= messages.getText("generic.sendemail.body")%>
+												</td>
+											</tr>
+						   	 				<tr> 
+												<td colspan="2" align="left" class="linetwo">
+													<html:textarea property="body" styleClass="input" cols="120" rows="5"></html:textarea>                                     
+												</td>
+						   					</tr>
+						   					<tr>   		
+										   		<td align="right" colspan="2">
+										   			<html:submit value='<%=messages.getText("generic.messages.send") %>' styleClass="input"/>			   			
+										   			<input type="button" value='<%=messages.getText("generic.messages.cancel") %>' onclick="document.location.href='layout.jsp?refer=/dpa/DPAUnconformityView.jsp?id=<%=unconformityId%>';" class="input"/>		
+										       	</td>             
+									   	  	</tr>
+									   </table>
+									     	
+									   
+													
+<%		}else {
+%>								Sim Dados	
+<%		}
+%>							
+						<jsp:include  page="../component/utilityboxbottom.jsp" />
+					</td>
+						
+				</tr>
+			</table>		
+			    
+			</html:form>
+		</center>
+	</body>
+</html:html>
+<%
+	}
+%>

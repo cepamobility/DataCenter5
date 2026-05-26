@@ -1,0 +1,1867 @@
+package presentation.translator.web.util;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.rmi.RemoteException;
+import java.sql.Time;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.StringTokenizer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
+import javax.servlet.http.HttpServletRequest;
+
+import org.apache.poi.hssf.usermodel.HSSFCell;
+import org.apache.poi.hssf.usermodel.HSSFRow;
+import org.apache.poi.hssf.usermodel.HSSFSheet;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.struts.action.DynaActionForm;
+import org.jfree.chart.ChartUtilities;
+import org.jfree.chart.JFreeChart;
+
+import presentation.translator.web.driver.DriverDivOrgForm;
+import business.SystemAccess;
+
+import communication.activity.tables.ItemValueData;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.DivOrgAttribute;
+import communication.administration.corporation.tables.DivOrgData;
+import communication.administration.corporation.tables.GeoItemData;
+import communication.administration.corporation.tables.GeoLabelData;
+import communication.administration.corporation.tables.ItemData;
+import communication.administration.corporation.tables.LabelItemData;
+import communication.administration.group.tables.GroupData;
+import communication.administration.group.tables.GroupLineData;
+import communication.administration.group.tables.GroupMainAttributes;
+import communication.administration.user.UserSessionData;
+import communication.driver.tables.DriverData;
+import communication.fleet.tables.FleetDivisionDetailData;
+import communication.language.Text;
+import communication.security.SecurityConstants;
+import communication.util.Filter;
+
+/**
+ * @author jrodriguez
+ */
+public class Util {
+
+    public static final double KMS_TO_MILES = 1.609344;
+    private static final String PATH =  SecurityConstants.IMAGES_WAR_DIRECTORY; // "/tmp/datacenter/images/";
+    public static final String [] MENU_LEVELS={"top","sub","sub2","sub3","sub4","sub5","sub6"};
+    /**
+     * 
+     */
+    public Util() {
+        super();
+    }
+    
+    /**
+     * Valida que el string sea diferente de null y de vacio.
+     * @param label
+     * @return
+     */
+    public static boolean empty(String label) {
+        return label == null || label.trim().length() == 0;
+    }
+
+    public static String checkPermission(SystemAccess systemAccess,String label) {
+    	if(systemAccess==null){
+			return "/home.jsp";
+		}
+		if(!systemAccess.getUserSessionData().checkPermission(label)){
+			return "/error.jsp";
+		}
+    	return null;
+    }
+    
+    public static String corporationLogo(UserSessionData userSessionData){
+    	if(userSessionData.getCorporationId()==CorporationData.FORESTALORIENTAL){  
+    		return "imgs/logo9.jpg";
+		} else if(userSessionData.getCorporationId()==CorporationData.MONTES_DE_PLATA){
+		 	return "imgs/logo50.jpg";
+		} else if(userSessionData.getCorporationId()==CorporationData.WEYERHAEUSER){ 
+			return "imgs/logo19.jpg";
+		} else if(userSessionData.getCorporationId()==CorporationData.COFUSA){ 
+			return "imgs/cofusa.png";
+		} else if(userSessionData.getCorporationId()==CorporationData.DTCP){ 
+			return "imgs/logo_fia_dtcp.png";
+		}else{ 
+			return "images/main_logo_large";
+		}
+    }
+    
+    
+    /**
+     * Return dd-mm-yyyy
+     * @param date
+     * @return
+     */
+    public static String formatDate(Date date) {
+        if(date == null) {
+            return "";
+        }
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        return calendar.get(Calendar.DAY_OF_MONTH)+"-"+(calendar.get(Calendar.MONTH)+1)+"-"+calendar.get(Calendar.YEAR);
+    }
+    
+    /**
+     * Return dd-mm-yyyy
+     * @param date
+     * @return
+     */
+    public static String formatDateEN(Date date) {
+        if(date == null) {
+            return "";
+        }
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        return (calendar.get(Calendar.MONTH)+1)+"/"+calendar.get(Calendar.DAY_OF_MONTH)+"/"+calendar.get(Calendar.YEAR);
+    }
+  
+    
+    /**
+     * Return yyyy-mm-dd
+     * @param date
+     * @return
+     */
+    public static String formatDateYYYYMMDD(Date date) {
+        if(date == null) {
+            return "";
+        }
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+            
+       	String month = (calendar.get(Calendar.MONTH)+1 < 10) ? 
+        			"0"+ String.valueOf(calendar.get(Calendar.MONTH)+1):
+        				String.valueOf(calendar.get(Calendar.MONTH)+1);
+        			
+        String day = (calendar.get(Calendar.DAY_OF_MONTH)+1 < 10) ? 
+    			"0"+ String.valueOf(calendar.get(Calendar.DAY_OF_MONTH)+1):
+    				String.valueOf(calendar.get(Calendar.DAY_OF_MONTH)+1);
+    			
+        return calendar.get(Calendar.YEAR)+"-"+month+"-"+day;
+    }
+
+
+    public static String formatHour(Time time) {
+        if(time == null) {
+            return "";
+        }
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(time);
+        String minute = (calendar.get(Calendar.MINUTE) < 10) ? "0"+String.valueOf(calendar.get(Calendar.MINUTE)) : String.valueOf(calendar.get(Calendar.MINUTE)); 
+        return String.valueOf(calendar.get(Calendar.HOUR_OF_DAY))+":"+minute;
+    }
+    
+    public static ArrayList<ArrayList<String>> xlsInputStreamToArray(InputStream input) throws IOException{
+    	HSSFWorkbook workbook = new HSSFWorkbook(input);
+		HSSFSheet sheet = workbook.getSheetAt(0);
+		ArrayList<ArrayList<String>> book=new ArrayList<ArrayList<String>>(); 
+		Iterator<HSSFRow> rowIterator = sheet.rowIterator();
+		while(rowIterator.hasNext()){
+			HSSFRow rowXLS=rowIterator.next();
+			Iterator<HSSFCell> cellIter = rowXLS.cellIterator();
+			ArrayList<String> row=new ArrayList<String>();
+			while(cellIter.hasNext()){
+				HSSFCell cel=cellIter.next();
+				row.add(cel.toString());
+			}
+			book.add(row);
+		}
+		
+		return book;
+    }
+    
+    public static ArrayList<ArrayList<String>> completeRows(ArrayList<ArrayList<String>> book) throws IOException{
+    	int count=0;
+    	for(ArrayList<String> row:book){
+    		if(row.size()>count){
+    			count=row.size();
+    		}
+    	}
+    	for(ArrayList<String> row:book){
+    		 for(int c=row.size();c<count;c++){
+    			 row.add("");
+    		 }
+    	}
+		return book;
+    }
+
+    public static String formatHour(Date time) {
+        if(time == null) {
+            return "";
+        }
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(time);
+        String minute = (calendar.get(Calendar.MINUTE) < 10) ? "0"+String.valueOf(calendar.get(Calendar.MINUTE)) : String.valueOf(calendar.get(Calendar.MINUTE)); 
+        return String.valueOf(calendar.get(Calendar.HOUR_OF_DAY))+":"+minute;
+    }
+
+    public static String formatHour(Integer duration) {
+        if(duration == null || duration == 0) {
+            return "---";
+        }
+        int hour = duration / 60;
+        int min = duration % 60;
+        String minute = (min < 10) ? "0"+String.valueOf(min) : String.valueOf(min); 
+        return String.valueOf(hour)+":"+minute;
+    }
+
+    /**
+     * 
+     * @param date
+     * @param month
+     * @param year
+     * @return
+     */
+    public static Date getDate(String date, String month, String year) {
+        try {
+            Calendar calendar = Calendar.getInstance();
+            calendar.set(Calendar.DAY_OF_MONTH,Integer.parseInt(date));
+            calendar.set(Calendar.MONTH,Integer.parseInt(month)-1);
+            calendar.set(Calendar.YEAR,Integer.parseInt(year));
+            
+            calendar.set(Calendar.HOUR,0);
+            calendar.set(Calendar.MINUTE,0);
+            calendar.set(Calendar.SECOND,0);
+            calendar.set(Calendar.MILLISECOND,0);
+            
+            return calendar.getTime();
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+    
+    public static Date getDate(String date, String month, String year, Integer hour, Integer minute) {
+        try {
+            Calendar calendar = Calendar.getInstance();
+            calendar.set(Calendar.DATE,Integer.parseInt(date));
+            calendar.set(Calendar.MONTH,Integer.parseInt(month)-1);
+            calendar.set(Calendar.YEAR,Integer.parseInt(year));
+            
+            calendar.set(Calendar.HOUR_OF_DAY,hour);
+            calendar.set(Calendar.MINUTE,minute);
+            calendar.set(Calendar.SECOND,0);
+            calendar.set(Calendar.MILLISECOND,0);
+            
+            return calendar.getTime();
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+    
+    public static Calendar getCalendar(Date slqdate) {
+        try {
+        	Calendar date = Calendar.getInstance();
+            date.setTime(slqdate);
+            
+            return date;
+        } catch (Exception e) {
+            return null;
+        }
+    }
+
+    /**
+     * A partir de un string de hora y otro de minuto devuelve un objeto Time
+     * con dichos valores seteados.
+     * 
+     * @param hour
+     * @param minute
+     * @return
+     */
+    public static Time getTime(String hour, String minute) {
+        Calendar calendar = Calendar.getInstance();
+        
+        if(isNumber(hour)) {
+            calendar.set(Calendar.HOUR_OF_DAY,Integer.parseInt(hour));
+        }
+        if(isNumber(minute)) {
+            calendar.set(Calendar.MINUTE,Integer.parseInt(minute));
+        }
+        calendar.set(Calendar.SECOND, 0);
+        
+        return new Time(calendar.getTimeInMillis());
+    }
+    
+    public static GeoLabelData getGeoLabelData(DriverDivOrgForm createData) {
+        Collection items1 = new LinkedList();
+        if(Util.empty(createData.getCountry2())) {
+            items1.add(new GeoItemData(Integer.valueOf(createData.getCountry1()),"",true,null));
+        }else{
+            if(Util.empty(createData.getCountry3())) {
+                Collection items2 = new LinkedList();
+                items2.add(new GeoItemData(Integer.valueOf(createData.getCountry2()),"",true,null));
+                GeoLabelData level1 = new GeoLabelData(null,null,null,items2);
+                items1.add(new GeoItemData(Integer.valueOf(createData.getCountry1()),"",true,level1));
+            }else {
+                Collection items3 = new LinkedList();
+                items3.add(new GeoItemData(Integer.valueOf(createData.getCountry3()),"",true,null));
+                GeoLabelData level2 = new GeoLabelData(null,null,null,items3);
+                
+                Collection items2 = new LinkedList();
+                items2.add(new GeoItemData(Integer.valueOf(createData.getCountry2()),"",true,level2));
+                GeoLabelData level1 = new GeoLabelData(null,null,null,items2);
+                
+                items1.add(new GeoItemData(Integer.valueOf(createData.getCountry1()),"",true,level1));
+            }
+        }
+        return new GeoLabelData(null,null,null,items1);        
+    }
+
+    public static Collection getDivOrgs(DriverDivOrgForm createData, UserSessionData userSession) {
+        DivOrgAttribute[] divOrgs = userSession.getFilter().getDivOrgsAttrs();
+        Collection list = new LinkedList();
+        if(divOrgs[0] != null) {
+            DivOrgAttribute divOrgAttribute = divOrgs[0];
+            LabelItemData labelData = getDivOrgData(createData.getDivOrg11(),createData.getDivOrg12(),createData.getDivOrg13());
+            if(labelData != null) {
+                list.add(new DivOrgData(divOrgAttribute.getId(),divOrgAttribute.getName(),labelData));
+            }
+        }
+        if(divOrgs[1] != null) {
+            DivOrgAttribute divOrgAttribute = divOrgs[1];
+            LabelItemData labelData = getDivOrgData(createData.getDivOrg21(),createData.getDivOrg22(),createData.getDivOrg23());
+            if(labelData != null) {
+                list.add(new DivOrgData(divOrgAttribute.getId(),divOrgAttribute.getName(),labelData));
+            }
+        }
+        if(divOrgs[2] != null) {
+            DivOrgAttribute divOrgAttribute = divOrgs[2];
+            LabelItemData labelData = getDivOrgData(createData.getDivOrg31(),createData.getDivOrg32(),createData.getDivOrg33());
+            if(labelData != null) {
+                list.add(new DivOrgData(divOrgAttribute.getId(),divOrgAttribute.getName(),labelData));
+            }
+        }
+        return list;
+    }
+
+    public static LabelItemData getDivOrgData(String item1,String item2,String item3) {
+        Collection items1 = new LinkedList();
+        if(Util.empty(item2)) {
+            items1.add(new ItemData(Integer.valueOf(item1),"",true,null));
+        }else{
+            if(Util.empty(item3)) {
+                Collection items2 = new LinkedList();
+                items2.add(new ItemData(Integer.valueOf(item2),"",true,null));
+                LabelItemData level1 = new LabelItemData(null,null,items2,null);
+                items1.add(new ItemData(Integer.valueOf(item1),"",true,level1));
+            }else {
+                Collection items3 = new LinkedList();
+                items3.add(new ItemData(Integer.valueOf(item3),"",true,null));
+                LabelItemData level2 = new LabelItemData(null,null,items3,null);
+                
+                Collection items2 = new LinkedList();
+                items2.add(new ItemData(Integer.valueOf(item2),"",true,level2));
+                LabelItemData level1 = new LabelItemData(null,null,items2,null);
+                
+                items1.add(new ItemData(Integer.valueOf(item1),"",true,level1));
+                
+            }
+        }
+        return new LabelItemData(null,null,items1,null);     
+    }
+
+    public static boolean isNumber(String string) {
+        try {
+            Integer.parseInt(string.trim());
+        }catch(Exception e) {
+            return false;
+        }
+        return true;
+    }
+    
+    public static boolean isFloat(String string){
+    	try{
+    		Float.parseFloat(string);
+    	}catch(Exception e){
+    		return false;
+    	}
+    	return true;
+    }
+
+    public static Collection<String> stringToCollection(String stringList){
+        String[] stringArray=stringList.split("<");
+        Collection<String> col=new LinkedList<String>();
+        
+        for(int i=0; i < stringArray.length; i++){
+            col.add(stringArray[i]);
+        }
+        
+        return col;
+    }
+    
+    public static Collection<String> stringToCollection(String stringList,String splitChar){
+        String[] stringArray=stringList.split(splitChar);
+        Collection<String> col=new LinkedList<String>();
+        
+        for(int i=0; i < stringArray.length; i++){
+            col.add(stringArray[i]);
+        }
+        
+        return col;
+    }
+
+    public static Hashtable stringToHash(String stringList){
+        String[] stringArray=stringList.split("<");
+        Hashtable col=new Hashtable();
+        
+        for(int i=0; i < stringArray.length; i++){
+            col.put(stringArray[i],stringArray[i]);
+        }
+        
+        return col;
+    }
+    public static boolean checkEmail(String email ) {
+    	email.trim();
+       	StringTokenizer mail1 = new StringTokenizer(email);	
+       	mail1.nextElement();
+       	if(mail1.hasMoreElements()==true){
+   		 return false;
+       	}
+       	Pattern p = Pattern.compile("^[_A-Za-z0-9-\\+]+(\\.[_A-Za-z0-9-]+)*@[A-Za-z0-9.-]+(\\.[A-Za-z0-9.-]+)*(\\.[A-Za-z]{2,})$");
+     	Matcher m = p.matcher(email);
+     	if (!m.find()){
+     		return false;
+     	}
+     	else{
+     		return true;
+     	}
+    }
+    public static boolean checkDate(int day,int month,int year) {
+        if(day <= 0 || month <= 0 || year <= 0) {
+            return false;
+        }
+        String validateYear=""+year;
+        if(validateYear.length()!=4){
+        	return false;
+        }
+          switch(month) {
+            case 2:
+                int max = (year % 4 == 0) ? 29 : 28; 
+                if(day > max) {
+                    return false;
+                }
+                break;
+            case 1: case 3: case 5: case 7: case 8: case 10: case 12:
+                if(day > 31) {
+                    return false;
+                }    
+                break;
+            case 4: case 6: case 9: case 11:
+                if(day > 30) {
+                    return false;
+                }    
+                break;
+            default: return false;    
+        }
+        return true;
+    }    
+    
+
+    /**
+     * Valida que la hora y los minutos sean un horario valido
+     * @param hour
+     * @param minute
+     * @return
+     */
+    public static boolean checkHour(int hour, int minute) {
+        if(hour > 23 || hour < 0) {
+            return false;
+        }
+        if(minute > 59 || minute < 0) {
+            return false;
+        }
+        return true;
+    }
+    
+    public static boolean isChecked(String label) {
+        return !Util.empty(label) && label.toLowerCase().equals("on");
+    }
+
+    public static String formatDouble(Double value,int decimals) {
+        String result = String.valueOf(value);
+        int point = result.indexOf('.');
+        if(point > 0) {
+            if(point+1+decimals < result.length()) {                
+                int lastValue = Integer.parseInt(String.valueOf(result.charAt(point+decimals)));
+                if(Integer.parseInt(String.valueOf(result.charAt(point+1+decimals))) >= 5) {
+                    lastValue++;
+                }
+                result = result.substring(0,point+decimals)+String.valueOf(lastValue);
+            }
+        }        
+        return result;
+    }
+    
+    /**
+     * @param chart : JFreeChart 
+     * @param chartName : Name of the JFreeChart
+     * @param reportName : Name of the report which contains the Chart
+     * @return String : Name of the image generated. 
+     */
+    public static String createJPEGFromChart(SystemAccess sys,JFreeChart chart, String chartName, String reportName)
+    {
+    	
+    	// Genero imagenes para mostrar en el html:    	
+    	String loginActual = null;
+    	File imagen = null;
+    	Date now = new Date();
+    	long nowLong;
+    	try{
+    		// Segundos de la fecha de generacion de la grafica
+            nowLong = now.getTime();
+            // Login del usuario que solicito el reporte
+        	loginActual = sys.getUserSessionData().getFilter().getLoginName().toString();
+        	imagen = new File(PATH + loginActual + "-" +
+        			reportName + "-" + chartName + "-" + String.valueOf(nowLong)+".jpg");        	
+        	ChartUtilities.saveChartAsJPEG(imagen,chart,600,450);        	
+        }catch (IOException e){
+        	String message = e.getMessage();
+        	System.out.print(message);
+        }
+        return imagen.getName();
+    }
+    
+    public static String getGroups(GroupData group) {
+        String groups = String.valueOf(group.getId());
+        if(group.getType().equals(GroupMainAttributes.COMPOSED) && group.getGroups() != null) {
+            Iterator it = group.getGroups().iterator();
+            while(it.hasNext()) {
+                groups += ","+getGroups((GroupData)it.next());
+            }
+        }
+        return groups;
+    }
+    
+  public static boolean dateRange(String yearFrom,String yearTo,String monthFrom,String monthTo,int rangeYear){
+	  try{
+		  int yearRange = Integer.parseInt(yearTo.trim())-Integer.parseInt(yearFrom.trim());
+		  int monthRange = Integer.parseInt(monthTo.trim())-Integer.parseInt(monthFrom.trim());
+		  if (rangeYear<0||yearRange>rangeYear||yearRange<0||((yearRange==rangeYear)&&(monthRange>0)))
+			  return false;
+	  }catch(Exception e){
+		  return false;
+	  } 
+	  return true;
+  }  
+  
+  /**
+   * 
+   * @param detail
+   * @param request
+   * @param object
+   * @param id
+   * @return
+   */
+  public static String getFleetValue(FleetDivisionDetailData detail,
+		  HttpServletRequest request,int object,Integer id) {
+      switch(object) {
+          case 1:
+              if(detail != null) {
+                  return String.valueOf(detail.getVehicles());
+              }
+              String value = request.getParameter("vehicles"+String.valueOf(id));  
+              if(!empty(value)) {
+                  return value;
+              }
+              break;
+          case 2:
+              if(detail != null) {
+                  return String.valueOf(detail.getMiles());
+              }
+              value = request.getParameter("miles"+String.valueOf(id));  
+              if(!empty(value)) {
+                  return value;
+              }
+              break;
+          case 3:
+              if(detail != null) {
+                  return String.valueOf(detail.getAccidents());
+              }
+              value = request.getParameter("accidents"+String.valueOf(id));  
+              if(!empty(value)) {
+                  return value;
+              }
+              break;
+          case 4:
+              if(detail != null) {
+                  return String.valueOf(detail.getIncidents());
+              }
+              value = request.getParameter("incidents"+String.valueOf(id));  
+              if(!empty(value)) {
+                  return value;
+              }
+              break;
+              
+          case 5:
+              if(detail != null) {
+            	  if (detail.getNearmiss() != null){
+            		  return String.valueOf(detail.getNearmiss());
+            	  }else{
+            		  return "0";
+            	  }
+              }
+              value = request.getParameter("nearmiss"+String.valueOf(id));  
+              if(!empty(value)) {
+                  return value;
+              }
+              break;
+          case 6:
+              if(detail != null) {
+                  value = String.valueOf(detail.getMiles());
+              }else {
+            	  value = request.getParameter("miles"+String.valueOf(id));
+              }
+              if(!empty(value)) {
+            	  double miles = Double.parseDouble(value);
+            	  double kms = miles * KMS_TO_MILES;
+            	  
+                  return String.valueOf(Math.round(kms));
+              }
+              break;
+      }
+      return "";
+  }
+
+  /**
+   * 
+   * @param sys
+   * @param form
+   * @param corporation
+   * @return
+   */
+  public static Integer[][] getDivOrgs(SystemAccess sys, DivOrgForm form, int corporation) {
+      Collection result = new LinkedList();
+      for(int j = 0; j < sys.getUserSessionData().getDivOrgCount(); j++) {
+          Collection divOrgs = new LinkedList();
+          switch(sys.getUserSessionData().getFilter().getDivOrgLevel(j)) {
+              case 1:
+                  String[] list = form.getDivOrg(j+1,1);
+                  if(list == null) {
+                      return new Integer[0][0];
+                  }
+                  switch(list.length) {
+                      case 0:
+                          return new Integer[0][0];
+                      case 1:
+                          if(list[0].equals("0")) {
+                              Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(1,j,null,null,corporation);
+                              while(it2.hasNext()) {
+                                  ItemData itemData = (ItemData)it2.next();
+                                  if(!divOrgs.contains(itemData.getId())) {
+                                      divOrgs.add(itemData.getId());
+                                  }
+                              }
+                          }else {
+                              if(!divOrgs.contains(new Integer(list[0]))) {
+                                  divOrgs.add(new Integer(list[0]));
+                              }
+                          }
+                          break;
+                      default:
+                          for(int i = 0; i < list.length; i++) {
+                              if(!divOrgs.contains(new Integer(list[i]))) {
+                                  divOrgs.add(new Integer(list[i]));
+                              }
+                          }
+                          break;
+                  }
+                  break;
+              case 2:
+                  String[] list2 = form.getDivOrg(j+1,2);
+                  if((list2 == null) || (list2.length == 0) || (list2.length == 1 && list2[0].equals("0"))) {        
+                      list = form.getDivOrg(j+1,1);
+                      if(list == null) {
+                          return new Integer[0][0];
+                      }
+                      switch(list.length) {
+                          case 0:
+                              return new Integer[0][0];
+                          case 1:
+                              if(list[0].equals("0") || list[0].equals("")) {
+                                  Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(2,j,null,null,corporation);
+                                  while(it2.hasNext()) {
+                                      ItemData itemData = (ItemData)it2.next();
+                                      if(!divOrgs.contains(itemData.getId())) {
+                                          divOrgs.add(itemData.getId());
+                                      }
+                                  }
+                              }else {
+                                  Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(2,j,list[0],null,corporation);
+                                  while(it2.hasNext()) {
+                                      ItemData itemData = (ItemData)it2.next();
+                                      if(!divOrgs.contains(itemData.getId())) {
+                                          divOrgs.add(itemData.getId());
+                                      }
+                                  }
+                              }
+                              break;
+                          default:
+                              for(int i = 0; i < list.length; i++) {
+                                  Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(2,j,list[i],null,corporation);
+                                  while(it2.hasNext()) {
+                                      ItemData itemData = (ItemData)it2.next();
+                                      if(!divOrgs.contains(itemData.getId())) {
+                                          divOrgs.add(itemData.getId());
+                                      }
+                                  }
+                              }
+                              break;
+                      }
+                  }else {
+                      for(int i = 0; i < list2.length; i++) {
+                          if(!divOrgs.contains(new Integer(list2[i]))) {
+                              divOrgs.add(new Integer(list2[i]));
+                          }
+                      }
+                  }
+                  break;
+              case 3:
+                  String[] list3 = form.getDivOrg(j+1,3);
+                  if((list3 == null) || (list3.length == 0) || (list3.length == 1 && list3[0].equals("0"))) {
+                      list2 = form.getDivOrg(j+1,2);
+                      if((list2 == null) || (list2.length == 0) || (list2.length == 1 && list2[0].equals("0"))) {
+                          list = form.getDivOrg(j+1,1);
+                          if(list == null) {
+                              return new Integer[0][0];
+                          }
+                          switch(list.length) {
+                              case 0:
+                                  return new Integer[0][0];
+                              case 1:
+                                  if(list[0].equals("0")) {
+                                      Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(3,j,null,null,corporation);
+                                      while(it2.hasNext()) {
+                                          ItemData itemData = (ItemData)it2.next();
+                                          if(!divOrgs.contains(itemData.getId())) {
+                                              divOrgs.add(itemData.getId());
+                                          }
+                                      }
+                                  }else {
+                                      Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(3,j,list[0],null,corporation);
+                                      while(it2.hasNext()) {
+                                          ItemData itemData = (ItemData)it2.next();
+                                          if(!divOrgs.contains(itemData.getId())) {
+                                              divOrgs.add(itemData.getId());
+                                          }
+                                      }
+                                  }
+                                  break;
+                              default:
+                                  for(int i = 0; i < list.length; i++) {
+                                      Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(3,j,list[i],null,corporation);
+                                      while(it2.hasNext()) {
+                                          ItemData itemData = (ItemData)it2.next();
+                                          if(!divOrgs.contains(itemData.getId())) {
+                                              divOrgs.add(itemData.getId());
+                                          }
+                                      }
+                                  }
+                                  break;
+                          }
+                      }else {
+                          for(int i = 0; i < list2.length; i++) {
+                              Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(3,j,null,list2[i],corporation);
+                              while(it2.hasNext()) {
+                                  ItemData itemData = (ItemData)it2.next();
+                                  if(!divOrgs.contains(itemData.getId())) {
+                                      divOrgs.add(itemData.getId());
+                                  }
+                              }
+                          }
+                      }
+                  }else {
+                      for(int i = 0; i < list3.length; i++) {
+                          if(!divOrgs.contains(new Integer(list3[i]))) {
+                              divOrgs.add(new Integer(list3[i]));
+                          }
+                      }
+                  }
+                  break;
+          }
+          result.add((Integer[])divOrgs.toArray(new Integer[0]));
+      }
+      return (Integer[][])result.toArray(new Integer[0][0]);
+  }
+  
+    public static Integer[] getDivGeos(SystemAccess sys, DivOrgForm form, int data) throws Exception {
+        Collection countries = new LinkedList();
+        switch(sys.getUserSessionData().getFilter().getGeoLevelCount()) {
+            case 1:
+                String[] list = form.getCountry1();
+                if(list == null) {
+                    return new Integer[0];
+                }
+                switch(list.length) {
+                    case 0:
+                        return new Integer[0];
+                    case 1:
+                        if(list[0].equals("0")) {
+                            Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(1,null,null,data);
+                            while(it2.hasNext()) {
+                                GeoItemData itemData = (GeoItemData)it2.next();
+                                if(!countries.contains(itemData.getId())) {
+                                    countries.add(itemData.getId());
+                                }
+                            }
+                        }else {
+                            if(!countries.contains(new Integer(list[0]))) {
+                                countries.add(new Integer(list[0]));
+                            }
+                        }
+                        break;
+                    default:
+                        for(int i = 0; i < list.length; i++) {
+                            if(!countries.contains(new Integer(list[i]))) {
+                                countries.add(new Integer(list[i]));
+                            }
+                        }
+                        break;
+                }
+                break;
+            case 2:
+                String[] list2 = form.getCountry2();
+                if((list2 == null) || (list2.length == 0) || (list2.length == 1 && (list2[0].equals("0") || list2[0].equals("")))) {        
+                    list = form.getCountry1();
+                    if(list == null) {
+                        return new Integer[0];
+                    }
+                    switch(list.length) {
+                        case 0:
+                            return new Integer[0];
+                        case 1:
+                            if(list[0].equals("0")) {
+                                Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(2,null,null,data);
+                                while(it2.hasNext()) {
+                                    GeoItemData itemData = (GeoItemData)it2.next();
+                                    if(!countries.contains(itemData.getId())) {
+                                        countries.add(itemData.getId());
+                                    }
+                                }
+                            }else {
+                                Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(2,list[0],null,data);
+                                while(it2.hasNext()) {
+                                    GeoItemData itemData = (GeoItemData)it2.next();
+                                    if(!countries.contains(itemData.getId())) {
+                                        countries.add(itemData.getId());
+                                    }
+                                }
+                            }
+                            break;
+                        default:
+                            for(int i = 0; i < list.length; i++) {
+                                Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(2,list[i],null,data);
+                                while(it2.hasNext()) {
+                                    GeoItemData itemData = (GeoItemData)it2.next();
+                                    if(!countries.contains(itemData.getId())) {
+                                        countries.add(itemData.getId());
+                                    }
+                                }
+                            }
+                            break;
+                    }
+                }else {
+                	System.out.println("List "+list2.length);
+                    for(int i = 0; i < list2.length; i++) {
+                        if(!countries.contains(new Integer(list2[i]))) {
+                            countries.add(new Integer(list2[i]));
+                        }
+                    }
+                }
+                break;
+            case 3:
+                String[] list3 = form.getCountry3();
+                if((list3 == null) || (list3.length == 0) || (list3.length == 1 && list3[0].equals("0"))) {
+                    list2 = form.getCountry2();
+                    if((list2 == null) || (list2.length == 0) || (list2.length == 1 && list2[0].equals("0"))) {
+                        list = form.getCountry1();
+                        if(list == null) {
+                            return new Integer[0];
+                        }
+                        switch(list.length) {
+                            case 0:
+                                return new Integer[0];
+                            case 1:
+                                if(list[0].equals("0")) {
+                                    Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(3,null,null,data);
+                                    while(it2.hasNext()) {
+                                        GeoItemData itemData = (GeoItemData)it2.next();
+                                        if(!countries.contains(itemData.getId())) {
+                                            countries.add(itemData.getId());
+                                        }
+                                    }
+                                }else {
+                                    Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(3,list[0],null,data);
+                                    while(it2.hasNext()) {
+                                        GeoItemData itemData = (GeoItemData)it2.next();
+                                        if(!countries.contains(itemData.getId())) {
+                                            countries.add(itemData.getId());
+                                        }
+                                    }
+                                }
+                                break;
+                            default:
+                                for(int i = 0; i < list.length; i++) {
+                                    Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(3,list[i],null,data);
+                                    while(it2.hasNext()) {
+                                        GeoItemData itemData = (GeoItemData)it2.next();
+                                        if(!countries.contains(itemData.getId())) {
+                                            countries.add(itemData.getId());
+                                        }
+                                    }
+                                }
+                                break;
+                        }
+                    }else {
+                        for(int i = 0; i < list2.length; i++) {
+                            Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(3,null,list2[i],data);
+                            while(it2.hasNext()) {
+                                GeoItemData itemData = (GeoItemData)it2.next();
+                                if(!countries.contains(itemData.getId())) {
+                                    countries.add(itemData.getId());
+                                }
+                            }
+                        }
+                    }
+                }else {
+                    for(int i = 0; i < list3.length; i++) {
+                        if(!countries.contains(new Integer(list3[i]))) {
+                            countries.add(new Integer(list3[i]));
+                        }
+                    }
+                }
+                break;
+        }
+        return (Integer[])countries.toArray(new Integer[0]);
+    }
+
+    public static Integer[][] getDivOrgs(SystemAccess sys, DriverDivOrgForm driverSearchForm) throws RemoteException {
+        return getDivOrgs(sys,driverSearchForm,Filter.USER);
+    }
+    
+    public static Integer[][] getDivOrgs(SystemAccess sys, DriverDivOrgForm driverSearchForm,int data) throws RemoteException {
+        Collection result = new LinkedList();
+        for(int j = 0; j < 3; j++) {
+            Collection divOrgs = new LinkedList();
+            switch(sys.getUserSessionData().getFilter().getDivOrgLevel(j)) {
+                case 1:
+                    if(!Util.empty(driverSearchForm.getDivOrg(j+1,1))) {
+                        divOrgs.add(new Integer(driverSearchForm.getDivOrg(j+1,1)));
+                    }
+                    break;
+                case 2:
+                    if(!Util.empty(driverSearchForm.getDivOrg(j+1,1))) {
+                        if(!Util.empty(driverSearchForm.getDivOrg(j+1,2))) {
+                            divOrgs.add(new Integer(driverSearchForm.getDivOrg(j+1,2)));
+                        }else {
+                            Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(2,j,driverSearchForm.getDivOrg(j+1,1),null,data);
+                            while(it2.hasNext()) {
+                                ItemData itemData = (ItemData)it2.next();
+                                divOrgs.add(itemData.getId());
+                            }
+                        }
+                    }
+                    break;
+                case 3:
+                    if(!Util.empty(driverSearchForm.getDivOrg(j+1,3))) {
+                        divOrgs.add(new Integer(driverSearchForm.getDivOrg(j+1,3)));
+                    }else {
+                        String level2 = null;
+                        if(!Util.empty(driverSearchForm.getDivOrg(j+1,1))) {
+                            if(!Util.empty(driverSearchForm.getDivOrg(j+1,2))) {
+                                level2 = driverSearchForm.getDivOrg(j+1,2);
+                            }
+                            Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(3,j,driverSearchForm.getDivOrg(j+1,1),level2,data);
+                            while(it2.hasNext()) {
+                                ItemData itemData = (ItemData)it2.next();
+                                divOrgs.add(itemData.getId());
+                            }
+                        }
+                    }
+                    break;
+            }
+            result.add((Integer[])divOrgs.toArray(new Integer[0]));
+        }
+        return (Integer[][])result.toArray(new Integer[0][0]);
+    }
+
+    public static Integer[] getDivGeos(SystemAccess sys, DriverDivOrgForm driverSearchForm) throws RemoteException {
+        return getDivGeos(sys,driverSearchForm,Filter.USER);
+    }
+    
+    public static Integer[] getDivGeos(SystemAccess sys, DriverDivOrgForm driverSearchForm,int data) throws RemoteException {
+        Integer[] result = new Integer[0]; 
+        Collection countries = new LinkedList();
+        switch(sys.getUserSessionData().getFilter().getGeoLevelCount()) {
+            case 1:
+                if(!Util.empty(driverSearchForm.getCountry1())) {
+                    countries.add(new Integer(driverSearchForm.getCountry1()));
+                }
+                break;
+            case 2:
+                if(!Util.empty(driverSearchForm.getCountry1())) {
+                    if(!Util.empty(driverSearchForm.getCountry2())) {
+                        countries.add(new Integer(driverSearchForm.getCountry2()));
+                    }else {
+                        Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(2,driverSearchForm.getCountry1(),null,data);
+                        while(it2.hasNext()) {
+                            GeoItemData itemData = (GeoItemData)it2.next();
+                            countries.add(itemData.getId());
+                        }
+                    }
+                }
+                break;
+            case 3:
+                if(!Util.empty(driverSearchForm.getCountry3())) {
+                    countries.add(new Integer(driverSearchForm.getCountry3()));
+                }else {
+                    String level2 = null;
+                    if(!Util.empty(driverSearchForm.getCountry1())) {
+                        if(!Util.empty(driverSearchForm.getCountry2())) {
+                            level2 = driverSearchForm.getCountry2();
+                        }
+                        Iterator it2 = sys.getUserSessionData().getFilter().getLastLevelItems(3,driverSearchForm.getCountry1(),level2);
+                        while(it2.hasNext()) {
+                            GeoItemData itemData = (GeoItemData)it2.next();
+                            countries.add(itemData.getId());
+                        }
+                    }
+                }
+                break;
+        }
+        result = (Integer[])countries.toArray(new Integer[0]);
+        return result;
+    }
+
+    public static String[][] integrityCheck(Collection fleets,Collection events) {
+        Collection errors = new LinkedList();
+        Iterator fleetIt = fleets.iterator();
+        while(fleetIt.hasNext()) {
+            Object[] fleet = (Object[])fleetIt.next();
+            int original = ((Integer)fleet[6]).intValue();
+            Iterator eventIt = events.iterator();
+            while(eventIt.hasNext()) {
+                Object[] event = (Object[])eventIt.next();
+                boolean equals = true;
+                for(int i = 3; i < 6 && equals; i++) {
+                    if(event[i] != null && fleet[i] != null){
+                        if(!event[i].equals(fleet[i])) {
+                            equals = false;
+                        }
+                    }
+                }
+                if(equals) {
+                    fleet[6] = new Integer(((Integer)fleet[6]).intValue() - ((Integer)event[6]).intValue());
+                    eventIt.remove();
+                }
+            }
+            if(((Integer)fleet[6]).intValue() != 0) {
+                String[] s = {null,null,null,String.valueOf(original),String.valueOf(fleet[6])};
+                for(int i = 0; i < 3; i++) {
+                    if(fleet[i] != null) {
+                        s[i] = String.valueOf(fleet[i]);
+                    }
+                }
+                errors.add(s);
+            }
+        }
+        Iterator eventIt = events.iterator();
+        while(eventIt.hasNext()) {
+            Object[] event = (Object[])eventIt.next();
+            String[] s = {null,null,null,"0",String.valueOf(event[6])};
+            for(int i = 0; i < 3; i++) {
+                if(event[i] != null) {
+                    s[i] = String.valueOf(event[i]);
+                }
+            }
+            errors.add(s);
+        }
+        return (String[][])errors.toArray(new String[0][0]);
+    }
+
+    /**
+     * Convierte un string en formato dd/mm/aaaa en un Calendar.
+     * @param word
+     * @return
+     */
+    public static Calendar getDate(String word) {
+    	try {
+	    	word = word.replace("-", "/");
+	    	if (word != null && word.trim() != ""){
+		        StringTokenizer tokDate = new StringTokenizer(word,"/");
+		        Calendar c = Calendar.getInstance();
+		        c.set(Calendar.DAY_OF_MONTH,Integer.parseInt(tokDate.nextToken()));
+		        c.set(Calendar.MONTH,Integer.parseInt(tokDate.nextToken())-1);
+		        c.set(Calendar.YEAR,Integer.parseInt(tokDate.nextToken()));
+		        
+		        c.set(Calendar.HOUR, 0);
+		        c.set(Calendar.MINUTE, 0);
+		        c.set(Calendar.SECOND,0);
+		        c.set(Calendar.MILLISECOND,0);
+		        
+		        return c;
+	    	}
+	    }catch (Exception e) {
+	    }
+    	return null;
+    }
+
+    public static GeoLabelData getCountry(Collection groups,String region,String country,Text messages) {
+        Iterator it = groups.iterator();
+        while(it.hasNext()) {
+            GroupLineData line = (GroupLineData) it.next();
+            GeoLabelData lid = line.getCountry();
+            if(lid != null) {
+                GeoItemData item = (GeoItemData)lid.getItemIterator().next();
+                
+                // System.out.println("Region: "+region+" Region DB: "+item.getName());
+                
+                if(item.getName().equals(region) && item.getSubItems() != null) {
+                    GeoItemData item2 = (GeoItemData)item.getSubItems().getItemIterator().next();
+                    if(messages.getText(item2.getName()).equalsIgnoreCase(country)) {
+                        return lid;
+                    }
+                }
+            }
+        }
+        return null;
+    }
+
+    public static LabelItemData getDivOrg(Collection groups,int divOrg,String divorg1,String divorg2,String divorg3) {
+        Iterator it = groups.iterator();
+        while(it.hasNext()) {
+            GroupLineData line = (GroupLineData) it.next();
+            LabelItemData lid = line.getDivOrgs()[divOrg];
+            if(lid != null) {
+                ItemData item = (ItemData)lid.getItemIterator().next();
+                
+                System.out.println("Divorg1: "+divorg1+" Divorg2 DB: "+item.getName());
+                
+                if(item.getName().equalsIgnoreCase(divorg1)) {
+                    if(divorg2 == null) {
+                        return lid;
+                    }else {
+                        item = (ItemData)item.getSubItems().getItemIterator().next();
+                        
+                        System.out.println("Divorg2: "+divorg2+" Divorg2 DB: "+item.getName());
+                        
+                        if(item.getName().equalsIgnoreCase(divorg2)) {
+                            if(divorg3 == null) {
+                                return lid;
+                            }else {
+                                item = (ItemData)item.getSubItems().getItemIterator().next();
+                                
+                                System.out.println("Divorg3: "+divorg3+" Divorg3 DB: "+item.getName());
+
+                                if(item.getName().equalsIgnoreCase(divorg3)) {
+                                    return lid;
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        return null;
+    }
+    
+    
+    public static String emailTranslation(String word) {
+        StringBuffer result = new StringBuffer();
+        for(int i = 0; i < word.length(); i++) {
+            char c = word.charAt(i);
+            switch(c) {
+                case 'á':
+                    result.append("&aacute;");
+                    break;
+                case 'é':
+                    result.append("&eacute;");
+                    break;
+                case 'í':
+                    result.append("&iacute;");
+                    break;
+                case 'ó':
+                    result.append("&oacute;");
+                    break;
+                case 'ú':
+                    result.append("&uacute;");
+                    break;
+                case 'ñ':
+                    result.append("&ntilde;");
+                    break;
+                case 'ç':
+                    result.append("&ccedil;");
+                    break;
+                case 'õ':
+                    result.append("&otilde;");
+                    break;
+                case 'ã':
+                    result.append("&atilde;");
+                    break;
+                default:
+                    result.append(c);
+            }
+        }
+        return result.toString();
+    }
+    
+
+    /**
+     * Convierte un string a unicode. Pasando letras con tildes
+     * a codigos unicode.
+     * @param word
+     * @return
+     */
+    public static String toUnicodeString(String word){
+         StringBuffer result = new StringBuffer();
+         for(int i = 0; i < word.length(); i++) {
+             char c = word.charAt(i);
+         }
+         System.out.println("texto HTML: " + result.toString());
+         return result.toString();
+    }
+    
+    public static String toHTMLString(String word) {
+        StringBuffer result = new StringBuffer();
+        for(int i = 0; i < word.length(); i++) {
+            char c = word.charAt(i);
+            switch(c) {
+	            case 'á':
+	                result.append("&aacute;");
+	                break;
+	           case 'â':
+	               result.append("&acirc;");
+	               break;
+	           case 'ã':
+	               result.append("&atilde;");
+	               break;
+	           case 'ä':
+	               result.append("&auml;");
+	               break;
+	           case 'é':
+	                result.append("&eacute;");
+	                break;
+	           case 'ê':
+	                // Todo
+	                result.append("&ecirc;");
+	                break;
+	           case 'ë':
+	               result.append("&euml;");
+	               break;
+	           case 'í':
+	                result.append("&iacute;");
+	                break;
+	           case 'î':
+	               result.append("&icirc;");
+	               break;
+	           case 'ï':
+	               result.append("&iuml;");
+	               break;
+	           case 'ó':
+	                result.append("&oacute;");
+	                break;
+	           case 'ô':
+	               result.append("&ocirc;");
+	               break;
+	           case 'ö':
+	               result.append("&ouml;");
+	               break;
+	           case 'õ':
+	                result.append("&otilde;");
+	                break;
+	           case 'ú':
+	                result.append("&uacute;");
+	                break;
+	           case 'û':
+	               result.append("&ucirc;");
+	               break;
+	           case 'ü':
+	               result.append("&uuml;");
+	               break;
+	            case 'ñ':
+	                result.append("&ntilde;");
+	                break;
+	            case 'ç':
+	                result.append("&ccedil;");
+	                break;
+                case '\n':
+                    result.append("<br>");
+                    break;
+                default:
+                    result.append(c);
+            }
+        }
+        System.out.println("texto HTML: " + result.toString());
+        return result.toString();
+    }
+    
+    public static String cleanString(String word) {
+    	if(word == null)
+    		return "";
+        return word.replaceAll("'", " ");
+    }
+    
+    public static String formatHTML(String word) {
+        StringBuffer result = new StringBuffer();
+        for(int i = 0; i < word.length(); i++) {
+            char c = word.charAt(i); 
+            switch(c) {
+                case '\r':
+                    break;
+                case '\n':
+                    result.append("<br>");
+                    break;
+                case '\t':
+                    result.append("&nbsp;&nbsp;&nbsp;&nbsp;");
+                    break;
+                case ' ':
+                    result.append("  ");
+                    break;
+                default:
+                    result.append(c);
+            }
+        }
+        return result.toString();
+    }
+    
+    public static Collection getCollisions(Object form,Text messages) {
+        Collection elements = new LinkedList();
+        if(form != null) {
+            DynaActionForm dynaForm = (DynaActionForm)form;
+            if(dynaForm.getString("colisionclasification").equals("datatype.collisionclasification.betweenmotionvehicles")){
+                elements.add(new OptionItem(messages.getText("generic.messages.select"),""));
+                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.ourdriverfailedyield"),"datatype.accidentclasification.ourdriverfailedyield"));
+                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.ourdriverhitrear"),"datatype.accidentclasification.ourdriverhitrear"));     
+                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.otherpartyfailedyield"),"datatype.accidentclasification.otherpartyfailedyield"));
+                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.otherpartyhitrear"),"datatype.accidentclasification.otherpartyhitrear"));
+                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.other"),"datatype.accidentclasification.other"));        
+            }else if (dynaForm.getString("colisionclasification").equals("datatype.collisionclasification.fixedobject")) {
+                elements.add(new OptionItem(messages.getText("generic.messages.select"),""));
+                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.ourdriverparkingbacking"),"datatype.accidentclasification.ourdriverparkingbacking"));
+                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.other"),"datatype.accidentclasification.other"));    
+                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.evasivemaneuver"),"datatype.accidentclasification.evasivemaneuver"));  
+            }else if (dynaForm.getString("colisionclasification").equals("datatype.collisionclasification.noncollision")) {
+                elements.add(new OptionItem(messages.getText("generic.messages.select"),""));
+                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.rollover"),"datatype.accidentclasification.rollover"));
+                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.offroad"),"datatype.accidentclasification.offroad"));
+                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.other"),"datatype.accidentclasification.other"));
+            }else if (dynaForm.getString("colisionclasification").equals("datatype.collisionclasification.pedestrian")) {
+                elements.add(new OptionItem(messages.getText("generic.messages.select"),""));
+                elements.add(new OptionItem(messages.getText("datatype.accidentclasification.atrop"),"datatype.accidentclasification.atrop"));
+            }else if (dynaForm.getString("colisionclasification").equals("datatype.collisionclasification.contact")) {
+                elements.add(new OptionItem(messages.getText("generic.messages.select"),""));
+                elements.add(new OptionItem(messages.getText("datatype.collisionclasification.contact"),"datatype.collisionclasification.contact"));
+            }else if (dynaForm.getString("colisionclasification").equals("datatype.collisionclasification.companyvehicles")) {
+                elements.add(new OptionItem(messages.getText("generic.messages.select"),""));
+                elements.add(new OptionItem(messages.getText("datatype.collisionclasification.companyvehicles"),"datatype.collisionclasification.companyvehicles"));
+            }else if (dynaForm.getString("colisionclasification").equals("datatype.collisionclasification.nonemployee")) {
+                elements.add(new OptionItem(messages.getText("generic.messages.select"),""));
+                elements.add(new OptionItem(messages.getText("datatype.collisionclasification.nonemployee"),"datatype.collisionclasification.nonemployee"));
+            }
+        }
+        return elements;
+    }
+
+    public static boolean before(Date before,int month,int year) {
+        Calendar date = Calendar.getInstance();
+        date.setTime(before);
+        if(date.get(Calendar.YEAR) < year) {
+            return true;
+        }
+        if(date.get(Calendar.YEAR) == year) {
+            return (date.get(Calendar.MONTH)+1 < month); 
+        }
+        return false;
+    }
+
+    public static boolean checkDate(String date, String month, String year) {
+        if (empty(date) || !isNumber(date) || empty(month) || !isNumber(month) || empty(year) || !isNumber(year)) {
+            return false;
+        }
+        return checkDate(Integer.parseInt(date.trim()),Integer.parseInt(month.trim()),Integer.parseInt(year.trim()));
+    }
+    
+    public static int getlevel(int [] items,int parentId,int last) {
+        int iter=last;
+        while(iter>=0){
+        	if (parentId==items[iter]){
+        		return iter+1-last;	
+        	}
+       		iter-=1;
+       	}
+        return iter+1-last;	  
+    }
+    
+    
+    /**
+     * Convierte un string en un string posible de usarse
+     * como url o directorio de linux.
+     * @param word
+     * @return
+     */
+    public static String stringToSlug(String word) {
+        StringBuffer result = new StringBuffer();
+        String wordSlug = word.toLowerCase();
+        for(int i = 0; i < wordSlug.length(); i++) {
+            char c = wordSlug.charAt(i); 
+            switch(c) {
+	            case 'á':
+	                result.append("a;");
+	                break;
+	           case 'â':
+	               result.append("a");
+	               break;
+	           case 'ã':
+	               result.append("a");
+	               break;
+	           case 'ä':
+	               result.append("a");
+	               break;
+	           case 'é':
+	                result.append("e");
+	                break;
+	           case 'ê':
+	                // Todo
+	                result.append("e");
+	                break;
+	           case 'ë':
+	                result.append("e");
+	               break;
+	           case 'í':
+	                result.append("i");
+	                break;
+	           case 'î':
+	                result.append("i");
+	               break;
+	           case 'ï':
+	                result.append("i");
+	               break;
+	           case 'ó':
+	                result.append("o");
+	                break;
+	           case 'ô':
+	                result.append("o");
+	               break;
+	           case 'ö':
+	                result.append("o");
+	               break;
+	           case 'õ':
+	                result.append("o");
+	                break;
+	           case 'ú':
+	                result.append("u");
+	                break;
+	           case 'û':
+	                result.append("u");
+	               break;
+	           case 'ü':
+	                result.append("u");
+	               break;
+	            case 'ñ':
+	                result.append("n");
+	                break;
+	            case 'ç':
+	                result.append("c");
+	                break;
+	            case '\n':
+	                result.append("_");
+	                break;
+                case ' ':case '/':
+                	result.append("-");
+                	break;
+                case '&':case ',':case '.':case ';': case ':':
+                	result.append("");
+                	break;
+                default:
+                    result.append(c);
+            }
+        }
+        return result.toString();
+    }
+
+    /**
+     * 
+     * @param h
+     * @param m
+     * @return
+     */
+	public static boolean checkHour(String h, String m) {
+		if(!empty(h) || !empty(m)) {
+			try {
+				int hour = Integer.parseInt(h);
+				int minute = Integer.parseInt(m);
+		        if(hour > 23 || hour < 0) {
+		            return false;
+		        }
+		        if(minute > 59 || minute < 0) {
+		            return false;
+		        }
+			}catch (Exception e) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	/**
+	 * 
+	 * @param date
+	 * @return
+	 */
+    public static String getDay(Date date) {
+        if(date == null) {
+            return "";
+        }
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        return String.valueOf(calendar.get(Calendar.DAY_OF_MONTH));
+    }
+
+    /**
+     * 
+     * @param date
+     * @return
+     */
+    public static String getMonth(Date date) {
+        if(date == null) {
+            return "";
+        }
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        return String.valueOf(calendar.get(Calendar.MONTH)+1);
+    }
+
+    /**
+     * 
+     * @param date
+     * @return
+     */
+    public static String getYear(Date date) {
+        if(date == null) {
+            return "";
+        }
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        return String.valueOf(calendar.get(Calendar.YEAR));
+    }
+    
+    public static String getHour(String value) {
+    	if(value != null) {
+	    	StringTokenizer tokenizer = new StringTokenizer(value,":");
+	    	if(tokenizer.hasMoreTokens()) {
+	    		return tokenizer.nextToken();
+	    	}
+    	}
+    	return "";
+    }
+
+    public static String getMinute(String value) {
+    	if(value != null) {
+	    	StringTokenizer tokenizer = new StringTokenizer(value,":");
+	    	if(tokenizer.countTokens() == 3) {
+	    		tokenizer.nextToken();
+	    		return tokenizer.nextToken();
+	    	}
+    	}
+    	return "";
+    }
+
+    public static String getSecond(String value) {
+    	if(value != null) {
+	    	StringTokenizer tokenizer = new StringTokenizer(value,":");
+	    	if(tokenizer.countTokens() == 3) {
+	    		tokenizer.nextToken();
+	    		tokenizer.nextToken();
+	    		return tokenizer.nextToken();
+	    	}
+    	}
+    	return "";
+    }
+
+    /**
+	 * 
+	 * @param items ItemValueData Collection
+	 * @param item ItemData
+	 * @return
+	 */
+	public static boolean contains(Collection<communication.activity.tables.ItemValueData> items,
+			communication.activity.tables.ItemData item){
+		
+		Iterator<communication.activity.tables.ItemValueData> iter = items.iterator();
+		boolean contain = false;
+		while(iter.hasNext() && !contain){
+			communication.activity.tables.ItemValueData itemData = iter.next();
+			contain = (item.getId().intValue() == itemData.getItem().getId().intValue());
+		}
+		
+		return contain;
+	}
+	
+	/**
+	 * 
+	 * @param items
+	 * @param item
+	 * @return
+	 */
+	public static Integer getValueFromItem(
+			Collection<communication.activity.tables.ItemValueData> items,
+			communication.activity.tables.ItemData item){
+		
+		if (items == null || item == null) return null;
+		
+		Iterator<communication.activity.tables.ItemValueData> iter = items.iterator();
+		boolean contain = false;
+		while(iter.hasNext() && !contain){
+			communication.activity.tables.ItemValueData itemData = iter.next();
+			contain = (item.getId().intValue() == itemData.getItem().getId().intValue());
+			if (contain){
+				return itemData.getItemValue();
+			}
+		}
+		
+		return null;
+	}
+	
+	 /**
+	 * Recibe un stringList que tiene items y valores con el formato:
+	 * Item1-ValorItem1<Item2-ValorItem2<Item3-ValorItem3 ....
+	 * y devuelve una coleccion de elementos ItemValue (Item,Value)
+	 * 
+	 * itemOrPoint : item, genero una lista item value de los items
+	 * 						point, genero una lsita item vlaue de los points
+	 */
+	public static Collection stringToItemValueCollection(String stringList, String itemOrPoint)
+	{
+		String[] stringItemValue;
+		String element;
+		ItemValueData itemValue;
+		String itemId = null;
+		String[] stringArray=stringList.split("<");
+		Collection<ItemValueData> col = new LinkedList<ItemValueData>();
+		
+		for(int i=0; i < stringArray.length; i++){
+			element  = (String) stringArray[i];
+			stringItemValue = (element).split("-");
+			
+			// Solo guardo valores de items, no de puntos
+			if (stringItemValue[0].contains("item") ){
+				if ( ! itemOrPoint.equalsIgnoreCase("item")){
+					itemId = null;
+				}else{
+					itemId = stringItemValue[0].substring(4);
+				}
+			}else if (stringItemValue[0].contains("point")  ){
+				 if (! itemOrPoint.equalsIgnoreCase("point")){
+					 itemId = null;
+				 }else{
+					 itemId = stringItemValue[0].substring(5);
+				 }
+			}else{
+				itemId = stringItemValue[0];
+			}	
+			
+			if (itemId != null){ 
+				itemValue = new ItemValueData(
+						new communication.activity.tables.ItemData(new Integer(itemId)),
+						new Integer(stringItemValue[1]));	
+				col.add(itemValue);
+			}
+			
+		}
+		return col;
+	}
+
+	public static String formatFile(String input) {
+		input = activityName(input);
+		// Cadena de caracteres original a sustituir.
+	    String original = "/aaaeeeiiiooouuunAAAEEEIIIOOOUUUNcC \n";
+	    // Cadena de caracteres ASCII que reemplazarÃƒÆ’Ã‚Â¡n los originales.
+	    String ascii = "_aaaeeeiiiooouuunAAAEEEIIIOOOUUUNcC__";
+	    String output = input;
+	    for (int i = 0; i < original.length(); i++) {
+	        // Reemplazamos los caracteres especiales.
+	        output = output.replace(original.charAt(i), ascii.charAt(i));
+	    }//for i
+	    return output;
+	}
+
+	public static String getTimeString(String hour, String minute, String second) {
+		String value = "";
+		if(Util.isNumber(hour)) {
+			int h = Integer.parseInt(hour);
+			if(h >= 0 && h < 24) {
+				value += String.valueOf(h);
+			}else {
+				return null;			
+			}
+		}else {
+			return null;			
+		}
+		value += ":";
+		if(Util.isNumber(minute)) {
+			int m = Integer.parseInt(minute);
+			if(m >= 0 && m < 60) {
+				if(m < 10) 
+					value += "0";
+				value += String.valueOf(m);
+			}else {
+				return null;			
+			}
+		}else {
+			return null;			
+		}
+		value += ":";
+		if(Util.isNumber(second)) {
+			int s = Integer.parseInt(second);
+			if(s >= 0 && s < 60) {
+				if(s < 10)
+					value += "0";
+				value += String.valueOf(s);
+			}else {
+				return null;			
+			}
+		}else {
+			return null;			
+		}
+		return value;
+	}
+	
+	public static String getLabelTiemproReparacion(int s){
+		switch ( s ) {
+		case -1:
+			return "S/P";
+		case 0:
+			return "DETENCIÃ“N INMEDIATA";
+		case 1:
+			return "24HS";
+		case 2:
+			return "48HS";
+		case 3:
+			return "72HS";
+
+		default:
+			return "N/A";
+		}
+		
+		
+	}
+
+	public static String borrarForestales(String contractor) {
+		contractor = contractor.replaceAll("(FOSA)", "");
+		contractor = contractor.replaceAll("(MDP)", "");
+		contractor = contractor.replaceAll("(WY)", "");
+		contractor = contractor.replaceAll("(FOSA,WY)", "");
+		contractor = contractor.replaceAll("(FOSA,MDP)", "");
+		contractor = contractor.replaceAll("(FOSA,WY,MDP)", "");
+		return contractor;
+	}
+
+	public static String formatCorporationId(DriverData driver) {
+		String corporationId = driver.getCorporationId();
+		if(driver.getCorporation().getId().intValue() == CorporationData.FORESTALES
+				|| driver.getCorporation().getId().intValue() == CorporationData.FORESTALORIENTAL
+				|| driver.getCorporation().getId().intValue() == CorporationData.MONTES_DE_PLATA
+				|| driver.getCorporation().getId().intValue() == CorporationData.WEYERHAEUSER) {
+			switch(corporationId.length()) {
+				case 7:
+					corporationId = corporationId.substring(0, 3) + "." + corporationId.substring(3, 6) + "-" + corporationId.substring(6);
+					break;
+				case 8:
+					corporationId = corporationId.substring(0, 1) + "." + corporationId.substring(1, 4) + "." + corporationId.substring(4,7) + "-" + corporationId.substring(7);
+					break;
+			}
+		}
+		return corporationId;
+	}
+
+	public static boolean afterOrEqual(Integer fromMonth, Integer fromYear, Integer toMonth, Integer toYear) {
+		if(fromMonth.intValue() == toMonth.intValue() && fromYear.intValue() == toYear.intValue())
+			return true;
+		Calendar c1 = getCalendar(fromMonth, fromYear);
+		Calendar c2 = getCalendar(toMonth, toYear);
+		return c2.after(c1);
+	}
+
+	private static Calendar getCalendar(Integer month, Integer year) {
+		Calendar c1 = Calendar.getInstance();
+		c1.set(Calendar.MONTH, month-1);
+		c1.set(Calendar.YEAR, year);
+		return c1;
+	}
+
+	public static Calendar getCalendar(String day, String month, String year) {
+        try {
+            Calendar calendar = Calendar.getInstance();
+            calendar.set(Calendar.DAY_OF_MONTH,Integer.parseInt(day));
+            calendar.set(Calendar.MONTH,Integer.parseInt(month)-1);
+            calendar.set(Calendar.YEAR,Integer.parseInt(year));
+            return calendar;
+        } catch (NumberFormatException e) {
+            return null;
+        }
+	}
+
+	public static Integer toKms(Integer miles) {
+		double m = miles.doubleValue();
+		double k = m * KMS_TO_MILES;
+		String kms = String.valueOf(Math.round(k));
+		return new Integer(kms);
+	}
+
+	
+	 public static byte[] toByteArray(InputStream is) throws IOException{
+	    	ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+	    	int nRead;
+	    	byte[] data = new byte[16384];
+
+	    	while ((nRead = is.read(data, 0, data.length)) != -1) {
+	    	  buffer.write(data, 0, nRead);
+	    	}
+
+	    	buffer.flush();
+
+	    	return buffer.toByteArray();
+	    }
+	 
+	 public static void fileToOutputStream(File file, OutputStream out) throws IOException{
+	    	out.write(toByteArray(new FileInputStream(file)));
+	    	out.flush();
+	    	out.close();
+	    }
+
+
+	public static Integer toMiles(Integer kms) {
+		double k = kms.doubleValue();
+		double m = k / KMS_TO_MILES;
+		String miles = String.valueOf(Math.round(m));
+		return new Integer(miles);
+	}
+	
+	 public static int stringToInt(String strNumber) {
+		 	try{
+		 		return Integer.valueOf(strNumber);
+		 	}catch(Exception ex){
+		 		
+		 	} 
+	    	return -1;
+	    }
+	 
+	 public static String activityName(String activity) {
+		 activity = activity.replace("(versiÃ³n Tablets)","");
+		 activity = activity.replace("(versÃ£o Tablets)","");
+		 activity = activity.replace("(version Tablets)","");
+		 return activity;
+	 }
+}

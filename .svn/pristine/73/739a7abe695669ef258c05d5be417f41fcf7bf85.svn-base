@@ -1,0 +1,157 @@
+<%@page language="java" 
+	errorPage="exception.jsp" 
+	import="java.util.*"
+	import="business.*"
+	import="business.vehicle.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.administration.user.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.activity.tables.*"
+	import="communication.vehicle.tables.*"
+	import="communication.util.*"
+ 	import="presentation.translator.web.util.*"
+ 	import="presentation.translator.web.vehicle.*" 	
+ 	import="communication.administration.user.*" 	
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html"
+%>
+
+<%@page import="communication.administration.corporation.tables.CorporationData"%>
+<%@page import="communication.driver.tables.DriverData"%>
+<%@page import="communication.administration.corporation.tables.CountryData"%>
+<%@page import="business.activity.ActivityReportFacade"%>
+
+<html xmlns="http://www.w3.org/1999/xhtml">
+	<head>
+		<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	 	<title> CEPA International</title>
+		<META http-equiv="Cache-Control" content="no-cache">
+		<META http-equiv="Pragma" content="no-cache">
+		<style type="text/css">
+<!--	body {
+			margin-left: 0px;
+			margin-top: 0px;
+			margin-right: 0px;
+			margin-bottom: 0px;
+		}
+		.contain {
+			width: 100%; 
+			height: 100%;
+		}
+ -->
+		</style>
+	</head>
+
+<%!
+	Text messages; 
+	SystemAccess sys;
+	String attribute; 
+	String value;
+	UserSessionData userSessionData; 
+%>
+<%
+	sys=(SystemAccess)session.getAttribute("SystemAccess");
+	int corporationId = sys.getCorporationId();
+	userSessionData=sys.getUserSessionData();
+	String check = Util.checkPermission(sys,SecurityConstants.JJ_REPORTER);
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		session.setAttribute("url","inserted.jsp");
+		messages=sys.getText();
+		DriverData driver = sys.getUserSessionData().getDriverData();
+%>	
+	<body>
+	 	<table width="100%" height="90" border="0" cellpadding="0" cellspacing="0" class="default">
+		 	<form name="logout" action="../login.jsp" method="post">
+	 		</form>
+		 	<form name="start" action="forms.jsp" method="post">
+	 		</form>
+		 	<form name="change" action="reporter.jsp" method="post">
+				<input type="hidden" name="change" value="1"></input>
+	 		</form>
+		 	<form name="driver" action="vehicle.jsp" method="post">
+	 		</form>
+  			<tr>
+    			<td colspan="2">
+					<table width="100%" border="0" cellspacing="0" cellpadding="0" valign="top">
+      					<tr>
+        					<td><jsp:include  page='<%="../topMenu.jsp?home=true&reporter=true" %>'/></td>
+      					</tr>
+    				</table>	
+    			</td><!--end the top�s table -->
+  			</tr>
+  		</table>
+  		<br>
+  		<br>	
+		<table width="400" border="0" align="center" cellpadding="0" cellspacing="0">
+		  	<tr> 
+	  			<jsp:include  page="../component/spaceline.jsp" />
+		  	</tr>
+		  	<tr> 
+	  			<jsp:include  page="../component/spaceline.jsp" />
+		  	</tr>
+		  	<tr> 
+	  			<jsp:include  page="../component/spaceline.jsp" />
+		  	</tr>
+			<tr> 
+	  			<td colspan="3"> 
+		    		<jsp:include  page='../component/utilitybox2top.jsp' /> 
+					<table width="100%" border="0" align='center' cellpadding="0" cellspacing="0">
+   						<tr class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+   						<tr  class="lineone">
+							<td width="100%" colspan="2" align="center" class="lineone">
+		    					<span class="success">
+		    						<%=messages.getText("reporterjj.commentarydrive.successmx") %> 
+		    					</span>
+		    				</td>   					
+		    			</tr>
+   						<tr class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+   						<tr  class="lineone" height="30">
+       						<th align="right"> <%=messages.getText("generic.driver.driverdata.firstname")+":"%></th>
+       						<td align="left">&nbsp;&nbsp;<%=driver.getFirstName()+" "+driver.getLastName()%></td>
+    					</tr>
+   						<tr class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+						<tr class="lineone" height="30">
+	        				<th align="right" > <%=messages.getText("generic.driver.driverdata.wwid")+":"%></th>
+       						<td align="left">&nbsp;&nbsp;<%=driver.getCorporationId()%></td>
+	      				</tr>
+   						<tr class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+						<tr class="lineone" height="30">
+	        				<th align="right" > <%=messages.getText("Matricula")+":"%></th>
+       						<td align="left">&nbsp;&nbsp;<%=userSessionData.getValue()%></td>
+	      				</tr>
+   						<tr class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+   						<tr  class="lineone">
+							<td width="100%" colspan="2" align="center" class="lineone">
+		    					<%=messages.getText("reporterjj.mx.sended") %> 
+		    				</td>   					
+		    			</tr>
+   						<tr class="lineone"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
+   						<tr  class="lineone">
+							<td width="100%" colspan="2" align="center" class="lineone">
+<%				if(sys.getUserSessionData().getLenguage().equals("es")) {
+%>								<input type="button" value='<%=messages.getText("generic.messages.back")%>' onclick="document.forms['driver'].submit();" />
+<%				}else {
+%>								<input type="button" value='<%=messages.getText("reporterjj.commentarydrive.forms")%>' onclick="document.forms['start'].submit();" />
+<%				}
+%>							
+		    				</td>   					
+		    			</tr>
+					</table>			
+	    			<jsp:include page="../component/utilitybox2bottom.jsp"/>
+		      	</td>	
+		  	</tr>
+		  	<tr> 
+		    	<jsp:include  page="../component/spaceline.jsp" />
+		  	</tr>
+		</table>			
+	</body>
+<%					
+	}
+%>		
+</html>

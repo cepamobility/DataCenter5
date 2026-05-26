@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE server PUBLIC 
+	"-//JBoss//DTD MBean Service 5.0//EN" 
+	"http://www.jboss.org/j2ee/dtd/jboss-service_5_0.dtd">
+
+<server>
+
+<!-- 
+<mbean code="org.jboss.varia.scheduler.Scheduler" name=":service=DayScheduler">
+	<attribute name="StartAtStartup">true</attribute>
+	<attribute name="SchedulableClass">persistence.administration.alert.DayAlert</attribute>
+	<attribute name="InitialStartDate">NOW</attribute>
+	<attribute name="SchedulePeriod">10000</attribute>
+	<attribute name="InitialRepetitions">-1</attribute>
+</mbean>
+
+<mbean code="org.jboss.varia.scheduler.Scheduler" name=":service=MonthScheduler">
+	<attribute name="StartAtStartup">true</attribute>
+	<attribute name="SchedulableClass">persistence.administration.alert.MonthAlert</attribute>
+	<attribute name="InitialStartDate">NOW</attribute>
+	<attribute name="SchedulePeriod">10000</attribute>
+	<attribute name="InitialRepetitions">-1</attribute>
+</mbean>
+
+<mbean code="org.jboss.varia.scheduler.Scheduler" name=":service=ThreeMonthScheduler">
+	<attribute name="StartAtStartup">true</attribute>
+	<attribute name="SchedulableClass">persistence.administration.alert.ThreeMonthAlert</attribute>
+	<attribute name="InitialStartDate">NOW</attribute>
+	<attribute name="SchedulePeriod">10000</attribute>
+	<attribute name="InitialRepetitions">-1</attribute>
+</mbean>
+ 
+ 
+<mbean code="org.jboss.varia.scheduler.Scheduler" name=":service=DayScheduler">
+	<attribute name="StartAtStartup">true</attribute>
+	<attribute name="SchedulableClass">persistence.administration.alert.DayAlert</attribute>
+	<attribute name="InitialStartDate">NOW</attribute>
+	<attribute name="SchedulePeriod">10000</attribute>
+	<attribute name="InitialRepetitions">-1</attribute>
+</mbean>
+-->
+
+<mbean code="org.jboss.varia.scheduler.Scheduler" name=":service=WeekScheduler">
+	<attribute name="StartAtStartup">true</attribute>
+	<attribute name="SchedulableClass">persistence.administration.alert.WeekAlert</attribute>
+	<attribute name="InitialStartDate">NOW</attribute>
+	<attribute name="SchedulePeriod">10000</attribute>
+	<attribute name="InitialRepetitions">10</attribute>
+</mbean>
+
+
+</server>

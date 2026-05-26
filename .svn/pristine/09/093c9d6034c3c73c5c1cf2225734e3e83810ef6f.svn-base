@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE server PUBLIC 
+	"-//JBoss//DTD MBean Service 5.0//EN" 
+	"http://www.jboss.org/j2ee/dtd/jboss-service_5_0.dtd">
+
+<server>
+	<!--  JBoss 5.1: -->
+	<mbean code="org.jboss.jms.server.destination.TopicService" 
+		name="jboss.messaging.destination:service=Topic,name=DayAlertTopic"
+		xmbean-dd="xmdesc/Topic-xmbean.xml">
+		
+		<attribute name="JNDIName">topic/DayAlertTopic</attribute>
+		<!-- 
+	  	<attribute name="RedeliveryDelay">10000</attribute>
+	  	<attribute name="MaxDeliveryAttempts">3</attribute>
+	  	-->
+	    <depends optional-attribute-name="ServerPeer">
+	  		jboss.messaging:service=ServerPeer
+	  	</depends>
+	  	<depends>
+	  		jboss.messaging:service=PostOffice
+	  	</depends>
+	  
+	</mbean>
+</server>

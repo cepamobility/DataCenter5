@@ -1,0 +1,245 @@
+package presentation.translator.web.user;
+
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.action.DynaActionForm;
+
+import presentation.translator.web.util.AbstractAction;
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+import business.driver.DriverReportFacade;
+
+import communication.administration.corporation.tables.CorporationData;
+import communication.alert.AlertConstants;
+import communication.driver.tables.DriverData;
+import communication.language.Text;
+import communication.util.MailSender;
+
+public class DriverUserCreateAction extends AbstractAction {
+
+    public ActionForward cancel(HttpSession session,ActionMapping mapping, ActionForm form) {
+        return mapping.findForward("cancel");
+    }
+
+    public ActionForward action(ActionMapping mapping, ActionForm createForm, HttpServletRequest request, HttpServletResponse response) throws Throwable {
+
+        HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        Text messages = sys.getText();
+
+        DynaActionForm createData = (DynaActionForm) createForm;
+        String driverId = createData.getString("driver");
+        String password = null;
+        String language = createData.getString("language");
+        String loginname = createData.getString("loginname");
+
+        String s = (sys.isCorporation(CorporationData.BAYER_MX)) ? "bymx" : "";
+        try {
+            if(Boolean.parseBoolean(createData.getString("insertpassword")) || sys.isCorporation(CorporationData.BAYER_MX)) {
+                password = createData.getString("password");
+                String confirm = createData.getString("confirm");
+                if(!Util.empty(password) && !Util.empty(confirm)) {
+                    if(!password.equals(confirm)) {
+                        session.setAttribute("Msg",messages.getText("generic user.userdata.passconfirm"));
+                        session.setAttribute("driver",driverId);
+                        session.removeAttribute("DriverUserCreateForm");
+                        return mapping.findForward("error"+s);
+                    }
+                } else {
+                    session.setAttribute("Msg",messages.getText("generic.user.userdata.pass.isempty"));
+                    session.setAttribute("driver",driverId);
+                    session.removeAttribute("DriverUserCreateForm");
+                    return mapping.findForward("error"+s);
+                }
+            }
+            DriverReportFacade driverReport = sys.getDriverReportFacade();
+            DriverData driver = driverReport.findDriverByPrimaryKey(new Integer(driverId),sys.getUserSessionData());
+            if(sys.isCorporation(CorporationData.BAYER_MX)) {
+            	String login = createData.getString("loginname");
+                if(Util.empty(login)) {
+                    session.setAttribute("Msg","Ingrese usuario");
+                    session.setAttribute("driver",driverId);
+                    session.removeAttribute("DriverUserCreateForm");
+                    return mapping.findForward("error"+s);
+                }
+            	if(sys.getUserReportFacade().userExist(login, sys.getUserSessionData())) {
+                    session.setAttribute("Msg","Ya existe usuario con esa clave");
+                    session.setAttribute("driver",driverId);
+                    session.removeAttribute("DriverUserCreateForm");
+                    return mapping.findForward("error"+s);
+            	}
+            	sys.getUserABMFacade().userDriverCreate(login,driver,password,language,sys.getUserSessionData());
+            }else {
+	            password = sys.getUserABMFacade().userDriverCreate(driver,password,language,sys.getUserSessionData());
+	            
+	            if(Util.isChecked(createData.getString("sendmail"))) {
+	                // if(driver.getCountryName().equals(CountryData.ARGENTINA)) {
+	                    MailSender sender = new MailSender();
+	                    String mail = getMail(loginname,password);
+	                    String title = getTitle(language);
+	                    
+	                    sender.send(loginname,
+	                    		AlertConstants.MAILSERVER,
+	                    		AlertConstants.FROMNAME_DC,
+	                    		AlertConstants.FROM_DC,
+	                    		AlertConstants.FROMPASSWORD_DC,
+	                    		title,mail);
+	                // }
+	            }
+            }            
+            return mapping.findForward("next");
+                
+        }catch(Exception e) {
+            Throwable thw = (e instanceof ServletException) ? ((ServletException)e).getRootCause() : e;
+            while (thw.getCause() != null) {
+                thw = thw.getCause();
+            }
+            if (thw.getClass().toString().indexOf("AlreadyExistsException") > 0) {
+                session.setAttribute("Msg",messages.getText("user.error.alreadyexist"));
+                return mapping.findForward("error");
+            }else {
+                throw e;
+            }
+        }
+    }
+
+    private String getTitle(String language) {
+        if(language.equals("es")) {
+            return "Acceso a Data Center";
+        }else if(language.equals("pt")) {
+            return "Aceso ao Data Center";
+        }else {
+            return "Access to Data Center";
+        }
+    }
+    
+    public String getMail(String user,String password) {
+        String mail = "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'>"+
+        "<span style='font-family:Arial;'> "+
+        "Estimado Usuario: "+
+        "</span> "+
+        "</p> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<span style='font-family:Arial;'> "+
+        "Su password de acceso al Data Center ha sido creado. "+
+        "</span> "+
+        "</p> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<span style='font-family:Arial;'> "+
+        "<b>URL:</b>  <a href='https://" + AlertConstants.DC_DOMAIN + "'>https://" + AlertConstants.DC_DOMAIN + "</a> "+
+        "</span> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "</p> "+
+        "<span style='font-family:Arial;'> "+
+        "<b>Username:</b> "+user+
+        "</span> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "</p> "+
+        "<span style='font-family:Arial;'> "+
+        "<b>Password: </b> "+password+
+        "</span> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "</p> "+
+        "<span style='font-family:Arial;'> "+
+        "Le sugerimos que no copie y pegue el usuario y contrase&ntilde;a directamente sino que los escriba (a veces se agregan o quitan espacios que no permiten ingresar al sistema correctamente)."+
+        "</span> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "</p> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "</p> "+
+        "<span style='font-family:Arial;'> "+
+        "Online encontrar&aacute; un Manual de Usuario Data Center. "+
+        "</span> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<span style='font-family:Arial;'> "+
+        "Atentamente "+
+        "</span> "+
+        "</p> "+
+        "--  "+
+        "<br> "+
+        "<br> "+
+        "<span style='font-size:10.0pt;font-family:Arial;color:navy'>.................................................</span> "+
+        // "<br> "+
+        // "<em><b><span style='font-size:10.0pt;font-family:Verdana;color:navy'>" + AlertConstants.DIGITAL_SIGNATURE_MANAGER + "</span></b></em> "+
+        // "<br> "+
+        // "<em><b><span style='font-size:10.0pt;font-family:Verdana;color:navy'>Data Center</span></b></em> "+
+        "<br> "+
+        "<em><b><span lang=EN-US style='font-size:7.5pt;font-family: Verdana;color:navy;mso-ansi-language:EN-US'>DataCenter&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; "+
+        "</span></b></em> "+
+        "<br> "+
+        "<em><b><span lang=EN-US style='font-size:10.0pt;font-family:Verdana;color:blue;mso-ansi-language: "+
+        "EN-US'>CEPA  International</span></b></em> "+
+        "<br> "+
+        "<strong> "+
+        "<span lang=EN-US style='font-size:7.5pt;font-family:Verdana;color:navy;mso-ansi-language: "+
+        "EN-US'>Phone:</span></strong><span class=grame><b><span lang=EN-US "+
+        "style='font-size:7.5pt;font-family:Verdana;color:navy;mso-ansi-language:EN-US'>&nbsp; "+
+        "(</span></b></span> "+
+        "<strong> "+
+        "<span lang=EN-US style='font-size:7.5pt;font-family: Verdana;color:navy;mso-ansi-language:EN-US'>598<span class=GramE>)(</span>2)&nbsp;&nbsp;518 55 28 int 203</span><br> "+
+        "<span lang=EN-US style='font-size:7.5pt;font-family: Verdana;color:navy;mso-ansi-language:EN-US'>&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;518 55 29 int 203</span> "+
+        "</strong> "+
+        "<span lang=EN-US style='mso-ansi-language:EN-US'></span> "+
+        "<br> "+
+        "<strong><span "+
+        "lang=EN-US style='font-size:7.5pt;font-family:Verdana;mso-ansi-language:EN-US; "+
+        "font-weight:normal'><a href='mailto:" + AlertConstants.FROM_DC + "'>" + AlertConstants.FROM_DC + "</a></span></strong><span "+
+        "lang=EN-US style='font-size:10.0pt;font-family:Arial;mso-ansi-language:EN-US'> </span><span "+
+        "lang=EN-US style='mso-ansi-language:EN-US'></span> "+
+
+        "<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=823 "+
+         "style='width:617.25pt;mso-cellspacing:0cm;mso-padding-alt:0cm 0cm 0cm 0cm'> "+
+         "<tr style='mso-yfti-irow:0;mso-yfti-lastrow:yes;mso-yfti-firstrow: yes'> "+
+          "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+          "<p class=MsoNormal align=center style='mso-margin-top-alt:auto;mso-margin-bottom-alt: "+
+          "auto;text-align:center'><span lang=EN-US style='mso-ansi-language:EN-US'>&nbsp;<o:p></o:p></span></p> "+
+          "</td> "+
+          "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+          "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'><span "+
+          "lang=EN-US style='mso-ansi-language:EN-US'>&nbsp;<o:p></o:p></span></p> "+
+          "</td> "+
+          "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+          "<div class=MsoNormal align=center style='text-align:center'><span "+
+          "style='font-size:7.5pt'> "+
+          "<hr size=2 width='100%' align=center> "+
+          "</span></div> "+
+          "<div align=center> "+
+          "<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=827 "+
+          " style='width:620.25pt;mso-cellspacing:0cm;mso-padding-alt:0cm 0cm 0cm 0cm'> "+
+           "<tr style='mso-yfti-irow:0;mso-yfti-lastrow:yes;mso-yfti-firstrow: yes'> "+
+           "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+            "<p class=MsoNormal align=center style='mso-margin-top-alt:auto;mso-margin-bottom-alt: "+
+            "auto;text-align:center'><span lang=EN-GB style='font-size:7.5pt;color:navy; "+
+            "mso-ansi-language:EN-GB'>&nbsp; *Confidentiality Notice*<br> "+
+            "The information contained in this e-mail and any accompanying documents is "+
+            "confidential, may be privileged. It is intended solely for the person "+
+            "and/or entity to whom it is addressed (i.e. those identified in the "+
+            "&quot;To&quot; and &quot;cc&quot; box). The message and any attachments are "+
+            "the property of CEPA International LLC, its group companies, or clients. "+
+            "Unauthorized review, use, disclosure, or copying of this communication, or "+
+            "any part thereof, is strictly prohibited and may be unlawful. If you have "+
+            "received this e-mail in error, please return it and any attachment to the "+
+            "sender and delete the e-mail and attachments and any copy from your system. "+
+            "</span><span style='font-size:7.5pt;color:navy'>CEPA <span class=SpellE>International</span> "+
+            "<span class=SpellE><span class=spelle>thanks</span></span> <span "+
+            "class=SpellE><span class=spelle>you</span></span> <span class=SpellE><span "+
+            "class=spelle>for</span></span> <span class=SpellE><span class=spelle>your</span></span> "+
+            "<span class=SpellE><span class=spelle>cooperation</span></span>. </span></p> "+
+            "<p align=center style='text-align:center'>&nbsp;</p> "+
+            "</td> "+
+           "</tr> "+
+          "</table> "+
+          "</div> "+
+          "<p class=MsoNormal align=center style='text-align:center'><o:p></o:p></p> "+
+          "</td> "+
+         "</tr> "+
+        "</table> ";
+        return mail;
+    }
+}

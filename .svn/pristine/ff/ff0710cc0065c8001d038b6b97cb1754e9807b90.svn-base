@@ -1,0 +1,30 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.activity.tables">
+	<class name="CEPAScheduleActivityInstructor" table="cepaactivityinstructor">
+		
+       <composite-id class="CEPAScheduleActivityInstructorPK" name="pk" >
+       		<key-many-to-one
+       			 name="activity"
+       			 column="activityid"
+       			 class="persistence.activity.tables.CEPAActivity"
+       	 	/>
+       	 	<key-many-to-one
+       			 name="user"
+       			 column="loginname"
+       			 class="persistence.administration.user.tables.User"
+       	 	/>       	 	
+       </composite-id>	
+       
+       <property name="addedResults"  >
+       		<column name="addedResults" default="false">
+       		</column>
+       </property>
+       
+       	
+  	</class>
+</hibernate-mapping>

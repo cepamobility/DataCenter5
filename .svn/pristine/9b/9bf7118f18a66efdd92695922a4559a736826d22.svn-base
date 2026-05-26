@@ -1,0 +1,2297 @@
+package business.driver;
+
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Enumeration;
+import java.util.HashMap;
+import java.util.Hashtable;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.StringTokenizer;
+
+import javax.ejb.CreateException;
+import javax.ejb.SessionBean;
+
+import org.hibernate.Query;
+
+import persistence.activity.ActivityReport;
+import persistence.activity.ActivityReportUtil;
+import persistence.driver.DriverABMUtil;
+import persistence.driver.DriverReport;
+import persistence.driver.DriverReportBean;
+import persistence.driver.DriverReportHome;
+import persistence.driver.DriverReportUtil;
+import persistence.driver.tables.DriverLogistic;
+import persistence.event.EventReport;
+import persistence.event.EventReportUtil;
+import persistence.fleet.FleetReport;
+import persistence.fleet.FleetReportUtil;
+import persistence.hibernate.HibernateUtil;
+import persistence.util.ExcelGenerator;
+import persistence.util.Util;
+import persistence.vehicle.VehicleReportUtil;
+import business.alert.reporthandler.AlertFOSADetailedDriverReportData;
+import business.util.ExceptionHandler;
+import business.util.MemoryLog;
+import communication.activity.tables.CEPAActivityConstants;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.CountryData;
+import communication.administration.user.UserSessionData;
+import communication.alert.AlertConstants;
+import communication.datatype.tables.EcolabReportData;
+import communication.driver.report.AlcoholControlReportData;
+import communication.driver.report.AptitudTestReportData;
+import communication.driver.report.DPATelematicControlFilter;
+import communication.driver.report.DetailedDriverReportData;
+import communication.driver.report.DetailedDriverReportDataType;
+import communication.driver.report.DetailedDriverReportWithVehiclesData;
+import communication.driver.report.DriverReportData;
+import communication.driver.report.FOSADetailedDriverReportData;
+import communication.driver.report.FOSADriverReportData;
+import communication.driver.tables.AnualPlanData;
+import communication.driver.tables.AptitudTestData;
+import communication.driver.tables.CsvEntityData;
+import communication.driver.tables.DriverBayerData;
+import communication.driver.tables.DriverData;
+import communication.driver.tables.DriverLogisticData;
+import communication.driver.tables.DriverMainAttributes;
+import communication.driver.tables.DriverPointList;
+import communication.driver.tables.MitigationPlanData;
+import communication.driver.tables.ReportPlanData;
+import communication.driver.tables.TelematicControlData;
+import communication.driver.tables.TelematicControlSendMailData;
+import communication.exception.DeslogedException;
+import communication.exception.InvalidDataException;
+import communication.language.Text;
+import communication.util.ContratistDataType;
+import communication.util.ListResult;
+import communication.util.MailSender;
+ 
+/**
+ * @ejb.bean name = "DriverReportFacade" jndi-name = "ejb/DriverReportFacade" type =
+ *           "Stateless" transaction-type = "Container"
+ * 
+ * @ejb.ejb-ref ejb-name = "DriverReport" 
+ * 				ref-name = "ejb/DriverReport" 
+ * 				view-type = "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/DriverReport" ref-name = "DriverReport"
+ * 
+ * @ejb.ejb-ref ejb-name = "DriverABM" 
+ * 				ref-name = "ejb/DriverABM" 
+ * 				view-type = "remote"
+ * 
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/DriverABM" ref-name = "DriverABM"
+ * 
+ * @ejb.ejb-ref ejb-name = "EventReport" 
+ *              ref-name = "ejb/EventReport" 
+ *              view-type = "remote"  
+ *              
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/EventReport" 
+ * 				ref-name = "EventReport"
+ * 
+ * @ejb.ejb-ref ejb-name = "ActivityReport" 
+ *              ref-name = "ejb/ActivityReport" 
+ *              view-type = "remote"
+ *                
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/ActivityReport" 
+ * 				ref-name = "ActivityReport"
+ * 
+ * @ejb.ejb-ref ejb-name = "FleetReport" 
+ *              ref-name = "ejb/FleetReport" 
+ *              view-type = "remote"
+ *                
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/FleetReport" 
+ * 				ref-name = "FleetReport"
+ *
+ * @ejb.ejb-ref ejb-name = "EventReport" 
+ *              ref-name = "ejb/EventReport" 
+ *              view-type = "remote"
+ *                
+ * @jboss.ejb-ref-jndi jndi-name = "ejb/EventReport" 
+ * 				ref-name = "EventReport"
+ *
+ * @ejb.util generate="physical"
+ */
+public abstract class DriverReportFacadeBean implements SessionBean {
+
+    private ExceptionHandler handler = new ExceptionHandler(DriverReportFacadeBean.class);
+
+	/**
+	 * Default create method
+	 * 
+	 * @throws CreateException
+	 * @ejb.create-method
+     * @ejb.permission role-name = "driverview,driveredit,driverupdate,administrator,driversearch,eventcreate,finecreate,cepascheduleactivityregistrycreate,cepascheduleactivityregistryupdate,resetpassword,cepascheduleactivityregistrycreate,cepascheduleactivityregistryupdate,driverviewowndata,drivertests,doorcontrol,jjreporter,driverbayerdata"
+	 */
+	public void ejbCreate() throws CreateException {
+
+	}
+
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess,driverview,driversearch,cepascheduleactivityregistrycreate,cepascheduleactivityregistryupdate"
+	 */
+	public ListResult findDriverList(String attrName, String attrValue,int first, 
+			int count, int status,UserSessionData userSessionData) throws Exception {
+        MemoryLog.getInstance().log(MemoryLog.START,"findDriverList",getClass());
+        ListResult returnListResult = new ListResult(new LinkedList(),0);
+        try{
+	        if (attrName == null) {
+	            throw new InvalidDataException("findDriverList","attrName = null");
+	        }
+	        DriverReportHome driverHome = DriverReportUtil.getHome();
+	        DriverReport driverReport = driverHome.create();
+	        returnListResult = driverReport.findList(attrValue,null,userSessionData, getAttribute(attrName,userSessionData), first, count, status, 0);
+        } catch (Exception e) {
+        	Object[] parameters = new Object[5];
+        	parameters[0] = attrName;
+        	parameters[1] = attrValue;
+        	parameters[2] = first;
+        	parameters[3] = count;
+        	parameters[4] = status;       	
+        	
+            handler.handleException("findDriverList",e, userSessionData, parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"findDriverList",getClass());
+        return returnListResult;
+	}
+
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess,driverview,driversearch,cepascheduleactivityregistrycreate,cepascheduleactivityregistryupdate"
+	 */
+	public ListResult findCDSDriverList(String attrName, String attrValue,int first, 
+			int count, int status,UserSessionData userSessionData) throws Exception {
+        MemoryLog.getInstance().log(MemoryLog.START,"findCDSDriverList",getClass());
+        ListResult returnListResult = new ListResult(new LinkedList(),0);
+        try{
+	        if (attrName == null) {
+	            throw new InvalidDataException("findCDSDriverList","attrName = null");
+	        }
+	        DriverReportHome driverHome = DriverReportUtil.getHome();
+	        DriverReport driverReport = driverHome.create();
+	        returnListResult = driverReport.findCDSList(attrValue,userSessionData, getAttribute(attrName,userSessionData), first, count, status);
+        } catch (Exception e) {
+        	Object[] parameters = new Object[5];
+        	parameters[0] = attrName;
+        	parameters[1] = attrValue;
+        	parameters[2] = first;
+        	parameters[3] = count;
+        	parameters[4] = status;       	
+        	
+            handler.handleException("findCDSDriverList",e, userSessionData, parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"findCDSDriverList",getClass());
+        return returnListResult;
+	}
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,systemaccess,driverview,driversearch,cepascheduleactivityregistrycreate,cepascheduleactivityregistryupdate"
+     */
+    public ListResult findDriverList(Hashtable parameters,UserSessionData userSessionData) throws Exception {
+        MemoryLog.getInstance().log(MemoryLog.START,"findDriverList",getClass());
+        ListResult returnListResult = new ListResult(new LinkedList(),0);
+        try{
+            if(!parameters.containsKey("attribute")) {
+                throw new InvalidDataException("findDriverList","attrName = null");
+            }
+            DriverReportHome driverHome = DriverReportUtil.getHome();
+            DriverReport driverReport = driverHome.create();
+            int first = 0;
+            int count = Integer.parseInt((String)parameters.get("pageSize"));
+            if(((Boolean)parameters.get("all")).booleanValue()) {
+                count=-1;
+            }else{
+                first=(Integer.parseInt((String)parameters.get("pageNum"))-1) * Integer.parseInt((String)parameters.get("pageSize"));
+            }
+            int temporal = (parameters.containsKey("temp")) ? Integer.parseInt((String)parameters.get("temp")) : 0;
+             returnListResult = driverReport.findList((String)parameters.get("value"),(String)parameters.get("corporationid"),userSessionData, getAttribute((String)parameters.get("attribute"),userSessionData), first, count, Integer.parseInt((String)parameters.get("status")),temporal);
+        } catch (Exception e) {
+        	Object[] parameters2 = new Object[1];
+        	parameters2[0] = parameters;
+            handler.handleException("findDriverList",e, userSessionData, parameters2);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"findDriverList",getClass());
+        return returnListResult;
+    }
+
+    private int getAttribute(String attrName,UserSessionData userSessionData) throws Exception{
+	    try{
+	    	if (attrName.equalsIgnoreCase("firstorlastNameorcorpid")){
+	    		return DriverReportBean.FIRST_OR_LAST_NAME_OR_CORP_ID;
+	    	}else
+	        if (attrName.equalsIgnoreCase("firstorlastName")) {
+	            return DriverReportBean.FIRST_OR_LAST_NAME;
+	        } else if (attrName.equalsIgnoreCase("id")){
+	        	return DriverReportBean.ID;
+	        }
+	        	
+	    } catch(Exception e){
+	    	Object[] parameters = new Object[1];
+	    	parameters[0] = attrName;
+	        handler.handleException("getAttribute",e,userSessionData, parameters);
+	    }
+		throw new InvalidDataException("business.driver.getAttribute","attrName != firstorlastName");
+	}
+	
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,drivereventview,driveredit,eventcreate,finecreate,driverupdate,drivertests,driverbayerdata,jjreporter"
+	 */
+	public DriverData findDriverByPrimaryKey(Integer id,UserSessionData userSessionData) throws Exception{
+        MemoryLog.getInstance().log(MemoryLog.START,"findDriverByPrimaryKey",getClass());
+        DriverData data=null;
+        try{
+            if (id == null) {
+                throw new InvalidDataException("business.driver.finddriverbyprimarykey","id = null");
+            }
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();
+            data=driverReport.findDriverByPrimaryKey(id,userSessionData);
+        } catch(Exception e){
+        	Object[] parameters = new Object[1];
+        	parameters[0] = id;
+            handler.handleException("findDriverByPrimaryKey",e,userSessionData, parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"findDriverByPrimaryKey",getClass());
+		return data;
+	}
+	
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driveredit,eventcreate,finecreate,driverupdate,drivertests,driverbayerdata,jjreporter"
+	 */
+	public DriverData getDriver(Integer id,UserSessionData userSessionData) throws Exception{
+        MemoryLog.getInstance().log(MemoryLog.START,"getDriver",getClass());
+        DriverData data=null;
+        try{
+            if (id == null) {
+                throw new InvalidDataException("getDriver","id = null");
+            }
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();
+            data=driverReport.getDriver(id,userSessionData);
+        } catch(Exception e){
+        	Object[] parameters = {id};
+            handler.handleException("getDriver",e,userSessionData, parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getDriver",getClass());
+		return data;
+	}
+	
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driveredit"
+	 */
+	public DriverLogisticData getDriverLogistic(Integer driverId, String activity, UserSessionData userRequest) throws Exception {
+		DriverLogisticData data=null;
+        try{
+            if (driverId == null) {
+                throw new InvalidDataException("getDriver","driverId = null");
+            }
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();
+            data=driverReport.getDriverLogistic(driverId,activity,userRequest);
+        } catch(Exception e){
+        	Object[] parameters = {driverId};
+            handler.handleException("getDriverLogistic",e,userRequest, parameters);
+        }
+	    return data;
+	}
+	
+	/**
+	 * @ejb.permission role-name ="administrator,driveredit"
+	 * @ejb.interface-method
+	 */
+	public Collection<String> getAvailableDriverLogistic(Integer driverId, UserSessionData userRequest) throws Exception {
+        try{
+            if (driverId == null) {
+                throw new InvalidDataException("getAvailableDriverLogistic","driverId = null");
+            }
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();
+            return driverReport.getAvailableDriverLogistic(driverId,userRequest);
+        } catch(Exception e){
+        	Object[] parameters = {driverId};
+            handler.handleException("getgetAvailableDriverLogistic",e,userRequest, parameters);
+        }
+	    return new LinkedList<String>();
+	}
+
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driveredit"
+	 */
+	public Collection<DriverLogisticData> getDriverLogisticList(Integer driverId, UserSessionData userRequest) throws Exception {
+        try{
+            if (driverId == null) {
+                throw new InvalidDataException("getDriver","driverId = null");
+            }
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();
+            return driverReport.getDriverLogisticList(driverId,userRequest);
+        } catch(Exception e){
+        	Object[] parameters = {driverId};
+            handler.handleException("getDriverLogisticList",e,userRequest, parameters);
+        }
+	    return new LinkedList();
+	}
+	
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driveredit,eventcreate,finecreate,driverupdate,drivertests,driverbayerdata"
+	 */
+	public DriverBayerData findDriverBayerByPrimaryKey(Integer id,UserSessionData userSessionData) throws Exception{
+        MemoryLog.getInstance().log(MemoryLog.START,"findDriverBayerByPrimaryKey",getClass());
+        DriverBayerData data = null;
+        try{
+            if (id == null) {
+                throw new InvalidDataException("business.driver.finddriverbayerbyprimarykey","id = null");
+            }
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();
+            data = driverReport.findDriverBayerByPrimaryKey(id,userSessionData);
+        } catch(Exception e){
+        	Object[] parameters = new Object[1];
+        	parameters[0] = id;
+            handler.handleException("findDriverBayerByPrimaryKey",e,userSessionData, parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"findDriverBayerByPrimaryKey",getClass());
+		return data;
+	}
+	
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driveredit,eventcreate,finecreate,driverupdate,drivertests,driverupload"
+	 * @param idDallas
+	 * @param userRequest
+	 * @return
+	 * @throws Exception
+	 */
+	public DriverData findDriverByIdDallas(String idDallas,
+			UserSessionData userSessionData) throws Exception {
+		MemoryLog.getInstance().log(MemoryLog.START,"findDriverByPrimaryKey",getClass());
+        DriverData data=null;
+        try{
+            if (idDallas == null) throw new InvalidDataException("business.driver.finddriverbyiddallas","idDallas = null");
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();
+            data = driverReport.findDriverByIdDallas(idDallas,userSessionData);
+        } catch(Exception e){
+        	Object[] parameters = new Object[1];
+        	parameters[0] = idDallas;
+            handler.handleException("findDriverByIdDallas",e,userSessionData, parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"findDriverByIdDallas",getClass());
+		return data;
+	}
+
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driveredit,eventcreate,finecreate,driverupdate,drivertests,doorcontrol"
+	 */
+	public Collection findDriverByCorporationId(String corporationId,UserSessionData userSessionData) throws Exception{
+        MemoryLog.getInstance().log(MemoryLog.START,"findDriverByPrimaryKey",getClass());
+        Collection data = new LinkedList();
+        try{
+            if (corporationId == null) {
+                throw new InvalidDataException("findDriverByCorporationId","id = null");
+            }
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();
+            data = driverReport.findDriverByCorporationId(corporationId,userSessionData);
+        } catch(Exception e){
+        	Object[] parameters = new Object[1];
+        	parameters[0] = corporationId;
+            handler.handleException("findDriverByCorporationId",e,userSessionData, parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"findDriverByCorporationId",getClass());
+		return data;
+	}
+	
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driveredit,eventcreate,finecreate,driverupdate,drivertests,doorcontrol,eventupload"
+	 */
+	public ListResult findDriverByNameCorporationAndBirthdate(String firstname, String lastname, 
+			Integer idCorporation, Date birthdate,UserSessionData userSessionData) throws Exception {
+		
+		MemoryLog.getInstance().log(MemoryLog.START,"findDriverByNameCorporationAndBirthdate",getClass());
+		
+        ListResult data = null;
+        try{
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();
+            data = driverReport.findDriversByNameCorporationAndBirthdate(firstname, lastname, 
+        			idCorporation, birthdate, userSessionData);
+        } catch(Exception e){
+        	Object[] parameters = new Object[4];
+        	parameters[0] = firstname;
+        	parameters[1] = lastname;
+        	parameters[2] = idCorporation;
+        	parameters[3] = birthdate;
+            handler.handleException("findDriverByNameCorporationAndBirthdate",e,userSessionData, parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"findDriverByNameCorporationAndBirthdate",getClass());
+		return data;
+	}
+
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driveredit,eventcreate,finecreate,driverupdate,drivertests,doorcontrol,eventupload"
+	 */
+	public Collection findDriverByFullName(String fullName, UserSessionData userSessionData) throws Exception {
+        Collection data = null;
+        try{
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();
+            data = driverReport.findDriversByFullName(fullName, userSessionData);
+        } catch(Exception e){
+        	Object[] parameters = {fullName};
+            handler.handleException("findDriverByFullName",e,userSessionData, parameters);
+        }
+		return data;
+	}
+
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driveredit,eventcreate,finecreate,driverupdate,drivertests,doorcontrol,eventupload"
+	 */
+	public ListResult findByMainData(String firstname, String lastname, Date birthdate,UserSessionData userSessionData) throws Exception {
+        ListResult data = null;
+        try{
+            data = DriverReportUtil.getHome().create().findByMainData(firstname, lastname, birthdate, userSessionData);
+        } catch(Exception e){
+        	Object[] parameters = {firstname,lastname,birthdate};
+            handler.handleException("findByMainData",e,userSessionData, parameters);
+        }
+		return data;
+	}
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driveredit,eventcreate,finecreate,driverupdate,drivertests,cepascheduleactivityregistrycreate,query"
+     */
+    public DriverMainAttributes findDriverMainData(Integer id,UserSessionData userSessionData) throws Exception{
+        MemoryLog.getInstance().log(MemoryLog.START,"findDriverMainData",getClass());
+        DriverMainAttributes data=null;
+        try{
+            if (id == null) {
+                throw new InvalidDataException("findDriverMainData","id = null");
+            }
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();
+            data=driverReport.findDriverMainData(id,userSessionData);
+        } catch(Exception e){
+        	Object[] parameters = new Object[1];
+        	parameters[0] = id;
+            handler.handleException("findDriverMainData",e,userSessionData,parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"findDriverMainData",getClass());
+        return data;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "driverview,administrator"
+     */
+    public ListResult advancedSearch(String id,String firstName,String lastName,
+    		Date birthDate,Integer[][] divOrgs,Integer[][] divGeo,int first,
+    		int count,int status,int temporal, UserSessionData userSessionData) throws Exception {
+        MemoryLog.getInstance().log(MemoryLog.START,"advancedSearch",getClass());
+        ListResult listResult = null;
+        try {
+            DriverReportHome driverHome = DriverReportUtil.getHome();
+            DriverReport driverReport = driverHome.create();
+            listResult = driverReport.advancedSearch(userSessionData,id,firstName,lastName,birthDate,divOrgs,divGeo,first,count,status,temporal);
+        } catch(Exception e){
+        	Object[] parameters = new Object[9];
+        	parameters[0] = id;
+        	parameters[1] = firstName;
+        	parameters[2] = lastName;
+        	parameters[3] = birthDate;
+        	parameters[4] = divOrgs;
+        	parameters[5] = divGeo;
+        	parameters[6] = first;
+        	parameters[7] = count;
+        	parameters[8] = status;
+            handler.handleException("advancedSearch",e,userSessionData,parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"advancedSearch",getClass());
+        return listResult;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "driverupdate,administrator"
+     */
+    public List getDrivers(String drivers,UserSessionData userSessionData) throws Exception{
+        MemoryLog.getInstance().log(MemoryLog.START,"getDrivers",getClass());
+        List list = new LinkedList();
+        try{
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();
+            list = driverReport.getDrivers(drivers,userSessionData);
+        } catch(Exception e){
+        	Object[] parameters = new Object[1];
+        	parameters[0] = drivers;
+            handler.handleException("getDrivers",e,userSessionData,parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getDrivers",getClass());
+        return list;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "driverview,administrator,driverviewowndata"
+     */
+    public Collection getObservations(Integer driverId,UserSessionData userSessionData) throws Exception{
+        MemoryLog.getInstance().log(MemoryLog.START,"getObservations",getClass());
+        Collection result = new LinkedList();
+        try{
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();
+            result = driverReport.getObservations(driverId,userSessionData);
+        } catch(Exception e){
+        	Object[] parameters = new Object[1];
+        	parameters[0] = driverId;
+            handler.handleException("getObservations",e,userSessionData,parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getObservations",getClass());
+        return result;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "driverview,administrator"
+     */
+    public DriverReportData getReportDrivers(Hashtable parameters, Integer[][] divOrgs, 
+    		Integer[][] divGeos, int first, int count,UserSessionData userSessionData) throws Exception{
+        MemoryLog.getInstance().log(MemoryLog.START,"getReportDrivers",getClass());
+        DriverReportData data = null;
+        try{
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();  
+            parameters.put("type","simple");
+            data = new DriverReportData(driverReport.getForestReportDrivers(parameters,divOrgs,divGeos,first,count,userSessionData));
+            if(userSessionData.getFilter().getCorporationId() == CorporationData.CIMSA) {
+            	// data.setPoints(driverReport.getDriverPoints(userSessionData));
+            }
+        }catch (Exception e) {
+        	Object[] parameters2 = new Object[5];
+        	parameters2[0] = parameters;
+        	parameters2[1] = divOrgs;
+        	parameters2[2] = divGeos;
+        	parameters2[3] = first;
+        	parameters2[4] = count;
+            handler.handleException("getReportDrivers",e,userSessionData,parameters2);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getReportDrivers",getClass());
+        return data;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "driverview,administrator"
+     */
+    public FOSADriverReportData getFOSAReportDrivers(Hashtable parameters, Integer[][] divOrgs, 
+    		Integer[][] divGeos, int first, int count,UserSessionData userSessionData) throws Exception{
+        MemoryLog.getInstance().log(MemoryLog.START,"getFOSAReportDrivers",getClass());
+        FOSADriverReportData data = null;
+        try{
+            data = new FOSADriverReportData(DriverReportUtil.getHome().create().getFOSAReportDrivers(parameters,divOrgs,divGeos,first,count,userSessionData));
+        }catch (Exception e) {
+        	Object[] parameters2 = new Object[5];
+        	parameters2[0] = parameters;
+        	parameters2[1] = divOrgs;
+        	parameters2[2] = divGeos;
+        	parameters2[3] = first;
+        	parameters2[4] = count;
+            handler.handleException("getFOSAReportDrivers",e,userSessionData,parameters2);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getFOSAReportDrivers",getClass());
+        return data;
+    }
+    
+    
+    /**
+	 * Consulta de Drivers y Eventos detallada con datos de vehiculos asociados.
+	 * @throws Exception
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "driverview,administrator"
+	 */
+	public DetailedDriverReportWithVehiclesData getDetailedReportDriversWithVehicles(Hashtable parameters,
+			Integer[][] divOrgs, Integer[][] divGeos, int first, int count,
+			UserSessionData userSessionData) throws Exception {
+        DetailedDriverReportWithVehiclesData data = null;
+        try{
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();
+            parameters.put("type","detailedwithvehicles");
+            data = new DetailedDriverReportWithVehiclesData(
+            		driverReport.getDetailedReportDriversWithVehicles(parameters,divOrgs,divGeos,
+            		first,count,userSessionData));
+        }catch (Exception e) {
+        	Object[] parameters2 = new Object[5];
+        	parameters2[0] = parameters;
+        	parameters2[1] = divOrgs;
+        	parameters2[2] = divGeos;
+        	parameters2[3] = first;
+        	parameters2[4] = count;
+            handler.handleException("getDetailedReportDriversWithVehicles",e,
+            		userSessionData,parameters2);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getDetailedReportDriversWithVehicles",getClass());
+        return data;
+	
+	}
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "driverview,administrator"
+     */
+    public DetailedDriverReportData getDetailedReportDrivers(Hashtable parameters, Integer[][] divOrgs, 
+    		Integer[][] divGeos, int first, int count,UserSessionData userSessionData) throws Exception{
+        MemoryLog.getInstance().log(MemoryLog.START,"getDetailedReportDrivers",getClass());
+        DetailedDriverReportData data = null;
+        try{
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();
+            parameters.put("type","detailed");
+            data = new DetailedDriverReportData(driverReport.getForestReportDrivers(parameters,divOrgs,divGeos,first,count,userSessionData));
+            if(userSessionData.getFilter().getCorporationId() == CorporationData.CIMSA) {
+            	// data.setPoints(driverReport.getDriverPoints(userSessionData));
+            }
+        }catch (Exception e) {
+        	Object[] parameters2 = new Object[5];
+        	parameters2[0] = parameters;
+        	parameters2[1] = divOrgs;
+        	parameters2[2] = divGeos;
+        	parameters2[3] = first;
+        	parameters2[4] = count;
+            handler.handleException("getDetailedReportDrivers",e,userSessionData,parameters2);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getDetailedReportDrivers",getClass());
+        return data;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "driverview,administrator"
+     */
+    public FOSADetailedDriverReportData getFOSADetailedReportDrivers(Hashtable<String,String> parameters, 
+    		Integer[][] divOrgs, Integer[][] divGeos, int first, int count,UserSessionData userSessionData) 
+    		throws Exception{
+    	
+        MemoryLog.getInstance().log(MemoryLog.START,"getFOSADetailedReportDrivers",getClass());
+        FOSADetailedDriverReportData data = null;
+        
+        try{
+        	
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();
+            data = new FOSADetailedDriverReportData(driverReport.getFOSAReportDrivers(parameters,divOrgs,divGeos,first,count,userSessionData));
+            
+        }catch (Exception e) {
+        	Object[] parameters2 = new Object[5];
+        	parameters2[0] = parameters;
+        	parameters2[1] = divOrgs;
+        	parameters2[2] = divGeos;
+        	parameters2[3] = first;
+        	parameters2[4] = count;
+            handler.handleException("getFOSADetailedReportDrivers",e,userSessionData,parameters2);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getFOSADetailedReportDrivers",getClass());
+        return data;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "driverview,administrator"
+     */
+    public AlertFOSADetailedDriverReportData getAlertFOSADetailedReportDrivers(Hashtable<String,String> parameters,
+    		Integer[][] divOrgs, Integer[][] divGeos, int first, int count,UserSessionData userSessionData) throws Exception{
+    	
+        MemoryLog.getInstance().log(MemoryLog.START,"getFOSADetailedReportDrivers",getClass());
+        AlertFOSADetailedDriverReportData data = null;
+       
+        try{
+        
+        	DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();
+            data = new AlertFOSADetailedDriverReportData(driverReport.getFOSAReportDrivers(parameters,divOrgs,divGeos,first,count,userSessionData));
+        
+        }catch (Exception e) {
+        	Object[] parameters2 = new Object[5];
+        	parameters2[0] = parameters;
+        	parameters2[1] = divOrgs;
+        	parameters2[2] = divGeos;
+        	parameters2[3] = first;
+        	parameters2[4] = count;
+            handler.handleException("getFOSADetailedReportDrivers",e,userSessionData,parameters2);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getFOSADetailedReportDrivers",getClass());
+        return data;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "resetpassword"
+     */
+    public DriverData findDriverByEmail(String email, UserSessionData userSessionData) throws Exception {
+        
+    	MemoryLog.getInstance().log(MemoryLog.START,"findDriverByEmail",getClass());
+        DriverData data = null;
+        try{
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();
+            data = driverReport.findDriverByEmail(email,userSessionData);
+        }catch (Exception e) {
+        	Object[] parameters = new Object[1];
+        	parameters[0] = email;
+            handler.handleException("findDriverByEmail",e,userSessionData,parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"findDriverByEmail",getClass());
+        return data;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "driverview,administrator"
+     */
+    public ListResult getDriverLicenseExpiry(String frommonth, Integer fromYear, String tomonth,
+    		Integer toYear, Integer[][] divOrgs, 
+    		Integer[][] divGeos, String firstname, String lastname, String status,
+    		int i, int j, UserSessionData userSessionData) throws Exception {
+
+    	MemoryLog.getInstance().log(MemoryLog.START,"getDriverLicenseExpiry",getClass());
+        ListResult result = null;
+        
+        try{
+        	
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();
+            result = driverReport.getDriverLicenseExpiry(frommonth,fromYear,tomonth,toYear,divOrgs,divGeos,firstname,lastname,status,i,j,userSessionData);
+        
+        }catch (Exception e) {
+        	Object[] parameters = new Object[11];
+        	parameters[0] = frommonth;
+        	parameters[1] = fromYear;
+        	parameters[2] = tomonth;
+        	parameters[3] = toYear;
+        	parameters[4] = divOrgs;
+        	parameters[5] = divGeos;
+        	parameters[6] = firstname;
+        	parameters[7] = lastname;
+        	parameters[8] = status;
+        	parameters[9] = i;
+        	parameters[10] = j;
+            handler.handleException("getDriverLicenseExpiry",e,userSessionData,parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getDriverLicenseExpiry",getClass());
+        return result;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "driverview,administrator"
+     */
+    public ListResult getDriverLicenseExpiry2(String frommonth, Integer fromYear, String tomonth,
+    		Integer toYear, String firstname, String lastname, String status,
+    		int i, int j, UserSessionData userSessionData) throws Exception {
+
+    	MemoryLog.getInstance().log(MemoryLog.START,"getDriverLicenseExpiry",getClass());
+        ListResult result = null;
+        
+        try{
+        	 
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();
+            result = driverReport.getDriverLicenseExpiry2(frommonth,fromYear,tomonth,toYear,firstname,lastname,status,i,j,userSessionData);
+        
+        }catch (Exception e) {
+        	Object[] parameters = new Object[11];
+        	parameters[0] = frommonth;
+        	parameters[1] = fromYear;
+        	parameters[2] = tomonth;
+        	parameters[3] = toYear;
+        
+        	parameters[6] = firstname;
+        	parameters[7] = lastname;
+        	parameters[8] = status;
+        	parameters[9] = i;
+        	parameters[10] = j;
+            handler.handleException("getDriverLicenseExpiry",e,userSessionData,parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getDriverLicenseExpiry",getClass());
+        return result;
+    }
+    
+	/**
+	 * @throws Exception
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "driverview,administrator"
+	 */
+	public ListResult getTelematicControlQuery(Integer fromday, Integer frommonth,
+			Integer fromYear, Integer today, Integer tomonth, Integer toYear,
+			Integer[][] divOrgs, Integer[][] divGeos, String firstname,
+			String lastname, String idDallas, Integer type, Integer recomendation,			
+			String status, int first, int count,String colorOrType, String reportType,String color,
+			UserSessionData userSessionData) throws Exception {		
+
+    	MemoryLog.getInstance().log(MemoryLog.START,"getTelematicControlQuery",getClass());
+        ListResult result = null;
+        
+        try{
+        	
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();
+            if (colorOrType.equalsIgnoreCase("color") ){
+            	// Filtro por Color 
+            	result = driverReport.getTelematicControlQueryByColor(fromday,frommonth,fromYear,
+                		today,tomonth,toYear,divOrgs,divGeos,firstname,lastname,idDallas, 
+                		status,first, count, color, userSessionData);
+            
+            }else{
+            	// Filtro por tipo de eventos
+            	result = driverReport.getTelematicControlQuery(fromday,frommonth,fromYear,
+            		today,tomonth,toYear,divOrgs,divGeos,firstname,lastname,idDallas, type,
+            		recomendation,status,first, count, userSessionData);
+            }
+            
+        }catch (Exception e) {
+        	Object[] parameters = { fromday,frommonth, fromYear,today, tomonth, toYear,
+					divOrgs, divGeos, firstname, lastname, type, recomendation, status, first, count };
+            handler.handleException("getTelematicControlQuery",e,userSessionData,parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getTelematicControlQuery",getClass());
+        return result;
+        
+	}
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "hrdphrdquery,administrator"
+     */
+    public ListResult getHRDDrivers(Integer frommonth, Integer fromYear,Integer tomonth, 
+    		Integer toYear, Integer[][] divOrgs, 
+    		Integer[][] divGeos, String firstname, String lastname, 
+    	   	int status, int first, int count, UserSessionData userSessionData) throws Exception {
+        
+    	MemoryLog.getInstance().log(MemoryLog.START,"getHRDDrivers",getClass());
+        ListResult hrd =  null;
+        
+        try {
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create(); 
+            hrd =  driverReport.getHRDDrivers(frommonth,fromYear,tomonth,toYear,divOrgs,divGeos,firstname,lastname,status,first,count,userSessionData);
+        
+        }catch (Exception e) {
+        	Object[] parameters = new Object[11];
+        	parameters[0] = frommonth;
+        	parameters[1] = fromYear;
+        	parameters[2] = tomonth;
+        	parameters[3] = toYear;
+        	parameters[4] = divOrgs;
+        	parameters[5] = divGeos;
+        	parameters[6] = firstname;
+        	parameters[7] = lastname;
+        	parameters[8] = status;
+        	parameters[9] = first;
+        	parameters[10] = count;
+            handler.handleException("getHRDDrivers",e,userSessionData,parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getHRDDrivers",getClass());
+        return hrd;
+    }
+    
+    /**
+     * Devuelve una ListResult con una Collection de DriverReportDataType
+     * con los drivers PHRD y el total de drivers que son PHRD.
+     * @ejb.interface-method
+     * @ejb.permission role-name = "hrdphrdquery,administrator"
+     */
+    public ListResult getPHRDDrivers(Integer frommonth, Integer fromYear,Integer tomonth, 
+    		Integer toYear, Integer[][] divOrgs, 
+    		Integer[][] divGeos, String firstname, String lastname, 
+    		int status, int first, int count, UserSessionData userSessionData) throws Exception {
+       
+    	MemoryLog.getInstance().log(MemoryLog.START,"getPHRDDrivers",getClass());
+        ListResult hrd =  null;
+        
+        try {
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create(); 
+            hrd =  driverReport.getPHRDDrivers(frommonth,fromYear,tomonth,toYear,divOrgs,divGeos,firstname,lastname,status,first,count,userSessionData);
+        
+        }catch (Exception e) {
+        	Object[] parameters = new Object[11];
+        	parameters[0] = frommonth;
+        	parameters[1] = fromYear;
+        	parameters[2] = tomonth;
+        	parameters[3] = toYear;
+        	parameters[4] = divOrgs;
+        	parameters[5] = divGeos;
+        	parameters[6] = firstname;
+        	parameters[7] = lastname;
+        	parameters[8] = status;
+        	parameters[9] = first;
+        	parameters[10] = count;
+            handler.handleException("getPHRDDrivers",e,userSessionData,parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getPHRDDrivers",getClass());
+        return hrd;
+    }
+    
+    /**
+     * Devuelve una ListResult con una Collection de DriverReportDataType
+     * con los drivers HRD con el Criterio de Monsanto Brasil y el total de 
+     * drivers que son HRD con el Criterio de Monsnato Brasil.
+     * @ejb.interface-method
+     * @ejb.permission role-name = "hrdbrasilquery,hrdphrdquery,administrator"
+     */
+    public ListResult getHRDMonsantoDrivers(Integer[][] divOrgs,Integer[][] divGeos, 
+    		String firstname, String lastname, int status, int first, 
+    		int count, String type, boolean avoidables, UserSessionData userSessionData) throws Exception {
+        
+    	MemoryLog.getInstance().log(MemoryLog.START,"getHRDMonsantoDrivers",getClass());
+        ListResult hrd =  null;
+        
+        try {
+            
+        	DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create(); 
+            hrd =  driverReport.getHRDMonsantoDrivers(divOrgs,divGeos,firstname,lastname,status,first,count,type,avoidables,userSessionData);
+        
+        }catch (Exception e) {
+        	Object[] parameters = new Object[9];
+        	parameters[0] = divOrgs;
+        	parameters[1] = divGeos;
+        	parameters[2] = firstname;
+        	parameters[3] = lastname;
+        	parameters[4] = status;
+        	parameters[5] = first;
+        	parameters[6] = count;
+        	parameters[7] = type;
+        	parameters[8] = avoidables;
+        	
+            handler.handleException("getHRDMonsantoDrivers",e,userSessionData,parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getHRDMonsantoDrivers",getClass());
+        return hrd;
+    }
+    
+    /**
+     * Devuelve una ListResult con una Collection de DriverReportDataType
+     * con los drivers HRD con el Criterio de Monsanto Argentina y el total de 
+     * drivers que son HRD con el Criterio de Monsnato Argentina.
+     * @ejb.interface-method
+     * @ejb.permission role-name = "hrdbrasilquery,hrdphrdquery,administrator"
+     */
+    public ListResult getHRDMonsantoARDrivers(Integer[][] divOrgs,Integer[][] divGeos, 
+    		String firstname, String lastname, int status, int first, 
+    		int count, String type, boolean avoidables, UserSessionData userSessionData) throws Exception {
+        
+    	MemoryLog.getInstance().log(MemoryLog.START,"getHRDMonsantoDrivers",getClass());
+        ListResult hrd =  null;
+        
+        try {
+            
+        	DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create(); 
+            hrd =  driverReport.getHRDMonsantoARDrivers(divOrgs,divGeos,firstname,lastname,status,first,count,type,avoidables,userSessionData);
+        
+        }catch (Exception e) {
+        	Object[] parameters = new Object[9];
+        	parameters[0] = divOrgs;
+        	parameters[1] = divGeos;
+        	parameters[2] = firstname;
+        	parameters[3] = lastname;
+        	parameters[4] = status;
+        	parameters[5] = first;
+        	parameters[6] = count;
+        	parameters[7] = type;
+        	parameters[8] = avoidables;
+        	
+            handler.handleException("getHRDMonsantoDrivers",e,userSessionData,parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getHRDMonsantoDrivers",getClass());
+        return hrd;
+    }
+    
+    /**
+     * Devuelve una ListResult con una Collection de DriverReportDataType
+     * con los drivers HRD con el Criterio de CEPA y el total de 
+     * drivers que son HRD con el Criterio de CEPA.
+     * @ejb.interface-method
+     * @ejb.permission role-name = "hrdbrasilquery,hrdphrdquery,administrator"
+     */
+    public ListResult getDetailedHRDDrivers(Integer frommonth, Integer fromYear, Integer tomonth, 
+    		Integer toYear, Integer[][] divOrgs, 
+    		Integer[][] divGeos, String firstname, String lastname, 
+    		int status, int first, int count, UserSessionData userSessionData) throws Exception {
+        
+    	MemoryLog.getInstance().log(MemoryLog.START,"getDetailedHRDDrivers",getClass());
+        ListResult hrd =  null;
+        try {
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create(); 
+            hrd =  driverReport.getDetailedHRDDrivers(frommonth,fromYear,tomonth,toYear,divOrgs,divGeos,firstname,lastname,status,first,count,userSessionData);
+        }catch (Exception e) {
+        	Object[] parameters = new Object[11];
+        	parameters[0] = frommonth;
+        	parameters[1] = fromYear;
+        	parameters[2] = tomonth;
+        	parameters[3] = toYear;
+        	parameters[4] = divOrgs;
+        	parameters[5] = divGeos;
+        	parameters[6] = firstname;
+        	parameters[7] = lastname;
+        	parameters[8] = status;
+        	parameters[9] = first;
+        	parameters[10] = count;
+            handler.handleException("getDetailedHRDDrivers",e,userSessionData,parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getDetailedHRDDrivers",getClass());
+        return hrd;         
+    }
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "driverview,administrator"
+     */
+    public DriverReportData getDriversWithoutBpsRegistry(String name, String status, 
+    		Integer[][] divOrgs, Integer[][] divGeos, int first, int count,
+    		UserSessionData userSessionData) throws Exception{
+    	
+        MemoryLog.getInstance().log(MemoryLog.START,"getDriversWithoutBpsRegistry",getClass());
+        DriverReportData data = null;
+        
+        try{
+            
+        	DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();  
+            data = new DriverReportData(driverReport.getDriversWithoutBpsRegistry(name,status,divOrgs,divGeos,first,count,userSessionData,"simple"));
+        
+        }catch (Exception e) {
+        	Object[] parameters = new Object[6];
+        	parameters[0] = name;
+        	parameters[1] = status;
+        	parameters[2] = divOrgs;
+        	parameters[3] = divGeos;
+        	parameters[4] = first;
+        	parameters[5] = count;
+        	
+            handler.handleException("getDriversWithoutBpsRegistry",e,userSessionData,parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getDriversWithoutBpsRegistry",getClass());
+        return data;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "driverview,administrator"
+     */
+    public AptitudTestReportData getDriversTest(String firstName, String lastName, int status, Integer fromMonth, Integer fromYear, Integer toMonth, Integer toYear, Integer[][] divOrgs, 
+    		Integer[][] divGeos, UserSessionData userSessionData) throws Exception{
+       
+        AptitudTestReportData data = null;
+       
+        try{
+           
+        	DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();  
+            data = new AptitudTestReportData(driverReport.getDriversTest(firstName,lastName,status,fromMonth,fromYear,toMonth,toYear,divOrgs,divGeos,userSessionData));
+        
+        }catch (Exception e) {
+        	Object[] parameters = {firstName,lastName,status,fromMonth,fromYear,toMonth,toYear,divOrgs,divGeos};
+            handler.handleException("getDriversTest",e,userSessionData,parameters);
+        }
+        return data;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "driverview,administrator"
+     */
+    public AptitudTestReportData getDriverAptitudTests(String firstName, String lastName, int status, Integer fromMonth, Integer fromYear 
+    		, Integer toMonth, Integer toYear, Integer[][] divOrgs, Integer[][] divGeos, UserSessionData userSessionData) throws Exception{
+       
+        AptitudTestReportData data = null;
+        try{
+        	DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();  
+            data = new AptitudTestReportData(driverReport.getDriverAptitutTests(firstName, lastName, status, fromMonth, fromYear, toMonth, toYear, divOrgs, divGeos, userSessionData));
+        }catch (Exception e) {
+        	Object[] parameters = {firstName, lastName, status, fromMonth, fromYear, toMonth, toYear, divOrgs, divGeos};
+            handler.handleException("getDriversTest",e,userSessionData,parameters);
+        }
+        return data;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "driverview,administrator"
+     */
+    public AlcoholControlReportData getDriversAlcoholControls(String name, String status, 
+    		String type, String result, Integer[][] divOrgs, Integer[][] divGeos, 
+    		int first, int count, UserSessionData userSessionData) throws Exception{
+        
+    	MemoryLog.getInstance().log(MemoryLog.START,"getDriversAlcoholControls",getClass());
+        AlcoholControlReportData data = null;
+        
+        try{
+            
+        	DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();  
+            data = new AlcoholControlReportData(driverReport.getDriversAlcoholControls(name,status,type,result,divOrgs,divGeos,first,count,userSessionData));
+        
+        }catch (Exception e) {
+        	Object[] parameters = new Object[7];
+        	parameters[0] = name;
+        	parameters[1] = type;
+        	parameters[2] = result;
+        	parameters[3] = divOrgs;
+        	parameters[4] = divGeos;
+        	parameters[5] = first;
+        	parameters[6] = count;
+            handler.handleException("getDriversAlcoholControls",e,userSessionData,parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getDriversAlcoholControls",getClass());
+        return data;
+    }
+    
+    /**
+     * @ejb.permission role-name = "administrator,driveredit,driverupdate,eventcreate,finecreate,driverviewowndata,drivertests,driverupload"
+	 * @ejb.interface-method	 
+	 * @param userRequest
+	 * @param firstName
+	 * @param lastName
+	 * @param birthday
+	 * 
+	 * Devuelve true si existe un driver con ese nombre, apellido y fecha de nacimiento.
+	 * 
+	 * @return
+	 * @throws Exception
+	 */
+	public boolean existDriver(UserSessionData userSessionData,String firstName, 
+			String lastName, Date birthday) throws Exception {
+       
+		MemoryLog.getInstance().log(MemoryLog.START,"existDriver",getClass());
+        boolean data = false;
+		
+        try{
+			
+        	DriverReportHome home = DriverReportUtil.getHome();
+		 	DriverReport driverReport = home.create();  
+            data = driverReport.existDriver(userSessionData,firstName,lastName,birthday);
+		
+        }catch (Exception e) {
+			Object[] parameters = new Object[3];
+        	parameters[0] = firstName;
+        	parameters[1] = lastName;
+        	parameters[2] = birthday;
+    	 	handler.handleException("existDriver",e,userSessionData,parameters);
+     	}
+        MemoryLog.getInstance().log(MemoryLog.END,"existDriver",getClass());
+        return data;
+	}
+	
+	/**
+     * @ejb.permission role-name = "administrator,driveredit,driverupdate,eventcreate,
+     * 				finecreate,driverviewowndata,drivertests,driverupload,uploadcdcimsa"
+     * @ejb.interface-method	 
+	 */
+	public Integer existDriverByCorporationId(UserSessionData userRequest,String firstName, 
+			String lastName, String corporationUserId, Integer corporationId) throws Exception {
+		
+		MemoryLog.getInstance().log(MemoryLog.START,"existDriver",getClass());
+        try{
+			
+        	DriverReportHome home = DriverReportUtil.getHome();
+		 	DriverReport driverReport = home.create();  
+            return driverReport.existDriverByCorporationId(userRequest, firstName, 
+            		lastName, corporationUserId,corporationId); 
+		
+        }catch (Exception e) {
+			Object[] parameters = new Object[3];
+        	parameters[0] = firstName;
+        	parameters[1] = lastName;
+        	parameters[2] = corporationId;
+    	 	handler.handleException("existDriver",e,userRequest,parameters);
+     	}
+        MemoryLog.getInstance().log(MemoryLog.END,"existDriver",getClass());
+        return null;
+	}
+	
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public ListResult getHistoryDrivers(String firstname, String lastname, int status,
+    		Integer[][] divOrgs, Integer[][] divGeos, int first, int count, 
+    		UserSessionData userSessionData) throws Exception {
+        
+    	MemoryLog.getInstance().log(MemoryLog.START,"getHistoryDrivers",getClass());
+        ListResult data = null;
+        
+        try{
+            
+        	DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();  
+            data = driverReport.getHistoryDrivers(firstname,lastname,status,divOrgs,divGeos,first,count,userSessionData);        
+       
+        }catch (Exception e) {
+        	Object[] parameters = new Object[7];
+        	parameters[0] = firstname;
+        	parameters[1] = lastname;
+        	parameters[2] = status ;
+        	parameters[3] = divOrgs;
+        	parameters[4] = divGeos;
+        	parameters[5] = first;
+        	parameters[6] = count;
+        	                               
+            handler.handleException("getHistoryDrivers",e,userSessionData,parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getHistoryDrivers",getClass());
+        return data;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driveredit,eventcreate,finecreate,driverupdate,drivertests"
+     */
+    public Collection getDriverUnconformities(Integer driver,UserSessionData userSessionData) throws Exception {
+    	Collection unconformities = new LinkedList();
+        try{
+        	DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();  
+            unconformities = driverReport.getDriverUnconformities(driver,userSessionData);        
+       
+        }catch (Exception e) {
+        	Object[] parameters = {driver};
+            handler.handleException("getDriverUnconformities",e,userSessionData,parameters);
+        }
+        return unconformities;
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverupdate,drivertests"
+     */
+    public boolean existsAptitudTest(Integer driver,String date,UserSessionData userSessionData) throws Exception {
+    	Collection unconformities = new LinkedList();
+        try{
+        	DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();  
+            return driverReport.existsAptitudTest(driver,date,userSessionData);        
+       
+        }catch (Exception e) {
+        	Object[] parameters = {driver};
+            handler.handleException("existsAptitudTest",e,userSessionData,parameters);
+        }
+        return false;
+    }
+    
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public ListResult getCombinedHistory(Hashtable parameters, int first, int count, UserSessionData userSessionData) throws Exception {
+        
+    	MemoryLog.getInstance().log(MemoryLog.START,"getCombinedHistory",getClass());
+        ListResult data = null;
+        
+        try{
+            
+        	DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();  
+            data = driverReport.getCombinedHistory(parameters,first,count,userSessionData);        
+       
+        }catch (Exception e) {
+        	Object[] p = new Object[parameters.size()];
+        	Enumeration pEnum = parameters.elements();
+        	int i = 0;
+        	while(pEnum.hasMoreElements()) {
+            	p[i] = pEnum.nextElement();
+            	i++;
+        	}
+            handler.handleException("getCombinedHistory",e,userSessionData,p);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getCombinedHistory",getClass());
+        return data;
+    }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,doorcontrol"
+     */
+    public String[][] verifyAccess(Integer driver,Text messages,UserSessionData userSessionData) throws Exception {
+    	Collection list = new LinkedList();
+        int access = DriverData.AVAILABLE;
+    	try {
+            DriverReport driverReport = DriverReportUtil.getHome().create();  
+    		DriverData driverData = driverReport.findDriverByPrimaryKey(driver, userSessionData);
+            ContratistDataType contratistType = driverReport.getDriverType(driver, userSessionData);
+            Object[] errors = new Object[6];
+    		if(driverData.getExclusionDate() != null) {
+    			list.add(messages.getText("doorcontrol.invalid.excludeddriver"));
+    			access = DriverData.UNAVAILABLE;
+    			errors[0] = driverData.getExclusionDate();
+    		}else {
+	            ActivityReport activityReport = ActivityReportUtil.getHome().create();
+	            int type = DriverData.TYPE_D;
+	            if(contratistType != null) {
+	            	type = contratistType.getType();
+	            }
+	            switch(type) {
+		        	case DriverData.TYPE_A:
+		        		Calendar today = Calendar.getInstance();
+		        		if(driverData.getLicenseExpiry() == null) {
+		        			list.add(messages.getText("doorcontrol.invalid.missinglicenseexpiry"));
+		        			access = DriverData.UNAVAILABLE;
+		        			errors[1] = new Integer(1);
+		        		}else if(isExpiry(today,driverData.getLicenseExpiry())) {
+		        			list.add(messages.getText("doorcontrol.invalid.licenseexpiry"));
+		        			access = DriverData.UNAVAILABLE;
+		        			errors[1] = driverData.getLicenseExpiry();
+		        		}
+		        		if(driverData.getHealthExpiry() == null) {
+		        			list.add(messages.getText("doorcontrol.invalid.missinghealthexpiry"));
+		        			access = DriverData.UNAVAILABLE;
+		        			errors[2] = new Integer(1);
+		        		}else if(isExpiry(today,driverData.getHealthExpiry())) {
+		        			list.add(messages.getText("doorcontrol.invalid.healthexpiry"));
+		        			access = DriverData.UNAVAILABLE;
+		        			errors[2] = driverData.getHealthExpiry();
+		        		}
+		        		AptitudTestData lastAptitudTest = driverReport.findLastAptitudTest(driver,userSessionData);
+		        		if(lastAptitudTest == null) {
+		        			list.add(messages.getText("doorcontrol.invalid.missingaptitudtest"));
+		        			access = DriverData.UNAVAILABLE;
+		        			errors[3] = new Integer(1);
+		        		}else if(isExpiry(today,lastAptitudTest.getExpiry())) {
+		        			
+		        			if(isExpiryNextMonth(today, lastAptitudTest.getExpiry())) {
+		        				list.add(messages.getText("doorcontrol.invalid.expiredaptitudtest"));
+		        				access = DriverData.UNAVAILABLE;
+		        				errors[3] = lastAptitudTest.getExpiry();
+		        			}else {
+		        				list.add(messages.getText("doorcontrol.warning.expiredaptitudtest")+" "+getDifference(today, lastAptitudTest.getExpiry())+" "+messages.getText("generic.messages.days"));
+		        			}
+		        		}else if(!lastAptitudTest.isApt()) {
+		        			list.add(messages.getText("doorcontrol.invalid.aptitudtest"));
+		        			access = DriverData.UNAVAILABLE;
+		        			errors[3] = new Integer(2);
+		        		}
+		        		Date lastRadar = activityReport.findLastActivity(driver,CEPAActivityConstants.RADAR,userSessionData);
+		        		if(lastRadar == null) {
+		        			list.add(messages.getText("doorcontrol.invalid.missingradar"));
+		        			access = DriverData.UNAVAILABLE;
+		        			errors[4] = new Integer(1);
+		        		}
+		        		Date lastInduction = activityReport.findLastActivity(driver,CEPAActivityConstants.INDUCTION_TRAINING,userSessionData);
+		        		if(lastInduction == null) {
+		        			list.add(messages.getText("doorcontrol.invalid.missinginduction"));
+		        			access = DriverData.UNAVAILABLE;
+		        			errors[5] = new Integer(1);
+		        		}
+		        		break;
+		        	case DriverData.TYPE_B:
+		        		today = Calendar.getInstance();
+		        		if(driverData.getLicenseExpiry() == null) {
+		        			list.add(messages.getText("doorcontrol.invalid.missinglicenseexpiry"));
+		        			access = DriverData.UNAVAILABLE;
+		        			errors[1] = new Integer(1);
+		        		}else if(isExpiry(today,driverData.getLicenseExpiry())) {
+		        			list.add(messages.getText("doorcontrol.invalid.licenseexpiry"));
+		        			access = DriverData.UNAVAILABLE;
+		        			errors[1] = driverData.getLicenseExpiry();
+		        		}
+		        		if(driverData.getHealthExpiry() == null) {
+		        			list.add(messages.getText("doorcontrol.invalid.missinghealthexpiry"));
+		        			access = DriverData.UNAVAILABLE;
+		        			errors[2] = new Integer(1);
+		        		}else if(isExpiry(today,driverData.getHealthExpiry())) {
+		        			list.add(messages.getText("doorcontrol.invalid.healthexpiry"));
+		        			access = DriverData.UNAVAILABLE;
+		        			errors[2] = driverData.getHealthExpiry();
+		        		}
+		        		lastRadar = activityReport.findLastActivity(driver,CEPAActivityConstants.RADAR,userSessionData);
+		        		if(lastRadar == null) {
+		        			list.add(messages.getText("doorcontrol.invalid.missingradar"));
+		        			access = DriverData.UNAVAILABLE;
+		        			errors[4] = new Integer(1);
+		        		}
+		        		lastInduction = activityReport.findLastActivity(driver,CEPAActivityConstants.INDUCTION_TRAINING,userSessionData);
+		        		if(lastInduction == null) {
+		        			list.add(messages.getText("doorcontrol.invalid.missinginduction"));
+		        			access = DriverData.UNAVAILABLE;
+		        			errors[5] = new Integer(1);
+		        		}
+		        		break;
+		        	case DriverData.TYPE_C:
+		        		today = Calendar.getInstance();
+		        		today.add(Calendar.YEAR, -1);
+		        		lastInduction = activityReport.findLastActivity(driver,CEPAActivityConstants.INDUCTION_TRAINING,userSessionData);
+		        		if(lastInduction == null) {
+		        			list.add(messages.getText("doorcontrol.invalid.missinginduction"));
+		        			access = DriverData.UNAVAILABLE;
+		        			errors[5] = new Integer(1);
+		        		}
+		        		break;
+	            }
+    		}
+    		DriverABMUtil.getHome().create().saveAccessLog(driverData.getId(),contratistType.getContratist(),errors,userSessionData);
+    		if(list.size() > 0 && !empty(contratistType.getEmails())) {
+    			sendDriverAccessEmail(driverData, errors, contratistType.getEmails());
+    		}
+    	} catch (Exception e) {
+        	Object[] p = {driver};
+            handler.handleException("verifyAccess",e,userSessionData,p);
+		}
+    	int length = (list.size() == 0) ? 1 : list.size();
+    	String[][] result = new String[2][length];
+    	result[0][0] = String.valueOf(access);
+    	result[1] = (String[])list.toArray(new String[0]);
+    	return result;
+    }
+
+	private int getDifference(Calendar start, Date date) {
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(date);
+		calendar.add(Calendar.MONTH, 1);
+		int result = calendar.get(Calendar.DAY_OF_YEAR) - start.get(Calendar.DAY_OF_YEAR);
+		if(result < 0) {
+			return 365 + result;
+		}else {
+			return result;
+		}
+	}
+
+	private boolean isExpiry(Calendar start,Date date) {
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(date);
+		return start.after(calendar);
+	}
+	
+	private boolean isExpiryNextMonth(Calendar start,Date date) {
+		Calendar calendar = Calendar.getInstance();
+		calendar.setTime(date);
+		calendar.add(Calendar.MONTH, 1);
+		return start.after(calendar);
+	}
+
+	private void sendDriverAccessEmail(DriverData driver,Object[] errors,String emails) throws Exception {
+		MailSender sender = new MailSender();
+
+		String mail = "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'>"+
+        "<span style='font-family:Arial;'> "+
+        "Estimado, "+
+        "</span> "+
+        "</p> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<span style='font-family:Arial;'> "+
+        "Este email es para avisar a usted que el conductor "+driver.getFirstName()+" "+driver.getLastName()+" no pas&oacute; el control de acceso del DataCenter."+
+        "</span> "+
+        "</p> "+
+        "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<span style='font-family:Arial;'> "+
+        "Los motivos por los que no se autoriz&oacute; son los siguientes:"+
+        "</span> "+
+        "</p> ";
+		if(errors[0] != null) {
+			mail += "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+			"<span style='font-family:Arial;'> "+
+			"- Usuario inactivo desde "+formatDate((Date)errors[0])+
+			"</span> "+
+			"</p> ";
+		}
+		if(errors[1] != null) {
+			mail += "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+				"<span style='font-family:Arial;'> ";
+			if(errors[1] instanceof Date) {
+				mail += "- Libreta de conducir vencida, fecha de vencimiento: "+formatDate((Date)errors[1]);
+			}else {
+				mail += "- No posee dato de Vencimiento de libreta de conducir";
+			}
+			mail += "</span></p> ";
+		}
+		if(errors[2] != null) {
+			mail += "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+				"<span style='font-family:Arial;'> ";
+			if(errors[2] instanceof Date) {
+				mail += "- Carnet de salud vencido, fecha de vencimiento: "+formatDate((Date)errors[1]);
+			}else {
+				mail += "- No posee dato de Vencimiento de carnet de salud";
+			}
+			mail += "</span></p> ";
+		}
+		if(errors[3] != null) {
+			mail += "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+			"<span style='font-family:Arial;'> ";
+			if(errors[3] instanceof Date) {
+				mail += "- Ex&aacutemen psico-t&eacute;cnico vencido, fecha de vencimiento: "+formatDate((Date)errors[3]);
+			}else {
+				if(((Integer)errors[3]).intValue() == 1) {
+					mail += "- No posee dato de ex&aacutemen psico-t&eacute;cnico";
+				}else {
+					mail += "- Ex&aacutemen psico-t&eacute;cnico no aprobado.";
+				}
+			}
+			mail += "</span></p> ";
+		}
+		if(errors[4] != null) {
+			mail += "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+			"<span style='font-family:Arial;'> "+
+			"- No posee curso RADAR."+
+			"</span> "+
+			"</p> ";
+		}
+		if(errors[5] != null) {
+			mail += "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+			"<span style='font-family:Arial;'> "+
+			"- No posee curso de inducci�n."+
+			"</span> "+
+			"</p> ";
+		}
+		mail += "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'> "+
+        "<span style='font-family:Arial;'> "+
+        "Atentamente, "+
+        "</span> "+
+        "</p> "+
+        "<br> "+
+        "<br> "+
+        "<span style='font-size:10.0pt;font-family:Arial;color:navy'>.................................................</span> "+
+        "<br> "+
+        "<em><b><span style='font-size:10.0pt;font-family:Verdana;color:navy'>Cepa Data Center</span></b></em> "+
+        "<br> "+
+        "<em><b><span style='font-size:10.0pt;font-family:Verdana;color:navy'>Dpto. Data Center</span></b></em> "+
+        "<br> "+
+        "<em><b><span lang=EN-US style='font-size:10.0pt;font-family:Verdana;color:blue;mso-ansi-language: "+
+        "EN-US'>CEPA UY</span></b></em> "+
+        "<br> "+
+        "<strong><span "+
+        "lang=EN-US style='font-size:7.5pt;font-family:Verdana;mso-ansi-language:EN-US; "+
+        "font-weight:normal'><a href='mailto:datacenter@cepasafedrive.com'>datacenter@cepasafedrive.com</a></span></strong><span "+
+        "lang=EN-US style='font-size:10.0pt;font-family:Arial;mso-ansi-language:EN-US'> </span><span "+
+        "lang=EN-US style='mso-ansi-language:EN-US'></span> "+
+
+        "<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=823 "+
+         "style='width:617.25pt;mso-cellspacing:0cm;mso-padding-alt:0cm 0cm 0cm 0cm'> "+
+         "<tr style='mso-yfti-irow:0;mso-yfti-lastrow:yes;mso-yfti-firstrow: yes'> "+
+          "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+          "<p class=MsoNormal align=center style='mso-margin-top-alt:auto;mso-margin-bottom-alt: "+
+          "auto;text-align:center'><span lang=EN-US style='mso-ansi-language:EN-US'>&nbsp;<o:p></o:p></span></p> "+
+          "</td> "+
+          "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+          "<p class=MsoNormal style='mso-margin-top-alt:auto;mso-margin-bottom-alt:auto'><span "+
+          "lang=EN-US style='mso-ansi-language:EN-US'>&nbsp;<o:p></o:p></span></p> "+
+          "</td> "+
+          "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+          "<div class=MsoNormal align=center style='text-align:center'><span "+
+          "style='font-size:7.5pt'> "+
+          "<hr size=2 width='100%' align=center> "+
+          "</span></div> "+
+          "<div align=center> "+
+          "<table class=MsoNormalTable border=0 cellspacing=0 cellpadding=0 width=827 "+
+          " style='width:620.25pt;mso-cellspacing:0cm;mso-padding-alt:0cm 0cm 0cm 0cm'> "+
+           "<tr style='mso-yfti-irow:0;mso-yfti-lastrow:yes;mso-yfti-firstrow: yes'> "+
+           "<td valign=top style='padding:0cm 0cm 0cm 0cm'> "+
+            "<p class=MsoNormal align=center style='mso-margin-top-alt:auto;mso-margin-bottom-alt: "+
+            "auto;text-align:center'><span lang=EN-GB style='font-size:7.5pt;color:navy; "+
+            "mso-ansi-language:EN-GB'>&nbsp; *Confidentiality Notice*<br> "+
+            "The information contained in this e-mail and any accompanying documents is "+
+            "confidential, may be privileged. It is intended solely for the person "+
+            "and/or entity to whom it is addressed (i.e. those identified in the "+
+            "&quot;To&quot; and &quot;cc&quot; box). The message and any attachments are "+
+            "the property of CEPA International LLC, its group companies, or clients. "+
+            "Unauthorized review, use, disclosure, or copying of this communication, or "+
+            "any part thereof, is strictly prohibited and may be unlawful. If you have "+
+            "received this e-mail in error, please return it and any attachment to the "+
+            "sender and delete the e-mail and attachments and any copy from your system. "+
+            "</span><span style='font-size:7.5pt;color:navy'>CEPA <span class=SpellE>International</span> "+
+            "<span class=SpellE><span class=spelle>thanks</span></span> <span "+
+            "class=SpellE><span class=spelle>you</span></span> <span class=SpellE><span "+
+            "class=spelle>for</span></span> <span class=SpellE><span class=spelle>your</span></span> "+
+            "<span class=SpellE><span class=spelle>cooperation</span></span>. </span></p> "+
+            "<p align=center style='text-align:center'>&nbsp;</p> "+
+            "</td> "+
+           "</tr> "+
+          "</table> "+
+          "</div> "+
+          "<p class=MsoNormal align=center style='text-align:center'><o:p></o:p></p> "+
+          "</td> "+
+         "</tr> "+
+        "</table> ";
+
+		StringTokenizer emailsTokenizer = new StringTokenizer(emails,";");
+		while(emailsTokenizer.hasMoreTokens()) {
+			sender.send(emailsTokenizer.nextToken(),"smtp.cepasafedrive.com","CEPA Data Center",
+					"datacenter@cepasafedrive.com","$Dc&28a$",
+					"Conductor no autorizado a entrada a planta - Data Center",mail,AlertConstants.BCC);
+		}
+    }
+
+    private boolean empty(String label) {
+        return label == null || label.trim().length() == 0;
+    }
+
+    private String formatDate(Date date) {
+        if(date == null) {
+            return "";
+        }
+        Calendar calendar = Calendar.getInstance();
+        calendar.setTime(date);
+        return calendar.get(Calendar.DAY_OF_MONTH)+"-"+(calendar.get(Calendar.MONTH)+1)+"-"+calendar.get(Calendar.YEAR);
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public Collection getDriverAccessLog(String corporationId,String contratists,Date start,Date end,Integer access,UserSessionData userSessionData) throws Exception {
+    	MemoryLog.getInstance().log(MemoryLog.START,"getDriverAccessLog",getClass());
+        try{
+            return DriverReportUtil.getHome().create().getDriverAccessLog(corporationId,contratists,start,end,access,userSessionData);        
+        }catch (Exception e) {
+        	Object[] p = {corporationId,contratists,start,end,access};
+            handler.handleException("getDriverAccessLog",e,userSessionData,p);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getDriverAccessLog",getClass());
+        return new LinkedList();
+   }
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverview,driveredit,driverupdate"
+     */
+    public Collection getUnconformities(Integer driver,UserSessionData userSessionData) throws Exception {
+    	MemoryLog.getInstance().log(MemoryLog.START,"getUnconformities",getClass());
+        try{
+            return DriverReportUtil.getHome().create().getUnconformities(driver,userSessionData);        
+        }catch (Exception e) {
+        	Object[] p = {driver};
+            handler.handleException("getUnconformities",e,userSessionData,p);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getUnconformities",getClass());
+        return new LinkedList();
+   }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,query"
+     */
+    public Object[][] getUncoformities(Integer fromMonth, Integer fromYear, Integer toMonth, Integer toYear, Integer status,
+    		Integer[][] divOrgs, Integer[] divGeos, UserSessionData userSessionData) throws Exception {
+    	MemoryLog.getInstance().log(MemoryLog.START,"getUnconformities",getClass());
+        try{
+            return DriverReportUtil.getHome().create().getUncoformities(fromMonth,fromYear,toMonth,toYear,status,divOrgs,divGeos,userSessionData);        
+        }catch (Exception e) {
+        	Object[] p = {fromMonth,fromYear,toMonth,toYear,status,divOrgs,divGeos};
+            handler.handleException("getUnconformities",e,userSessionData,p);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getUnconformities",getClass());
+        return new Object[0][0];
+    }
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driverview"
+     */
+    public Object[][] getProvisionalBTW(Integer driver,UserSessionData userSessionData) throws Exception {
+        try{
+            return DriverReportUtil.getHome().create().getProvisionalBTW(driver, userSessionData);        
+        }catch (Exception e) {
+        	Object[] p = {driver};
+            handler.handleException("getUnconformities",e,userSessionData,p);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getUnconformities",getClass());
+        return new Object[0][0];
+    }
+    
+    /**
+     * Obtiene la entidad csv que tiene la informacion vinculada a la actualizacion masiva
+     * de conductores o vehiculos.
+     * 
+     * @ejb.permission role-name = "administrator,driverupdatebatch,vehicleupdatebatch"
+	 * @ejb.interface-method
+	 */
+	public CsvEntityData findCsvEntityByPrimaryKey(Integer idCsv, UserSessionData userRequest) throws Exception {
+		try{
+            return DriverReportUtil.getHome().create().findCsvEntityByPrimaryKey(idCsv, userRequest);        
+        }catch (Exception e) {
+        	Object[] p = {idCsv};
+            handler.handleException("findCsvEntityByPrimaryKey",e,userRequest,p);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"getUnconformities",getClass());
+        return null;
+	}
+	
+	/**
+	 * @ejb.permission role-name ="administrator,driveredit,driverviewowndata,driverupload"
+	 * @ejb.interface-method
+	 */
+	public Collection<TelematicControlData> findTelematicControls(Integer driver, UserSessionData userSessionData) throws Exception {
+		try{
+            return DriverReportUtil.getHome().create().findTelematicControls(driver, userSessionData);        
+        }catch (Exception e) {
+        	Object[] p = {driver};
+            handler.handleException("findTelematicControls",e,userSessionData,p);
+        }
+        return null;
+	}	
+	
+	/**
+	 * @ejb.permission role-name ="administrator,driveredit,driverviewowndata,driverupload"
+	 * @ejb.interface-method
+	 */
+	public Collection<TelematicControlData> findTelematicControls(Integer year,Integer monthstart,Integer monthend, UserSessionData userSessionData) throws Exception {
+		try{
+            return DriverReportUtil.getHome().create().findTelematicControls(year,monthstart,monthend, userSessionData);        
+        }catch (Exception e) {
+        	Object[] p = {};
+            handler.handleException("findTelematicControls",e,userSessionData,p);
+        }
+        return null;
+	}	
+	
+	/**
+	 * @ejb.permission role-name ="administrator,driveredit,driverviewowndata"
+	 * @ejb.interface-method
+	 */
+	public Collection<TelematicControlData> findTelematicControls(String firstName, String lastName, Date from, Date to, int type, int status, Integer[][] divOrgs, Integer[][] divGeos,UserSessionData userSessionData) throws Exception {
+		try{
+            return DriverReportUtil.getHome().create().findTelematicControls(firstName,lastName,from,to,type,status,divOrgs,divGeos,userSessionData);        
+        }catch (Exception e) {
+        	Object[] p = {firstName,lastName,from,to,type,status,divOrgs,divGeos};
+            handler.handleException("findTelematicControls",e,userSessionData,p);
+        }
+        return null;
+	}
+	/**
+	 * @ejb.permission role-name ="administrator,driveredit,driverviewowndata"
+	 * @ejb.interface-method
+	 */
+	public Collection<DriverData> findDriversDPAPontos(
+			Integer year,Integer monthend, UserSessionData userSessionData) throws Exception {
+		try{
+            return DriverReportUtil.getHome().create().findDriversDPAPontos(year,monthend, userSessionData);        
+        }catch (Exception e) {
+        	Object[] p = {};
+            handler.handleException("findDriversDPAPontos",e,userSessionData,p);
+        }
+        return null;
+	}	
+  
+	/**
+	 * @ejb.permission role-name ="administrator,driveredit,driverviewowndata,driverupload"
+	 * @ejb.interface-method
+	 */
+	public TelematicControlData findTelematicControl(Integer id, UserSessionData userSessionData) throws Exception {
+		try{
+            return DriverReportUtil.getHome().create().findTelematicControl(id, userSessionData);        
+        }catch (Exception e) {
+        	Object[] p = {id};
+            handler.handleException("findTelematicControl",e,userSessionData,p);
+        }
+        return null;
+	}	
+
+	/**
+	 * @ejb.permission role-name = "administrator,driveredit,drivervehicleedit,driverecreate,driverupdate,driverupload" 
+     * @ejb.interface-method
+	 * @param idVehicle
+	 * @param idDallas
+	 * @return
+	 * @throws Exception
+	 */
+	public boolean idCorporationExist(String idDriver,String idCorporation,UserSessionData userSessionData)throws Exception {
+		try {
+			return DriverReportUtil.getHome().create().idCorporationExist(idDriver,idCorporation, userSessionData);
+		} catch (Exception e) {
+			Object[] p = new Object[]{idDriver,idCorporation};
+			handler.handleException("idCorporationExist",e,null,p);
+		}
+		return false;
+	}
+	
+	/**
+	 * @ejb.permission role-name = "administrator,driveredit,drivervehicleedit,driverecreate,driverupdate,driverupload" 
+     * @ejb.interface-method
+	 * @param idDriver
+	 * @param date
+	 * @param type
+	 * @return
+	 * @throws Exception
+	 * 
+	 * Verifica si existe o no un control telematico para el 
+	 * conductor idDriver en esa fecha date y de ese tipo type.
+	 */
+	public boolean existTelematicControl(Integer idDriver, Date date, Integer type, 
+			UserSessionData userRequest) throws Exception {
+		try {
+			DriverReportHome dHome = DriverReportUtil.getHome();
+			DriverReport dReport = dHome.create();
+			return dReport.existTelematicControl(idDriver,date,type, userRequest);
+		} catch (Exception e) {
+			Object[] p = { idDriver, date,type};
+			handler.handleException("existTelematicControl",e,null,p);
+		}
+		return false;
+	}
+
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,jjreporter"
+     */
+    public Collection findDriverReport(Hashtable parameters,UserSessionData userSessionData) throws Exception {
+    	Collection drivers = new LinkedList();	
+    	try {
+			DriverReportHome dHome = DriverReportUtil.getHome();
+			DriverReport dReport = dHome.create();
+			drivers.addAll(dReport.findDriverReport(parameters, userSessionData));
+		} catch (Exception e) {
+			handler.handleException("findDriverReport",e,null,null);
+		}
+		return drivers;
+    }
+    
+	/**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,driverview"
+	 */
+	public void exportTelematicControlDPA(Text messages, UserSessionData userSessionData,DPATelematicControlFilter filter,OutputStream output) throws Exception {
+		try{
+			DriverReportHome dHome = DriverReportUtil.getHome();
+			DriverReport dReport = dHome.create();
+			dReport.exportTelematicControlDPA(messages, userSessionData, filter, output);
+		} catch (Exception e) {
+			handler.handleException("exportTelematicControlDPA",e,null,null);
+		}
+	}
+
+
+	/**
+	 * @ejb.interface-method view-type = "remote"
+	 * @ejb.transaction type="Required" 
+     * @ejb.permission role-name = "administrator,drivercreate"
+	 * @param data
+	 * @throws Exception 
+	 */
+	public Integer[] getDriverLink(Integer driver,UserSessionData userSessionData) throws Exception {
+		try{
+			DriverReportHome dHome = DriverReportUtil.getHome();
+			DriverReport dReport = dHome.create();
+			return dReport.getDriverLink(driver, userSessionData);
+    	}catch (Exception e) {
+			Object[] parameters = {driver};
+			handler.handleException("getDriverLink",e,userSessionData,parameters);
+    	}
+		return null;
+	}
+
+    
+    /**
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,driveredit,eventcreate,finecreate,driverupdate,drivertests,cepascheduleactivityregistrycreate,query"
+     */
+    public DriverMainAttributes findDriverForestalData(Integer id, int divorg, UserSessionData userSessionData) throws Exception{
+        MemoryLog.getInstance().log(MemoryLog.START,"findDriverForestalData",getClass());
+        DriverMainAttributes data=null;
+        try{
+            if (id == null) {
+                throw new InvalidDataException("findDriverForestalData","id = null");
+            }
+            DriverReportHome home = DriverReportUtil.getHome();
+            DriverReport driverReport = home.create();
+            data=driverReport.findDriverForestalData(id,divorg,userSessionData);
+        } catch(Exception e){
+        	Object[] parameters = new Object[1];
+        	parameters[0] = id;
+            handler.handleException("findDriverForestalData",e,userSessionData,parameters);
+        }
+        MemoryLog.getInstance().log(MemoryLog.END,"findDriverForestalData",getClass());
+        return data;
+    }
+    
+	/**
+	 * @ejb.permission role-name ="administrator,driverview"
+	 * @ejb.interface-method
+	 */
+	public List getAllDriverCorporation(UserSessionData userSessionData) throws Exception {
+        try{
+            return DriverReportUtil.getHome().create().getAllDriverCorporation(userSessionData);
+        } catch(Exception e){
+            handler.handleException("getAllDriverCorporation",e,userSessionData,null);
+        }
+        return new LinkedList();
+	}
+	
+	/**
+	 * @throws Exception 
+	 * @ejb.permission role-name ="administrator,driveredit,driverviewowndata"
+	 * @ejb.interface-method 
+	 */
+	public ArrayList<TelematicControlSendMailData> findTelematicControlsSendMail(Date start, Date end,UserSessionData userSessionData) throws Exception{
+		try{
+            return DriverReportUtil.getHome().create().findTelematicControlsSendMail(start, end, userSessionData);
+        } catch(Exception e){
+            handler.handleException("findTelematicControlsSendMail",e,userSessionData,null);
+        }
+        return new ArrayList<TelematicControlSendMailData>();
+	}
+	
+	/**
+	 * @throws Exception 
+	 * @ejb.permission role-name ="administrator,driveredit,driverviewowndata"
+	 * @ejb.interface-method 
+	 */
+	public void exporTelematicControlsSendMail(Date start, Date end,UserSessionData userSessionData,Text messages, OutputStream out) throws Exception{
+		try{
+            ArrayList<TelematicControlSendMailData>list= DriverReportUtil.getHome().create().findTelematicControlsSendMail(start, end, userSessionData);
+            ArrayList<ArrayList<String>> page=new ArrayList<ArrayList<String>>();
+	        ArrayList<String> header=new ArrayList<String>();
+	        header.add("ID TELEMATIC CONTROL");
+	        header.add("TC DATA");
+	        header.add("TC TIPO");
+	        header.add("NOME");
+	        header.add("SOBRENOME");
+	        header.add("PLACA");
+	        header.add("USUARIO");
+	        header.add("DATA ENVIO");
+	        header.add("ASUNTO");
+	        header.add("DESTINATARIOS");
+	        header.add("MESAGEM");
+	        page.add(header);
+	        Iterator<TelematicControlSendMailData> iter=list.iterator();
+	        while(iter.hasNext()){
+	        	TelematicControlSendMailData tc=iter.next();
+	        	 
+	        	ArrayList<String> rowStr=new ArrayList<String>();
+	        	
+	        	rowStr.add(tc.getTelematicControlData().getId().toString());
+	        	rowStr.add(Util.formatDateWithHour(tc.getDate()));
+	        	rowStr.add(messages.getText(tc.getTelematicControlData().getStringType()));
+	        	if(tc.getTelematicControlData().getDriver()!=null){
+	        		rowStr.add(tc.getTelematicControlData().getDriver().getFirstName());
+	        		rowStr.add(tc.getTelematicControlData().getDriver().getLastName());
+	        	}else{
+	        		rowStr.add("");
+	        		rowStr.add("");
+	        	}
+	        	if(tc.getTelematicControlData().getVehicle()!=null){
+	        		rowStr.add(tc.getTelematicControlData().getVehicle().getMatricula());
+	        	}else{
+	        		rowStr.add("");
+	        	}
+	        	rowStr.add(tc.getUserData().getFirstName()+" "+tc.getUserData().getLastName());
+	        	rowStr.add(Util.formatDateWithHour(tc.getDate()));
+	        	rowStr.add(tc.getSubject());
+	        	rowStr.add(tc.getTo());
+	        	rowStr.add(tc.getBody());
+	        	page.add(rowStr);
+	        }
+	        
+	        ExcelGenerator.generatorXLS(page, "TelematicControlsSendMail", out);
+            
+        } catch(Exception e){
+            handler.handleException("findTelematicControlsSendMail",e,userSessionData,null);
+        }
+        
+	}
+	
+
+	/**
+	 * @throws Exception 
+	 * @ejb.permission role-name ="administrator,query"
+	 * @ejb.interface-method 
+	 */
+	public Collection getDriverInsertedLog(String firstName, String lastName, Date from, Date to, Integer[][] divOrgs, Integer[][] divGeos, int status,UserSessionData userSessionData) throws Exception {
+		try{
+			return DriverReportUtil.getHome().create().getDriverInsertedLog(firstName,lastName,from,to,divOrgs,divGeos,status,userSessionData);
+        } catch(Exception e){
+            handler.handleException("getDriverInsertedLog",e,userSessionData,null);
+        }
+		return null;
+	}
+
+	/**
+	 * @throws Exception 
+	 * @ejb.permission role-name ="administrator,query"
+	 * @ejb.interface-method 
+	 */
+	public Collection<DetailedDriverReportDataType> getClosedDrivers(Integer period, Integer year, int status, Integer country, UserSessionData userSessionData) throws Exception {
+		try{
+			return DriverReportUtil.getHome().create().getClosedDrivers(period,year,status,country,userSessionData);
+        } catch(Exception e){
+            handler.handleException("getClosedDrivers",e,userSessionData,null);
+        }
+		return new LinkedList<DetailedDriverReportDataType>();
+	}
+
+	/**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,query"
+	 */
+	public ListResult getPointHistory(String firstname, String lastname, int status, Integer[][] divOrgs, Integer[][] divGeos, int first, int count, String operation, UserSessionData userSessionData) throws Exception {
+		try{
+			return DriverReportUtil.getHome().create().getPointHistory(firstname,lastname,status,divOrgs,divGeos,first,count,operation,userSessionData);
+        } catch(Exception e){
+            handler.handleException("getPointHistory",e,userSessionData,null);
+        }
+		return null;
+	}
+
+	/**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,query"
+	 */
+	public ListResult getPointHistory(Integer period, Integer year, String firstname, String lastname, int status, Integer[][] divOrgs, Integer[][] divGeos, int first, int count, String operation, UserSessionData userSessionData) throws Exception {
+		try {
+			return DriverReportUtil.getHome().create().getPointHistory(period,year,firstname,lastname,status,divOrgs,divGeos,first,count,operation,userSessionData);
+        } catch(Exception e){
+            handler.handleException("getPointHistory",e,userSessionData,null);
+        }
+		return null;
+	}
+
+	/**
+	 * @ejb.interface-method
+	 * @ejb.permission role-name = "administrator,query"
+	 */
+	public EcolabReportData getEcolabReportData(Integer month, Integer yearReport, Integer depto, Integer distrit, UserSessionData userSessionData) throws Exception {
+		EcolabReportData reportData = new EcolabReportData(depto);
+		try{
+			Integer year = (month == 0) ? yearReport + 1 : yearReport;
+			DriverReport driverReport = DriverReportUtil.getHome().create();
+			
+			Integer[][] divorgs = new Integer[2][1];
+			if(depto == null)
+				divorgs[0] = null;
+			else
+				divorgs[0][0] = depto;
+			if(distrit == null)
+				divorgs[1] = null;
+			else
+				divorgs[1][0] = distrit;
+			Integer[][] divgeos = new Integer[1][1];
+			divgeos[0][0] = CountryData.BRASIL_ID;
+			reportData.setDrivers(driverReport.findDriversByDivisions(divorgs, new Integer[0], DriverData.ACTIVE, userSessionData));
+			
+			Calendar from = Calendar.getInstance();
+			from.set(Calendar.YEAR,year);
+			from.set(Calendar.MONTH,month-1);
+			from.set(Calendar.DATE,1);
+
+			Calendar to = Calendar.getInstance();
+			if(month == 12) {
+				to.set(Calendar.YEAR,year+1);				
+				to.set(Calendar.MONTH,0);
+			}else {
+				to.set(Calendar.YEAR,year);
+				to.set(Calendar.MONTH,month);
+			}
+			to.set(Calendar.DATE,1);
+
+			reportData.setTelematicControls(driverReport.findTelematicControls(null, null, from.getTime(), to.getTime(), 0, DriverData.ACTIVE, divorgs, divgeos, userSessionData));
+			
+			FleetReport fleetReport = FleetReportUtil.getHome().create();
+			reportData.setOdometers(fleetReport.getInsertedOdometers(year, depto, distrit, userSessionData),year.intValue());
+			reportData.setVehiclesWO_Odometers(fleetReport.getVehicleWO_Odometers(year, depto, distrit, userSessionData));
+			reportData.setInstaled(fleetReport.getEcolabInstalled(month,year,reportData.getInstaledList(month+1),userSessionData));
+			
+			EventReport eventReport = EventReportUtil.getHome().create();
+
+			reportData.setFines(eventReport.getEcolabFines(year, depto, distrit, userSessionData),month);
+			reportData.setEvitableAccidents(eventReport.getEcolabEvitableAccidents(year, depto, distrit, userSessionData),month);
+			
+			reportData.setDriverSpeeds(driverReport.getEcolabSpeeds(year,depto,distrit,userSessionData));
+        } catch(Exception e){
+            handler.handleException("getEcolabReportData",e,userSessionData,null);
+        }
+		return reportData;
+	}
+
+	/**
+	 * @throws Exception
+	 * @ejb.permission role-name ="administrator,driverview"
+	 * @ejb.interface-method
+	 */	
+	public Integer[][] getDriverPointHistory(Integer driver, UserSessionData userSessionData) throws Exception {
+		try {
+			return DriverReportUtil.getHome().create().getDriverPointHistory(driver,userSessionData);
+        } catch(Exception e){
+            handler.handleException("getDriverPointHistory",e,userSessionData,null);
+        }
+		return null;
+	}
+	
+	/**
+     * @throws Exception
+     * @ejb.interface-method
+     * @ejb.permission role-name = "query,administration" 
+     */
+	public void driverRiskAdvanceToXLS(Calendar from, Calendar to, Integer[][] divOrgs, Integer[][] divGeos, String firstName,String lastName, int status, Text messages, UserSessionData userSessionData, OutputStream output) throws Exception {
+		try {
+			DriverReportUtil.getHome().create().driverRiskAdvanceToXLS(from,to,divOrgs,divGeos,firstName,lastName,status,messages,userSessionData,output);
+        } catch(Exception e){
+            handler.handleException("getDriverPointHistory",e,userSessionData,null);
+        }
+	}
+
+	/**
+	 * @ejb.permission role-name ="administrator,driverview"
+	 * @ejb.interface-method
+	 */
+	public MitigationPlanData getMitigationPlan(Integer driver, UserSessionData userSessionData) throws Exception {
+		try {
+			return DriverReportUtil.getHome().create().getMitigationPlan(driver,userSessionData);
+        } catch(Exception e){
+            handler.handleException("getMitigationPlan",e,userSessionData,null);
+        }
+		return null;
+	}
+	
+	/**
+	 * @ejb.permission role-name ="administrator,driverview"
+	 * @ejb.interface-method
+	 */
+	public ArrayList<AnualPlanData> getAnualPlan(Integer driver, UserSessionData userSessionData) throws Exception{
+		try {
+			return DriverReportUtil.getHome().create().getAnualPlan(driver,userSessionData);
+        } catch(Exception e){
+            handler.handleException("getMitigationPlan",e,userSessionData,null);
+        }
+		return null;
+	}
+
+	/**
+	 * @ejb.permission role-name ="administrator,driverview"
+	 * @ejb.interface-method
+	 */
+	public DriverPointList getDriverPointResume(UserSessionData userSessionData) throws Exception {
+		try {
+			return DriverReportUtil.getHome().create().getDriverPointResume(userSessionData);
+        } catch(Exception e){
+            handler.handleException("getDriverPointResume",e,userSessionData,null);
+        }
+		return null;
+	}
+
+	/**
+	 * @ejb.permission role-name ="administrator,driverview"
+	 * @ejb.interface-method
+	 */
+	public HashMap<Integer,String> getMitigationPlans(UserSessionData userSessionData) throws Exception {
+		try {
+			return DriverReportUtil.getHome().create().getMitigationPlans(userSessionData);
+        } catch(Exception e){
+            handler.handleException("getMitigationPlans",e,userSessionData,null);
+        }
+		return null;
+	}
+	
+	/**
+	 * @ejb.permission role-name ="administrator,driverview"
+	 * @ejb.interface-method
+	 */
+	public ReportPlanData getReportPlan(Integer driver, UserSessionData userSessionData) throws Exception {
+	
+		try {
+			return DriverReportUtil.getHome().create().getReportPlan(driver, userSessionData);
+        } catch(Exception e){
+            handler.handleException("getReportPlan",e,userSessionData,null);
+        }
+		return null;
+	}
+	
+	/**
+	 * @ejb.permission role-name ="administrator,driverview"
+	 * @ejb.interface-method
+	 */
+	public ArrayList<ReportPlanData> getGlobalReportPlan(String search,int order,UserSessionData userSessionData) throws Exception {
+
+		try {
+			return DriverReportUtil.getHome().create().getGlobalReportPlan(search,order,userSessionData);
+        } catch(Exception e){
+            handler.handleException("getGlobalReportPlan",e,userSessionData,null);
+        }
+		return null;
+	}
+	
+	/**
+	 * @ejb.permission role-name ="administrator,driveredit,driverupdate,eventcreate,finecreate,driverviewowndata,drivertests,usercreate,doorcontrol,driverbayerdata,jjreporter"
+	 * @ejb.interface-method
+	 */
+	public Collection<String> getManagerMonitor(Integer driver, UserSessionData userSessionData)  throws Exception {
+		try {
+			return DriverReportUtil.getHome().create().getManagerMonitor(driver,userSessionData);
+        } catch(Exception e){
+            handler.handleException("getManagerMonitor",e,userSessionData,null);
+        }
+		return new LinkedList<String>();
+	}
+
+    /**
+     * @ejb.permission role-name ="administrator,query"
+     * @ejb.interface-method
+     */
+   public ArrayList emptyFields(Text messages, UserSessionData userSessionData) throws Exception {
+		try {
+			return DriverReportUtil.getHome().create().emptyFields(messages,userSessionData);
+        } catch(Exception e){
+            handler.handleException("emptyFields",e,userSessionData,null);
+        }
+		return new ArrayList();
+   }
+
+   /**
+    * @ejb.permission role-name ="administrator,query"
+    * @ejb.interface-method
+    */
+  	public Collection<Object[]> getPendingActivities(String[] mitigation, String[] anual, int status, Calendar from, Calendar to, Integer[][] divOrgs, Integer[] divGeos, UserSessionData userSessionData) throws Exception {
+		try {
+			return DriverReportUtil.getHome().create().getPendingActivities(mitigation, anual, status, from, to, divOrgs, divGeos, userSessionData);
+        } catch(Exception e){
+            handler.handleException("getPendingActivities",e,userSessionData,null);
+        }
+		return new ArrayList();
+   }
+
+    /**
+     * @ejb.permission role-name ="administrator,query"
+     * @ejb.interface-method
+     */
+ 	public Collection getMitigationPlans(String firstName, String lastName, String corporationId, int status, Integer[][] divOrgs, Integer[] divGeos, UserSessionData userSessionData) throws Exception {
+		try {
+			return DriverReportUtil.getHome().create().getMitigationPlans(firstName,lastName,corporationId, status, divOrgs, divGeos, userSessionData);
+        } catch(Exception e){
+            handler.handleException("getMitigationPlans",e,userSessionData,null);
+        }
+		return new ArrayList();
+   }
+
+    /**
+     * @throws Exception
+     * @ejb.interface-method
+     * @ejb.permission role-name = "vehicleedit,vehicleupdate,administration" 
+     */
+	public Collection getVehicleMaintenances(Integer driver, UserSessionData userSessionData) throws Exception {
+		Collection maintenances = null;
+		try {
+			maintenances = DriverReportUtil.getHome().create().getVehicleMaintenances(driver,userSessionData);
+		} catch (Exception e) {
+			Object[] p = {driver};
+			handler.handleException("getVehicleMaintenances",e,userSessionData,p);
+		}
+		return maintenances;
+	}
+
+}

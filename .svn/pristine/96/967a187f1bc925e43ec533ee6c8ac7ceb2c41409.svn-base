@@ -1,0 +1,142 @@
+<%@page import="communication.administration.corporation.tables.CorporationData"%>
+<%@page language="java"
+    errorPage="../exception.jsp"
+	import="business.*"
+	import="java.io.*"
+	import="java.text.*"
+	import="java.util.*"
+	import="business.administration.user.*"
+	import="communication.language.*"
+	import="communication.security.*"
+	import="communication.util.*"
+ 	import="communication.administration.user.*" 
+	import="communication.util.Filter"
+	import="presentation.translator.web.activity.schedule.*"
+ 	import="presentation.translator.web.util.*"
+	import="communication.fleet.tables.FleetData" 			
+	import="communication.fleet.tables.FleetMainAttributes"
+	import="presentation.translator.web.fleet.UploadOdometerForm"
+%>
+
+<%@ taglib uri="/WEB-INF/struts-html.tld"
+        prefix="html" 
+%>
+<%
+	// hace el include de la página que despliega el box que indica el resultado de la operación
+	// el texto que se despliega en el box es el guardado en la variable de sesión bajo la key Msg
+	RequestDispatcher dispatcher=request.getRequestDispatcher("/util/jsp/message.jsp");
+	dispatcher.include(request,response);
+	// Fin manejo de mensajes
+ 	
+	SystemAccess sys = (SystemAccess)session.getAttribute("SystemAccess");
+	Text messages = sys.getText();
+	UserSessionData userSessionData = sys.getUserSessionData();
+
+	String check = null;
+	check = Util.checkPermission(sys,SecurityConstants.FLEET_INSERT_DATA);	
+	if(check!=null) {
+		response.sendRedirect(request.getContextPath()+check);
+	}else {
+		ListResult fleets = sys.getFleetReportFacade().findFleetList("",FleetData.INDIVIDUAL,0,-1,sys.getUserSessionData(),FleetData.ACTIVE);
+		
+    	UploadOdometerForm form = new UploadOdometerForm();
+    	Calendar c = Calendar.getInstance();
+    	if(c.get(Calendar.MONTH) == 0) {
+    		form.setPeriod("12");
+    		form.setYear(String.valueOf(c.get(Calendar.YEAR)-1));
+    	}else {
+    		form.setPeriod(String.valueOf(c.get(Calendar.MONTH)));
+    		form.setYear(String.valueOf(c.get(Calendar.YEAR)));
+    	}
+    	session.setAttribute("OdometerUploadForm",form);
+    	
+    	String action = (sys.getCorporationId() == CorporationData.MONSANTO) ? "/UploadOdometerMonsanto" : "/UploadOdometer";
+%>
+
+
+
+<html:html>
+	<head>
+		<LINK REL=StyleSheet HREF="../util/css/estilo.css" TYPE="text/css">
+	</head>
+	<body>
+		<table width="700"  border="0" cellspacing="0" cellpadding="0" align="center"> 
+			<tr class="guide1">
+				<jsp:include  page='<%="../component/titlecomponent.jsp?title="+messages.getText("fleet.upload.odometers")%>' />
+  			</tr>
+      		<tr>
+				<jsp:include  page="../component/spaceline.jsp" />
+  			</tr>
+      		<tr>
+      			<td>
+					<jsp:include  page='<%="../component/utilityboxtop.jsp?title="+messages.getText("generic.messages.data")%>' />
+					<html:form action="<%=action%>" enctype="multipart/form-data" >
+		      			<table width="100%" cellpadding="0" cellspacing="0" class="texts">
+			      			<tr>
+			      				<th align="left">
+			      					<%=messages.getText("query.mileage.fleet")%>:
+			      				</th>
+			      				<td align="left">
+			      					<html:select property="fleet" style="width:360;" styleClass="input">
+<%			Iterator it = fleets.getElements().iterator();
+			while(it.hasNext()) {
+			    FleetMainAttributes fleet = (FleetMainAttributes)it.next();
+%>			    						<html:option value='<%=String.valueOf(fleet.getId())%>'><%=fleet.getName()+" ("+fleet.getDescription()+")"%></html:option>
+<%			}
+%>									</html:select>
+								</td>
+							</tr>
+				  			<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+				  			</tr>
+							<tr>
+								<th align="left"> 	
+									<%=messages.getText("fleet.data.period")%><span class="required">*</span>
+			    				</th>
+			    				<td align="left">
+                					<html:select property="period" styleClass="input" >
+<%			for(int i = 1; i <= 12; i++) { 
+%>										<html:option value="<%=String.valueOf(i)%>"><%=messages.getText("generic.month."+String.valueOf(i))%></html:option>
+<%			}
+%>           						</html:select>
+                					<html:select property="year" styleClass="input" >
+<%			Calendar instance = Calendar.getInstance();
+			for(int i = instance.get(Calendar.YEAR)-5; i <= instance.get(Calendar.YEAR)+5; i++) {
+%>				    					<html:option value="<%=String.valueOf(i)%>" ><%=String.valueOf(i)%></html:option>
+<%			}
+%>                					</html:select>
+			         			</td>
+			      			</tr>
+							<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+							</tr>
+			      			<tr>
+			      				<th align="left">
+			      					<%=messages.getText("generic.supportmaterial.reports.file")%>:
+			      				</th>
+			      				<td align="left">
+			      					<html:file property="file" />
+			      				</td>			      					      					      		
+			      			</tr>			      						
+							<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+							</tr>
+			      			<tr>
+			      				<td colspan="2" align="right">
+				      				<html:submit value='<%=messages.getText("generic.messages.continue")%>' />
+			      				</td>
+			      			</tr>
+							<tr>
+								<jsp:include  page="../component/spaceline.jsp" />
+							</tr>
+		      			</table>              
+					</html:form>
+					<jsp:include  page='../component/utilityboxbottom.jsp' />
+				</td>
+			</tr>
+		</table>
+	</body>
+</html:html>
+<% }
+%>
+

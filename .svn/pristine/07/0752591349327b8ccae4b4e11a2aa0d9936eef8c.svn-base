@@ -1,0 +1,127 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<html>
+<head>
+<title>Documento sem t&iacute;tulo</title>
+<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
+</head>
+
+<body leftmargin="0" topmargin="0" marginwidth="0" marginheight="0">
+<table width="559" border="0" align="center" cellpadding="0" cellspacing="0">
+  <tr> 
+    <td height="81" colspan="4"> 
+      <table width="90%" border="0" align="center" cellpadding="0" cellspacing="0">
+        <tr> 
+          <td><div align="center"><font size="5" face="Arial, Helvetica, sans-serif"><strong></strong></font></div>
+            <div align="center"></div>
+            <table width="91%" height="63" border="0" align="center" cellpadding="0" cellspacing="0" bgcolor="3B6692">
+              <tr> 
+                <td height="63" align="center" valign="middle"> <font color="#FFFFFF" size="5" face="Arial, Helvetica, sans-serif"><strong><em>User 
+                  Manual </em></strong></font><br> <font color="#FFFFFF" size="4" face="Arial, Helvetica, sans-serif"><strong><font size="2">BASIC 
+                  INSTRUCTIONS ON ACCESS AND USE</font></strong></font><font color="#FFFFFF" size="3" face="Arial, Helvetica, sans-serif"><strong></strong></font></td>
+              </tr>
+            </table></td>
+        </tr>
+      </table>
+      <div align="right"> </div></td>
+  </tr>
+  <tr valign="top"> 
+    <td height="20" colspan="5"> <hr color="#3B6692"noshade> <div align="center"> 
+      </div></td>
+  </tr>
+  <tr valign="top"> 
+    <td height="752" colspan="5"> 
+      <table width="100%" border="0" cellspacing="0" cellpadding="0" height="735">
+        <tr> 
+          <td height="19"><font face="Arial, Helvetica, sans-serif"><strong>FLEETS</strong></font></td>
+        </tr>
+        <tr> 
+          <td height="19">&nbsp;</td>
+        </tr>
+        <tr> 
+          <td height="19"><strong><font size="3" face="Arial, Helvetica, sans-serif">Fleets/Vehicle 
+            Management</font></strong></td>
+        </tr>
+        <tr> 
+          <td height="19">&nbsp;</td>
+        </tr>
+        <tr> 
+          <td height="622"> 
+            <div align="justify"> 
+              <table width="90%" height="587" border="1" align="center" cellpadding="0" cellspacing="0" bordercolor="#3B6692">
+                <tr> 
+                  <td height="585"> 
+                    <div align="justify"></div>
+                    <div align="justify"></div>
+                    <div align="justify"> 
+                      <table width="90%" height="535" border="0" align="center" cellpadding="0" cellspacing="0">
+                        <tr> 
+                          <td width="30%" height="143"><img src="/datacenter/util/imgs/mn_menu_11_en.jpg" width="152" height="178"></td>
+                          <td width="3%" height="143"></td>
+                          <td width="67%" height="143"><div align="justify"> <font size="2" face="Arial, Helvetica, sans-serif">This 
+                              item allows users to input, edit and delete vehicle 
+                              data similar to the item Drivers &gt; Management.</font><br>
+                            </div></td>
+                        </tr>
+                        <tr> 
+                          <td height="357" colspan="3"> 
+                            <ul>
+                              <li> 
+                                <div align="justify"><font size="2" face="Arial, Helvetica, sans-serif">	
+                                  To <strong>Add</strong> a vehicle click on &#8216;&#8220;Add 
+                                  Vehicle&#8221;. All the fields marked with * 
+                                  must be filled in. The input will be sent to 
+                                  supervision and the CEPA team will be in charge 
+                                  of making the any corrections and requesting 
+                                  further information as necessary.</font></div>
+                              </li>
+                            </ul>
+                            <ul>
+                              <li> <font size="2" face="Arial, Helvetica, sans-serif"> 
+                                To <strong>Delete</strong> a vehicle users must 
+                                first perform a simple or advanced search, establishing 
+                                the selected criteria. A drop-down list containing 
+                                all the vehicles that meet the selected criteria 
+                                will appear. The user should then select the vehicle 
+                                to be deleted and click &#8220;Inactive&#8221; 
+                                on the next screen. Fill in the &#8220;exclusion 
+                                date&#8221; and &#8220;comments&#8221; (reason 
+                                for the deletion) and click on the &#8220;Inactivate&#8221; 
+                                button. This vehicle will no longer be active 
+                                (available) for queries or searches, however the 
+                                recorded data (mileage, events, etc.) will not 
+                                be deleted. </font> </li>
+                            </ul>
+                            <div align="justify"> 
+                              <ul>
+                                <li><font size="2" face="Arial, Helvetica, sans-serif"> 
+                                  To <strong>Edit</strong> a vehicle users must 
+                                  first perform a search where the characteristics 
+                                  of the vehicle will be established. This search 
+                                  will display a list of vehicles that meet the 
+                                  selected criteria.<br>
+                                  Click on the license plate of the vehicle, then 
+                                  click &#8220;Edit&#8221; on the next screen, 
+                                  inform the necessary changes and click on &#8220;Save&#8221;.</font></li>
+                              </ul>
+                            </div>
+                            <ul type="square">
+                            </ul></td>
+                        </tr>
+                      </table>
+                    </div></td>
+                </tr>
+              </table>
+            </div></td>
+        </tr>
+        <tr>
+          <td height="18">&nbsp;</td>
+        </tr>
+        <tr> 
+          <td height="18"><div align="center"><font size="1" face="Arial, Helvetica, sans-serif"><a href="layout.jsp?refer=/manual/english/manual1_en.htm" style="color:black;text-decoration:none">Back 
+              to Contens</a></font></div></td>
+        </tr>
+      </table></td>
+  </tr>
+</table>
+</body>
+</html>

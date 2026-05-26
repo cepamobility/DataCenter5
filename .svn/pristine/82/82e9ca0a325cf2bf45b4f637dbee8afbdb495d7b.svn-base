@@ -1,0 +1,750 @@
+package presentation.translator.web.activity.schedule;
+
+import java.sql.Time;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.action.DynaActionForm;
+
+import presentation.translator.web.util.AbstractAction;
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+import business.activity.ActivityABMFacade;
+import business.activity.ActivityReportFacade;
+
+import communication.activity.tables.CEPAActivityConstants;
+import communication.activity.tables.CEPAActivityScheduleData;
+import communication.activity.tables.CEPAActivityScheduleRegistryData;
+import communication.activity.tables.CEPAScheduleActivityRegistryObservationData;
+import communication.activity.tables.CEPAScheduleActivityRegistryObservationSelectedData;
+import communication.activity.tables.ItemData;
+import communication.activity.tables.ItemValueData;
+import communication.activity.tables.PointCommentData;
+import communication.activity.tables.PointData;
+import communication.activity.tables.PointObservationData;
+import communication.activity.tables.PointObservationSelectedData;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.CountryData;
+import communication.administration.user.UserSessionData;
+import communication.datatype.tables.CEPAActivityNoteDataType;
+import communication.driver.tables.DriverData;
+import communication.language.Text;
+
+
+public class ActivityRegistryCreateAction extends AbstractAction { 
+
+	/*
+	 * (non-Javadoc)
+	 * 
+	 * @see org.apache.struts.action.Action#execute(org.apache.struts.action.ActionMapping,
+	 *      org.apache.struts.action.ActionForm,
+	 *      javax.servlet.http.HttpServletRequest,
+	 *      javax.servlet.http.HttpServletResponse)
+	 */
+	public ActionForward action(ActionMapping mapping, ActionForm form,HttpServletRequest request, HttpServletResponse response) throws Exception {
+		
+		try{
+
+        HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        Text messages=null;
+        if (sys!=null)
+        	messages = sys.getText();
+		UserSessionData userSessionData = sys.getUserSessionData();
+		
+		DynaActionForm activityRegistryForm = (DynaActionForm) form;
+		
+		int classNumber = 0;
+		int drivingExperience = 0;
+		
+		boolean hasResult = true;			
+		String stringList = (String) activityRegistryForm.get("checkboxParamList");		
+		String pointCommentList = (String) activityRegistryForm.get("pointCommentList");		
+		String note = (String) activityRegistryForm.get("note");
+		Integer clasification = new Integer(-1);		
+		
+		
+		/* Nota 19/04/2012
+		 * para las actividades (no tablets) el obs es un campo de texto,
+		 * para las actividades con formularios para tablets el campo obs
+		 * viene con los ids de las observaciones generales seleccionadas:
+		 * ogID1<ogID2...
+		 */
+		String obs = (String) activityRegistryForm.get("obs");
+		obs.replace("'", ""); // reemplazamos comilla simple por NADA (antes usabamos: doble comilla)
+			// para evitar errores en postgres por codificacion UTF8/ISO
+		
+		String phrdString = (String)activityRegistryForm.get("phrd");
+			
+		boolean teoricoasistence = true;
+		if (((String) activityRegistryForm.get("noteoricoasistence")).equals("true")) {
+			teoricoasistence = false;
+		}	
+		boolean practicoasistence = true;
+		if (((String) activityRegistryForm.get("nopracticoasistence")).equals("true")) {
+			practicoasistence = false;
+		}			
+		boolean fia = false;
+		/*if (((String) activityRegistryForm.get("fia")).equals("true")) {
+			fia = true;
+		}*/			
+		boolean file = true;
+		/*if (((String) activityRegistryForm.get("nopracticoasistence")).equals("true")) {
+			practicoasistence = false;
+		}*/			
+		
+		String instructor = (String) activityRegistryForm.get("instructor");		
+		String idActivity=(String) activityRegistryForm.get("idActivity");
+		String idDriver=(String) activityRegistryForm.get("idDriver");	
+		session.removeAttribute("id");
+		session.removeAttribute("idDriver");
+		ActivityABMFacade activityABM = sys.getActivityABMFacade();	
+		
+		Collection<ItemData> items = new ArrayList<ItemData>();
+		Collection<ItemValueData> itemsValues = null; // Para CommentaryDrive J&J
+		Collection<String> colUid;
+	
+		// Cargo items por defecto para aquellos puntos que no tienen items marcados
+		String skidcar = (String) activityRegistryForm.get("skidcar");
+		
+		// Novato (solo aplica para BTW1)
+		boolean novato = false;
+		if (((String)activityRegistryForm.get("novato")).equals("true")) {
+			novato = true;
+		}
+		ActivityReportFacade activityReport = sys.getActivityReportFacade();
+		CEPAActivityScheduleData activity = (CEPAActivityScheduleData) session.getAttribute("activityData");
+		if (activity == null && idActivity != null) {
+			activity = activityReport.findCEPAActivityScheduleByPrimaryKey(new Integer(idActivity.trim()),sys.getUserSessionData());
+		}
+
+		if(sys.isCorporation(CorporationData.MONSANTO) && Util.isNumber(note)) {
+			String type = activity.getType().getResourceBundleId();
+			String countryName = activity.getCountryName();
+			if(((type.equals(CEPAActivityConstants.BTW1) || type.equals(CEPAActivityConstants.BTW2) || type.equals(CEPAActivityConstants.PICKUP_REMOLQUE) || type.equals(CEPAActivityConstants.REBOQUE)) && (countryName.equals(CountryData.MEXICO) || countryName.equals(CountryData.COLOMBIA) || countryName.equals(CountryData.GUATEMALA)))
+					|| ((type.equals(CEPAActivityConstants.BTW1_NEW_FORM_TABLET) || type.equals(CEPAActivityConstants.BTW2_NEW_FORM_TABLET)) && (countryName.equals(CountryData.COLOMBIA)))) {
+				clasification = new Integer(note);
+				if(clasification < 3) {
+					note = CEPAActivityNoteDataType.NOT_APRUVED;
+				} else if(clasification < 5) {
+					note = CEPAActivityNoteDataType.APRUVED_WITH_OBSERVATIONS;
+				} else {
+					note = CEPAActivityNoteDataType.APRUVED;
+				}
+			}
+		}
+		
+		// ClassNumber: Para los cursos de ESCUELA, existe un campo classNumber que debe ser seteado.
+		// Se usa como resultado para las Mercancias Peligrosas.
+		
+		String classNumberString = (String)activityRegistryForm.get("classNumber");			
+		classNumber = (classNumberString != null && classNumberString.trim() != "" &&
+				Util.isNumber(classNumberString))?(new Integer(classNumberString)).intValue():0;
+		
+		
+		if (activity.getDefinition().getCheckList().getId().intValue() == 14 ||
+			activity.getDefinition().getCheckList().getId().intValue() == 8 ||
+			activity.getDefinition().getCheckList().getId().intValue() == 61
+		)
+		/* Para Las actividades que tengan el formulario de "Evaluacion en Cabina Pesados (Checklist 14)"
+		   - Evaluacion en Cabina Pesado
+		   - Curso Pesados
+		   - BTW Pesados con Evaluacio en Cabina
+			
+		   Para commentary drive J&J:
+		   - CommentaryDriveOther (Checklist 8)
+		*/	
+		{
+			itemsValues = this.stringToItemValueCollection(stringList);
+			items = null;
+			practicoasistence = false; // No aplica practicoasistence para Commentary Drive de J&J
+		}
+		
+		if (activity.getDefinition().getCheckList().getId().intValue() == 0)
+		// Para los Cursos que usan un formulario por defecto (Checklist = 0)
+		// las colecciones de datos van vacias.
+		{
+			itemsValues = null;
+			items = null;
+		}
+
+		if (activity.getDefinition().getCheckList().getId().intValue() == 10 ){
+			// Formulario de BTWTHAILAND:
+			
+			drivingExperience = ((activityRegistryForm.get("drivingExperience") != null &&
+						Util.isNumber((String)activityRegistryForm.get("drivingExperience"))) ?
+				Integer.parseInt((String)activityRegistryForm.get("drivingExperience")):0);
+			itemsValues = this.stringToItemValueCollection(stringList);
+			items = null;
+			practicoasistence = false; 
+
+		}
+		
+		if (!stringList.equals("") && 
+			practicoasistence && 
+			// Diferente al formulario de CommentaryDriveOther
+			activity.getDefinition().getCheckList().getId().intValue() != 8 &&
+			// Diferente al formulario de Evaluacion en Cabina Pesados
+			activity.getDefinition().getCheckList().getId().intValue() != 14
+			)
+		{			
+			colUid= stringToCollection(stringList);
+			Iterator<String> iterColUid=colUid.iterator();
+			while(iterColUid.hasNext())
+			{
+				String idItem=iterColUid.next();
+                ItemData item=new ItemData(new Integer(idItem));
+				items.add(item); 
+			}			
+		}
+		
+		Collection<PointData> points = activity.getDefinition().getCheckList().getPoints();
+		Iterator<PointData> iterPoints = (points != null)?points.iterator():null;
+		
+		boolean  abledPoint = true;
+		
+		// Solo si asitió al práctico proceso los items del formulario
+		if (practicoasistence) {
+			while(iterPoints != null && iterPoints.hasNext()){
+				PointData point = (PointData) iterPoints.next();
+				
+				abledPoint = (!novato) || ((novato) && (!point.getDisableForNovato()));
+				
+				//if (!point.getDisableForNovato()) {
+				if (abledPoint) {
+					Iterator<ItemData> iterItemsPoint = point.getItems().iterator();
+					boolean exists = false;
+					while(iterItemsPoint.hasNext() && !exists){
+						ItemData item = iterItemsPoint.next();
+						exists = contains(items,item);
+					}
+					if (!exists) {
+						if (!(point.getText().equals(CEPAActivityConstants.BTW2LIVIANO_SKIDCAR))) {
+							ItemData defaultItem = (point != null && point.getDefaultItem() != null ) ?
+									new ItemData(point.getDefaultItem().getId()):null;
+							if (defaultItem != null) items.add(defaultItem);
+						}	
+						// Si el punto es SKIDCAR y se usó SKIDCAR cargo item por defecto
+						else {
+							if (skidcar.equals("true")) {
+								ItemData defaultItem = new ItemData(point.getDefaultItem().getId());
+								items.add(defaultItem);						
+							}	
+		
+						}	
+					}
+				}
+			}
+			// Fin de carga de items por defecto
+			
+			// Si se marco frenaje ABS elimino el texto por defecto correspondiente a frenaje convencional.
+			// Si se marco frenaje convencional elimino el texto por defecto correspondiente a frenaje convencional.		
+			// if ((activity.getType().getResourceBundleId().equals(CEPAActivityConstants.BTW1) && !novato) || 
+			//	activity.getType().getResourceBundleId().equals(CEPAActivityConstants.BTW2)) {
+			
+			if ( (activity.getDefinition().getCheckList().getId().intValue() == 1 // Formulario de BTW1: BTW1, BTW-4x4
+				 && !novato) ||
+				 activity.getDefinition().getCheckList().getId().intValue() == 3 // Formulario de BTW2: BTW2, BTW2-4x4
+				) {
+				String frenaje = (String) activityRegistryForm.get("frenaje");
+				ItemData defaultFrenaje=null;
+			
+				String btw = "";
+				// if (activity.getType().getResourceBundleId().equals(CEPAActivityConstants.BTW1))
+				if (activity.getDefinition().getCheckList().getId().intValue() == 1)
+						btw = "btw1liviano";
+				else if (activity.getDefinition().getCheckList().getId().intValue() == 3)
+				// if (activity.getType().getResourceBundleId().equals(CEPAActivityConstants.BTW2))
+						btw = "btw2liviano";
+				
+				if (frenaje.equals("abs")) {
+					//defaultFrenaje = new Item(activityReport.getFormItem("generic.activity.form.btw2liviano.requiredbraking","generic.activity.form.btw2liviano.requiredbraking.default",sys.getUserSessionData()).getId());
+					defaultFrenaje = new ItemData(activityReport.getFormItem("generic.activity.form." + btw + ".requiredbraking","generic.activity.form." + btw +".requiredbraking.default",sys.getUserSessionData()).getId());
+				}
+				else {
+					if (frenaje.equals("convencional")) {
+						//defaultFrenaje = new Item(activityReport.getFormItem("generic.activity.form.btw2liviano.brakingABS","generic.activity.form.btw2liviano.brakingABS.default",sys.getUserSessionData()).getId());
+						defaultFrenaje = new ItemData(activityReport.getFormItem("generic.activity.form." + btw + ".brakingABS","generic.activity.form." + btw +".brakingABS.default",sys.getUserSessionData()).getId());				
+						
+					}	
+				}
+				items = removeItem(items,defaultFrenaje);
+			}
+			// Fin de eliminacion de items por defecto que no corresponden (relativos a frenaje)	
+		}
+			
+		
+		Collection<PointCommentData> pointComment = null;
+		Collection<PointObservationSelectedData> pointObservations = null;
+		/**
+		 * 16/04/2012
+		 * Para las actividades nuevas provenientes de las Tablets no hay comentarios
+		 * sino observaciones predefinidas, identificadas por id
+		 */
+		if (activity.getType().getResourceBundleId().contains("tablet")){
+			// Actividades con observaciones
+			Collection<PointObservationData> pointObs = null;
+			if (!pointCommentList.equals("")){
+				if (points != null){
+					
+					// Itero sobre los puntos, dentro de los puntos sobre las observaciones posibles
+					// y recorro el array de observbacione pointcommentList a ver si coincide alguna 
+					// para ese punto
+					
+					 LinkedList<String> colObs;					 
+					 colObs = (LinkedList<String>) stringToCollection(pointCommentList);
+					 // Valor del check de observaciones idPoint-idObservacion
+					
+					 PointObservationData po;
+					 Collections.sort((List<PointData>)points);
+					 Iterator<PointData> pointIt = points.iterator();	
+					 pointObs = new ArrayList<PointObservationData>();
+		             int i = 0;
+		             // boolean finished = false;
+		             pointObservations = new LinkedList<PointObservationSelectedData>();
+		             
+					 while(pointIt.hasNext()) {
+						String[]  splitObs = null;
+						PointData point = pointIt.next();
+						
+						for (int j = 0; j < colObs.size(); j++){
+							if (colObs.get(j) != null){
+								splitObs =  ((String) colObs.get(j)).split("-");
+								Integer idPointTemp = (splitObs.length == 2 && splitObs[0] != null) ? 
+										new Integer(splitObs[0]): null;
+								Integer idObsTemp = (splitObs.length == 2 && splitObs[1] != null) ? 
+										new Integer(splitObs[1]):null;								
+								if (idPointTemp.equals(point.getId())){
+									po = new PointObservationData(idObsTemp);
+									PointObservationSelectedData ps = new PointObservationSelectedData(point, po);
+									pointObservations.add(ps);
+								}
+							}
+						} // end for
+					}
+				}			
+			}
+		}else{
+		
+			/* Commentarios de cada punto */
+			
+			if (!pointCommentList.equals("")) {			
+				if (points != null){
+		            Collections.sort((List<PointData>)points);
+		            Iterator<PointData> pointIt = points.iterator();
+		            
+					LinkedList<String> colComments;
+					PointCommentData pc;
+					colComments = (LinkedList<String>) stringToCollection(pointCommentList);
+					if (colComments.size() == points.size()) {
+						pointComment = new ArrayList<PointCommentData>();
+		                int i = 0;
+						while(pointIt.hasNext()) {
+							pc = new PointCommentData((PointData)pointIt.next(),(String)colComments.get(i));
+							pointComment.add(pc);
+		                    i++;
+						}
+					}
+				}
+			}
+		}
+		/* Fin Commentarios de cada punto */
+		
+		/*
+		 * Observaciones Generales Seleccionadas - TABLETS 
+		 */
+		LinkedList<CEPAScheduleActivityRegistryObservationSelectedData> obsSelected = null;
+		if (activity.getType().getResourceBundleId().contains("tablet")){
+			if (!Util.empty(obs)){
+				Collection<String> obsGenerales = stringToCollection(obs);
+				if (obsGenerales != null && obsGenerales.size() > 0){
+					obsSelected = new LinkedList<CEPAScheduleActivityRegistryObservationSelectedData>();
+					Iterator<String> itObs = obsGenerales.iterator();
+					while (itObs.hasNext()){
+						String idObs = itObs.next();
+						// Le saco el prefijo: og
+						idObs = idObs.substring(2);
+						CEPAScheduleActivityRegistryObservationSelectedData
+							obsData = new CEPAScheduleActivityRegistryObservationSelectedData(
+									new CEPAScheduleActivityRegistryObservationData(
+											new Integer(idObs),null,null,-1));
+						obsSelected.add(obsData);			
+					}
+				}
+			}
+		}
+			
+		
+		/* Commentary Drive: */
+		String partner = (String)activityRegistryForm.get("partner");
+		boolean cepaCourse = Boolean.parseBoolean((String)activityRegistryForm.get("cepaCourse"));
+		String conductionType = (String)activityRegistryForm.get("conductionType");
+		String plate = (String)activityRegistryForm.get("plate");
+		/* Fin Commentary Drive  */
+		
+		
+		// Tranning on the Job
+		String trade = (String)activityRegistryForm.get("trade");
+		
+		String message = null;
+		
+		String ikm = (String)activityRegistryForm.get("initialKm");
+		String fkm = (String)activityRegistryForm.get("finalKm");
+		String ih = (String)activityRegistryForm.get("initialHr");;
+		String im = (String)activityRegistryForm.get("initialMinute");;
+		String fh = (String)activityRegistryForm.get("finalHr");;
+		String fm = (String)activityRegistryForm.get("finalMinute");;
+		
+
+		Integer initialKm = null;
+		Integer finalKm = null;
+		
+		Time initialHr = null;
+		Time finalHr = null;
+		
+		// String url = (String)session.getAttribute("url");
+		
+		// La URL la traigo del form poruqe si la traigo del userSessionData
+		// y hay varias pestañas abiertas se reescribe la url. en cambio el form va
+		// por request.
+		
+		String url = null;
+		try{
+			url = (String)activityRegistryForm.get("url");	
+		}catch(Exception e){
+			// Nada, no esta leyendo la propiedad url del form.
+		}
+		
+		if (url != null && url.equalsIgnoreCase("activity/schedule/TranningOnTheJobForm.jsp")){
+			// Para todas las actividades que usan el formulario: TranningOnTheJobForm
+			message = validar(ikm,fkm,ih,im,fh,fm);
+			if (message == null) {
+				if ( (ikm != null) && (!ikm.equals(""))) {
+					initialKm = new Integer(ikm);
+				}
+				if ( (fkm != null) && (!fkm.equals(""))) {
+					finalKm = new Integer(fkm);
+				}
+				if ( (ih != null) && (!ih.equals(""))
+						&&	(im != null) && (!im.equals(""))) {
+					initialHr = Util.getTime(ih,im);
+				}
+				if ( (fh != null) && (!fh.equals(""))
+						&&	(fm != null) && (!fm.equals(""))) {
+					finalHr = Util.getTime(fh,fm);
+				}	
+			}
+		}
+
+		// session.setAttribute("id",idActivity);
+		// session.setAttribute("idDriver",idDriver);
+		if(message != null) {				
+		    //Some attribute data is invalid			
+			userSessionData.setMsg(messages.getText(message));
+			userSessionData.setUrl("/activity/schedule/AddCEPAActivityScheduleRegistry.jsp?idActivity="+idActivity+"&idDriver="+idDriver);
+		    return mapping.findForward("layout");		
+		}
+
+		String vehicleType = (String)activityRegistryForm.get("vehicleType");
+		
+		/* Circulation Area */
+		
+		// String circulationArea = (String)activityRegistryForm.get("circulationArea");
+		String ca = (String)activityRegistryForm.get("circulationAreaHighWay");
+		boolean circulationAreaHighWay = (ca != null && ca.trim() != "")?Boolean.parseBoolean(ca.trim()):false;
+		ca = (String)activityRegistryForm.get("circulationAreaRoad");
+		boolean circulationAreaRoad = (ca != null && ca.trim() != "")?Boolean.parseBoolean(ca.trim()):false;
+		ca = (String)activityRegistryForm.get("circulationAreaSubUrban");
+		boolean circulationAreaSubUrban = (ca != null && ca.trim() != "")?Boolean.parseBoolean(ca.trim()):false;
+		ca = (String)activityRegistryForm.get("circulationAreaUrban");
+		boolean circulationAreaUrban = (ca != null && ca.trim() != "")?Boolean.parseBoolean(ca.trim()):false;
+		
+		/* Fin Circulation Area */
+		
+		
+		String velocityBox = (String)activityRegistryForm.get("velocityBox");
+		String light = (String)activityRegistryForm.get("light");	
+
+		
+		
+		
+
+		// Me fijo si tiene el campo de PHRD en true:
+		boolean phrd = ( phrdString != null && phrdString.trim()  != "") ? 
+					Boolean.parseBoolean((String)activityRegistryForm.get("phrd")) : false;		
+		
+		DriverData driverData = Util.empty(idDriver) ? null:
+								new DriverData(new Integer(idDriver));
+
+ 		CEPAActivityScheduleRegistryData registryData= new CEPAActivityScheduleRegistryData(
+				activity,driverData,items,note,clasification,obs,instructor, cepaCourse, partner, conductionType,
+				plate, pointComment, trade, initialKm,	finalKm, initialHr,
+				finalHr, vehicleType, circulationAreaHighWay, circulationAreaRoad,
+				circulationAreaSubUrban, circulationAreaUrban, velocityBox, light, novato, 
+				teoricoasistence, practicoasistence,hasResult, fia, file, itemsValues,drivingExperience,
+				phrd,classNumber,pointObservations,obsSelected);
+
+ 		// Si ya fueron ingresados los resultados de todos los participantes 
+ 		// (o todos excepto el del participante actual) y la actividad es commentary entonces al 
+ 		// ingresar este resultado la actividad se pasa a dictada
+ 		boolean existeOtroDriverSinResultado = activityReport.
+ 				existsCeroOrOneDriverWithOutResultForActivity(activity.getActivityId(),userSessionData,driverData.getId());
+ 		
+ 		// Pasar a dictada: 
+ 		boolean pasarADictada = ((!existeOtroDriverSinResultado)
+ 					// Paso a Dictada los Commentray Drives:
+ 				&& ( activity.getType().getResourceBundleId().equals(CEPAActivityConstants.COMMENTARYDRIVE) || 
+ 					 activity.getType().getResourceBundleId().equals(CEPAActivityConstants.COMMENTARYDRIVEOTHER) ||
+ 					 activity.getType().getResourceBundleId().equals(CEPAActivityConstants.COMMENTARYDRIVEARGENTINA) ||
+ 					 activity.getType().getResourceBundleId().equals(CEPAActivityConstants.CEPA_SYSTEM_COURSE_1_LIVIANOS) ||
+ 					 activity.getType().getResourceBundleId().equals(CEPAActivityConstants.COMMENTARYDRIVEHIGHRISK) 
+ 					 
+ 					// Paso a Dictada tambien los CEPA SYSTEM ENTRENADORES
+					// No más a partir del 12/10/2010 por pedido de Jorge y Dennis
+ 					// || activity.getType().getResourceBundleId().equals(CEPAActivityConstants.CEPA_SYSTEM_COURSE_2_ENTRENADORES) 
+ 					)
+ 					
+ 		);
+ 		
+		activityABM.createCEPAScheduleActivityRegistry(registryData,userSessionData,pasarADictada);
+		
+		// 	Clean session
+		session.removeAttribute("ActivityRegistryForm");		
+		session.removeAttribute("activityData");
+		session.removeAttribute("registryData");
+		session.removeAttribute("from"); // variable utilizada en VehicleCheckCreate para determinar desde donde se llamò el formulario
+		
+		if (activity.getType().getResourceBundleId().equals(CEPAActivityConstants.COMMENTARYDRIVEOTHER) || 
+			activity.getType().getResourceBundleId().equals(CEPAActivityConstants.COMMENTARYDRIVE) ||
+			activity.getType().getResourceBundleId().equals(CEPAActivityConstants.COMMENTARYDRIVEARGENTINA) ||
+			activity.getType().getResourceBundleId().equals(CEPAActivityConstants.COMMENTARYDRIVEHIGHRISK)
+			) {
+			userSessionData.setUrl("/activity/schedule/ViewCEPAActivityScheduleRegistry.jsp?idDriver="+idDriver+"&idActivity="+idActivity);
+			return mapping.findForward("layout");
+			
+		}else{
+			userSessionData.setUrl("/activity/schedule/CEPAActivityScheduleView.jsp?idActivity="+idActivity);
+			return mapping.findForward("layout");
+		}	
+
+		}catch(Exception e){
+			e.printStackTrace();
+			throw e;
+		}
+	}
+	
+	/**
+	 * 
+	 * @param request
+	 * @return
+	 */
+	private String getOriginalUri(HttpServletRequest request) {
+	    String targetUrl = request.getServletPath();
+	    if (request.getQueryString() != null) {
+	        targetUrl += "?" + request.getQueryString();
+	    }
+	    return targetUrl;
+	}
+
+	
+	/**
+	 * 
+	 */
+    public ActionForward cancel(HttpSession session,ActionMapping mapping, ActionForm form) {
+    	SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        UserSessionData userSessionData = sys.getUserSessionData();
+        DynaActionForm activityRegistryForm = (DynaActionForm) form;
+    	String idActivity = (String)activityRegistryForm.get("idActivity");
+    	if (idActivity != null){
+    		userSessionData.setUrl("/activity/schedule/CEPAActivityScheduleView.jsp?idActivity="+idActivity);
+    	}else{
+    		userSessionData.setUrl("/activity/schedule/ActivityList.jsp");
+    	}
+        return mapping.findForward("layout");
+    }
+
+	
+
+	/**
+	 * 
+	 * @param stringList
+	 * @return
+	 */
+	public Collection<String> stringToCollection(String stringList){
+		String[] stringArray=stringList.split("<");
+		Collection<String> col = new LinkedList<String>();
+		
+		for(int i=0; i < stringArray.length; i++){
+			col.add(stringArray[i]);
+		}
+		
+		return col;
+	}
+	
+	
+	/**
+	 * Recibe un stringList que tiene items y valores con el formato:
+	 * Item1-ValorItem1<Item2-ValorItem2<Item3-ValorItem3 ....
+	 * y devuelve una coleccion de elementos ItemValue (Item,Value)
+	 */
+	private Collection<ItemValueData> stringToItemValueCollection(String stringList)
+	{
+		String[] stringItemValue;
+		String element;
+		ItemValueData itemValue;
+		String[] stringArray=stringList.split("<");
+		Collection<ItemValueData> col = new LinkedList<ItemValueData>();
+		
+		for(int i=0; i < stringArray.length; i++){
+			element  = (String) stringArray[i];
+			stringItemValue = (element).split("-");
+			itemValue = new ItemValueData(new ItemData(new Integer(stringItemValue[0])),
+					new Integer(stringItemValue[1]));	
+			col.add(itemValue);
+		}
+		
+		return col;
+	}
+	
+	/**
+	 * 
+	 * @param items
+	 * @param item
+	 * @return
+	 */
+	public boolean contains(Collection<ItemData> items, ItemData item){
+		
+		Iterator<ItemData> iter = items.iterator();
+		boolean contain = false;
+		while(iter.hasNext() && !contain){
+			ItemData itemData = iter.next();
+			contain = (item.getId().intValue() == itemData.getId().intValue());
+		}
+		return contain;
+	}
+	
+	/**
+	 * 
+	 * @param items
+	 * @param item
+	 * @return
+	 */
+	public Collection<ItemData> removeItem(Collection<ItemData> items, ItemData item){
+		
+		Collection<ItemData> itemsNew = new ArrayList<ItemData>();
+		Iterator<ItemData> iter = items.iterator();
+		while(iter.hasNext()){
+			ItemData itemData = iter.next();
+			
+			if ( (item == null || item.getId() == null) || 
+				 !(item.getId().intValue() == itemData.getId().intValue())
+				){
+				itemsNew.add(itemData);
+			}
+			
+		}
+		return itemsNew;
+	}
+	
+
+    
+    /**
+     * 
+     * @param ikm
+     * @param fkm
+     * @param ih
+     * @param im
+     * @param fh
+     * @param fm
+     * @return
+     */
+    public String validar(String ikm,String fkm,String ih,String im,String fh,String fm) { 
+    	String message = null;
+
+		try {
+
+			if ( (ikm != null) && (!ikm.equals(""))) {
+				new Integer(ikm);
+			}
+						
+			if ( (fkm != null) && (!fkm.equals(""))) {
+				new Integer(fkm);
+			}
+		
+		} catch (Exception e) {
+			message = "generic.activity.trainingonthejob.invalidKm";
+			return message;
+		}
+			
+		if ((ih != null) && (im != null)
+				&& (!(ih.equals(""))) && (!(im.equals("")))) {
+				try {
+					new Integer(ih.trim());
+					new Integer(im.trim());
+					if ( (ih != null) && (im != null) 
+							&& (!(ih.equals(""))) && (!(im.equals("")))
+							&& (Util.checkHour(Integer.parseInt(ih),Integer.parseInt(im)))
+						) {
+						message = null;
+					}
+					else {
+						return message = "generic.activity.trainingonthejob.invalidHour";
+					}
+				} catch (Exception e) {
+					message = "generic.activity.trainingonthejob.invalidHour";
+					return message;
+				}
+			}
+		else {
+			if ((ih == null) || (ih.equals(""))
+					&& (im == null) || (im.equals(""))) {
+				message = null;
+			}	
+			else 
+				return "generic.activity.trainingonthejob.invalidHour";
+		}	
+		if ((fh != null) && (fm != null)
+				&& (!(fh.equals(""))) && (!(fm.equals("")))) {
+				try {
+					new Integer(fh.trim());
+					new Integer(fm.trim());
+					if ( (fh != null) && (fm != null) 
+							&& (!(fh.equals(""))) && (!(fm.equals("")))
+							&& (Util.checkHour(Integer.parseInt(fh),Integer.parseInt(fm)))
+						) {
+						message = null;
+					}
+					else {
+						return "generic.activity.trainingonthejob.invalidHour";
+					}
+				} catch (Exception e) {
+					message = "generic.activity.trainingonthejob.invalidHour";
+					return message;
+				}
+			}
+		else {
+			if ((fh == null) || (fh.equals(""))
+					&& (fm == null) || (fm.equals(""))) {
+				message = null;
+			}	
+			else 
+				return message = "generic.activity.trainingonthejob.invalidHour";
+		}	
+		
+	
+		return message;
+    }
+
+    
+}

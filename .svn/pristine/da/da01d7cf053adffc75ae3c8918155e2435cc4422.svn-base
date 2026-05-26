@@ -1,0 +1,248 @@
+package business.ws;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.StringTokenizer;
+
+import javax.ejb.Stateless;
+import javax.jws.WebMethod;
+import javax.jws.WebParam;
+import javax.jws.WebService;
+import javax.xml.bind.DatatypeConverter;
+
+import net.sf.jasperreports.engine.JRExporterParameter;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.export.JRPdfExporter;
+import net.sf.jasperreports.engine.util.JRLoader;
+import persistence.administration.corporation.CorporationABM;
+import persistence.administration.corporation.CorporationABMUtil;
+import persistence.administration.user.UserReport;
+import persistence.administration.user.UserReportUtil;
+import persistence.vehicle.VehicleReport;
+import persistence.vehicle.VehicleReportUtil;
+import sun.misc.IOUtils;
+
+import business.SystemAccessRemote;
+import business.alert.handler.Util;
+import business.vehicle.VehicleReportFacade;
+import business.ws.cache.CacheManager;
+import business.ws.client.WSL;
+import business.ws.client.activity.WSLCEPAActivityScheduleRegistryData;
+import business.ws.client.common.ListWSLDriverMainAttributeDataResult;
+import business.ws.client.common.ListWSLVehicleDataResult;
+import business.ws.client.driver.WSLDriverData;
+import business.ws.client.driver.WSLDriverMainAttributesData;
+import business.ws.client.driver.WSLTelematicControlData;
+import business.ws.client.security.User;
+import business.ws.client.vehicle.WSLVehicleData;
+
+import communication.activity.tables.CEPAActivityScheduleRegistryData;
+import communication.activity.tables.CheckListData;
+import communication.activity.tables.ItemData;
+import communication.activity.tables.PointData;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.DivOrgData;
+import communication.administration.corporation.util.DPAUnconformityItemFilter;
+import communication.administration.dpa.UnconformityDPAData;
+import communication.administration.dpa.UnconformityItemDPAData;
+import communication.administration.dpa.UnconformityReportDPADataSource;
+import communication.administration.dpa.UnconformityTypeDPADataType;
+import communication.administration.user.UserSessionData;
+import communication.alert.AlertConstants;
+import communication.driver.tables.DriverData;
+import communication.driver.tables.DriverMainAttributes;
+import communication.driver.tables.TelematicControlData;
+import communication.language.Text;
+import communication.security.SecurityConstants;
+import communication.util.FileTransfer;
+import communication.util.ListResult;
+import communication.util.MailSender;
+import communication.vehicle.report.CheckListUPMDataSource;
+import communication.vehicle.report.ChecklistReportHead;
+import communication.vehicle.tables.DPAGoalData;
+import communication.vehicle.tables.DPAVehicleActiveData;
+import communication.vehicle.tables.TrailerMainData;
+import communication.vehicle.tables.VehicleCheckData;
+import communication.vehicle.tables.VehicleCheckReportGroupData;
+import communication.vehicle.tables.VehicleCheckResumeData;
+import communication.vehicle.tables.VehicleData;
+
+@Stateless(mappedName = "WSLDCWebReportToolsInternal")
+@WebService(name="WSLDCWebReportToolsInternal")
+public class WSLDCWebReportToolsInternal implements WSLFacade {
+	
+	 
+
+	@WebMethod(operationName="login")
+	public User login(@WebParam(name = "u") String u, @WebParam(name = "p")String p){
+		User user=new User(u,p);
+		 try { 
+			 
+			SystemAccessRemote sys=CacheManager.getInstance().getSys(user,true);
+			user.setFullName(sys.getUserSessionData().getFullName());
+			Object[][] o= sys.getText().getContents();
+			String[][] m=new String[o.length][];
+			int i=0;
+			for(Object[] a:o){
+				m[i]=new String[] {a[0].toString(),a[1].toString()};
+				i++;
+			}
+			user.setMessages(m);
+			
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			user=null;
+		}
+         
+         return user;
+	}
+	
+	@WebMethod(operationName="findCheckReportHead")
+	public ChecklistReportHead[] findCheckReportHead(@WebParam(name = "sd")Integer startDay,@WebParam(name = "sm")Integer startMonth, @WebParam(name = "sy")Integer startYear,@WebParam(name = "ed")Integer endDay,@WebParam(name = "em")Integer endMonth,@WebParam(name = "ey")Integer endYear, @WebParam(name = "c")Integer corporation,@WebParam(name = "t")String type, @WebParam(name = "u")User u){
+		
+		 try {
+			SystemAccessRemote sys=CacheManager.getInstance().getSys(u,false);
+			
+			ArrayList<ChecklistReportHead> res= sys.getVehicleReportFacade().findCheckReportHead(startDay, startMonth, startYear, endDay, endMonth, endYear, corporation, type, sys.getUserSessionData());
+			
+			return res.toArray(new ChecklistReportHead[]{});
+		} catch (Exception e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		 
+		 return new ChecklistReportHead[]{};
+   }
+
+	@WebMethod(operationName="pdfCheckAbtract")
+	public FileTransfer pdfCheckAbtract(@WebParam(name = "id") Integer vehicleCheckId, @WebParam(name = "u") User user) throws Exception{
+			SystemAccessRemote sys=CacheManager.getInstance().getSys(user,true);
+			VehicleReportFacade vehicleReport=sys.getVehicleReportFacade();
+			UserSessionData userSys=sys.getUserSessionData();
+			
+			Text messages=sys.getText();
+			
+			VehicleCheckData data=vehicleReport.findVehicleCheck(vehicleCheckId, userSys); 
+		
+			boolean internos = data.getName().equals("84");
+			boolean pesados = data.getName().equals("80") || internos;
+			boolean seguimiento = data.getName().equals("79");
+			
+			
+			
+			CheckListData checkList = vehicleReport.getCheckList(new Integer(data.getName()),userSys);
+			
+	        VehicleData vehicleData=vehicleReport.findVehicleByPrimaryKey(data.getVehicle().getId(), userSys);
+	        String fileName=vehicleData.getMatricula().replace(" ", "_")+".pdf";
+	        String file = sys.getVehicleReportFacade().reportChecklistPDF(fileName, checkList, data, userSys, messages);
+	        byte[] dataFile=communication.administration.corporation.util.Util.toByteArray(new FileInputStream(file));
+	        
+	        FileTransfer fileTransfer=new FileTransfer();
+	        fileTransfer.setName(fileName);
+	        fileTransfer.setData(dataFile);
+	        
+	        return fileTransfer;
+				
+			
+			
+	}
+	
+	@WebMethod(operationName="pdfUnconformityCorrectiveAction")
+	public FileTransfer pdfUnconformityCorrectiveAction(@WebParam(name = "id") Integer id, @WebParam(name = "u") User user) throws Exception{
+		SystemAccessRemote sys=CacheManager.getInstance().getSys(user,true);
+		VehicleReportFacade vehicleReport=sys.getVehicleReportFacade();
+		UserSessionData userSys=sys.getUserSessionData();
+		Text messages=sys.getText();
+	
+		String tmpDirectory=AlertConstants.TEMP_DIRECTORY_DPA;
+		String fileName = "Unconformity.pdf";
+		String unconformityId = String.valueOf(id);
+		String file = tmpDirectory+"out/"+fileName;
+		if(new File(file).exists()){
+			new File(file).delete();
+		}
+		
+		UnconformityDPAData unconformity = sys.getCorporationReportFacade().findUnconformityDPAById(sys.getUserSessionData(), Integer.valueOf(unconformityId));
+
+	     HashMap<String,Object> parameters2 = new HashMap<String,Object>();
+	     parameters2.put("header", tmpDirectory+"images/header.jpg");
+	     parameters2.put("footer", tmpDirectory+"images/footer.jpg");
+	     parameters2.put("logo_cepa", tmpDirectory+"images/logo_cepa.png");
+	     parameters2.put("title", messages.getText("generic.dpa.unconformity.title"));
+	     parameters2.put("date", Util.formatDate(Calendar.getInstance().getTime()));
+	     parameters2.put("back1", tmpDirectory+"images/back1.jpg");
+	     parameters2.put("tabla1",tmpDirectory+"images/tabla1.jpg");
+	     parameters2.put("tabla2",tmpDirectory+"images/tabla3.jpg");
+	     parameters2.put("tabla3",tmpDirectory+"images/tabla2.jpg");
+	     parameters2.put("tabla4",tmpDirectory+"images/tabla4.jpg");
+	     parameters2.put("unconformitydata", "FECHA "+messages.getText("generic.dpa.unconformity.title").toUpperCase()+": "+Util.formatDate(unconformity.getDate()));
+	     parameters2.put("unconformitytype", messages.getText("generic.dpa.unconformity.type")+": "+messages.getText(unconformity.getType().getResourceBundleId()));
+	     parameters2.put("actions", messages.getText("generic.dpa.correctiveactions.title"));
+	     parameters2.put("picturestitle", messages.getText("generic.dpa.unconformity.files"));
+	     parameters2.put("itemstitle", messages.getText("generic.dpa.itemssolved"));
+	     parameters2.put("obstext", messages.getText("generic.dpa.uncnformity.comment"));
+	     parameters2.put("obsvalue", unconformity.getComment());
+	     parameters2.put("divorglevel1","Contratista"+":"+unconformity.getRelatedInformation("divOrgLevel1"));
+	     parameters2.put("divorglevel2","");
+	     parameters2.put("divorglevel3","");
+	     parameters2.put("SUBREPORT_DIR", tmpDirectory+"jasper/");
+	     
+	     
+	     String report=""; 
+	     if(unconformity.getDriverId()!=null){
+	     	parameters2.put("reference", unconformity.getRelatedInformation("fullName"));
+	     	report="Driver";
+	     }else if(unconformity.getCheck()!=null){
+	     	
+	     	report="CheckList";
+	     	parameters2.put("header1", tmpDirectory+"images/check_header1.jpg");
+	     	parameters2.put("header2", tmpDirectory+"images/check_header2.jpg");
+	     	parameters2.put("header3", tmpDirectory+"images/check_header3.jpg");
+	     	parameters2.put("header4", tmpDirectory+"images/check_header4.jpg");
+	     	
+	     	VehicleCheckData data = sys.getVehicleReportFacade().findVehicleCheck(unconformity.getCheck(), sys.getUserSessionData());
+     	
+     	 
+     		parameters2.put("vehiculo", messages.getText("generic.messages.matricula")+" : "+data.getVehicle().getMatricula());
+     	 
+	     } 
+	     
+	     Collection correctiveActions=sys.getCorporationReportFacade().findCorrectiveActionsByUnconformityId(sys.getUserSessionData(), Integer.valueOf(unconformityId));
+	     
+ 		 UnconformityReportDPADataSource dataSourceUn = new UnconformityReportDPADataSource(correctiveActions,messages);
+		 JasperCompileManager.compileReportToFile(tmpDirectory+"jasper/UnconformityItemsSubreport"+(report.equals("Driver")?"2":"")+".jrxml", tmpDirectory+"jasper/UnconformityItemsSubreport.jasper");
+		 JasperCompileManager.compileReportToFile(tmpDirectory+"jasper/UnconformityPictureSubreport.jrxml", tmpDirectory+"jasper/UnconformityPictureSubreport.jasper");
+	     JasperCompileManager.compileReportToFile(tmpDirectory+"jasper/UnconformityReport"+report+".jrxml", tmpDirectory+"jasper/UnconformityReport"+report+".jasper");
+	     FileInputStream input2 = new FileInputStream(new File(tmpDirectory+"jasper/UnconformityReport"+report+".jasper"));
+	
+	     JasperReport jasperReport = (JasperReport)JRLoader.loadObject(input2);
+	     FileOutputStream out2 = new FileOutputStream(new File(file));
+	     JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters2, dataSourceUn);
+	    
+	     JRPdfExporter exporter = new JRPdfExporter();
+	     exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
+	     exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, out2);
+	     exporter.exportReport();       
+	     out2.flush();
+	     out2.close();
+	     
+	     FileTransfer fileTransfer=new FileTransfer();
+	     fileTransfer.setData(communication.administration.corporation.util.Util.toByteArray(new FileInputStream(file)));
+	     fileTransfer.setName(fileName);
+	     
+	     return fileTransfer;
+	}
+}

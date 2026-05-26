@@ -1,0 +1,267 @@
+/*
+ * Created on 24-feb-2006
+ */
+package presentation.translator.web.vehicle;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.util.Date;
+import java.util.HashMap;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import net.sf.jasperreports.engine.JRExporterParameter;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.export.JRPdfExporter;
+import net.sf.jasperreports.engine.util.JRLoader;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.action.DynaActionForm;
+import org.jfree.report.JFreeReportBoot;
+
+import presentation.report.ReportFactory;
+import presentation.report.ReportUtil;
+import presentation.report.vehicle.ContractComodatoOwnFleetReportFactory;
+import presentation.report.vehicle.ContractDevolutionReportFactory;
+import presentation.report.vehicle.ContractDistratoReportFactory;
+import presentation.report.vehicle.ContractResponsabilityReportFactory;
+import presentation.translator.web.util.AbstractAction;
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+
+import communication.alert.AlertConstants;
+import communication.datatype.tables.SexDataType;
+import communication.datatype.tables.VehicleContractDataType;
+import communication.driver.tables.DriverData;
+import communication.language.Text;
+import communication.security.SecurityConstants;
+import communication.vehicle.report.ContractComodatoDataSource;
+import communication.vehicle.report.ContractReportData;
+import communication.vehicle.tables.VehicleContractData;
+import communication.vehicle.tables.VehicleData;
+
+
+public class VehicleContractAction extends AbstractAction {
+
+    public ActionForward action(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response) throws Exception {
+
+        HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        
+        DynaActionForm reportForm = (DynaActionForm)form;
+        
+        // TODO: Validar Fecha
+        String day = reportForm.getString("day");
+        String month = reportForm.getString("month");
+        String year = reportForm.getString("year");
+        Date date = Util.getDate(day, month, year);
+        String message = null;
+        if ( date == null){
+        	message =  "generic.vehicle.vehicledata.invalidDate";	        	
+        }
+        
+    	JFreeReportBoot.getInstance().start();
+
+     
+	    String data = reportForm.getString("day")+"/"+
+	    		reportForm.getString("month")+"/"+
+	    		reportForm.getString("year");
+	    String vehicleId = reportForm.getString("vehicle");
+	    // int type = Integer.parseInt(reportForm.getString("type"));
+	    
+	    String type = (String)reportForm.getString("type");
+	
+	    VehicleData vehicle = sys.getVehicleReportFacade().findVehicleById(
+	    		new Integer(vehicleId), sys.getUserSessionData());
+	    
+	    // Guardar el Contrato, para saber con que fecha se hizo el contrato
+	    // y tener un registro de contratos hechos y no hechos
+	    /*
+	    String contractType = "";
+	    switch(type) {
+	    	case 1: contractType = VehicleContractDataType.COMODATO; break;
+	    	case 2: contractType = VehicleContractDataType.DISTRATO; break;
+	    	case 3: contractType = VehicleContractDataType.RESPONSABILITY; break;
+	    	case 4: contractType = VehicleContractDataType.DEVOLUTION; break;
+	    }
+	    */
+	    VehicleContractData contract = new VehicleContractData(new Integer(vehicleId),date,new VehicleContractDataType(type),false);
+	    sys.getVehicleABMFacade().createVehicleContract(new Integer(vehicleId),contract,sys.getUserSessionData());
+	    
+	    // Genero el reporte de contrato:
+	    ContractReportData contractData = new ContractReportData(sys,getData(type));
+	    
+	    if (type.equalsIgnoreCase(VehicleContractDataType.COMODATO)){
+		    String contractName = SecurityConstants.DATACENTER5_WAR_DIRECTORY+"allergan/contracts/Comodato_"+vehicle.getMatricula().replaceAll(" ","_")+"_"+Util.formatDate(date)+".pdf";
+    		File f = new File(contractName);	
+    		FileOutputStream out = new FileOutputStream(f);
+
+    		Text messages = sys.getText();
+	        HashMap<String,Object> parameters = new HashMap<String,Object>();
+	        parameters.put("titulo", "CONTRATO DE COMODATO");
+	        parameters.put("texto0", getComodatoText0(vehicle.getDriver()));
+	        parameters.put("texto1", getComodatoText1(vehicle.getDriver()));
+	        
+	        parameters.put("texto2", "O COMODATÁRIO(A)  recebe da COMODANTE, o veículo já mencionado, passando o presente contrato a vigorar com as seguintes cláusulas e condições:");
+	    	parameters.put("tradetxt", messages.getText("generic.vehicle.vehicledata.trade"));
+	    	parameters.put("trade", vehicle.getTrade().getResourceBundleId());
+	    	parameters.put("platetxt", messages.getText("generic.vehicle.vehicledata.registrationNumber"));
+	    	parameters.put("plate", vehicle.getMatricula());
+	    	parameters.put("yeartxt", messages.getText("generic.vehicle.vehicledata.year"));
+	    	parameters.put("year", String.valueOf(vehicle.getYear()));
+	    	parameters.put("chassistxt", messages.getText("generic.vehicle.vehicledata.chasisNumber"));
+	    	parameters.put("chassis", vehicle.getChasisNumber());
+	    	parameters.put("modeltxt", messages.getText("generic.vehicle.vehicledata.model"));
+	    	parameters.put("model", vehicle.getModel());
+	    	parameters.put("colortxt", messages.getText("generic.vehicle.vehicledata.colour"));
+	    	parameters.put("color", vehicle.getColour());
+	    	parameters.put("modelFactorytxt", messages.getText("Modelo Fab"));
+	    	parameters.put("modelFactory", "");
+	    	parameters.put("renavamtxt", "RENAVAM");
+	    	parameters.put("renavam", vehicle.getPermissionNumber());
+	    	parameters.put("accesoriestxt", messages.getText("Acessórios"));
+	    	parameters.put("accesories", "");
+	    	parameters.put("texto3", "E por estarem justos e contratados, assinam o presente em duas vias de igual teor, para o mesmo efeito, diante das testemunhas abaixo mencionadas.");
+	    	parameters.put("currentDate", "São Paulo, "+data);
+	    	parameters.put("declaration", "Declara estar Ciente e De Acordo com a Política de Veículos:");
+	    	parameters.put("allergan", "Allergan Produtos Farmacêuticos Ltda");
+	    	parameters.put("witness", "Testemunha");
+	        
+	        JasperCompileManager.compileReportToFile(AlertConstants.TEMP_DIRECTORY_ALLERGAN+"jasper/comodato.jrxml", AlertConstants.TEMP_DIRECTORY_ALLERGAN+"jasper/comodato.jasper");
+	        FileInputStream input2 = new FileInputStream(new File(AlertConstants.TEMP_DIRECTORY_ALLERGAN+"jasper/comodato.jasper"));
+	        
+	        JasperReport jasperReport = (JasperReport)JRLoader.loadObject(input2);
+	        response.setHeader("Content-Type", "application/pdf");
+	   	 	response.setHeader("Content-Disposition", "inline; filename=\"Comodato.pdf");
+	        JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, new ContractComodatoDataSource());
+	        
+	        JRPdfExporter exporter = new JRPdfExporter();
+	        exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
+	        exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, out);
+	        exporter.exportReport();       
+	        out.flush();
+	        out.close();
+
+	    }else {
+		    ReportFactory factory = null;
+		    String contractType = "";
+		    if (type.equalsIgnoreCase(VehicleContractDataType.DISTRATO)){
+		    	factory = new ContractDistratoReportFactory("contract",contractData,reportForm,sys,vehicle,data);
+		    	contractType = "Distrato";
+		    }else if (type.equalsIgnoreCase(VehicleContractDataType.RESPONSABILITY)){
+		    	factory = new ContractResponsabilityReportFactory("contract",contractData,reportForm,sys,vehicle,data);
+		    	contractType = "Responsability";
+		    }else if (type.equalsIgnoreCase(VehicleContractDataType.DEVOLUTION)){
+		    	factory = new ContractDevolutionReportFactory("contract",contractData,reportForm,sys,vehicle,data);
+		    	contractType = "Devolution";
+		    }else if (type.equalsIgnoreCase(VehicleContractDataType.COMODATO_OWNFLEET)){
+		    	factory = new ContractComodatoOwnFleetReportFactory("contract",contractData,reportForm,sys,vehicle,data);
+		    	contractType = "ComodatoFrotaPropia";
+		    }
+		    String contractName = SecurityConstants.DATACENTER5_WAR_DIRECTORY+"allergan/contracts/"+contractType+"_"+vehicle.getMatricula().replaceAll(" ","_")+"_"+Util.formatDate(date)+".pdf";
+		
+		    new ReportUtil().executeReport(mapping,response,factory.createReport(),"PDFFile",session,contractName,true);
+	    }
+	    sys.getUserSessionData().setValue(contract);
+	    sys.getUserSessionData().setUrl("vehicle/viewContract.jsp");
+	    return mapping.findForward("next");
+    }
+
+    private Object getComodatoText0(DriverData driver) {
+		String text = "\t\tPelo presente instrumento particular, de um lado ALLERGAN PRODUTOS FARMACÊUTICOS LTDA., com sede à Av. Dr. Cardoso de Melo, 1855, 13º andar – Bloco I -, Vila Olímpia, Estado de São Paulo - SP, inscrita no CGC MF sob o nº 43.426.626/0001-77, neste ato representada pelos infra-assinados doravante denominada COMODANTE e de outro a ";
+		boolean female = driver.getSex().getResourceBundleId().equals(SexDataType.FEMALE);
+		text += (female) ? "Sra. " : "Sr. ";
+		text += driver.getFirstName()+" "+driver.getLastName();
+		text += (female) ? ", residente e domiciliada à" : ", residente e domiciliado à ";
+		text += driver.getPersonalAddress()+" CEP --- ";
+		text += (female) ? "portadora da célula de identidade RG nº " : "portador da célula de identidade RG nº ";
+		text += driver.getFederativeEntity()+", CPF nº "+driver.getLicenseCoverage()+" e da CNH nº "+driver.getLicenseNumber()+" categoria "+driver.getLicenseCategory()+" doravante denominada ";
+		text += (female) ? " COMODATÁRIA " : " COMODATÁRIO ";
+		text += ", tem entre si justo e contratado o seguinte:";
+		return text;
+	}
+
+    private Object getComodatoText1(DriverData driver) {
+		boolean female = driver.getSex().getResourceBundleId().equals(SexDataType.FEMALE);
+		String text = (female) ? "O COMODATÁRIA" : "O COMODATÁRIO";
+		text += ", na qualidade de funcionário da COMODANTE, e exercendo o cargo de ";
+		text += (driver.getAuthorizateWho() == null) ? "---" : driver.getAuthorizateWho();
+		text += ", para o completo desempenho de suas atribuições recebe, neste ato, da COMODANTE, um veículo com as seguintes características:";
+		return text;
+	}
+
+    /**
+     * 
+     */
+    public ActionForward cancel(HttpSession session,ActionMapping mapping, ActionForm form) {
+        return null;
+    }
+
+    public String[][] getData(String  type) {
+    	if(type.equalsIgnoreCase(VehicleContractDataType.COMODATO)) {
+    		String[][] data = {{"1ª) 	A COMODANTE  entrega à COMODATÁRIA o veículo acima descrito, devidamente licenciado e lacrado, com todos os impostos e taxas pagos para livre circulação em todo Território Nacional, inclusive com apólice de seguro com cobertura para danos materiais e pessoais, nos termos da política interna da COMODANTE."},
+    			{"2ª) 	Destina-se o aludido veículo a que a COMODATÁRIA possa exercer suas atividades para a COMODANTE, de acordo com as normas internas."},
+    			{"3ª) 	É permitido à COMODATÁRIA a utilização do aludido bem, de acordo com as condições constantes do presente contrato de comodato."},
+    			{"4ª) 	É proibida a condução do veículo por terceiros, salvo por outro funcionário da COMODANTE e quando a trabalho desta, desde que devidamente habilitado e autorizado pela COMODATÁRIA."},
+    			{"5ª) 	A COMODATÁRIA será reembolsada pelas despesas de utilização do veículo de acordo com as normas internas da COMODANTE."},
+    			{"6ª) 	No caso de ocorrer acidentes com o veículo objeto deste contrato, a COMODANTE pagará os custos de reparo, desde que não seja comprovada culpa da COMODATÁRIA, situação na qual uma vez configurada implicará á COMODATÁRIA o pagamento de 50% do custo da franquia do seguro, ou a outros critérios estipulados em normas internas da COMODANTE ."},
+    			{"7ª) 	Havendo perda total ou furto do veículo, a COMODANTE providenciará a sua substituição. Se for comprovada culpa da COMODATÁRIA, este arcará com 50% custos incorridos pelo COMODANTE."},
+    			{"8ª) 	Os consertos que não sejam de caráter de urgência, bem como reformas totais ou parciais, necessitarão de prévia autorização da unidade responsável pela administração da frota para que sejam executados."},
+    			{"9ª)	Mensalmente, a COMODATÁRIA deverá apresentar ao seu superior imediato, Relatório de Despesas contendo as despesas com o veículo."},
+    			{"10ª)	Não será permitido à instalação de acessórios / equipamentos adicionais que alterem as características originais do veículo."},
+    			{"11ª)	Havendo alteração de cargo para o qual a empresa não conceda veículo, ou, se durante a  vigência deste contrato houver rescisão de contrato de trabalho entre as partes, a COMODATÁRIA deverá devolver o veículo recebido da COMODANTE, em perfeitas condições de uso, salvo o desgaste natural das peças e componentes."},
+    			{"12ª) 	Em se configurando a má utilização do veículo pela COMODATÁRIA, poderá a COMODANTE  pleitear ressarcimento das despesas com o conserto das partes do veículo diretamente afetadas por esta condição, ou sem qualquer aviso prévio ou notificação, rescindir  o presente contrato e reaver o veículo, sem qualquer ressarcimento ou indenização à COMODATÁRIA."},
+    			{"13ª) 	Reserva-se à COMODANTE, o direito de vistoriar o veículo, a qualquer tempo, em data fixada pela unidade responsável pela administração da frota, no sentido de verificar se estão sendo cumpridas as cláusulas deste, no tocante à conservação do veículo, inclusive a conferência de quilometragem informada no relatório com a  registrada no hodômetro do veículo."},
+    			{"14ª) 	Definida a venda do veículo pela COMODANTE, terá a COMODATÁRIA preferência  sobre a sua aquisição de conformidade com o procedimento vigente na época."},
+    			{"15ª)	Compromete-se a COMODATÁRIA a conduzir o veículo dentro das leis de trânsito arcando, com multas por infrações que forem aplicadas pelas autoridades competentes, bem como a ressarcir a COMODANTE do valor das despesas por ela quitadas, através de desconto em folha de pagamento, estando sujeito a COMODATÁRIA ao não reembolso das despesas descritas na clausula 5ª até sua quitação, incluindo-se os danos com acidentes de trânsito.  "},
+    			{"Único - 	No caso de acidente, roubo ou furto, a COMODATÁRIA deverá providenciar junto aos órgãos locais competentes toda documentação necessária para o processo de reparação."},
+    			{"16ª)	Correrão por conta da COMODANTE  as despesas com licenciamento e seguro do veículo."},
+    			{"17ª) 	O presente contrato vigorará pelo prazo de 36 meses ou 100.000 km rodados, não sendo permitida a substituição do veículo por outro, salvo se a COMODATÁRIA vier a exercer outra atividade para a COMODANTE que, de acordo com as normas internas, lhe destine um veículo com outras características."},
+    			{"18ª)	Poderá a COMODANTE, a qualquer momento e a seu critério rescindir o presente Contrato de Comodato, mediante simples comunicação à COMODATÁRIA."},
+    			{"19ª) 	 A COMODATÁRIA obriga-se a observar as normas que regem o presente contrato ciente de que a sua não observância acarretará em sanções previstas de acordo com as normas internas."},
+    			{"20ª) A COMODATÁRIA recebe nesta data a cópia da política de veículos vigente e se compromete a cumpri-la em sua totalidade. Sempre que uma nova política entrar em vigor, esta deverá ser entregue pela COMODANTE à COMODATÁRIA."},
+    			{"21ª) 	As partes elegem o Foro da Comarca de São Paulo para dirimir quaisquer dúvidas da interpretação do presente contrato."}};
+    		return data;
+    	}else if(type.equalsIgnoreCase(VehicleContractDataType.COMODATO_OWNFLEET)) {
+    		String[][] data = {{"1ª) 	A COMODANTE  entrega ao COMODATÁRIO o veículo acima descrito, devidamente licenciado e lacrado, com todos os impostos e taxas pagos para livre circulação em todo Território Nacional, inclusive com apólice de seguro com cobertura para danos materiais e pessoais, nos termos da política interna da COMODANTE ." +
+    				"\n\n2ª) 	Destina-se o aludido veículo a que o COMODATÁRIO possa exercer suas atividades para a COMODANTE, de acordo com as normas internas."},
+    			{"3ª) 	É permitido ao COMODATÁRIO a utilização do aludido bem, de acordo com as condições constantes do presente contrato de comodato." +
+    					"\n\n4ª) 	É proibida a condução do veículo por terceiros, salvo por outro funcionário da COMODANTE quando a trabalho desta e devidamente autorizado pelo COMODATÁRIO ou eventualmente pelo cônjuge do COMODATÁRIO desde que habilitado e que não o utilize como meio principal de transporte."},
+    			{"5ª) 	O COMODATÁRIO será reembolsado pelas despesas de utilização do veículo de acordo com as normas internas da COMODANTE.\" "},
+    			{"6ª) 	No caso de ocorrer acidentes com o veículo objeto deste contrato, a COMODANTE  pagará os custos de reparo, desde que não seja comprovada culpa do COMODATÁRIO, situação na qual uma vez configurada implicará ao COMODATÁRIO o pagamento integral do custo da franquia do seguro, ou o valor total para reparo do veículo caso a franquia estipulada pelo seguro não seja atingida ou ainda a outros critérios estipulados em normas internas da COMODANTE ."},
+    			{"7ª) 	Havendo perda total ou furto do veículo, a COMODANTE  providenciará a sua substituição.\n\n8ª) 	Os consertos que não sejam de caráter de urgência, bem como reformas totais ou parciais, necessitarão de prévia autorização da unidade responsável  pela administração da frota para que sejam executados."},
+    			{"9ª)	Mensalmente, o COMODATÁRIO deverá apresentar ao seu superior imediato, Relatório de Despesas contendo as despesas com o veículo.\n\n10ª)	Não será permitido a instalação de acessórios / equipamentos adicionais que alterem as características originais do veículo."},
+    			{"11ª)	Havendo alteração de cargo para o qual a empresa não conceda veículo, ou, se durante a  vigência deste contrato houver rescisão de contrato de trabalho entre as partes, o COMODATÁRIO deverá devolver o veículo recebido da COMODANTE , em perfeitas condições de uso, salvo o desgaste natural das peças e componentes ."},
+    			{"12ª) 	Em se configurando a má utilização do veículo pelo COMODATÁRIO, poderá a COMODANTE  pleitear ressarcimento das despesas com o conserto das partes do veículo diretamente afetadas por esta condição,ou sem qualquer aviso prévio ou notificação, rescindir  o presente contrato e reaver o veículo, sem qualquer ressarcimento ou indenização ao COMODATÁRIO."},
+    			{"13ª) 	Reserva-se à COMODANTE, o direito de vistoriar o veículo, a qualquer tempo, em data fixada pela unidade responsável pela administração da frota, no sentido de verificar se estão sendo cumpridas as cláusulas deste, no tocante à conservação do veículo, inclusive a conferência de quilometragem informada no relatório com a  registrada no hodômetro do veículo.\n\n14ª) 	Definida a venda do veículo pela COMODANTE, terá o COMODATÁRIO preferência  sobre a sua aquisição de conformidade com o procedimento vigente na época."},
+    			{"15ª)	Compromete-se o COMODATÁRIO a conduzir o veículo dentro das leis de trânsito arcando, com multas por infrações que forem aplicadas pelas autoridades competentes, bem como a ressarcir a COMODANTE do valor das despesas por ela quitadas, através de desconto em folha de pagamento, estando sujeita o COMODATÁRIO ao não reembolso das despesas descritas na clausula 5ª até sua quitação, incluindo-se os danos com acidentes de trânsito.\n\tÚnico - 	No caso de acidente, roubo ou furto, o COMODATÁRIO deverá providenciar junto aos órgãos locais competentes toda documentação necessária para o processo de reparação."},
+    			{"16ª)	Correrão por conta da COMODANTE  as despesas com licenciamento e seguro do veículo.\n\n17ª) 	O presente contrato vigorará pelo prazo de 36 meses ou 100.000 km rodados, não sendo permitida a substituição do veículo por outro, salvo se o COMODATÁRIO vier a exercer outra atividade para a COMODANTE que, de acordo com as normas internas, lhe destine um veículo com outras características."},
+    			{"18ª)	Poderá a COMODANTE rescindir o presente se o COMODATÁRIO vier a exercer outra atividade para a COMODANTE, nos termos das normas internas em vigor.\n\n19ª) 	O COMODATÁRIO  obriga-se a observar as normas que regem o presente contrato ciente de que a sua não observância acarretará em sanções previstas de acordo com as normas internas."},
+    			{"20ª) 	As partes elegem o Foro da Comarca de São Paulo para dirimir quaisquer dúvidas da interpretação do presente contrato."}};
+    		return data;
+    	}else if(type.equalsIgnoreCase(VehicleContractDataType.RESPONSABILITY)) {
+    		String[][] data = {{"2.7 Será permitida a instalação de acessórios no carro-frota desde que sob as expensas do FUNCIONÁRIO e desde que não alterem as características originais do carro-frota. Na hipótese de instalação de algum equipamento ou acessório que não puder ser removido quando da devolução do carro-frota à LOCADORA, quer por encerramento de contrato ou desligamento do FUNCIONÁRIO, o mesmo não será reembolsado pela instalação desses acessórios."},
+    			{"2.8 Na hipótese dos acessórios instalados sob as expensas do FUNCIONÁRIO serem removidos e alterarem as características originais do carro-frota, o FUNCIONÁRIO arcará com os custos de reparo na parte diretamente afetada por esta condição. Fica desde já autorizado pelo FUNCIONÁRIO o desconto do referido valor na folha de pagamento (devolução por encerramento de contrato) ou na rescisão (no caso de desligamento ou pedido de demissão)."},
+    			{"2.9 Em caso de colisão decorrente de dolo ou culpa do usuário com avarias no carro-frota que a critério da LOCADORA puderem ser reparadas, o FUNCIONÁRIO será responsável pelo pagamento integral do conserto, através do desconto em sua folha de pagamento, até o limite máximo de 5% (cinco por cento) do valor do mesmo carro novo (zero quilometro), conforme a respectiva tabela de revendedores vigente na data do pagamento."},
+    			{"2.10 Em caso de colisão decorrente de dolo ou culpa do usuário que acarrete a perda total do carro-frota, o FUNCIONÁRIO será responsável pelo pagamento, através do desconto em sua folha de pagamento, do valor equivalente a 10% (dez por cento) do valor do mesmo carro novo (zero quilometro) conforme a respectiva tabela de revendedores vigente na data do pagamento."},
+    			{"2.11 Na hipótese de furto do carro-frota em que se caracterize a negligência quanto à guarda e utilização do carro-frota em relação às instruções recebidas da COMPANHIA através da Política de Carros-Frota – Frota Terceirizada, o FUNCIONÁRIO será advertido formalmente e será responsável pelo pagamento, através do desconto em sua folha de pagamento, do valor equivalente a 10% (dez por cento) do valor do mesmo carro novo (zero quilometro) conforme a respectiva tabela de revendedores vigente na data do pagamento."},
+    			{"2.12 Na hipótese do carro-frota titular não estar disponível, por se encontrar em serviços de manutenção ou reparos, o FUNCIONÁRIO terá a sua disposição um outro carro-frota fornecido pela LOCADORA, respeitando-se o tempo mínimo de quatro horas para execução de reparos conforme estabelecido em contrato entre a LOCADORA e a ALLERGAN, aplicando-se também a este carro-frota todas as regras estabelecidas no presente Termo. O carro-frota reserva quando utilizado, deverá ser devolvido abastecido. Na hipótese de devolução sem abastecimento o usuário arcará com o acréscimo de 15% do valor do combustível utilizado, cobrado pela Locadora, sendo este valor descontado de seus vencimentos."},
+    			{"2.13 O FUNCIONÁRIO arcará com os custos INTEGRAIS com reparos, reposições de carros-frota e indenizações por danos materiais e/ou pessoais, não somente em favor da locadora como também em favor de terceiros no caso de ele ter agido com dolo ou culpa gravíssima na guarda, condução ou conservação do carro-frota, ficando o mesmo totalmente responsável pelas conseqüências de tais condutas, devendo suportar e reembolsar à Allergan e/ou a LOCADORA por todas as despesas que estas vierem a suportar em decorrência de tais atos."}};
+    		return data;
+
+    	}
+    	return new String[0][0];
+    }
+} 
+    
+
+

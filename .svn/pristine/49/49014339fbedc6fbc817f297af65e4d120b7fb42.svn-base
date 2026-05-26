@@ -1,0 +1,464 @@
+package communication.activity.tables;
+
+import java.io.Serializable;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.List;
+
+import persistence.activity.ActivityReport;
+
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.corporation.tables.DivOrgData;
+import communication.administration.corporation.tables.GeoItemData;
+import communication.administration.corporation.tables.GeoLabelData;
+import communication.administration.corporation.tables.ItemData;
+import communication.administration.corporation.tables.LabelItemData;
+import communication.administration.corporation.util.Util;
+import communication.administration.user.UserSessionData;
+import communication.datatype.tables.ActivityStateDataType;
+import communication.datatype.tables.CepaASecondaryClasificationDataType;
+import communication.driver.tables.DriverData;
+
+public class CEPAActivityScheduleData extends CEPAActivityData implements Serializable {
+      
+	public static final String PREVISTA = "datatype.scheduledactivitystate.prevista";
+	public static final String EN_SUPERVISION = "datatype.scheduledactivitystate.ensupervision";
+	public static final String DICTADA = "datatype.scheduledactivitystate.dictada";
+	
+	private static final long serialVersionUID = 1L;
+
+	private Collection<DivOrgData> divOrgSet;
+	
+	private ActivityStateDataType state;
+	
+	private LinkedList<CEPAScheduleActivityInstructorData> instructors;
+	private LinkedList<DriverData> drivers;
+
+	
+	/**
+	 * @return the instructors
+	 */
+	public LinkedList<CEPAScheduleActivityInstructorData> getInstructors() {		
+		return instructors;
+	}
+	
+	public LinkedList<CEPAScheduleActivityInstructorData>  getInstructorsOrdered(){
+		if (instructors != null && instructors.size() > 0){
+			Collections.sort(instructors);
+		}
+		return instructors;
+	}
+
+	/**
+	 * @param instructors the instructors to set
+	 */
+	public void setInstructors(LinkedList<CEPAScheduleActivityInstructorData> instructors) {
+		this.instructors = instructors;
+	}
+
+	public CEPAActivityScheduleData() {
+		super();		
+	}
+
+	public Collection<DivOrgData> getDivOrgSet() {
+		return divOrgSet;
+	}
+	
+	/**
+	 * 
+	 * @param activityData
+	 */
+	public  CEPAActivityScheduleData(CEPAActivityData activityData){
+		super();
+		this.countrygeo = activityData.getCountrygeo();
+		this.definition = activityData.getDefinition();
+		this.type = activityData.getType();
+		this.activityId = activityData.getActivityId();
+		this.corpooration = activityData.getCorpooration();
+		this.date = activityData.getDate();
+		this.city = activityData.getCity();
+		this.dateExpiry = activityData.getDateExpiry();
+		this.isOld = activityData.getIsOld();
+		this.drivingExperience = activityData.getDrivingExperience();
+		this.definition = activityData.getDefinition();
+		this.observations = activityData.getObservations();
+		this.divOrgSet = null;
+		this.state = null;		
+	}
+
+	public CEPAActivityScheduleData(Collection<DivOrgData> divOrgSet,GeoLabelData countrygeo, 
+			String state, boolean isOld, String observations) {
+		super();
+		this.divOrgSet = divOrgSet;
+		this.countrygeo = countrygeo;
+		this.state = new ActivityStateDataType(state);
+		this.isOld = isOld;
+		this.observations = observations;
+		//this.definition = definition;
+	}
+		
+	public CEPAActivityScheduleData(Collection<DivOrgData> divOrgSet,
+			GeoLabelData countrygeo, String state,Integer id,
+			CEPAActivityDefinitionData  definition,	String type,
+			CorporationData corporation, String city,
+			Date date, boolean isOld, Date dateExpiry, int drivingExperience,
+			String observations, Integer participants, String theme, Integer duration, String file) {
+
+		super(countrygeo,definition,type,id,corporation,date,
+				city,dateExpiry,isOld,drivingExperience,observations,participants,theme, duration, file);				
+		
+		this.divOrgSet = divOrgSet;
+		this.state = new ActivityStateDataType(state);
+		
+		//this.isOld = isOld;
+
+	}	
+
+	/**
+	 * @return Returns the state.
+	 */
+	public ActivityStateDataType getState() {
+		return state;
+	}
+
+	/**
+	 * @param state The state to set.
+	 */
+	public void setState(ActivityStateDataType state) {
+		this.state = state;
+	}
+
+	/**
+	 * @param divOrgSet The divOrgSet to set.
+	 */
+	public void setDivOrgSet(Collection<DivOrgData> divOrgSet) {
+		this.divOrgSet = divOrgSet;
+	}
+
+    public CEPAActivityScheduleData(Integer id) {
+    	super(id);
+    }
+
+
+    public CEPAActivityScheduleData(CEPAActivityScheduleData originalActivity, DriverData driver) {
+		this(originalActivity);
+		this.state = originalActivity.getState();
+		this.divOrgSet = (Collection<DivOrgData>)driver.getDivOrgs();
+		this.countrygeo = driver.getCountry();
+	}
+
+	/**
+     * @return
+     */
+    public Iterator<DivOrgData> getDivOrgsIterator() {
+        if(this.divOrgSet == null) {
+            return null;
+        }
+        Collections.sort((List)divOrgSet);
+        return divOrgSet.iterator();
+    }
+    
+  
+    public String getDivision() {
+    	Iterator<DivOrgData> it;
+    	it = this.getDivOrgsIterator();
+    	String division = "";
+    	while(it.hasNext()) {		
+    		DivOrgData divOrgData = (DivOrgData)it.next();
+    		if (divOrgData.getName().equals("corporation.monsanto.divisions")) {
+    		if(divOrgData.getDivOrgLevels() != null) {
+    			ItemData item1 = (ItemData)divOrgData.getDivOrgLevels().getItemIterator().next();
+
+        		if(item1.getSubItems() != null) {
+    				ItemData item2 = (ItemData)item1.getSubItems().getItemIterator().next();
+
+    				division = item2.getName();
+    				    
+				} // end if(item2.getSubItems() != null)
+
+    		}
+    		}
+    	}
+    	return division;
+    }
+    
+    public String getSubdivision() {
+       	Iterator<DivOrgData> it;
+       	it = this.getDivOrgsIterator();
+       	String subdivision ="";
+       	while(it.hasNext()) {		
+       		DivOrgData divOrgData = (DivOrgData)it.next();
+    		if (divOrgData.getName().equals("corporation.monsanto.divisions")) {       		
+       		if(divOrgData.getDivOrgLevels() != null) {
+       			ItemData item1 = (ItemData)divOrgData.getDivOrgLevels().getItemIterator().next();
+   	        		if(item1.getSubItems() != null) {
+  	    				ItemData item2 = (ItemData)item1.getSubItems().getItemIterator().next();
+   	    	    		if(item2.getSubItems() != null) {
+ 	    					ItemData item3 = (ItemData)item2.getSubItems().getItemIterator().next();
+   	    					subdivision =item3.getName();
+   							} // end if(item2.getSubItems() != null)
+    	    			} // end if(item1.getSubItems() != null) 
+
+    	    		}
+    	    	}
+       		}
+            return subdivision;
+    	    }    
+    
+    public String getUnit() {
+    	Iterator<DivOrgData> it;
+    	it = this.getDivOrgsIterator();
+    	String unit = "";
+    	while(it.hasNext()) {		
+    		DivOrgData divOrgData = (DivOrgData)it.next();
+    		if (divOrgData.getName().equals("corporation.monsanto.units")) {
+    		if(divOrgData.getDivOrgLevels() != null) {
+    			ItemData item1 = (ItemData)divOrgData.getDivOrgLevels().getItemIterator().next();
+
+        		if(item1.getSubItems() != null) {
+    				ItemData item2 = (ItemData)item1.getSubItems().getItemIterator().next();
+
+    				unit = item2.getName();
+    				    
+				} // end if(item2.getSubItems() != null)
+
+    		}
+    		}
+    	}
+    	return unit;
+    }
+
+    
+    public String getAssignedVehicle() {
+    	Iterator<DivOrgData> it;
+    	it = this.getDivOrgsIterator();
+    	String assignedVehicle = "";
+    	while(it.hasNext()) {		
+    		DivOrgData divOrgData = (DivOrgData)it.next();
+    		if (divOrgData.getName().equals("corporation.monsanto.assignedvehicles")) {
+    		if(divOrgData.getDivOrgLevels() != null) {
+    			ItemData item1 = (ItemData)divOrgData.getDivOrgLevels().getItemIterator().next();
+    				assignedVehicle = item1.getName();
+    		}
+    		}
+    	}
+    	return assignedVehicle;
+    }
+    
+    public String getData(int type, int index, int j) {
+        if(type == DIV_ORG) {
+            Iterator<DivOrgData> it = getDivOrgsIterator();
+            DivOrgData data = null;
+            for(int i = 0; i < index; i++) {
+                data = (DivOrgData)it.next();
+            }
+            LabelItemData label = data.getDivOrgLevels(); 
+            for(int i = 1; i < j; i++) {
+                label = ((ItemData)label.getItemIterator().next()).getSubItems();
+            }
+            return ((ItemData)label.getItemIterator().next()).getName();
+        }else{
+            GeoLabelData label = getCountrygeo(); 
+            for(int i = 1; i < j; i++) {
+                label = ((GeoItemData)label.getItemIterator().next()).getSubItems();
+            }
+           return ((GeoItemData)label.getItemIterator().next()).getName();
+        }
+    }
+
+	public String getKey() {
+		String key = "";
+		Iterator<DivOrgData> it = this.getDivOrgsIterator();
+    	while(it.hasNext()) {		
+    		DivOrgData divOrgData = (DivOrgData)it.next();
+    		if(divOrgData.getDivOrgLevels() != null) {
+    			ItemData item = (ItemData)divOrgData.getDivOrgLevels().getItemIterator().next();
+        		while(item.getSubItems() != null) {
+    				item = (ItemData)item.getSubItems().getItemIterator().next();
+				} // end if(item2.getSubItems() != null)
+				key += item.getId()+";";
+    		}
+    	}
+	    GeoItemData itemData1 = (GeoItemData)countrygeo.getItemIterator().next();
+	    while(itemData1.getSubItems() != null) {
+	        itemData1 = (GeoItemData)itemData1.getSubItems().getItemIterator().next();
+	    }
+	    key += String.valueOf(itemData1.getId());
+    	return key;
+	}
+
+	public HashMap<String, CEPAActivityScheduleData> divide(Collection<DriverData> drivers) {
+		HashMap<String, CEPAActivityScheduleData> newActivities = new HashMap<String, CEPAActivityScheduleData>(); 
+		String activityKey = getKey();
+		Iterator<DriverData> driversIt = drivers.iterator();
+		while(driversIt.hasNext()) {
+			DriverData driver = driversIt.next();
+			String driverKey = driver.getKey();
+			if(activityKey.equals(driverKey)) {
+				addDriver(driver);
+			}else {
+				if(!newActivities.containsKey(driverKey)) {
+					CEPAActivityScheduleData newActivity = new CEPAActivityScheduleData(this,driver);
+					newActivity.setActivityId(null);
+					newActivity.addDriver(driver);
+					newActivities.put(driverKey, newActivity);
+				}else {
+					CEPAActivityScheduleData activity = newActivities.get(driverKey);
+					activity.addDriver(driver);
+				}
+			}
+		}
+		if(this.drivers != null && this.drivers.size() > 0) {
+			newActivities.put(activityKey, this);
+		}
+		return newActivities;
+	}
+
+	private void addDriver(DriverData driver) {
+		if(drivers == null) {
+			drivers = new LinkedList<DriverData>();
+		}
+		drivers.add(driver);
+	}
+
+	public LinkedList<DriverData> getDrivers() {
+		return drivers;
+	}
+
+	public void setDrivers(LinkedList<DriverData> drivers) {
+		this.drivers = drivers;
+	}
+    
+	public void replaceDivOrg(int index, Integer item1, Integer item2, Integer item3) {
+		LabelItemData lid = getLabelItemData(item1, item2, item3);  	
+
+		Iterator<DivOrgData> it = this.getDivOrgsIterator();
+		DivOrgData divOrgData = null;
+    	for(int i = 1; i <= index && it.hasNext(); i++) {		
+    		divOrgData = (DivOrgData)it.next();
+    	}
+    	divOrgData.setDivOrgLevels(lid);
+	}
+
+	public void removeDivOrg(int index) {
+		Iterator<DivOrgData> it = this.getDivOrgsIterator();
+    	int i = 1;
+    	while(it.hasNext()) {		
+    		it.next();
+    		if(i >= index)
+    	    	it.remove();
+    		i++;
+    	}
+	}
+
+	private LabelItemData getLabelItemData(Integer item1, Integer item2,
+			Integer item3) {
+		Collection items1 = new LinkedList();
+        if(item2 == null) {
+            items1.add(new ItemData(item1,"",true,null));
+        }else{
+            if(item3 == null) {
+                Collection items2 = new LinkedList();
+                items2.add(new ItemData(item2,"",true,null));
+                LabelItemData level1 = new LabelItemData(null,null,items2,null);
+                items1.add(new ItemData(item1,"",true,level1));
+            }else {
+                Collection items3 = new LinkedList();
+                items3.add(new ItemData(item3,"",true,null));
+                LabelItemData level2 = new LabelItemData(null,null,items3,null);
+                
+                Collection items2 = new LinkedList();
+                items2.add(new ItemData(item2,"",true,level2));
+                LabelItemData level1 = new LabelItemData(null,null,items2,null);
+                
+                items1.add(new ItemData(item1,"",true,level1));
+                
+            }
+        }
+        LabelItemData lid = new LabelItemData(null,null,items1,null);
+		return lid;
+	}
+	
+	public void addDivOrg(Integer divOrgid, String divOrgName, Integer item1, Integer item2, Integer item3) {
+		LabelItemData lid = getLabelItemData(item1, item2, item3);  	
+    	getDivOrgSet().add(new DivOrgData(divOrgid,divOrgName,lid));
+	}
+	
+	public void replaceDivGeo(Integer item1, Integer item2, Integer item3) {
+		Collection items1 = new LinkedList();
+        if(item2 == null) {
+            items1.add(new GeoItemData(item1,"",true,null));
+        }else{
+            if(item3 == null) {
+                Collection items2 = new LinkedList();
+                items2.add(new GeoItemData(item2,"",true,null));
+                GeoLabelData level1 = new GeoLabelData(null,null,null,items2);
+                items1.add(new GeoItemData(item1,"",true,level1));
+            }else {
+                Collection items3 = new LinkedList();
+                items3.add(new GeoItemData(item3,"",true,null));
+                GeoLabelData level2 = new GeoLabelData(null,null,null,items3);
+                
+                Collection items2 = new LinkedList();
+                items2.add(new GeoItemData(item2,"",true,level2));
+                GeoLabelData level1 = new GeoLabelData(null,null,null,items2);
+                
+                items1.add(new GeoItemData(item1,"",true,level1));
+            }
+        }
+        setCountrygeo(new GeoLabelData(null,null,null,items1));       		
+	}
+
+	public boolean isCommentaryDrive() {
+		String typeStr = type.getResourceBundleId();
+		return typeStr.equals(CEPAActivityConstants.COMMENTARYDRIVE) ||
+				typeStr.equals(CEPAActivityConstants.COMMENTARYDRIVE_INSTRUCTORES) ||
+				typeStr.equals(CEPAActivityConstants.COMMENTARYDRIVE_JJ2) ||
+				typeStr.equals(CEPAActivityConstants.COMMENTARYDRIVE_NOVARTIS) ||
+				typeStr.equals(CEPAActivityConstants.COMMENTARYDRIVE_RENOVATION) ||
+				typeStr.equals(CEPAActivityConstants.INITIAL_FOREIGN_EVALUATION) ||
+				typeStr.equals(CEPAActivityConstants.COMMENTARYDRIVEARGENTINA) ||
+				typeStr.equals(CEPAActivityConstants.COMMENTARYDRIVEARGENTINA_NUEVO) ||
+				typeStr.equals(CEPAActivityConstants.COMMENTARYDRIVEHIGHRISK) ||
+				typeStr.equals(CEPAActivityConstants.COMMENTARYDRIVENALCO) ||
+				typeStr.equals(CEPAActivityConstants.COMMENTARYDRIVEOTHER) ||
+				typeStr.equals(CEPAActivityConstants.COMMENTARYDRIVEOTHERSPECIAL) ||
+				typeStr.equals(CEPAActivityConstants.COMMENTARYDRIVETIMEEXPIRY);
+	}
+
+	public int getAge() {
+		return Util.getAge(date);
+	}
+
+	public String getDivOrg(int[] divOrgs) {
+		Iterator<DivOrgData> it = getDivOrgsIterator();
+		DivOrgData divOrg = null;
+		for(int i = 0; i < divOrgs[0]; i++) 
+			divOrg = it.next();
+		LabelItemData lid = divOrg.getDivOrgLevels();
+		for(int i = 1; i < divOrgs[1]; i++) { 
+			lid = ((ItemData)lid.getItemIterator().next()).getSubItems();
+		}
+		// TODO Auto-generated method stub
+		return ((ItemData)lid.getItemIterator().next()).getName();
+	}
+
+	public boolean hasNewReports() {
+		String defName = definition.getResourceKeyName();
+		return defName.equals(CEPAActivityConstants.BTW1_NEW_FORM_TABLET) || defName.equals(CEPAActivityConstants.BTW2_NEW_FORM_TABLET)
+		 || defName.equals(CEPAActivityConstants.BTW2ONBOARD_TABLET)  || defName.equals(CEPAActivityConstants.BTW1ONBOARD_TABLET)
+		 || defName.equals(CEPAActivityConstants.TRAINING_ON_THE_JOB_TABLET) || defName.equals(CEPAActivityConstants.PHRD_TABLET)
+		 || defName.equals(CEPAActivityConstants.EVALUACION_EN_CABINA_TABLET) || defName.equals(CEPAActivityConstants.TOJ_ECONOMIC_TABLET)
+		 || defName.equals(CEPAActivityConstants.TRAINING_ON_THE_JOB_4X4_TABLET) || defName.equals(CEPAActivityConstants.SPECIALDAYOFTRAINING_TABLET)
+		 || defName.equals(CEPAActivityConstants.TRANSIT_BEHAVIOUR_TABLET) || defName.equals(CEPAActivityConstants.SAFE_DRIVE_TABLET)
+		 || defName.equals(CEPAActivityConstants.BTW3_VIA_PUBLICA_TABLET) || defName.equals(CEPAActivityConstants.BTW2REFRESHONBOARD_TABLET)
+		 || defName.equals(CEPAActivityConstants.EBTW_PISTA_TABLET) || defName.equals(CEPAActivityConstants.BTWPLUS1_TABLET)
+		  || defName.equals(CEPAActivityConstants.BTWPLUS1ONBOARD_TABLET) || defName.equals(CEPAActivityConstants.BTWPLUS2_TABLET)
+		   || defName.equals(CEPAActivityConstants.BTWPLUS2ONBOARD_TABLET);
+	}
+
+}

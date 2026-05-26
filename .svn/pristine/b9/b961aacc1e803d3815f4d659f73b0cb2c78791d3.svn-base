@@ -1,0 +1,176 @@
+/*
+ * Created on 27-oct-2005
+ *
+ * TODO To change the template for this generated file go to
+ * Window - Preferences - Java - Code Style - Code Templates
+ */
+package presentation.translator.web.vehicle;
+
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.OutputStream;
+import java.util.Calendar;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedList;
+import java.util.StringTokenizer;
+
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
+
+import net.sf.jasperreports.engine.JRExporterParameter;
+import net.sf.jasperreports.engine.JasperCompileManager;
+import net.sf.jasperreports.engine.JasperFillManager;
+import net.sf.jasperreports.engine.JasperPrint;
+import net.sf.jasperreports.engine.JasperReport;
+import net.sf.jasperreports.engine.export.JRPdfExporter;
+import net.sf.jasperreports.engine.util.JRLoader;
+
+import org.apache.struts.action.ActionForm;
+import org.apache.struts.action.ActionForward;
+import org.apache.struts.action.ActionMapping;
+import org.apache.struts.action.DynaActionForm;
+
+import presentation.translator.web.util.AbstractAction;
+import presentation.translator.web.util.Util;
+import business.SystemAccess;
+
+import communication.activity.tables.CheckListData;
+import communication.activity.tables.ItemData;
+import communication.activity.tables.PointData;
+import communication.administration.corporation.tables.CorporationData;
+import communication.administration.dpa.UnconformityDPAData;
+import communication.administration.user.UserSessionData;
+import communication.administration.user.tables.UserData;
+import communication.alert.AlertConstants;
+import communication.language.Text;
+import communication.security.SecurityConstants;
+import communication.util.MailSender;
+import communication.vehicle.report.CheckListDPADataSource;
+import communication.vehicle.report.CheckListImageData;
+import communication.vehicle.report.CheckListUPMDataSource;
+import communication.vehicle.report.PictureDPADataSource;
+import communication.vehicle.report.UnconformityDPADataSource;
+import communication.vehicle.tables.VehicleCheckData;
+
+/**
+ * @author fcarriquiry
+ */
+public class UPMDownloadCheckListAction extends AbstractAction {
+
+	public ActionForward action(ActionMapping mapping, ActionForm form, HttpServletRequest request, HttpServletResponse response) throws Throwable {
+
+        HttpSession session = request.getSession();
+        SystemAccess sys = ((SystemAccess)session.getAttribute("SystemAccess"));
+        Text messages = sys.getText();
+        
+      
+        
+        DynaActionForm controlData = (DynaActionForm)form;
+        
+ 		VehicleCheckData data = sys.getVehicleReportFacade().findVehicleCheck(new Integer(controlData.getString("check")), sys.getUserSessionData());
+		boolean pesados = data.getName().equals("80");
+		
+		CheckListData checkList = sys.getVehicleReportFacade().getCheckList(new Integer(data.getName()),sys.getUserSessionData());
+		Boolean resume=controlData.getString("checkListResume")!=null && controlData.getString("checkListResume").equals("1");
+		
+        HashMap<String,Object> parameters = new HashMap<String,Object>();
+        parameters.put("header", AlertConstants.TEMP_DIRECTORY_DPA+"images/header.jpg");
+        parameters.put("footer", AlertConstants.TEMP_DIRECTORY_DPA+"images/footer.jpg");
+        parameters.put("logo_cepa", AlertConstants.TEMP_DIRECTORY_DPA+"images/logo_cepa.png");
+        parameters.put("title", "Checklist Vehículos Pesados");
+        parameters.put("date", Util.formatDate(Calendar.getInstance().getTime()));
+        parameters.put("header1", AlertConstants.TEMP_DIRECTORY_DPA+"images/check_header1.jpg");
+        parameters.put("header2", AlertConstants.TEMP_DIRECTORY_DPA+"images/check_header2.jpg");
+        parameters.put("header3", AlertConstants.TEMP_DIRECTORY_DPA+"images/check_header3.jpg");
+        parameters.put("header4", AlertConstants.TEMP_DIRECTORY_DPA+"images/check_header4.jpg");
+        parameters.put("checkdata", "Fecha: "+Util.formatDate(data.getDate()));
+        Iterator<PointData> it = checkList.getSortPoints();
+        String[][] values = null;
+        if(pesados) {
+            parameters.put("data", AlertConstants.TEMP_DIRECTORY_DPA+"images/datosCheckListT1.jpg");
+            parameters.put("table", AlertConstants.TEMP_DIRECTORY_DPA+"images/tablaCheckListT1.jpg");
+            parameters.put("plate","Placa: "+data.getVehicle().getMatricula());
+            
+            Iterator<ItemData> items = it.next().getSortItems();
+            for(int count=0; count<2; ) {
+		        ItemData item = items.next();
+		        String text =  messages.getText(item.getText()) + ": " + data.getValueFromItem(item);
+		        if(item.getText().equals("forestales.check2.h1")){
+		        	//Conductor
+		        	count++;
+		        	parameters.put("driver", text);
+		        }else if(item.getText().equals("forestales.check2.h3")){
+		        	//Transportista
+		        	parameters.put("transporter", text);
+		        	count++;
+		        }
+	        }
+        
+        }
+        
+        parameters.put("aprouved", "A");
+        parameters.put("reprouved", "R");
+        parameters.put("plates", "PLACAS");
+        parameters.put("obs", messages.getText("generic.messages.observations"));
+        
+        String result = messages.getText("generic.activity.result") +": ";
+        result += (data.getResult().intValue() == 1) ? messages.getText("generic.activity.note.approved") : messages.getText("generic.activity.note.notapproved"); 
+        parameters.put("pictures", messages.getText("generic.checklist.pictures"));
+        parameters.put("finaldata", "Conclusiones");
+        parameters.put("result", result);
+        parameters.put("inspected", messages.getText("generic.checklist.inspector")+": "+data.getInspectedby());
+        parameters.put("obsText", messages.getText("generic.messages.observations"));
+        parameters.put("stop", "P");
+        parameters.put("obsValue", (data.getObs() == null || data.getObs().contains("dpa")) ? "--------" :  data.getObs());
+        String city= (data.getSerie() == null) ?data.getSerie():"-1";
+        
+
+        Iterator<PointData> itWar=checkList.getSortPoints();
+		boolean war=false;
+		while(itWar.hasNext() && !war){
+			PointData pointData=itWar.next();
+			Iterator<ItemData> itItWar=pointData.getSortItems();
+			while(itItWar.hasNext() && !war){
+				ItemData itData=itItWar.next();
+				String tag=data.getValueTagFromItem(itData.getId());
+				war=tag!=null && Integer.valueOf(tag)==1?true:false;
+			}
+		}
+		
+		if(war){
+			parameters.put("warning", AlertConstants.TEMP_DIRECTORY_DPA+"images/warning.jpg");
+			parameters.put("warningB",true);
+		}else{
+			parameters.put("warningB",false);
+		}
+		
+		CheckListUPMDataSource dataSource = new CheckListUPMDataSource(resume, data, checkList, sys.getText());
+		parameters.put("city","PLAZO REPARACIÓN: "+dataSource.getValueX(Integer.valueOf(city)));
+		
+        String type = (pesados) ? "Pesados" : "undefined"; 
+        JasperCompileManager.compileReportToFile(AlertConstants.TEMP_DIRECTORY_DPA+"jasper/CheckListUPM"+type+".jrxml", AlertConstants.TEMP_DIRECTORY_DPA+"jasper/CheckListUPM"+type+".jasper");
+        FileInputStream input2 = new FileInputStream(new File(AlertConstants.TEMP_DIRECTORY_DPA+"jasper/CheckListUPM"+type+".jasper"));
+
+        JasperReport jasperReport = (JasperReport)JRLoader.loadObject(input2);
+        response.setHeader("Content-Type", "application/pdf");
+   	 	response.setHeader("Content-Disposition", "inline; filename=\"CheckList_"+data.getVehicle().getMatricula().replace(" ", "_")+".pdf");
+        OutputStream out = response.getOutputStream();
+        JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters, dataSource);
+        
+        JRPdfExporter exporter = new JRPdfExporter();
+        exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
+        exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, out);
+        exporter.exportReport();       
+        out.flush();
+        out.close();
+	 
+		return null;
+	}
+    public ActionForward cancel(HttpSession session,ActionMapping mapping, ActionForm form) {
+        return null;
+    }
+}

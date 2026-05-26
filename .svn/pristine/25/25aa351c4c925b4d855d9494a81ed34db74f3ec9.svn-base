@@ -1,0 +1,432 @@
+package communication.vehicle.tables;
+
+
+import java.io.Serializable;
+import java.sql.Timestamp;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Iterator;
+
+import communication.activity.tables.ItemData;
+import communication.activity.tables.ItemValueStrData;
+import communication.activity.tables.PointCommentData;
+import communication.util.DateValue;
+import communication.vehicle.report.CheckListImageData;
+
+
+public class VehicleCheckData implements Serializable,DateValue,Comparable {
+
+	/*
+	 * Because implements Serializable it needs a serialVersionUID
+	 */
+	
+	private Integer vehicleCheckId;
+	
+    private static final long serialVersionUID = 1L;
+
+    // representan el reultado(son solo los items del formulario que fueron seleccionados)
+	//private Set itemSet;
+	private Collection itemValueSet = null;
+	
+	private String name;
+	
+	private Date date;
+
+    protected Integer vehicleKm;
+    
+    protected String obs;
+    
+    protected String serie;
+    
+    protected VehicleData vehicle;
+    
+    private String licenseNumber;
+    
+    private Date dateLicenseExpiry;
+
+    private Integer result;
+    protected Collection<PointCommentData> pointCommentSet;
+    protected Collection<CheckListImageData> pointImageSet;
+    
+    // Para Nalco:
+    private String inspectedby;
+    private String distrito;
+    private String grupo;
+    
+    
+    public String getObs() {
+		return obs;
+	}
+
+
+
+	public void setObs(String obs) {
+		this.obs = obs;
+	}
+
+
+
+	public String getSerie() {
+		return serie;
+	}
+
+	public void setSerie(String serie) {
+		this.serie = serie;
+	}
+
+	public VehicleCheckData(){
+		
+	}
+	
+	/**
+	 * 
+	 * @param id
+	 * @param vehicle
+	 * @param date
+	 * @param name
+	 * @param vehicleKm
+	 * @param obs
+	 * @param serie
+	 * @param itemValueSet
+	 * @param licenseNumber
+	 * @param dateLicenseExpiry
+	 * @param result
+	 */
+	public VehicleCheckData(Integer id,VehicleData vehicle,Date date,String name,Integer vehicleKm,String obs, String serie, Collection itemValueSet,String licenseNumber,Date dateLicenseExpiry, Integer result) 
+	{
+		this.vehicleCheckId = id;
+		this.vehicle = vehicle;
+		this.date = date;
+		this.itemValueSet = itemValueSet;
+		this.name = name;
+		this.vehicleKm = vehicleKm;				
+		this.obs = obs;
+		this.serie = serie;
+		this.licenseNumber = licenseNumber;
+		this.dateLicenseExpiry = dateLicenseExpiry;
+		this.result = result;
+	}	
+	
+	/**
+	 * Constructor para el CehckList de Nalco
+	 * @param id
+	 * @param vehicle
+	 * @param date
+	 * @param name
+	 * @param vehicleKm
+	 * @param obs
+	 * @param serie
+	 * @param itemValueSet
+	 * @param licenseNumber
+	 * @param dateLicenseExpiry
+	 * @param result
+	 */
+	public VehicleCheckData(Integer id,VehicleData vehicle,Date date,String name,
+			String obs, Collection itemValueSet, Integer result, String inspectedby,
+			String distrito, String grupo) 
+	{
+		this.vehicleCheckId = id;
+		this.vehicle = vehicle;
+		this.date = date;
+		this.itemValueSet = itemValueSet;
+		this.name = name;
+		this.obs = obs;
+		this.result = result;
+		this.inspectedby = inspectedby;
+		this.distrito = distrito;
+		this.grupo = grupo;
+	}	
+	
+		
+	
+	/**
+	 * @return Returns the instructor.
+	 */
+	public String getName() {
+		return name;
+	}
+
+	/**
+	 * @param instructor The instructor to set.
+	 */
+	public void setName(String name) {
+		this.name = name;
+	}
+
+	/**
+	 * @return Returns the activityRegistryId.
+	 */
+	public Integer getVehicleCheckId() {
+		return vehicleCheckId;
+	}
+
+	/**
+	 * @param activityRegistryId The activityRegistryId to set.
+	 */
+	public void setVehicleCheckId(Integer vehicleCheckId) {
+		this.vehicleCheckId = vehicleCheckId;
+	}
+
+	public Integer getVehicleKm() {
+		return vehicleKm;
+	}
+
+	public void setVehicleKm(Integer vehicleKm) {
+		this.vehicleKm = vehicleKm;
+	}
+
+	public int compareTo(Object anotherobject){
+		DateValue another = (DateValue)anotherobject; 
+    	Date element1=another.getDate();
+    	Date element2=this.getDate();
+    	if (element1 instanceof Timestamp)
+    		element1= new Date(element1.getTime());
+    	if (element2 instanceof Timestamp)
+    		element2= new Date(element2.getTime());
+        return element1.compareTo(element2);    
+      }
+
+	/**
+	 * Redefine el metodo equals. Dos checklist son iguales
+	 * si y solo si tienen el mismo vehiculo (id del vehiculo)
+	 * y tienen la misma fecha.
+	 * @param o - Objeto
+	 * @return boolean - True si son iguales, false en caso contrario.
+	 * @author gbenaderet
+	 */
+	public boolean equals(Object o){
+		VehicleCheckData vcd;
+		if (o instanceof VehicleCheckData){
+			vcd = (VehicleCheckData)o;
+			// Asumo que es la misma checklist si esta asociada
+			// al mismo vehiculo para la misma fecha.
+			// Si las fechas son diferentes son checklist diferentes
+			if (	
+				(vcd.vehicleCheckId != null && this.vehicleCheckId != null
+				&& vcd.vehicleCheckId.equals(this.vehicleCheckId) ) 
+				||
+				(vcd.getVehicle().getId().equals(this.getVehicle().getId())
+				&& vcd.getDate().equals(this.getDate()))
+				){
+				return true;
+			}else{
+				return false;
+			}
+		}else
+			return false;
+	}
+
+	/**
+	 * @return Returns the itemValueSet.
+	 */
+	public Collection getItemValueSet() {
+		return itemValueSet;
+	}
+
+	/**
+	 * @param itemValueSet The itemValueSet to set.
+	 */
+	public void setItemValueSet(Collection itemValueSet) {
+		this.itemValueSet = itemValueSet;
+	}
+	
+	/* Devuelve el valor (1,2,3 o null) de un item.
+	 * Esto se utiliza para ls Commentary Drive donde los items
+	 * pueden tomar valores 1 2 o 3 (segun el radiobuttom 
+	 * que se indique: SI, NO, Necesita Mejorar.
+	 * Para los demás casos devuelve null; 
+	 */
+	public String getValueFromItem(ItemData item)
+	{
+		if (this.itemValueSet != null)
+		{
+			Iterator it = this.itemValueSet.iterator();
+			while (it.hasNext())
+			{
+				ItemValueStrData itemValue = (ItemValueStrData)it.next();
+				if (itemValue.getItem().equals(item))
+					return itemValue.getItemValue();
+			}
+		}
+		return null;
+		
+	}
+
+    public String getValueFromItem(Integer item) {
+        if (itemValueSet != null) {
+            Iterator it = itemValueSet.iterator();
+            while (it.hasNext()) {
+                ItemValueStrData itemValue = (ItemValueStrData)it.next();
+                if(itemValue.getItem().getId().equals(item)) {
+                    return itemValue.getItemValue();
+                } 
+            }
+        }
+        return null;
+    }
+    
+    public String getValueTagFromItem(Integer item) {
+        if (itemValueSet != null) {
+            Iterator it = itemValueSet.iterator();
+            while (it.hasNext()) {
+                ItemValueStrData itemValue = (ItemValueStrData)it.next();
+                if(itemValue.getItem().getId().equals(item)) {
+                    return itemValue.getItemTag();
+                } 
+            }
+        }
+        return null;
+    }
+
+    public String getValueFromCommentPoint(Integer point) {
+        if (pointCommentSet != null) {
+            Iterator it = pointCommentSet.iterator();
+            while (it.hasNext()) {
+                PointCommentData pointValue = (PointCommentData)it.next();
+                if(pointValue.getPoint().getId().equals(point)) {
+                    return pointValue.getComment();
+                }
+            }
+        }
+        return null;
+    }
+    
+    
+    
+    
+    public Collection<CheckListImageData> getPointImageSet() {
+		return pointImageSet;
+	}
+
+
+
+	public void setPointImageSet(Collection<CheckListImageData> pointImageSet) {
+		this.pointImageSet = pointImageSet;
+	}
+
+
+
+	public Date getDate() {
+		return date;
+	}
+
+	public VehicleData getVehicle() {
+		return vehicle;
+	}
+
+
+
+	public void setVehicle(VehicleData vehicle) {
+		this.vehicle = vehicle;
+	}
+
+
+
+	public void setDate(Date date) {
+		this.date = date;
+	}
+
+
+
+	public Date getDateLicenseExpiry() {
+		return dateLicenseExpiry;
+	}
+
+
+
+	public void setDateLicenseExpiry(Date dateLicenseExpiry) {
+		this.dateLicenseExpiry = dateLicenseExpiry;
+	}
+
+
+
+	public String getLicenseNumber() {
+		return licenseNumber;
+	}
+
+
+
+	public void setLicenseNumber(String licenseNumber) {
+		this.licenseNumber = licenseNumber;
+	}
+
+
+
+	public Integer getResult() {
+		return result;
+	}
+
+
+
+	public void setResult(Integer result) {
+		this.result = result;
+	}
+
+	/**
+	 * @return the inspectedby
+	 */
+	public String getInspectedby() {
+		return inspectedby;
+	}
+
+
+
+	/**
+	 * @param inspectedby the inspectedby to set
+	 */
+	public void setInspectedby(String inspectedby) {
+		this.inspectedby = inspectedby;
+	}
+
+
+
+	/**
+	 * @return the distrito
+	 */
+	public String getDistrito() {
+		return distrito;
+	}
+
+
+
+	/**
+	 * @param distrito the distrito to set
+	 */
+	public void setDistrito(String distrito) {
+		this.distrito = distrito;
+	}
+
+
+
+	/**
+	 * @return the grupo
+	 */
+	public String getGrupo() {
+		return grupo;
+	}
+
+
+
+	/**
+	 * @param grupo the grupo to set
+	 */
+	public void setGrupo(String grupo) {
+		this.grupo = grupo;
+	}
+
+	
+
+
+	public Collection<PointCommentData> getPointCommentSet() {
+		return pointCommentSet;
+	}
+
+
+
+	public void setPointCommentSet(Collection<PointCommentData> pointCommentSet) {
+		this.pointCommentSet = pointCommentSet;
+	}
+
+
+
+}

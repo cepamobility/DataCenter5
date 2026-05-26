@@ -1,0 +1,24 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+
+<hibernate-mapping package="persistence.driver.tables">
+	<class name="AnualPlanDefinition" table="anualplandefinitions">
+       <id	column="id"	name="id"	type="java.lang.Integer">
+            <generator class="sequence">
+            	<param name="sequence">AnualPlanDefinition_Sequence</param>
+            </generator>
+        </id>
+        <property		name="plan"	   type="java.lang.Integer"		column="plan"		not-null="true" />
+        <property		name="activity"	   type="java.lang.Integer"		column="activity"		not-null="true" />
+        <property		name="startType"	   type="java.lang.Integer"		column="startType"		not-null="true" />
+        <property		name="start"	   type="java.util.Date"		column="start"/>
+        <property		name="days"	   type="java.lang.Integer"		column="days" />
+        <property		name="alert1"	   type="java.lang.Integer"		column="alert1" />
+        <property		name="alert2"	   type="java.lang.Integer"		column="alert2" />
+        <property		name="alert3"	   type="java.lang.Integer"		column="alert3" />
+                
+   	</class>
+</hibernate-mapping>

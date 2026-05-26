@@ -1,0 +1,39 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC
+"-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+
+<hibernate-mapping package="persistence.fleet.tables" >
+	<class name="FleetDivision" table="fleetdivisions">
+        
+		<id column="id" name="id">
+            <generator class="sequence">
+            	<param name="sequence">FleetDivision_Sequence</param>
+            </generator>
+        </id>
+
+		<many-to-one name="fleet" column="fleet" not-null="true"/>
+
+	    <many-to-one class="persistence.datatype.tables.TypeVehicle"	name="vehicleType"/>
+	    <many-to-one class="persistence.datatype.tables.TypeDistanceUnit"	name="odometer"/>
+
+        <many-to-one name="geoLevel2" class="persistence.administration.corporation.tables.GeoLevel2" column="geolevel2" />
+        <many-to-one name="geoLevel1" class="persistence.administration.corporation.tables.GeoLevel1" column="geolevel1" />
+        <many-to-one name="country" class="persistence.administration.corporation.tables.Country" />
+
+        <many-to-one name="divOrg11" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="divorg11" />
+        <many-to-one name="divOrg12" class="persistence.administration.corporation.tables.DivOrgItemLevel2" column="divorg12" />
+        <many-to-one name="divOrg13" class="persistence.administration.corporation.tables.DivOrgItemLevel3" column="divorg13" />
+
+        <many-to-one name="divOrg21" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="divorg21" />
+        <many-to-one name="divOrg22" class="persistence.administration.corporation.tables.DivOrgItemLevel2" column="divorg22" />
+        <many-to-one name="divOrg23" class="persistence.administration.corporation.tables.DivOrgItemLevel3" column="divorg23" />
+
+        <many-to-one name="divOrg31" class="persistence.administration.corporation.tables.DivOrgItemLevel1" column="divorg31" />
+        <many-to-one name="divOrg32" class="persistence.administration.corporation.tables.DivOrgItemLevel2" column="divorg32" />
+        <many-to-one name="divOrg33" class="persistence.administration.corporation.tables.DivOrgItemLevel3" column="divorg33" />
+
+		<property	name="exclusionDate"	type="java.util.Date"	column="exclusionDate"	/>
+		
+    </class>
+</hibernate-mapping>
