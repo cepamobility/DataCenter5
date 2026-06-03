@@ -1,0 +1,42 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!-- Generated 28/05/2026 04:59:38 PM by Hibernate Tools 3.5.0.Final -->
+<hibernate-mapping>
+    <class name="persistence.vehicle.tables.InstructorActivity" table="INSTRUCTORACTIVITY">
+        <id name="id" type="java.lang.Integer">
+            <column name="ID" />
+            <generator class="sequence">
+		        <param name="sequence">instructoractivity_id_seq</param>
+		    </generator>
+        </id>
+        <many-to-one name="user" 
+             class="persistence.administration.user.tables.User" 
+             column="loginname" 
+             not-null="true"/>
+        <property name="corporation" type="java.lang.Integer" not-null="true">
+            <column name="CORPORATION" />
+        </property>
+        <property name="category" type="java.lang.Integer" not-null="true">
+            <column name="CATEGORY" />
+        </property>
+        <property name="subCategory" type="java.lang.Integer" not-null="true">
+            <column name="SUB_CATEGORY" />
+        </property>
+        <property name="location" type="java.lang.String" not-null="true">
+            <column name="LOCATION" />
+        </property>
+        <property name="date" type="java.util.Date" not-null="true">
+            <column name="DATE" />
+        </property>
+        <property name="channel" type="java.lang.Integer" not-null="true">
+            <column name="CHANNEL" />
+        </property>
+        <property name="referent" type="java.lang.String" not-null="true">
+            <column name="REFERENT" />
+        </property>
+        <property name="observation" type="java.lang.String">
+            <column name="OBSERVATION" />
+        </property>
+    </class>
+</hibernate-mapping>

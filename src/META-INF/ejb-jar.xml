@@ -7628,6 +7628,46 @@
    <method-permission >
       <description><![CDATA[description not supported yet by ejbdoclet]]></description>
          <role-name>administrator</role-name>
+         <role-name>eventcreate</role-name>
+         <role-name>vehicleview</role-name>
+         <role-name>drivervehicleview</role-name>
+         <role-name>driverodometer</role-name>
+         <role-name>dpachecklist</role-name>
+         <role-name>systemaccess</role-name>
+      <method >
+         <description><![CDATA[]]></description>
+         <ejb-name>VehicleReport</ejb-name>
+         <method-intf>Local</method-intf>
+         <method-name>findInstructorActivityListByInstructor</method-name>
+         <method-params>
+         	<method-param>java.lang.String</method-param>
+            <method-param>communication.administration.user.UserSessionData</method-param>
+         </method-params>
+      </method>
+   </method-permission>
+   <method-permission >
+      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
+         <role-name>administrator</role-name>
+         <role-name>eventcreate</role-name>
+         <role-name>vehicleview</role-name>
+         <role-name>drivervehicleview</role-name>
+         <role-name>driverodometer</role-name>
+         <role-name>dpachecklist</role-name>
+         <role-name>systemaccess</role-name>
+      <method >
+         <description><![CDATA[]]></description>
+         <ejb-name>VehicleReport</ejb-name>
+         <method-intf>Remote</method-intf>
+         <method-name>findInstructorActivityListByInstructor</method-name>
+         <method-params>
+         	<method-param>java.lang.String</method-param>
+            <method-param>communication.administration.user.UserSessionData</method-param>
+         </method-params>
+      </method>
+   </method-permission>
+   <method-permission >
+      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
+         <role-name>administrator</role-name>
       <method >
          <description><![CDATA[]]></description>
          <ejb-name>VehicleReport</ejb-name>
@@ -27553,6 +27593,42 @@
          <role-name>cepascheduleactivitycreate</role-name>
          <role-name>cdactivitycreate</role-name>
          <role-name>vehiclechecklist</role-name>
+         <role-name>dpachecklist</role-name>
+         <role-name>jjreporter</role-name>
+      <method >
+         <description><![CDATA[]]></description>
+         <ejb-name>VehicleABM</ejb-name>
+         <method-intf>Local</method-intf>
+         <method-name>instructorActivityCreate</method-name>
+         <method-params>
+            <method-param>communication.vehicle.tables.InstructorActivityData</method-param>
+            <method-param>communication.administration.user.UserSessionData</method-param>
+         </method-params>
+      </method>
+   </method-permission>
+	<method-permission>
+	  <role-name>administrator</role-name>
+	  <role-name>cepascheduleactivitycreate</role-name>
+	  <role-name>cdactivitycreate</role-name>
+	  <role-name>vehiclechecklist</role-name>
+	  <role-name>dpachecklist</role-name>
+	  <role-name>jjreporter</role-name>
+	  <method>
+	      <ejb-name>VehicleABM</ejb-name>
+	      <method-intf>Remote</method-intf>
+	      <method-name>instructorActivityCreate</method-name>
+	      <method-params>
+	          <method-param>communication.vehicle.tables.InstructorActivityData</method-param>
+	          <method-param>communication.administration.user.UserSessionData</method-param>
+	      </method-params>
+	  </method>
+	</method-permission>
+   <method-permission >
+      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
+         <role-name>administrator</role-name>
+         <role-name>cepascheduleactivitycreate</role-name>
+         <role-name>cdactivitycreate</role-name>
+         <role-name>vehiclechecklist</role-name>
       <method >
          <description><![CDATA[]]></description>
          <ejb-name>VehicleABM</ejb-name>
@@ -29791,6 +29867,46 @@
          <method-name>findVehicleByLike</method-name>
          <method-params>
             <method-param>communication.vehicle.tables.VehicleData</method-param>
+            <method-param>communication.administration.user.UserSessionData</method-param>
+         </method-params>
+      </method>
+   </method-permission>
+   <method-permission >
+      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
+         <role-name>administrator</role-name>
+         <role-name>eventcreate</role-name>
+         <role-name>vehicleview</role-name>
+         <role-name>drivervehicleview</role-name>
+         <role-name>driverodometer</role-name>
+         <role-name>dpachecklist</role-name>
+         <role-name>systemaccess</role-name>
+      <method >
+         <description><![CDATA[]]></description>
+         <ejb-name>VehicleReportFacade</ejb-name>
+         <method-intf>Local</method-intf>
+         <method-name>findInstructorActivityListByInstructor</method-name>
+         <method-params>
+            <method-param>java.lang.String</method-param>
+            <method-param>communication.administration.user.UserSessionData</method-param>
+         </method-params>
+      </method>
+   </method-permission>
+   <method-permission >
+      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
+         <role-name>administrator</role-name>
+         <role-name>eventcreate</role-name>
+         <role-name>vehicleview</role-name>
+         <role-name>drivervehicleview</role-name>
+         <role-name>driverodometer</role-name>
+         <role-name>dpachecklist</role-name>
+         <role-name>systemaccess</role-name>
+      <method >
+         <description><![CDATA[]]></description>
+         <ejb-name>VehicleReportFacade</ejb-name>
+         <method-intf>Remote</method-intf>
+         <method-name>findInstructorActivityListByInstructor</method-name>
+         <method-params>
+            <method-param>java.lang.String</method-param>
             <method-param>communication.administration.user.UserSessionData</method-param>
          </method-params>
       </method>
@@ -33498,6 +33614,25 @@
          <role-name>drivercreatevehicle</role-name>
          <role-name>vehiclechecklist</role-name>
          <role-name>dpachecklist</role-name>
+         <role-name>jjreporter</role-name>
+      <method >
+         <description><![CDATA[]]></description>
+         <ejb-name>VehicleABMFacade</ejb-name>
+         <method-intf>Remote</method-intf>
+         <method-name>instructorActivityCreate</method-name>
+         <method-params>
+            <method-param>communication.vehicle.tables.InstructorActivityData</method-param>
+            <method-param>communication.administration.user.UserSessionData</method-param>
+         </method-params>
+      </method>
+   </method-permission>
+   <method-permission >
+      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
+         <role-name>administrator</role-name>
+         <role-name>vehiclecreate</role-name>
+         <role-name>drivercreatevehicle</role-name>
+         <role-name>vehiclechecklist</role-name>
+         <role-name>dpachecklist</role-name>
       <method >
          <description><![CDATA[]]></description>
          <ejb-name>VehicleABMFacade</ejb-name>
@@ -33512,6 +33647,7 @@
          </method-params>
       </method>
    </method-permission>
+   
    <method-permission >
       <description><![CDATA[description not supported yet by ejbdoclet]]></description>
          <role-name>administrator</role-name>

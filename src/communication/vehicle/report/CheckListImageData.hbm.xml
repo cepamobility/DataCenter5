@@ -1,0 +1,27 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!-- Generated 28/05/2026 04:41:57 PM by Hibernate Tools 3.5.0.Final -->
+<hibernate-mapping>
+    <class name="communication.vehicle.report.CheckListImageData" table="CHECKLISTIMAGEDATA">
+        <id name="checkId" type="java.lang.Integer">
+            <column name="CHECKID" />
+            <generator class="assigned" />
+        </id>
+        <property name="inputStream" type="java.io.InputStream">
+            <column name="INPUTSTREAM" />
+        </property>
+        <property name="fileName" type="java.lang.String">
+            <column name="FILENAME" />
+        </property>
+        <property name="pointId" type="java.lang.Integer">
+            <column name="POINTID" />
+        </property>
+        <property name="text" type="java.lang.String">
+            <column name="TEXT" />
+        </property>
+        <property name="imageBase64" type="java.lang.String">
+            <column name="IMAGEBASE64" />
+        </property>
+    </class>
+</hibernate-mapping>

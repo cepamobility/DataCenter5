@@ -85,6 +85,7 @@ import communication.util.MailSender;
 import communication.vehicle.tables.ComplaintData;
 import communication.vehicle.tables.DPAGoalData;
 import communication.vehicle.tables.DPAVehicleActiveData;
+import communication.vehicle.tables.InstructorActivityData;
 import communication.vehicle.tables.TrailerCheckData;
 import communication.vehicle.tables.TrailerData;
 import communication.vehicle.tables.UnconformityData;
@@ -391,7 +392,16 @@ public class VehicleABMFacadeBean implements SessionBean {
 		return null;
 	}
 
-
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle,vehiclechecklist,dpachecklist,jjreporter"
+	 * @param data
+	 * @throws Exception
+	 */	
+	public Integer instructorActivityCreate(InstructorActivityData data, UserSessionData userSessionData) throws Exception {
+		return VehicleABMUtil.getHome().create().instructorActivityCreate(data, userSessionData);
+	}
+		
 	/**
 	 * @ejb.interface-method
      * @ejb.permission role-name = "administrator,vehicledelete"

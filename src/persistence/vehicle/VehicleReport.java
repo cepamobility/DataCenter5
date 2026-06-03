@@ -19,6 +19,9 @@ public interface VehicleReport
    public communication.util.ListResult findList( java.lang.String value,communication.administration.user.UserSessionData userRequest,int attribute,int first,int count,int status )
       throws java.lang.Exception, java.rmi.RemoteException;
 
+   public java.util.List<communication.vehicle.tables.InstructorActivityData> findInstructorActivityListByInstructor( java.lang.String instructor,communication.administration.user.UserSessionData userSessionData )
+      throws java.lang.Exception, java.rmi.RemoteException;
+   
    public java.util.List findVehicleByLike( communication.administration.user.UserSessionData userRequest,int attribute,java.lang.String value,int first,int count )
       throws java.lang.Exception, java.rmi.RemoteException;
 

@@ -11,6 +11,7 @@
 <%@page import="java.util.Collection"%>
 <%@page import="communication.activity.tables.CheckListData"%>
 <%@page import="presentation.translator.web.util.*"%>
+<%@page import="communication.security.SecurityConstants"%>
 
 <%@page language="java" 
 	errorPage="../exception.jsp" 
@@ -25,7 +26,7 @@
 	SystemAccess sys = (SystemAccess)session.getAttribute("SystemAccess");
 	UserSessionData userSessionData = sys.getUserSessionData();
 	Text messages = sys.getText();
-
+	
 %>
 
 <html lang="en">
@@ -46,8 +47,29 @@
 		<link rel="stylesheet" href="../styles/base.css">
 		<link rel="stylesheet" href="../styles/checklist.css">
 		<link rel="stylesheet" href="../styles/jquery-ui-1.10.3.custom.min.css">
+		<script type="text/javascript">
+			function doRegistry() {
+				var form = document.getElementById('registry');
+	            form.submit();
+			}
+			function openRegistry() {
+				var form = document.getElementById('activities');
+	            form.submit();
+			}
+		</script>
+		<style>
+			.button[disabled] {
+				cursor: default !important;
+			}
+		</style>
 	</head>
 	<body>
+		<form name="registry" id='registry' action="instructorRegistry.jsp">
+		</form>
+		
+		<form name="activities" id='activities' action="instructorRegistryView.jsp">
+		</form>
+	
 		<header>
 			<section class="grid_container">
 				<h1 class="customer_logo" style="background-image: url('../menu/<%=Util.corporationLogo(sys.getUserSessionData()) %>');">DC</h1>
@@ -77,6 +99,14 @@
 							</label>
 						</div>
 					</fieldset>
+					<% if(!SecurityConstants.isProductionServer() || userSessionData.getFilter().getLoginName().equals("6ac629fabce5d543be2c6df1a49d7338")) {%>
+					<fieldset>
+						<div class="narrow">
+							<input type="button" style="cursor: pointer;" class="button" value="Registro de Actividad" onClick="javascript:doRegistry()"/>
+							<input type="button" style="margin-left: 20px; cursor: pointer;" class="button"  value="Ver actividades" onClick="javascript:openRegistry()"/>
+						</div>
+					</fieldset>
+					<% } %>
 				</form>
 			</section>
 		</section>

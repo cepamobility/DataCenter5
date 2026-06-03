@@ -80,6 +80,7 @@ import communication.vehicle.report.VehiclePursuitReportDataType;
 import communication.vehicle.tables.ComplaintData;
 import communication.vehicle.tables.DPAGoalData;
 import communication.vehicle.tables.DPAVehicleActiveData;
+import communication.vehicle.tables.InstructorActivityData;
 import communication.vehicle.tables.TrailerData;
 import communication.vehicle.tables.VehicleCheckData;
 import communication.vehicle.tables.VehicleCheckReportGroupData;
@@ -251,6 +252,10 @@ public abstract class VehicleReportFacadeBean implements SessionBean {
 					"business.vehicle.vehiclereportfacade.notaccess.vehiclereport");
 		}
 
+	}
+	
+	public List<InstructorActivityData> findInstructorActivityListByInstructor(String instructor, UserSessionData userSessionData) throws Exception{
+		return VehicleReportUtil.getHome().create().findInstructorActivityListByInstructor(instructor, userSessionData);
 	}
 	
 	/**

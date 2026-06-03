@@ -18,6 +18,9 @@ public interface VehicleReportFacade
 
    public java.util.List findVehicleByLike( communication.vehicle.tables.VehicleData vehicle,communication.administration.user.UserSessionData userSessionData )
       throws communication.exception.InvalidDataException, communication.exception.CommunicationProblemException, communication.exception.DeslogedException, java.rmi.RemoteException;
+   
+   public java.util.List<communication.vehicle.tables.InstructorActivityData> findInstructorActivityListByInstructor( java.lang.String instructor,communication.administration.user.UserSessionData userSessionData )
+      throws java.lang.Exception, java.rmi.RemoteException;
 
    public java.util.Collection findVehicleCheckDPA( java.lang.Integer id,communication.administration.user.UserSessionData userSessionData )
       throws java.lang.Exception, java.rmi.RemoteException;

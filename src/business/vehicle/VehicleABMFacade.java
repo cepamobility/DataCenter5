@@ -13,6 +13,9 @@ public interface VehicleABMFacade
    public java.lang.Integer vehicleCreate( communication.vehicle.tables.VehicleData data,java.lang.String comment,communication.administration.user.UserSessionData userSessionData )
       throws java.lang.Exception, java.rmi.RemoteException;
 
+   public java.lang.Integer instructorActivityCreate( communication.vehicle.tables.InstructorActivityData data, communication.administration.user.UserSessionData userSessionData)
+		      throws java.lang.Exception, java.rmi.RemoteException;
+   
    public void vehicleDelete( communication.vehicle.tables.VehicleData data,java.lang.String comment,communication.administration.user.UserSessionData userSessionData )
       throws java.lang.Exception, java.rmi.RemoteException;
 

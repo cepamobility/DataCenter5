@@ -36,6 +36,7 @@ import persistence.vehicle.tables.CheckListTransporterLink;
 import persistence.vehicle.tables.Complaint;
 import persistence.vehicle.tables.DPAGoal;
 import persistence.vehicle.tables.DPAVehicleActive;
+import persistence.vehicle.tables.InstructorActivity;
 import persistence.vehicle.tables.Trailer;
 import persistence.vehicle.tables.TrailerCheck;
 import persistence.vehicle.tables.Unconformity;
@@ -69,6 +70,7 @@ import communication.vehicle.report.CheckListImageData;
 import communication.vehicle.tables.ComplaintData;
 import communication.vehicle.tables.DPAGoalData;
 import communication.vehicle.tables.DPAVehicleActiveData;
+import communication.vehicle.tables.InstructorActivityData;
 import communication.vehicle.tables.TrailerCheckData;
 import communication.vehicle.tables.TrailerData;
 import communication.vehicle.tables.UnconformityData;
@@ -209,6 +211,38 @@ public abstract class VehicleABMBean implements SessionBean {
 		} catch (Exception e) {
 			Object[] parameters = {data,comment};
 		    handler.getException(e,"vehicleCreate",userSessionData,parameters);
+		}
+		
+		return null;
+	}
+	
+	/**
+	 * @ejb.permission role-name = "administrator,cepascheduleactivitycreate,cdactivitycreate,vehiclechecklist,dpachecklist,jjreporter" 
+	 * @ejb.interface-method view-type = "both"
+	 * @param data
+	 * @param userRequest
+	 */
+	public Integer instructorActivityCreate( InstructorActivityData data, UserSessionData userSessionData ) throws Exception {
+		try {
+			if (userSessionData == null) {
+				throw new DeslogedException("instructorActivityCreate","userSessionData = null");
+			}
+			if (data == null) {
+				throw new InvalidDataException("instructorActivityCreate","data = null");
+			}
+			
+			
+			InstructorActivity instructorActivity = new InstructorActivity(data);
+			Session session = HibernateUtil.currentSession();
+			
+			Integer id = (Integer)session.save(instructorActivity);
+			
+			instructorActivity.setId(id);
+			
+			return id;
+		} catch(Exception e) {
+			Object[] parameters = {data};
+		    handler.getException(e,"instructorActivityCreate",userSessionData,parameters);
 		}
 		
 		return null;

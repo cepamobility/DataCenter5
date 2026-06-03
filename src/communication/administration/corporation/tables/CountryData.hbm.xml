@@ -1,0 +1,15 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!-- Generated 28/05/2026 04:41:57 PM by Hibernate Tools 3.5.0.Final -->
+<hibernate-mapping>
+    <class name="communication.administration.corporation.tables.CountryData" table="COUNTRYDATA">
+        <id name="id" type="java.lang.Integer" access="field">
+            <column name="ID" />
+            <generator class="assigned" />
+        </id>
+        <property name="resourceKey" type="java.lang.String" access="field">
+            <column name="RESOURCEKEY" />
+        </property>
+    </class>
+</hibernate-mapping>

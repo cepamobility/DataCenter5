@@ -1,0 +1,33 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!-- Generated 28/05/2026 04:41:57 PM by Hibernate Tools 3.5.0.Final -->
+<hibernate-mapping>
+    <joined-subclass name="communication.administration.corporation.tables.CorporationData" extends="communication.administration.corporation.tables.CorporationAttribute"
+    table="CORPORATIONDATA" lazy="false">
+        <key>
+            <column name="ID" />
+        </key>
+        <property name="id" type="java.lang.Long">
+            <column name="ID" />
+        </property>
+        <array name="geoLabels" element-class="communication.administration.corporation.tables.GeoLabelAttributes" table="GEOLABELATTRIBUTES" access="field" fetch="join">
+            <key>
+                <column name="SERIALVERSIONUID" />
+            </key>
+            <list-index></list-index>
+            <one-to-many class="communication.administration.corporation.tables.GeoLabelAttributes" />
+        </array>
+        <bag name="divOrgDataSet" table="CORPORATIONDATA" inverse="false" lazy="true" access="field">
+            <key>
+                <column name="SERIALVERSIONUID" />
+            </key>
+            <element type="string">
+                <column name="DIVORGDATASET" />
+            </element>
+        </bag>
+        <many-to-one name="divGeoDataSet" class="communication.administration.corporation.tables.GeoLabelData" access="field" fetch="join">
+            <column name="DIVGEODATASET" />
+        </many-to-one>
+    </joined-subclass>
+</hibernate-mapping>
