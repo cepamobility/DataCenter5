@@ -1296,7 +1296,7 @@ public class MailSender implements Serializable{
 				toMail.add("cepasafedrive@gmail.com");
 				subject = "TESTING - "+subject;
 				bccMail = new LinkedList<String>();
-				bccMail.add("jrodriguez@cepasafedrive.com");
+				bccMail.add("nguillermo@cepamobility.com");
 			} 
 
 			Session mailSession = null;
