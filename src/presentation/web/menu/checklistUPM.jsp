@@ -662,7 +662,7 @@
 
 						var fDate = date.toISOString().split('T')[0];
 
-						document.getElementById('q3').value = fDate;
+						//document.getElementById('q3').value = fDate;
 						
 						$('#q33').val(date.getHours());
 						$('#q34').val(date.getMinutes());

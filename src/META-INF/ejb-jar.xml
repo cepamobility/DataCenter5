@@ -11374,6 +11374,7 @@
          <role-name>query</role-name>
          <role-name>viewrecomendation</role-name>
          <role-name>fleetinsertdata</role-name>
+         <role-name>dpachecklist</role-name>
       <method >
          <description><![CDATA[]]></description>
          <ejb-name>EventReport</ejb-name>
@@ -11396,6 +11397,7 @@
          <role-name>query</role-name>
          <role-name>viewrecomendation</role-name>
          <role-name>fleetinsertdata</role-name>
+         <role-name>dpachecklist</role-name>
       <method >
          <description><![CDATA[]]></description>
          <ejb-name>EventReport</ejb-name>
@@ -12898,6 +12900,7 @@
          <role-name>administrator</role-name>
          <role-name>query</role-name>
          <role-name>reparations</role-name>
+         <role-name>dpachecklist</role-name>
       <method >
          <description><![CDATA[Returns menu options.]]></description>
          <ejb-name>EventReport</ejb-name>
@@ -12914,6 +12917,7 @@
          <role-name>administrator</role-name>
          <role-name>query</role-name>
          <role-name>reparations</role-name>
+         <role-name>dpachecklist</role-name>
       <method >
          <description><![CDATA[Returns menu options.]]></description>
          <ejb-name>EventReport</ejb-name>
