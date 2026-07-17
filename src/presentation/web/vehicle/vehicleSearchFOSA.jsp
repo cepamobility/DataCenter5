@@ -99,14 +99,12 @@
 							</label>
 						</div>
 					</fieldset>
-					<% if(!SecurityConstants.isProductionServer() || userSessionData.getFilter().getLoginName().equals("6ac629fabce5d543be2c6df1a49d7338")) {%>
 					<fieldset>
 						<div class="narrow">
 							<input type="button" style="cursor: pointer;" class="button" value="Registro de Actividad" onClick="javascript:doRegistry()"/>
 							<input type="button" style="margin-left: 20px; cursor: pointer;" class="button"  value="Ver actividades" onClick="javascript:openRegistry()"/>
 						</div>
 					</fieldset>
-					<% } %>
 				</form>
 			</section>
 		</section>

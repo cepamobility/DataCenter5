@@ -2492,6 +2492,58 @@ public abstract class VehicleReportBean implements SessionBean {
 
         return data;
     }
+    
+    
+    /**
+     * @throws InvalidDataException
+     * @throws DeslogedException
+     * @throws CommunicationProblemException
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventcreate,dpachecklist,finecreate,drivervehicleedit,drivercreateevent"
+     */
+    public VehicleCheckData findLastVehicleCheckByCheckId(Integer vehicleId, Integer checkId, UserSessionData userRequest) throws Exception{
+    	VehicleCheckData data = null;
+    	try {
+    		if (vehicleId == null) {
+    			throw new InvalidDataException("findLastVehicleCheckByCheckId", "vehicleId is null");
+    		}
+    		if (checkId == null) {
+    			throw new InvalidDataException("findLastVehicleCheckByCheckId", "checkId is null");
+    		}
+    		if (userRequest == null) {
+        		throw new DeslogedException("findLastVehicleCheck","session is null");
+        	}
+    		
+    		Session session = HibernateUtil.currentSession();
+    		
+    		String sql = "select vehicleCheck from VehicleCheck as vehicleCheck  "+
+                    UtilityQuery.corporationDivisionsRestictions("vehicleCheck.vehicle",userRequest)+
+                    "and vehicleCheck.vehicle.id = :id " +
+                    "and vehicleCheck.name = :name " +
+                    " order by vehicleCheck.date desc";
+    		
+    		Query query = session.createQuery(sql);
+    		
+    		query.setParameter("id", vehicleId);
+    		query.setParameter("name", checkId.toString());
+            List vehicleColl = query.list();
+    		
+            if (vehicleColl.iterator().hasNext()) {
+                VehicleCheck vehicleCheck = (VehicleCheck)vehicleColl.iterator().next();
+
+                // accedo al conjunto de items para que la inicializaciòn lazy no falle
+                Iterator it = vehicleCheck.getItemValueSet().iterator();
+                while (it.hasNext()) {
+                    it.next();
+                }
+                data = vehicleCheck.getVehicleCheckData();
+            }
+    	} catch (Exception e) {
+    		Object[] parameters = {vehicleId, checkId};
+    		handler.getException(e, "findLastVehicleCheckByCheckId", userRequest, parameters);
+    	}
+    	return data;
+    }
 
     /**
      * @ejb.interface-method

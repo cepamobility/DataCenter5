@@ -1186,6 +1186,26 @@ public abstract class VehicleReportFacadeBean implements SessionBean {
 		return null;
 	}
 	
+	public VehicleCheckData findLastVehicleCheckByCheckId(Integer vehicleId, Integer checkId, UserSessionData userSessionData) throws Exception{
+		try {
+			if (vehicleId == null)	{
+				throw new InvalidDataException(
+						"Class business.vehicle.VehicleReportFacade(findDriverByPrimaryKey), primary Key is empty",
+						"generic.vehicle.vehicledata.id.empty");
+			}
+			if (checkId == null)	{
+				throw new InvalidDataException(
+						"Class business.vehicle.VehicleReportFacade(findDriverByPrimaryKey), primary Key is empty",
+						"generic.vehicle.vehicledata.name.empty");
+			}
+		} catch (Exception e) {
+			Object[] p = new Object[2];
+			p[0] = vehicleId;
+			p[1] = checkId;
+			handler.handleException("findLastVehicleCheck",e,userSessionData,p);
+		}
+		return null;
+	}
 	
 	/**
 	 * @ejb.interface-method

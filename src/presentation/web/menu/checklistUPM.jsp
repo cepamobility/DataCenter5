@@ -15,6 +15,7 @@
 <%@page import="java.util.Collection"%>
 <%@page import="presentation.translator.web.util.*"%>
 <%@page import="communication.activity.tables.CheckListData"%>
+<%@page import="communication.vehicle.tables.VehicleCheckData" %>
 <%@page language="java" 
 	errorPage="../exception.jsp" 
 	import="business.*"
@@ -31,7 +32,10 @@
 
 	
 	VehicleData data = sys.getVehicleReportFacade().findVehicleByPrimaryKey(new Integer(request.getParameter("id")),userSessionData); 
+	
+	VehicleCheckData checkData = null;
 	//Id=79/80	
+			
 	String checklist = request.getParameter("checklist");
 	
 	String next = "layout.jsp?refer=vehicle/VehicleView.jsp?id="+request.getParameter("id");
@@ -88,12 +92,30 @@
 					<span class="exit"><a href='<%=next%>'><%=messages.getText("generic.messages.exit") %></a></span>
 				</div>
 				<div id="videocontainer" style="display: none;">
-					<div style="float: left;">
-					<!--  <img src='menu/images/Shot_Camera-icon.png' style="height:100px;width:100px;" onclick="takepicture();"/>-->	
-						<!-- <div id="videocontainerh"> -->
-					</div>
-					<video id="video" style="position:fixed;top:0;left:0;width: 100%;height: 100%;" autoplay onclick="takepicture();"></video>
-		 		</div>
+				    <video id="video" style="position:fixed;top:0;left:0;width:100%;height:100%;z-index:9998;" autoplay></video>
+				    
+				    <div style="position:fixed;bottom:30px;left:0;width:100%;text-align:center;z-index:9999;">
+				        <button onclick="takepicture();"
+				            style="width:8rem;height:8rem;border-radius:50%;background:white;
+				                   border:4px solid #ccc;font-size:2rem;font-weight:900;cursor:pointer;
+				                   box-shadow:0 2px 8px rgba(0,0,0,0.5);">
+				            FOTO
+				        </button>
+				        <button onclick="switchCamera();"
+				            style="width:6rem;height:6rem;border-radius:50%;background:rgba(255,255,255,0.8);
+				                   border:2px solid #ccc;font-size:1.5rem;font-weight:900;cursor:pointer;margin-left:20px;
+				                   box-shadow:0 2px 8px rgba(0,0,0,0.5);">
+				            CAM
+				        </button>
+				        <button onclick="off();"
+				            style="width:6rem;height:6rem;border-radius:50%;background:rgba(255,0,0,0.7);
+				                   border:2px solid #ccc;font-size:1.5rem;font-weight:900;color:white;cursor:pointer;margin-left:20px;
+				                   box-shadow:0 2px 8px rgba(0,0,0,0.5);">
+				            X
+				        </button>
+				    </div>
+				</div>
+				</div>
 			</section>
 		</header>
 
@@ -105,7 +127,7 @@
 						<h4>
 							<%=messages.getText("checklist.dpa.title"+checklist) %>
 						</h4>
-						<!-- h5>Data EfetivaÁ„o: 07/02/2011 ï Revis„o: 00</h5 -->
+						<!-- h5>Data Efetiva√ß√£o: 07/02/2011 ¬ï Revis√£o: 00</h5 -->
 					</fieldset>
 					<fieldset>
 						<div class="narrow" id="qw1" data-type="2">
@@ -295,19 +317,19 @@
 								</label>
 <%						}
 %>								<label class="inline" tagV='n'><%=messages.getText("generic.messages.observations") %><input id="<%=comName%>" name="<%=comName%>" type="text"></label>
-								<label class="inline" tagV="no" id='<%="ids"+qName%>' ><%="PLAZO REPARACI”N"%>
+								<label class="inline" tagV="no" id='<%="ids"+qName%>' ><%="PLAZO REPARACI√ìN"%>
 									<select p='t' name="<%="s"+qName%>" id="<%="s"+qName%>" class="select">
 <%						if(options == 1) {
 %>										<option value="2">48 hs</option>
 <%						} else if(options == 2) {
 %>										<option value="30">s/v</option>
 <%						} else if(options == 3) {
-%>										<option value="0">DetenciÛn inmediata</option>
+%>										<option value="0">Detenci√≥n inmediata</option>
 <%						} else if(options == 4) {
 %>										<option value="3">72 hs</option>
 <%						} else {
-%>										<option value="30">30 DÌas</option>
-										<option value="0">DetenciÛn inmediata</option>
+%>										<option value="30">30 D√≠as</option>
+										<option value="0">Detenci√≥n inmediata</option>
 										<option value="1">24 hs</option>
 										<option value="2">48 hs</option>
 										<option value="3">72 hs</option>
@@ -330,10 +352,10 @@
 							<label class="radio" tagV="n"  ><input type="radio" idaux='<%="ids"+qName%>' tagErr="s" nameSelect="<%="s"+qName%>" name="<%=qName%>" value="2"><%=checklist.equals("80") || checklist.equals("84")? "C/O":"NO" %></label>
 							<label class="inline" tagV="n"><%=messages.getText("generic.messages.observations") %><input id="<%=comName%>" name="<%=comName%>" type="text"></label>
 <%						if(!checklist.equals("123")) {
-%>							<label class="inline" tagV='no' id='<%="ids"+qName%>' ><%="PLAZO REPARACI”N"%>
+%>							<label class="inline" tagV='no' id='<%="ids"+qName%>' ><%="PLAZO REPARACI√ìN"%>
 								<select p='t' name="<%="s"+qName%>" id="<%="s"+qName%>" class="select">
-									<option value="30">30 DÌas</option>
-									<option value="0">DetenciÛn inmediata</option>
+									<option value="30">30 D√≠as</option>
+									<option value="0">Detenci√≥n inmediata</option>
 									<option value="1">24 hs</option>
 									<option value="2">48 hs</option>
 									<option value="3">72 hs</option>
@@ -408,6 +430,17 @@
 	 		var currentFacing = 'environment';
 			var corp='UPM';
 			var srcImgWarning='<%=path%>menu/images/redFlag.png';
+
+			function switchCamera() {
+			    currentFacingMode = (currentFacingMode === "environment") ? "user" : "environment";
+			    var stream = video.srcObject;
+			    if (stream) {
+			        stream.getTracks().forEach(function(track) { track.stop(); });
+			    }
+			    
+			    initiated = false;
+			    init2();
+			}
 			
 			function toggleVisible(t){
 				$(t).parent().find('label').each(
@@ -451,18 +484,21 @@
 			  	var h,w,topBack;
 			  	var sourcesIds=null;
 
-			 function off(){
-				 $('#videocontainer').hide();
-				 $('#videocontainerh').hide();
-				 
-			 }
+			  	function off(){
+			  	    var stream = video.srcObject;
+			  	    if (stream) {
+			  	        stream.getTracks().forEach(function(track) { track.stop(); });
+			  	    }
+			  	    video.srcObject = null;
+			  	    initiated = false;
+			  	    $('#videocontainer').hide();
+			  	}
 			 function on(){
 				 $('#videocontainer').show();
 				 $('#videocontainerh').show();
 				 
 			 } 	
 		 	 function init(qName) {
-			 	 console.log('PRUEBA, ACCEDI AL BOTON AL MENOS');
 		 		 topBack=$(window).scrollTop();
 		 		 qNameBuff=qName;	
 			 	  video        = document.querySelector('#video');
@@ -565,8 +601,8 @@
 		 	            on();
 		 	        })
 		 	        .catch(err => {
-		 	            console.error("No se pudo acceder a la c·mara:", err);
-		 	            alert("Error al acceder a la c·mara: " + err.name);
+		 	            console.error("No se pudo acceder a la c√°mara:", err);
+		 	            alert("Error al acceder a la c√°mara: " + err.name);
 		 	        });
 		 	}
 
