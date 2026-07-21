@@ -186,6 +186,8 @@ public class VehicleABMFacadeBean implements SessionBean {
 		
 		public void run(){
 			try{
+				Thread.sleep(300000); 
+
 				String urlString="http://localhost:8080/datacenter/webapi/batch/processChecklist?vehicleCheckId="+vehiclechecklistId+"&u="+user+"&p="+password;
 				if(SecurityConstants.isProductionServer()){
 					urlString="http://localhost:8080/datacenter/webapi/batch/processChecklist?vehicleCheckId="+vehiclechecklistId+"&u="+user+"&p="+password;
@@ -226,6 +228,8 @@ public class VehicleABMFacadeBean implements SessionBean {
 		
 		public void run(){
 			try{
+				Thread.sleep(300000); 
+
 				String urlString="http://localhost:8080/datacenter/webapi/batch/notifyMP?vehicleCheckId="+vehiclechecklistId+"&u="+user+"&p="+password;
 				if(SecurityConstants.isProductionServer()){
 					urlString="http://localhost:8080/datacenter/webapi/batch/notifyMP?vehicleCheckId="+vehiclechecklistId+"&u="+user+"&p="+password;
@@ -752,8 +756,8 @@ public class VehicleABMFacadeBean implements SessionBean {
 									reparation = EventReportUtil.getHome().create().findReparationByPrimaryKey(repId, userSessionData);
 			
 						    		MailSender sender = new MailSender();
-			
-						    		if(userSessionData.isCorporation(CorporationData.FRAYLOG)) {
+						    		Integer corporation = (vehicle.getCorporation() == null) ? userSessionData.getCorporationId() : vehicle.getCorporation().getId();
+						    		if(corporation.equals(CorporationData.FRAYLOG)) {
 						    			Collection<Integer> sendTo = new LinkedList<Integer>();
 						    			boolean isVolvo = reparation.getVehicle().getTrade().getResourceBundleId().equals("Volvo");
 					        			String subdivision = reparation.getVehicle().getData(CEPAActivityScheduleData.DIV_ORG,1,2); 
@@ -839,7 +843,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 					        			while(it.hasNext()) {
 					    	    			sendReparationEmail(sender, reparation, messages, userSessionData, it.next());
 					        			}
-						    		}else if(userSessionData.isCorporation(CorporationData.SOCTMA)){
+						    		}else if(corporation.equals(CorporationData.SOCTMA)){
 						    			sendReparationEmail(sender, reparation, messages, userSessionData, ReparationData.SOCTMA);
 						    		}else {
 						    			sendReparationEmail(sender, reparation, messages, userSessionData, -1);
@@ -875,8 +879,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 							//Se guarda si o si el checklist, si hay error en la notificación
 							
 						}
-					}else 		
-						if(data.getName()!=null && (data.getName().equals("92"))&& userSessionData.getCorporationId()==CorporationData.MONTES_DE_PLATA){
+					}else if(data.getName()!=null && (data.getName().equals("92"))&& userSessionData.getCorporationId()==CorporationData.MONTES_DE_PLATA){
 							//UPM Mercancias peligrosas
 							try{
 								//notifyChecklistMP(vehicleCheckId,messages,userSessionData);

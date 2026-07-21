@@ -1456,7 +1456,7 @@ public class MailSender implements Serializable{
 			return false;
 		}
 		
-		System.out.println("No se enviÃ³ el email, destinatarios vacios.");
+		System.out.println("No se envió el email, destinatarios vacios: "+subject);
 		return false;
 		
 	}
