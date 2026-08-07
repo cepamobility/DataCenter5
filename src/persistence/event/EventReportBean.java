@@ -82,7 +82,7 @@ public abstract class EventReportBean implements SessionBean {
 	/**
 	 * @ejb.create-method
 	 * @ejb.permission role-name =
-	 *                 "administrator,eventedit,eventview,driveredit,driverviewowndata,drivereventview,drivereventedit,driverviewowndata,query,viewrecomendation,fleetinsertdata"
+	 *                 "administrator,eventedit,eventview,driveredit,driverviewowndata,drivereventview,drivereventedit,driverviewowndata,query,viewrecomendation,fleetinsertdata,dpachecklist"
 	 * @throws CreateException
 	 */
 	public void ejbCreate() throws CreateException {
@@ -4673,7 +4673,7 @@ public abstract class EventReportBean implements SessionBean {
 	/**
      * Returns menu options.
      * @ejb.interface-method
-     * @ejb.permission role-name = "administrator,query,reparations"
+     * @ejb.permission role-name = "administrator,query,reparations,dpachecklist"
 	 * @throws Exception
 	 */
 	public ReparationData findReparationByPrimaryKey(Integer reparationId, UserSessionData userSessionData) throws Exception {

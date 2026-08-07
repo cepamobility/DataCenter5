@@ -2699,7 +2699,7 @@ public abstract class VehicleReportFacadeBean implements SessionBean {
 		         String[] imgSources = new String[images.size()];
 		         String[] imgTexts = new String[images.size()];
 		         String[] imgPointTexts = new String[images.size()];
-			     if(images.size() > 0) {
+			     /*if(images.size() > 0) {
 			        Iterator<CheckListImageData> imgIt = images.iterator();
 			        int index = 0;
 			        while(imgIt.hasNext()) {
@@ -2717,7 +2717,7 @@ public abstract class VehicleReportFacadeBean implements SessionBean {
 			        JasperReport subReport = (JasperReport)JRLoader.loadObject(input);
 			        parameters.put("sub", sub);
 			        parameters.put("subreport", subReport);
-		         }else {
+		         }else {*/
 			        PictureDPADataSource sub = new PictureDPADataSource(imgSources,imgTexts,imgPointTexts,messages);
 			        sub.setCorporationId(userSys.getCorporationId());
 			      //JasperCompileManager.compileReportToFile(AlertConstants.TEMP_DIRECTORY_GENERAL+"jasper/PictureSubreport2.jrxml", AlertConstants.TEMP_DIRECTORY_GENERAL+"jasper/PictureSubreport2.jasper");
@@ -2725,7 +2725,7 @@ public abstract class VehicleReportFacadeBean implements SessionBean {
 			        JasperReport subReport = (JasperReport)JRLoader.loadObject(input);
 			        parameters.put("sub", sub);
 			        parameters.put("subreport", subReport);
-			     }
+			     //}
 		     
 		     }else if(seguimiento){
 		     		parameters.put("title", "Seguimiento en ruta.");
