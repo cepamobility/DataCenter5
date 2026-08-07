@@ -80,6 +80,7 @@ import communication.vehicle.report.VehiclePursuitReportDataType;
 import communication.vehicle.tables.ComplaintData;
 import communication.vehicle.tables.DPAGoalData;
 import communication.vehicle.tables.DPAVehicleActiveData;
+import communication.vehicle.tables.InstructorActivityData;
 import communication.vehicle.tables.TrailerData;
 import communication.vehicle.tables.VehicleCheckData;
 import communication.vehicle.tables.VehicleCheckReportGroupData;
@@ -251,6 +252,10 @@ public abstract class VehicleReportFacadeBean implements SessionBean {
 					"business.vehicle.vehiclereportfacade.notaccess.vehiclereport");
 		}
 
+	}
+	
+	public List<InstructorActivityData> findInstructorActivityListByInstructor(String instructor, UserSessionData userSessionData) throws Exception{
+		return VehicleReportUtil.getHome().create().findInstructorActivityListByInstructor(instructor, userSessionData);
 	}
 	
 	/**
@@ -1181,6 +1186,26 @@ public abstract class VehicleReportFacadeBean implements SessionBean {
 		return null;
 	}
 	
+	public VehicleCheckData findLastVehicleCheckByCheckId(Integer vehicleId, Integer checkId, UserSessionData userSessionData) throws Exception{
+		try {
+			if (vehicleId == null)	{
+				throw new InvalidDataException(
+						"Class business.vehicle.VehicleReportFacade(findDriverByPrimaryKey), primary Key is empty",
+						"generic.vehicle.vehicledata.id.empty");
+			}
+			if (checkId == null)	{
+				throw new InvalidDataException(
+						"Class business.vehicle.VehicleReportFacade(findDriverByPrimaryKey), primary Key is empty",
+						"generic.vehicle.vehicledata.name.empty");
+			}
+		} catch (Exception e) {
+			Object[] p = new Object[2];
+			p[0] = vehicleId;
+			p[1] = checkId;
+			handler.handleException("findLastVehicleCheck",e,userSessionData,p);
+		}
+		return null;
+	}
 	
 	/**
 	 * @ejb.interface-method

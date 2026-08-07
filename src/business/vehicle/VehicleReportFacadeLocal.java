@@ -203,5 +203,7 @@ public interface VehicleReportFacadeLocal
    public java.util.HashMap getActiveVehicleCount( communication.administration.user.UserSessionData userSessionData ) throws java.lang.Exception;
 
    public java.util.HashMap getActiveVehicleCount( java.lang.Integer fleet,java.lang.Integer month,java.lang.Integer year,communication.administration.user.UserSessionData userSessionData ) throws java.lang.Exception;
+   
+   public java.util.List<communication.vehicle.tables.InstructorActivityData> findInstructorActivityListByInstructor( java.lang.String instructor,communication.administration.user.UserSessionData userSessionData ) throws java.lang.Exception;
 
 }

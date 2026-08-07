@@ -1,0 +1,18 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!-- Generated 28/05/2026 04:41:57 PM by Hibernate Tools 3.5.0.Final -->
+<hibernate-mapping>
+    <joined-subclass name="communication.administration.corporation.tables.GeoItemData" extends="communication.administration.corporation.tables.GeoItemAttribute"
+    table="GEOITEMDATA" lazy="false">
+        <key>
+            <column name="ID" />
+        </key>
+        <property name="id" type="java.lang.Long">
+            <column name="ID" />
+        </property>
+        <many-to-one name="subItems" class="communication.administration.corporation.tables.GeoLabelData" access="field" fetch="join">
+            <column name="SUBITEMS" />
+        </many-to-one>
+    </joined-subclass>
+</hibernate-mapping>

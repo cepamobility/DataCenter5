@@ -51,6 +51,7 @@ import persistence.util.UtilityQuery;
 import persistence.vehicle.tables.Complaint;
 import persistence.vehicle.tables.DPAGoal;
 import persistence.vehicle.tables.DPAVehicleActive;
+import persistence.vehicle.tables.InstructorActivity;
 import persistence.vehicle.tables.Trailer;
 import persistence.vehicle.tables.TrailerCheck;
 import persistence.vehicle.tables.Vehicle;
@@ -91,6 +92,7 @@ import communication.vehicle.tables.DPAGoalData;
 import communication.vehicle.tables.DPAVehicleActiveData;
 import communication.vehicle.tables.ForestalCheckListData;
 import communication.vehicle.tables.ForestalResumeCheckListData;
+import communication.vehicle.tables.InstructorActivityData;
 import communication.vehicle.tables.SuctaMTOPData;
 import communication.vehicle.tables.TrailerData;
 import communication.vehicle.tables.TrailerMainData;
@@ -207,6 +209,45 @@ public abstract class VehicleReportBean implements SessionBean {
 
         return false;
     }
+    
+    
+    /**
+     * @throws InvalidDataException
+     * @throws DeslogedException
+     * @throws CommunicationProblemException
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventcreate,vehicleview,drivervehicleview,driverodometer,dpachecklist"
+     */
+    public List<InstructorActivityData> findInstructorActivityListByInstructor(String instructor, UserSessionData userSessionData) throws Exception{
+    	List<InstructorActivityData> result = new ArrayList<InstructorActivityData>();
+    	try {
+    		if (instructor == null) {
+                throw new InvalidDataException("findInstructorActivityListByInstructor","instructor = null");
+            }
+    		if (userSessionData == null) {
+                throw new DeslogedException("findInstructorActivityListByInstructor","session = null");
+            }
+    		Session session = HibernateUtil.currentSession();
+    		
+    		Query query = session.createQuery("SELECT i FROM InstructorActivity i WHERE i.user.loginName = :instructor");
+    		query.setParameter("instructor", instructor);
+    		
+    		Iterator<InstructorActivity> it = query.list().iterator();
+    		
+    		while(it.hasNext()) {
+    			InstructorActivityData data = new InstructorActivityData(it.next());
+    			data.setUser(userSessionData);
+    			result.add(data);
+    		}
+    		
+    	} catch (Exception e) {
+    		Object[] parameters = {instructor};
+            handler.getException(e,"findInstructorActivityListByInstructor",userSessionData,parameters);
+    	}
+    	
+    	return result;
+    }
+    
 
     /**
      * @throws InvalidDataException
@@ -2450,6 +2491,58 @@ public abstract class VehicleReportBean implements SessionBean {
         }
 
         return data;
+    }
+    
+    
+    /**
+     * @throws InvalidDataException
+     * @throws DeslogedException
+     * @throws CommunicationProblemException
+     * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,eventcreate,dpachecklist,finecreate,drivervehicleedit,drivercreateevent"
+     */
+    public VehicleCheckData findLastVehicleCheckByCheckId(Integer vehicleId, Integer checkId, UserSessionData userRequest) throws Exception{
+    	VehicleCheckData data = null;
+    	try {
+    		if (vehicleId == null) {
+    			throw new InvalidDataException("findLastVehicleCheckByCheckId", "vehicleId is null");
+    		}
+    		if (checkId == null) {
+    			throw new InvalidDataException("findLastVehicleCheckByCheckId", "checkId is null");
+    		}
+    		if (userRequest == null) {
+        		throw new DeslogedException("findLastVehicleCheck","session is null");
+        	}
+    		
+    		Session session = HibernateUtil.currentSession();
+    		
+    		String sql = "select vehicleCheck from VehicleCheck as vehicleCheck  "+
+                    UtilityQuery.corporationDivisionsRestictions("vehicleCheck.vehicle",userRequest)+
+                    "and vehicleCheck.vehicle.id = :id " +
+                    "and vehicleCheck.name = :name " +
+                    " order by vehicleCheck.date desc";
+    		
+    		Query query = session.createQuery(sql);
+    		
+    		query.setParameter("id", vehicleId);
+    		query.setParameter("name", checkId.toString());
+            List vehicleColl = query.list();
+    		
+            if (vehicleColl.iterator().hasNext()) {
+                VehicleCheck vehicleCheck = (VehicleCheck)vehicleColl.iterator().next();
+
+                // accedo al conjunto de items para que la inicializaciòn lazy no falle
+                Iterator it = vehicleCheck.getItemValueSet().iterator();
+                while (it.hasNext()) {
+                    it.next();
+                }
+                data = vehicleCheck.getVehicleCheckData();
+            }
+    	} catch (Exception e) {
+    		Object[] parameters = {vehicleId, checkId};
+    		handler.getException(e, "findLastVehicleCheckByCheckId", userRequest, parameters);
+    	}
+    	return data;
     }
 
     /**

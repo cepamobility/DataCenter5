@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="src" path="src"/>
-	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/jre1.8.0_181"/>
 	<classpathentry kind="con" path="org.jboss.ide.eclipse.jdt.core.classpath.j2ee-1.4"/>
 	<classpathentry kind="var" path="DATACENTER/activation.jar"/>
 	<classpathentry kind="var" path="DATACENTER/antlr-2.7.5H3.jar"/>
@@ -18,7 +17,7 @@
 	<classpathentry kind="var" path="DATACENTER/ejb3-persistence.jar"/>
 	<classpathentry kind="var" path="DATACENTER/hibernate-annotations.jar"/>
 	<classpathentry kind="var" path="DATACENTER/hibernate-commons-annotations.jar"/>
-	<classpathentry kind="var" path="DATACENTER/hibernate-core.jar"/>
+	<classpathentry kind="var" path="DATACENTER/hibernate-core.jar" sourcepath="C:/Users/nahue/.m2/repository/org/hibernate/hibernate-core/3.3.1.GA/hibernate-core-3.3.1.GA-sources.jar"/>
 	<classpathentry kind="var" path="DATACENTER/hibernate-entitymanager.jar"/>
 	<classpathentry kind="var" path="DATACENTER/hibernate-jmx.jar"/>
 	<classpathentry kind="var" path="DATACENTER/hibernate-validator.jar"/>
@@ -115,7 +114,7 @@
 	<classpathentry kind="var" path="DATACENTER/standard.jar"/>
 	<classpathentry kind="var" path="DATACENTER/stax-api.jar"/>
 	<classpathentry kind="var" path="DATACENTER/struts-el.jar"/>
-	<classpathentry kind="var" path="DATACENTER/struts.jar"/>
+	<classpathentry kind="var" path="DATACENTER/struts.jar" sourcepath="C:/Users/nahue/.m2/repository/struts/struts/1.2.8/struts-1.2.8-sources.jar"/>
 	<classpathentry kind="var" path="DATACENTER/svgsalamander.jar"/>
 	<classpathentry kind="var" path="DATACENTER/wsdl4j.jar"/>
 	<classpathentry kind="var" path="DATACENTER/xercesImpl.jar"/>
@@ -137,5 +136,6 @@
 	<classpathentry kind="var" path="DATACENTER/axis.jar"/>
 	<classpathentry kind="lib" path="lib/asm.jar"/>
 	<classpathentry kind="lib" path="lib/itext-1.4.jar"/>
+	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.6"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>

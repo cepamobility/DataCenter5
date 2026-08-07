@@ -1,0 +1,48 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!-- Generated 28/05/2026 04:41:57 PM by Hibernate Tools 3.5.0.Final -->
+<hibernate-mapping>
+    <class name="communication.driver.tables.DriverMainAttributes" table="DRIVERMAINATTRIBUTES">
+        <id name="id" type="java.lang.Integer">
+            <column name="ID" />
+            <generator class="assigned" />
+        </id>
+        <property name="firstName" type="java.lang.String">
+            <column name="FIRSTNAME" />
+        </property>
+        <property name="lastName" type="java.lang.String">
+            <column name="LASTNAME" />
+        </property>
+        <many-to-one name="country" class="communication.administration.corporation.tables.GeoLabelData" fetch="join">
+            <column name="COUNTRY" />
+        </many-to-one>
+        <property name="birthDate" type="java.util.Date">
+            <column name="BIRTHDATE" />
+        </property>
+        <property name="city" type="java.lang.String">
+            <column name="CITY" />
+        </property>
+        <property name="exclusionDate" type="java.util.Date">
+            <column name="EXCLUSIONDATE" />
+        </property>
+        <property name="divOrgItem1" type="java.lang.String">
+            <column name="DIVORGITEM1" />
+        </property>
+        <property name="divOrgItem2" type="java.lang.String">
+            <column name="DIVORGITEM2" />
+        </property>
+        <property name="divOrgItem3" type="java.lang.String">
+            <column name="DIVORGITEM3" />
+        </property>
+        <property name="divOrgItem4" type="java.lang.String" access="field">
+            <column name="DIVORGITEM4" />
+        </property>
+        <property name="corporationId" type="java.lang.String">
+            <column name="CORPORATIONID" />
+        </property>
+        <property name="licenceExpirity" type="java.util.Date">
+            <column name="LICENCEEXPIRITY" />
+        </property>
+    </class>
+</hibernate-mapping>

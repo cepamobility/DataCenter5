@@ -10,9 +10,13 @@ public interface VehicleABM
    extends javax.ejb.EJBObject
 {
 
+   
    public java.lang.Integer vehicleCreate( communication.vehicle.tables.VehicleData data,communication.administration.user.UserSessionData userSessionData,java.lang.String comment )
       throws java.lang.Exception, java.rmi.RemoteException;
 
+   public java.lang.Integer instructorActivityCreate( communication.vehicle.tables.InstructorActivityData data, communication.administration.user.UserSessionData userSessionData)
+      throws java.lang.Exception, java.rmi.RemoteException;
+   
    public void vehicleDelete( communication.vehicle.tables.VehicleData data,communication.administration.user.UserSessionData userRequest,java.lang.String comment )
       throws communication.exception.InvalidDataException, communication.exception.CommunicationProblemException, communication.exception.DeslogedException, communication.exception.DCException, java.rmi.RemoteException;
 

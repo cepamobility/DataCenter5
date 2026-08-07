@@ -1,0 +1,159 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!-- Generated 28/05/2026 04:41:57 PM by Hibernate Tools 3.5.0.Final -->
+<hibernate-mapping>
+    <class name="communication.driver.report.DriverReportDataType" table="DRIVERREPORTDATATYPE">
+        <id name="id" type="java.lang.Integer">
+            <column name="ID" />
+            <generator class="assigned" />
+        </id>
+        <property name="firstname" type="java.lang.String">
+            <column name="FIRSTNAME" />
+        </property>
+        <property name="lastname" type="java.lang.String">
+            <column name="LASTNAME" />
+        </property>
+        <property name="country" type="java.lang.String">
+            <column name="COUNTRY" />
+        </property>
+        <property name="birthdate" type="java.util.Date">
+            <column name="BIRTHDATE" />
+        </property>
+        <property name="exclusiondate" type="java.util.Date">
+            <column name="EXCLUSIONDATE" />
+        </property>
+        <property name="contract" type="java.lang.String">
+            <column name="CONTRACT" />
+        </property>
+        <property name="divorg11" type="java.lang.String">
+            <column name="DIVORG11" />
+        </property>
+        <property name="divorg12" type="java.lang.String">
+            <column name="DIVORG12" />
+        </property>
+        <property name="divorg13" type="java.lang.String">
+            <column name="DIVORG13" />
+        </property>
+        <property name="divorg21" type="java.lang.String">
+            <column name="DIVORG21" />
+        </property>
+        <property name="divorg22" type="java.lang.String">
+            <column name="DIVORG22" />
+        </property>
+        <property name="divorg23" type="java.lang.String">
+            <column name="DIVORG23" />
+        </property>
+        <property name="divorg31" type="java.lang.String">
+            <column name="DIVORG31" />
+        </property>
+        <property name="divorg32" type="java.lang.String">
+            <column name="DIVORG32" />
+        </property>
+        <property name="divorg33" type="java.lang.String">
+            <column name="DIVORG33" />
+        </property>
+        <property name="divgeo1" type="java.lang.String">
+            <column name="DIVGEO1" />
+        </property>
+        <property name="divgeo2" type="java.lang.String">
+            <column name="DIVGEO2" />
+        </property>
+        <property name="divgeo3" type="java.lang.String">
+            <column name="DIVGEO3" />
+        </property>
+        <property name="corporationId" type="java.lang.String">
+            <column name="CORPORATIONID" />
+        </property>
+        <property name="email" type="java.lang.String">
+            <column name="EMAIL" />
+        </property>
+        <property name="driverPoints" type="java.lang.Integer">
+            <column name="DRIVERPOINTS" />
+        </property>
+        <property name="hrdCondition" type="java.lang.String">
+            <column name="HRDCONDITION" />
+        </property>
+        <property name="phrdCondition" type="java.lang.String">
+            <column name="PHRDCONDITION" />
+        </property>
+        <property name="lastUpdate" type="java.util.Date">
+            <column name="LASTUPDATE" />
+        </property>
+        <property name="bpsRegistry" type="java.lang.String">
+            <column name="BPSREGISTRY" />
+        </property>
+        <property name="testDate" type="java.util.Date">
+            <column name="TESTDATE" />
+        </property>
+        <property name="apt" type="boolean">
+            <column name="APT" />
+        </property>
+        <property name="pending" type="boolean">
+            <column name="PENDING" />
+        </property>
+        <property name="expiry" type="java.util.Date">
+            <column name="EXPIRY" />
+        </property>
+        <property name="lastControl" type="java.util.Date">
+            <column name="LASTCONTROL" />
+        </property>
+        <property name="result" type="java.lang.Integer">
+            <column name="RESULT" />
+        </property>
+        <property name="status" type="int">
+            <column name="STATUS" />
+        </property>
+        <property name="anyPositive" type="boolean">
+            <column name="ANYPOSITIVE" />
+        </property>
+        <property name="conditional" type="boolean">
+            <column name="CONDITIONAL" />
+        </property>
+        <many-to-one name="driver" class="persistence.driver.tables.Driver" fetch="join">
+            <column name="DRIVER" />
+        </many-to-one>
+        <property name="assignedVehicle" type="java.lang.String">
+            <column name="ASSIGNEDVEHICLE" />
+        </property>
+        <property name="vehicleId" type="java.lang.Integer">
+            <column name="VEHICLEID" />
+        </property>
+        <property name="vehiclePlate" type="java.lang.String">
+            <column name="VEHICLEPLATE" />
+        </property>
+        <property name="lastHRD" type="java.util.Date">
+            <column name="LASTHRD" />
+        </property>
+        <property name="city" type="java.lang.String">
+            <column name="CITY" />
+        </property>
+        <property name="phonenumber" type="java.lang.String">
+            <column name="PHONENUMBER" />
+        </property>
+        <property name="manager" type="java.lang.String">
+            <column name="MANAGER" />
+        </property>
+        <property name="superviser" type="java.lang.String">
+            <column name="SUPERVISER" />
+        </property>
+        <property name="noHrd" type="boolean">
+            <column name="NOHRD" />
+        </property>
+        <property name="noHrdComment" type="java.lang.String">
+            <column name="NOHRDCOMMENT" />
+        </property>
+        <property name="evitability" type="java.lang.Integer">
+            <column name="EVITABILITY" />
+        </property>
+        <property name="licenseObs" type="java.lang.String">
+            <column name="LICENSEOBS" />
+        </property>
+        <property name="director" type="boolean">
+            <column name="DIRECTOR" />
+        </property>
+        <property name="temporal" type="boolean">
+            <column name="TEMPORAL" />
+        </property>
+    </class>
+</hibernate-mapping>
