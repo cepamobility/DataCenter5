@@ -403,7 +403,18 @@
 			<form-property name="year3" type="java.lang.String" />
 			<form-property name="file" type="org.apache.struts.upload.FormFile" />
 		</form-bean>
-
+		<form-bean name="InstructorActivityForm" type="org.apache.struts.action.DynaActionForm">
+			<form-property name="user" type="java.lang.String" />
+			<form-property name="corporation" type="java.lang.Integer" />
+			<form-property name="instructor" type="java.lang.String" />
+			<form-property name="category" type="java.lang.Integer" />
+			<form-property name="subcat" type="java.lang.Integer" />
+			<form-property name="location" type="java.lang.String" />
+			<form-property name="date" type="java.lang.String" />
+			<form-property name="channel" type="java.lang.Integer" />
+			<form-property name="referent" type="java.lang.String" />
+			<form-property name="observation" type="java.lang.String" />
+		</form-bean>
 		<form-bean name="DriverHRDForm" type="org.apache.struts.action.DynaActionForm">
 			<form-property name="driver" type="java.lang.String" />
 			<form-property name="date" type="java.lang.String" />
@@ -2961,6 +2972,9 @@
 		</action>
 		<action path="/Fleetaddaccident" type="presentation.translator.web.fleet.FleetAddAccidentAction" name="FleetAddAccidentForm" scope="session">
 			<forward name="back" path="/layout.jsp?refer=/fleet/InsertColective.jsp" />
+		</action>
+		<action path="/instructorActivity" type="presentation.translator.web.vehicle.InstructorActivityAction" name="InstructorActivityForm" scope="session">
+			<forward name="back" path="/layout.jsp" />
 		</action>
 		<action path="/Fleetaddincident"
 		type="presentation.translator.web.fleet.FleetAddIncidentAction"

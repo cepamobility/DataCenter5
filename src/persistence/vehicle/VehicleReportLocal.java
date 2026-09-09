@@ -235,5 +235,7 @@ public interface VehicleReportLocal
    public java.lang.String[][] getVehicleAsociation( java.lang.Integer vehicleId,communication.administration.user.UserSessionData userSessionData ) throws java.lang.Exception;
 
    public communication.vehicle.tables.VehicleData findVehicleTransporter( java.lang.Integer id,communication.administration.user.UserSessionData userSessionData ) throws java.lang.Exception;
+   
+   public java.util.List<communication.vehicle.tables.InstructorActivityData> findInstructorActivityListByInstructor( java.lang.String instructor,communication.administration.user.UserSessionData userSessionData ) throws java.lang.Exception;
 
 }

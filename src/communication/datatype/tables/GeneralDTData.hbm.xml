@@ -1,0 +1,12 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!-- Generated 28/05/2026 04:41:57 PM by Hibernate Tools 3.5.0.Final -->
+<hibernate-mapping>
+    <class name="communication.datatype.tables.GeneralDTData" table="GENERALDTDATA">
+        <id name="resourceBundleId" type="java.lang.String" access="field">
+            <column name="RESOURCEBUNDLEID" />
+            <generator class="assigned" />
+        </id>
+    </class>
+</hibernate-mapping>

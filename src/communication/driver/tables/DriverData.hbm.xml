@@ -1,0 +1,169 @@
+<?xml version="1.0"?>
+<!DOCTYPE hibernate-mapping PUBLIC "-//Hibernate/Hibernate Mapping DTD 3.0//EN"
+"http://hibernate.sourceforge.net/hibernate-mapping-3.0.dtd">
+<!-- Generated 28/05/2026 04:41:57 PM by Hibernate Tools 3.5.0.Final -->
+<hibernate-mapping>
+    <joined-subclass name="communication.driver.tables.DriverData" extends="communication.driver.tables.DriverMainAttributes" table="DRIVERDATA" lazy="false">
+        <key>
+            <column name="ID" />
+        </key>
+        <property name="id" type="java.lang.Long">
+            <column name="ID" />
+        </property>
+        <bag name="divOrgs" table="DRIVERDATA" inverse="false" lazy="true">
+            <key>
+                <column name="SERIALVERSIONUID" />
+            </key>
+            <element type="string">
+                <column name="DIVORGS" />
+            </element>
+        </bag>
+        <property name="authorizateDate" type="java.util.Date">
+            <column name="AUTHORIZATEDATE" />
+        </property>
+        <property name="licenseNotExpiry" type="boolean">
+            <column name="LICENSENOTEXPIRY" />
+        </property>
+        <property name="corporationId" type="java.lang.String">
+            <column name="CORPORATIONID" />
+        </property>
+        <property name="employee" type="boolean">
+            <column name="EMPLOYEE" />
+        </property>
+        <property name="personalAddress" type="java.lang.String">
+            <column name="PERSONALADDRESS" />
+        </property>
+        <property name="points" type="java.lang.Integer">
+            <column name="POINTS" />
+        </property>
+        <property name="licenseObs" type="java.lang.String">
+            <column name="LICENSEOBS" />
+        </property>
+        <property name="stateOrRegion" type="java.lang.String">
+            <column name="STATEORREGION" />
+        </property>
+        <many-to-one name="puesto" class="communication.datatype.tables.PuestoPepsicoDataType" fetch="join">
+            <column name="PUESTO" />
+        </many-to-one>
+        <property name="licenseExpiry" type="java.util.Date">
+            <column name="LICENSEEXPIRY" />
+        </property>
+        <property name="federativeEntity" type="java.lang.String">
+            <column name="FEDERATIVEENTITY" />
+        </property>
+        <many-to-one name="educationLevel" class="communication.datatype.tables.EducationLevelDataType" fetch="join">
+            <column name="EDUCATIONLEVEL" />
+        </many-to-one>
+        <property name="authorizateWho" type="java.lang.String">
+            <column name="AUTHORIZATEWHO" />
+        </property>
+        <bag name="aptitudTest" table="DRIVERDATA" inverse="false" lazy="true">
+            <key>
+                <column name="SERIALVERSIONUID" />
+            </key>
+            <element type="string">
+                <column name="APTITUDTEST" />
+            </element>
+        </bag>
+        <property name="noHrd" type="boolean">
+            <column name="NOHRD" />
+        </property>
+        <property name="healthExpiry" type="java.util.Date">
+            <column name="HEALTHEXPIRY" />
+        </property>
+        <property name="licenseNumber" type="java.lang.String">
+            <column name="LICENSENUMBER" />
+        </property>
+        <property name="email" type="java.lang.String">
+            <column name="EMAIL" />
+        </property>
+        <property name="inclusionDate" type="java.util.Date">
+            <column name="INCLUSIONDATE" />
+        </property>
+        <property name="temporal" type="boolean">
+            <column name="TEMPORAL" />
+        </property>
+        <many-to-one name="assignedVehicle" class="communication.datatype.tables.AssignedVehicleDataType" fetch="join">
+            <column name="ASSIGNEDVEHICLE" />
+        </many-to-one>
+        <property name="superviser" type="java.lang.String">
+            <column name="SUPERVISER" />
+        </property>
+        <property name="manager" type="java.lang.String">
+            <column name="MANAGER" />
+        </property>
+        <property name="bpsregistry" type="java.lang.String">
+            <column name="BPSREGISTRY" />
+        </property>
+        <property name="licenseCoverage" type="java.lang.String">
+            <column name="LICENSECOVERAGE" />
+        </property>
+        <property name="director" type="boolean">
+            <column name="DIRECTOR" />
+        </property>
+        <many-to-one name="sex" class="communication.datatype.tables.SexDataType" fetch="join">
+            <column name="SEX" />
+        </many-to-one>
+        <many-to-one name="corporation" class="communication.administration.corporation.tables.CorporationData" fetch="join">
+            <column name="CORPORATION" />
+        </many-to-one>
+        <many-to-one name="contract" class="communication.datatype.tables.ContractDataType" fetch="join">
+            <column name="CONTRACT" />
+        </many-to-one>
+        <property name="alertDate" type="java.util.Date">
+            <column name="ALERTDATE" />
+        </property>
+        <property name="officeAddress" type="java.lang.String">
+            <column name="OFFICEADDRESS" />
+        </property>
+        <property name="hrdConditions" type="java.lang.String">
+            <column name="HRDCONDITIONS" />
+        </property>
+        <bag name="alcoholControl" table="DRIVERDATA" inverse="false" lazy="true">
+            <key>
+                <column name="SERIALVERSIONUID" />
+            </key>
+            <element type="string">
+                <column name="ALCOHOLCONTROL" />
+            </element>
+        </bag>
+        <property name="phoneNumber" type="java.lang.String">
+            <column name="PHONENUMBER" />
+        </property>
+        <property name="nationality" type="java.lang.String">
+            <column name="NATIONALITY" />
+        </property>
+        <property name="drives" type="boolean">
+            <column name="DRIVES" />
+        </property>
+        <property name="noHrdComment" type="java.lang.String">
+            <column name="NOHRDCOMMENT" />
+        </property>
+        <property name="licenseCategory" type="java.lang.String">
+            <column name="LICENSECATEGORY" />
+        </property>
+        <bag name="prizes" table="DRIVERDATA" inverse="false" lazy="true">
+            <key>
+                <column name="SERIALVERSIONUID" />
+            </key>
+            <element type="string">
+                <column name="PRIZES" />
+            </element>
+        </bag>
+        <property name="idDallas" type="java.lang.String">
+            <column name="IDDALLAS" />
+        </property>
+        <property name="licenseGet" type="java.util.Date">
+            <column name="LICENSEGET" />
+        </property>
+        <many-to-one name="vehicleAllowed" class="communication.datatype.tables.TypeVehicleDataType" fetch="join">
+            <column name="VEHICLEALLOWED" />
+        </many-to-one>
+        <many-to-one name="maritalStatus" class="communication.datatype.tables.MaritalStatusDataType" fetch="join">
+            <column name="MARITALSTATUS" />
+        </many-to-one>
+        <many-to-one name="licenseImage" class="communication.driver.tables.DriverLicenseImageData" fetch="join">
+            <column name="LICENSEIMAGE" />
+        </many-to-one>
+    </joined-subclass>
+</hibernate-mapping>
