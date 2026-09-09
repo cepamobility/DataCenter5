@@ -57,6 +57,7 @@ import persistence.language.LanguageABMHome;
 import persistence.language.LanguageABMUtil;
 import persistence.language.tables.GeneralMessage;
 import persistence.util.Util;
+import persistence.vehicle.VehicleABMUtil;
 import persistence.vehicle.VehicleReport;
 import persistence.vehicle.VehicleReportUtil;
 import sun.java2d.pipe.GeneralCompositePipe;
@@ -1956,6 +1957,10 @@ public abstract class CorporationABMFacadeBean implements SessionBean {
 		   						System.out.println("MT:No se encontro definicion de puntos "+data.getMatricula()+"-"+data.getdEvento()+"-"+data.getFechaHora());
 		   					}
 		
+							if(userSession.isCorporation(CorporationData.WEYERHAEUSER) && vehicle.getExclusionDate() != null)  {
+								vehicle.setExclusionDate(null);
+								VehicleABMUtil.getHome().create().vehicleUpdate(vehicle, userSession, "Activo por llegada de descuento de puntos", LogActions.INCLUDE);
+							}
 							if(vehicle.getExclusionDate() == null) {
 								corpABM.savePointAccount(account, userSession);
 			   	   				//Si tuvo puntos negativos se notifica nuevo estado contable

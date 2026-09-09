@@ -741,117 +741,121 @@ public class VehicleABMFacadeBean implements SessionBean {
 			}
 
 			if(!doNotProccess(data)) {
-				if(userSessionData.isCorporation(new int[] {CorporationData.FORESTALORIENTAL,CorporationData.MONTES_DE_PLATA,CorporationData.WEYERHAEUSER})) {
-					VehicleReport vehicleReport = VehicleReportUtil.getHome().create();
-					Integer[] ids = vehicleReport.getVehicleLinks(data.getVehicle().getId(), userSessionData);
-					if(ids != null) {
-						ReparationData reparation = data.getFraylogReparation(userSessionData.getFilter().getFirstName().toLowerCase(),userSessionData.getFilter().getLastName().toLowerCase(), userSessionData.getCorporationId());
-						if(reparation != null) {
-							VehicleData vehicle = vehicleReport.findVehicleTransporter(ids[0], userSessionData);
-							if(vehicle != null) {
-								reparation.setVehicle(vehicle);
-								if(reparation != null) {
-									EventABM eventABM = EventABMUtil.getHome().create();
-									Integer repId = eventABM.createReparation(reparation, userSessionData);
-									reparation = EventReportUtil.getHome().create().findReparationByPrimaryKey(repId, userSessionData);
-			
-						    		MailSender sender = new MailSender();
-						    		Integer corporation = (vehicle.getCorporation() == null) ? userSessionData.getCorporationId() : vehicle.getCorporation().getId();
-						    		if(corporation.equals(CorporationData.FRAYLOG)) {
-						    			Collection<Integer> sendTo = new LinkedList<Integer>();
-						    			boolean isVolvo = reparation.getVehicle().getTrade().getResourceBundleId().equals("Volvo");
-					        			String subdivision = reparation.getVehicle().getData(CEPAActivityScheduleData.DIV_ORG,1,2); 
-					        			if(subdivision.equals("Kemira - FB") || subdivision.equals("MDP - FB") || subdivision.equals("UPM - FB")) {
-								    		if(reparation.checkGroup(1)) { //camion
-								    			if(isVolvo) {
-								    				sendTo.add(ReparationData.FRAYLOG_FB);
-								    				sendTo.add(ReparationData.TALLER);
-								    			}
-							    				sendTo.add(ReparationData.MANTENIMIENTO);
-								    		}
-								    		if(reparation.checkGroup(2)) { //caja de carga
-								    			if(!sendTo.contains(ReparationData.FRAYLOG_FB))
-								    				sendTo.add(ReparationData.FRAYLOG_FB);
-								    			sendTo.add(ReparationData.METALURGIA);
-								    			if(!sendTo.contains(ReparationData.MANTENIMIENTO))
+				try {
+					if(userSessionData.isCorporation(new int[] {CorporationData.FORESTALORIENTAL,CorporationData.MONTES_DE_PLATA,CorporationData.WEYERHAEUSER})) {
+						VehicleReport vehicleReport = VehicleReportUtil.getHome().create();
+						Integer[] ids = vehicleReport.getVehicleLinks(data.getVehicle().getId(), userSessionData);
+						if(ids != null) {
+							ReparationData reparation = data.getFraylogReparation(userSessionData.getFilter().getFirstName().toLowerCase(),userSessionData.getFilter().getLastName().toLowerCase(), userSessionData.getCorporationId());
+							if(reparation != null) {
+								VehicleData vehicle = vehicleReport.findVehicleTransporter(ids[0], userSessionData);
+								if(vehicle != null) {
+									reparation.setVehicle(vehicle);
+									if(reparation != null) {
+										EventABM eventABM = EventABMUtil.getHome().create();
+										Integer repId = eventABM.createReparation(reparation, userSessionData);
+										reparation = EventReportUtil.getHome().create().findReparationByPrimaryKey(repId, userSessionData);
+				
+							    		MailSender sender = new MailSender();
+							    		Integer corporation = (vehicle.getCorporation() == null) ? userSessionData.getCorporationId() : vehicle.getCorporation().getId();
+							    		if(corporation.equals(CorporationData.FRAYLOG)) {
+							    			Collection<Integer> sendTo = new LinkedList<Integer>();
+							    			boolean isVolvo = reparation.getVehicle().getTrade().getResourceBundleId().equals("Volvo");
+						        			String subdivision = reparation.getVehicle().getData(CEPAActivityScheduleData.DIV_ORG,1,2); 
+						        			if(subdivision.equals("Kemira - FB") || subdivision.equals("MDP - FB") || subdivision.equals("UPM - FB")) {
+									    		if(reparation.checkGroup(1)) { //camion
+									    			if(isVolvo) {
+									    				sendTo.add(ReparationData.FRAYLOG_FB);
+									    				sendTo.add(ReparationData.TALLER);
+									    			}
 								    				sendTo.add(ReparationData.MANTENIMIENTO);
-								    		}
-								    		if(reparation.checkGroup(3)) { //gomeria
-								    			sendTo.add(ReparationData.GOMERIA);
-								    			sendTo.add(ReparationData.GOMERIA_2);
-								    			sendTo.add(ReparationData.RESPAGNOLO);
-								    		}
-								    		if(reparation.checkGroup(4)) { //seguridad
-								    			sendTo.add(ReparationData.SIG);
-								    		}
-					        			} else if(subdivision.equals("Celulosa - PdT") || subdivision.equals("UPM - PdT")) {
-					        				sendTo.add(ReparationData.RESPAGNOLO);
-								    		if(reparation.checkGroup(1)) { //metalurgia
-								    			if(isVolvo)
-								    				sendTo.add(ReparationData.FRAYLOG_CN);
-								    			else {
+									    		}
+									    		if(reparation.checkGroup(2)) { //caja de carga
+									    			if(!sendTo.contains(ReparationData.FRAYLOG_FB))
+									    				sendTo.add(ReparationData.FRAYLOG_FB);
+									    			sendTo.add(ReparationData.METALURGIA);
 									    			if(!sendTo.contains(ReparationData.MANTENIMIENTO))
 									    				sendTo.add(ReparationData.MANTENIMIENTO);
-								    			}
-								    		}
-								    		if(reparation.checkGroup(2)) { //metalurgia
-								    			if(!sendTo.contains(ReparationData.FRAYLOG_CN))
-								    				sendTo.add(ReparationData.FRAYLOG_CN);
-								    		}
-								    		if(reparation.checkGroup(3)) { //gomeria
-								    			sendTo.add(ReparationData.GOMERIA);
-								    			sendTo.add(ReparationData.GOMERIA_2);
-								    			sendTo.add(ReparationData.GOMERIA_LOSTOROS);
-								    		}
-								    		if(reparation.checkGroup(4)) { //seguridad
-								    			sendTo.add(ReparationData.SIG);
-								    		}
-					        			} else if(subdivision.equals("MDP - Centro")) {
-								    		if(reparation.checkGroup(1)) { //camion
-								    			if(isVolvo)
-								    				sendTo.add(ReparationData.FRAYLOG_DZ);
-								    			if(!sendTo.contains(ReparationData.MANTENIMIENTO))
-								    				sendTo.add(ReparationData.MANTENIMIENTO);
-								    			sendTo.add(ReparationData.C_PEREZ);
-								    		}
-								    		if(reparation.checkGroup(2)) { //metalurgia
-								    			if(!sendTo.contains(ReparationData.FRAYLOG_DZ))
-								    				sendTo.add(ReparationData.FRAYLOG_DZ);
-								    			if(!sendTo.contains(ReparationData.MANTENIMIENTO))
-								    				sendTo.add(ReparationData.MANTENIMIENTO);
-								    			if(!sendTo.contains(ReparationData.C_PEREZ))
-								    				sendTo.add(ReparationData.C_PEREZ);
-								    		}
-								    		if(reparation.checkGroup(3)) { //gomeria
-								    			if(!sendTo.contains(ReparationData.GOMERIA))
-								    				sendTo.add(ReparationData.GOMERIA);
-								    			if(!sendTo.contains(ReparationData.GOMERIA_2))
-								    				sendTo.add(ReparationData.GOMERIA_2);
-								    			if(!sendTo.contains(ReparationData.MANTENIMIENTO))
-								    				sendTo.add(ReparationData.MANTENIMIENTO);
-								    			if(!sendTo.contains(ReparationData.C_PEREZ))
-								    				sendTo.add(ReparationData.C_PEREZ);
-								    		}
-								    		if(reparation.checkGroup(4)) { //seguridad
-								    			if(!sendTo.contains(ReparationData.SIG))
-								    				sendTo.add(ReparationData.SIG);
-								    			if(!sendTo.contains(ReparationData.C_PEREZ))
-								    				sendTo.add(ReparationData.C_PEREZ);
-								    		}
-					        			}
-					        			Iterator<Integer> it = sendTo.iterator();
-					        			while(it.hasNext()) {
-					    	    			sendReparationEmail(sender, reparation, messages, userSessionData, it.next());
-					        			}
-						    		}else if(corporation.equals(CorporationData.SOCTMA)){
-						    			sendReparationEmail(sender, reparation, messages, userSessionData, ReparationData.SOCTMA);
-						    		}else {
-						    			sendReparationEmail(sender, reparation, messages, userSessionData, -1);
-						    		}
+									    		}
+									    		if(reparation.checkGroup(3)) { //gomeria
+									    			sendTo.add(ReparationData.GOMERIA);
+									    			sendTo.add(ReparationData.GOMERIA_2);
+									    			sendTo.add(ReparationData.RESPAGNOLO);
+									    		}
+									    		if(reparation.checkGroup(4)) { //seguridad
+									    			sendTo.add(ReparationData.SIG);
+									    		}
+						        			} else if(subdivision.equals("Celulosa - PdT") || subdivision.equals("UPM - PdT")) {
+						        				sendTo.add(ReparationData.RESPAGNOLO);
+									    		if(reparation.checkGroup(1)) { //metalurgia
+									    			if(isVolvo)
+									    				sendTo.add(ReparationData.FRAYLOG_CN);
+									    			else {
+										    			if(!sendTo.contains(ReparationData.MANTENIMIENTO))
+										    				sendTo.add(ReparationData.MANTENIMIENTO);
+									    			}
+									    		}
+									    		if(reparation.checkGroup(2)) { //metalurgia
+									    			if(!sendTo.contains(ReparationData.FRAYLOG_CN))
+									    				sendTo.add(ReparationData.FRAYLOG_CN);
+									    		}
+									    		if(reparation.checkGroup(3)) { //gomeria
+									    			sendTo.add(ReparationData.GOMERIA);
+									    			sendTo.add(ReparationData.GOMERIA_2);
+									    			sendTo.add(ReparationData.GOMERIA_LOSTOROS);
+									    		}
+									    		if(reparation.checkGroup(4)) { //seguridad
+									    			sendTo.add(ReparationData.SIG);
+									    		}
+						        			} else if(subdivision.equals("MDP - Centro")) {
+									    		if(reparation.checkGroup(1)) { //camion
+									    			if(isVolvo)
+									    				sendTo.add(ReparationData.FRAYLOG_DZ);
+									    			if(!sendTo.contains(ReparationData.MANTENIMIENTO))
+									    				sendTo.add(ReparationData.MANTENIMIENTO);
+									    			sendTo.add(ReparationData.C_PEREZ);
+									    		}
+									    		if(reparation.checkGroup(2)) { //metalurgia
+									    			if(!sendTo.contains(ReparationData.FRAYLOG_DZ))
+									    				sendTo.add(ReparationData.FRAYLOG_DZ);
+									    			if(!sendTo.contains(ReparationData.MANTENIMIENTO))
+									    				sendTo.add(ReparationData.MANTENIMIENTO);
+									    			if(!sendTo.contains(ReparationData.C_PEREZ))
+									    				sendTo.add(ReparationData.C_PEREZ);
+									    		}
+									    		if(reparation.checkGroup(3)) { //gomeria
+									    			if(!sendTo.contains(ReparationData.GOMERIA))
+									    				sendTo.add(ReparationData.GOMERIA);
+									    			if(!sendTo.contains(ReparationData.GOMERIA_2))
+									    				sendTo.add(ReparationData.GOMERIA_2);
+									    			if(!sendTo.contains(ReparationData.MANTENIMIENTO))
+									    				sendTo.add(ReparationData.MANTENIMIENTO);
+									    			if(!sendTo.contains(ReparationData.C_PEREZ))
+									    				sendTo.add(ReparationData.C_PEREZ);
+									    		}
+									    		if(reparation.checkGroup(4)) { //seguridad
+									    			if(!sendTo.contains(ReparationData.SIG))
+									    				sendTo.add(ReparationData.SIG);
+									    			if(!sendTo.contains(ReparationData.C_PEREZ))
+									    				sendTo.add(ReparationData.C_PEREZ);
+									    		}
+						        			}
+						        			Iterator<Integer> it = sendTo.iterator();
+						        			while(it.hasNext()) {
+						    	    			sendReparationEmail(sender, reparation, messages, userSessionData, it.next());
+						        			}
+							    		}else if(corporation.equals(CorporationData.SOCTMA)){
+							    			sendReparationEmail(sender, reparation, messages, userSessionData, ReparationData.SOCTMA);
+							    		}else {
+							    			sendReparationEmail(sender, reparation, messages, userSessionData, -1);
+							    		}
+									}
 								}
 							}
 						}
 					}
+				}catch(Exception e) {
+					e.printStackTrace();
 				}
 				/*if(newItems.size() > 0 && true) {
 					sendMailNewItems(data.getVehicle(), newItems, messages, userSessionData);
