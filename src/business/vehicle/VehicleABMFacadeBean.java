@@ -85,6 +85,7 @@ import communication.util.MailSender;
 import communication.vehicle.tables.ComplaintData;
 import communication.vehicle.tables.DPAGoalData;
 import communication.vehicle.tables.DPAVehicleActiveData;
+import communication.vehicle.tables.InstructorActivityData;
 import communication.vehicle.tables.TrailerCheckData;
 import communication.vehicle.tables.TrailerData;
 import communication.vehicle.tables.UnconformityData;
@@ -103,64 +104,64 @@ import net.sf.jasperreports.engine.util.JRLoader;
 /**
  * @ejb.bean name="VehicleABMFacade"
  *           display-name="Name for VehicleABMFacade"
- *           description="Description for VehicleABMFacade" 
+ *           description="Description for VehicleABMFacade"
  *           jndi-name="ejb/VehicleABMFacade"
  *           type="Stateless"
  *           view-type="remote"
  * 			 transaction-type = "Container"
- * 
+ *
  * @ejb.ejb-ref ejb-name = "VehicleABM" ref-name = "ejb/VehicleABM" view-type =
  *              "remote"
- * 
+ *
  * @jboss.ejb-ref-jndi jndi-name = "ejb/VehicleABM" ref-name = "VehicleABM"
  * @jboss.ejb-ref-jndi jndi-name = "ejb/UserReport" ref-name = "UserReport"
  *
  * @ejb.ejb-ref ejb-name = "VehicleReport" ref-name = "ejb/VehicleReport" view-type =
  *              "remote"
- * 
+ *
  * @jboss.ejb-ref-jndi jndi-name = "ejb/VehicleReport" ref-name = "VehicleReport"
  *
  *
  * @ejb.ejb-ref ejb-name = "EventABM" ref-name = "ejb/EventABM" view-type =
  *              "remote"
- * 
+ *
  * @jboss.ejb-ref-jndi jndi-name = "ejb/EventABM" ref-name = "EventABM"
  *
  * @ejb.ejb-ref ejb-name = "EventReport" ref-name = "ejb/EventReport" view-type =
  *              "remote"
- * 
+ *
  * @jboss.ejb-ref-jndi jndi-name = "ejb/EventReport" ref-name = "EventReport"
  *
  * @ejb.ejb-ref ejb-name = "VehicleReportFacade" ref-name = "ejb/VehicleReportFacade" view-type =
  *              "remote"
- * 
+ *
  * @jboss.ejb-ref-jndi jndi-name = "ejb/VehicleReportFacade" ref-name = "VehicleReportFacade"
 
  * @ejb.ejb-ref ejb-name = "DriverABM" ref-name = "ejb/DriverABM" view-type ="remote"
- * 
+ *
  * @jboss.ejb-ref-jndi jndi-name = "ejb/DriverABM" ref-name = "DriverABM"
  *
  * @ejb.ejb-ref ejb-name = "DriverReport" ref-name = "ejb/DriverReport" view-type ="remote"
- *              
- * 
+ *
+ *
  * @jboss.ejb-ref-jndi jndi-name = "ejb/DriverReport" ref-name = "DriverReport"
- * 														
+ *
  * @jboss.ejb-ref-jndi jndi-name = "ejb/CorporationABM" ref-name = "CorporationABM"
- * 
+ *
  * @jboss.ejb-ref-jndi jndi-name = "ejb/CorporationABMFacade" ref-name = "CorporationABMFacade"
- * 
+ *
  * @jboss.ejb-ref-jndi jndi-name = "ejb/CorporationReport" ref-name = "CorporationReport"
- * 
- * @ejb.ejb-ref 
+ *
+ * @ejb.ejb-ref
  *          ejb-name ="DataTypeReport"
  *          ref-name = "ejb/DataTypeReport"
  *          view-type ="remote"
- * 
+ *
  * @jboss.ejb-ref-jndi
- *          jndi-name = "ejb/DataTypeReport" 
+ *          jndi-name = "ejb/DataTypeReport"
  *          ref-name = "DataTypeReport"
- * 
- * 
+ *
+ *
  *  * @ejb.util generate="physical"
  */
 
@@ -169,7 +170,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 	private ExceptionHandler handler = new ExceptionHandler(VehicleABMFacadeBean.class);
 
 	/**
-	 * 
+	 *
 	 */
 	private static final long serialVersionUID = 1L;
 	/**
@@ -177,22 +178,22 @@ public class VehicleABMFacadeBean implements SessionBean {
 	 */
 	private Logger logger = Logger.getLogger(DriverABMFacadeBean.class);
 	private LoggerFormatting logFormatting = new LoggerFormatting();
-	
+
 	private class ThreadProcessChecklist extends Thread{
 		public UserSessionData userSessionData;
 		public Integer vehiclechecklistId;
 		public String user;
 		public String password;
-		
+
 		public void run(){
 			try{
-				Thread.sleep(300000); 
+				Thread.sleep(300000);
 
 				String urlString="http://localhost:8080/datacenter/webapi/batch/processChecklist?vehicleCheckId="+vehiclechecklistId+"&u="+user+"&p="+password;
 				if(SecurityConstants.isProductionServer()){
 					urlString="http://localhost:8080/datacenter/webapi/batch/processChecklist?vehicleCheckId="+vehiclechecklistId+"&u="+user+"&p="+password;
 				}
-				
+
 				URL url = new URL(urlString);
 				HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 				conn.setRequestMethod("GET");
@@ -211,30 +212,30 @@ public class VehicleABMFacadeBean implements SessionBean {
 				}
 
 				System.out.println("Checklist procesado "+builder.toString());
-				
+
 				conn.disconnect();
-				
+
 			}catch(Throwable th){
 				th.printStackTrace();
 			}
 		}
 	}
-	
+
 	private class ThreadNotifyMPChecklist extends Thread{
 		public UserSessionData userSessionData;
 		public Integer vehiclechecklistId;
 		public String user;
 		public String password;
-		
+
 		public void run(){
 			try{
-				Thread.sleep(300000); 
+				Thread.sleep(300000);
 
 				String urlString="http://localhost:8080/datacenter/webapi/batch/notifyMP?vehicleCheckId="+vehiclechecklistId+"&u="+user+"&p="+password;
 				if(SecurityConstants.isProductionServer()){
 					urlString="http://localhost:8080/datacenter/webapi/batch/notifyMP?vehicleCheckId="+vehiclechecklistId+"&u="+user+"&p="+password;
 				}
-				
+
 				URL url = new URL(urlString);
 				HttpURLConnection conn = (HttpURLConnection) url.openConnection();
 				conn.setRequestMethod("GET");
@@ -254,29 +255,29 @@ public class VehicleABMFacadeBean implements SessionBean {
 				}
 
 				System.out.println("Checklist procesado "+builder.toString());
-				
+
 				conn.disconnect();
 			}catch(Throwable th){
 				th.printStackTrace();
 			}
 		}
 	}
-	
+
 	public VehicleABMFacadeBean() {
-		super();		
+		super();
 	}
 
 	/**
 	 * Create method
-	 * 
+	 *
 	 * @ejb.create-method
-     * @ejb.permission role-name = "administrator,vehiclecreate,vehicleupdate,vehicledelete,drivercreatevehicle,drivervehicleupdate,vehiclechecklist,dpachecklist,jjreporter,systemaccess" 
-	 *  
+     * @ejb.permission role-name = "administrator,vehiclecreate,vehicleupdate,vehicledelete,drivercreatevehicle,drivervehicleupdate,vehiclechecklist,dpachecklist,jjreporter,systemaccess"
+	 *
 	 */
-	public void ejbCreate() throws javax.ejb.CreateException {		
+	public void ejbCreate() throws javax.ejb.CreateException {
 	}
 
-	
+
 	public void setSessionContext(SessionContext ctx)throws EJBException,RemoteException {
 	}
 
@@ -284,29 +285,29 @@ public class VehicleABMFacadeBean implements SessionBean {
 	public void ejbRemove() throws EJBException, RemoteException {
 	}
 
-	
+
 	public void ejbActivate() throws EJBException, RemoteException {
 	}
 
 	public void ejbPassivate() throws EJBException, RemoteException {
 	}
-	
+
 	/**
 	 * @ejb.interface-method
      * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle,dpachecklist"
 	 * @param data
 	 * @throws Exception
-	 */	
+	 */
 	public Integer vehicleCreate(VehicleData data, String comment, UserSessionData userSessionData) throws Exception {
 		VehicleABM vehicleABM = null;
-		try {	
-						
+		try {
+
             if(userSessionData.isDriver() && !data.getDriver().getId().equals(userSessionData.getDriverData().getId())) {
                 throw new InvalidDataException("vehicleCreate","Invalid driver");
             }
 			VehicleABMHome home = VehicleABMUtil.getHome();
 			vehicleABM = home.create();
-			
+
 			Integer id = vehicleABM.vehicleCreate(data,userSessionData,comment);
 			data.setId(id);
 
@@ -330,9 +331,9 @@ public class VehicleABMFacadeBean implements SessionBean {
 	        		Integer upm = (userSessionData.isCorporation(CorporationData.FORESTALORIENTAL)) ? id : null;
 	        		Integer mdp = (userSessionData.isCorporation(CorporationData.MONTES_DE_PLATA)) ? id : null;
 	        		Integer lumin = (userSessionData.isCorporation(CorporationData.WEYERHAEUSER)) ? id : null;
-	        		
+
 	        		if(values[0] == 0) {
-	        			if(isContractor == CorporationData.FRAYLOG) {	
+	        			if(isContractor == CorporationData.FRAYLOG) {
 							data.replaceDivOrg(1,TransporterLink.FRAYLOG_DEFAULT_DIVISION, null, null);
 							data.replaceDivGeo(null,TransporterLink.FRAYLOG_REGION,TransporterLink.FRAYLOG_COUNTRY);
 			        		data.setUse(new TypeUseDataType(TypeUseDataType.INSTITUTIONAL));
@@ -342,7 +343,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 			        		sendVehicleEmail(data, userSessionData);
 			        		vehicleABM.saveVehicleLinks(frayId, upm, mdp, lumin, CorporationData.FRAYLOG, userSessionData);
 	        			}
-	        			if(isContractor == CorporationData.SOCTMA) {	
+	        			if(isContractor == CorporationData.SOCTMA) {
 							data.replaceDivOrg(1,TransporterLink.SOCTMA_DEFAULT_DIVISION, null, null);
 							data.replaceDivGeo(null,TransporterLink.SOCTMA_REGION,TransporterLink.SOCTMA_COUNTRY);
 			        		data.setUse(new TypeUseDataType(TypeUseDataType.INSTITUTIONAL));
@@ -395,6 +396,15 @@ public class VehicleABMFacadeBean implements SessionBean {
 		return null;
 	}
 
+	/**
+	 * @ejb.interface-method
+     * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle,vehiclechecklist,dpachecklist,jjreporter"
+	 * @param data
+	 * @throws Exception
+	 */
+	public Integer instructorActivityCreate(InstructorActivityData data, UserSessionData userSessionData) throws Exception {
+		return VehicleABMUtil.getHome().create().instructorActivityCreate(data, userSessionData);
+	}
 
 	/**
 	 * @ejb.interface-method
@@ -404,8 +414,8 @@ public class VehicleABMFacadeBean implements SessionBean {
 	 */
 	public void vehicleDelete(VehicleData data, String comment,UserSessionData userSessionData)
 		throws Exception {
-		
-		
+
+
 		VehicleABM vehicleABM = null;
 		try {
 
@@ -422,35 +432,35 @@ public class VehicleABMFacadeBean implements SessionBean {
         	handler.handleException("vehicleDelete",e, userSessionData, p);
 		}
 	}
-	
+
 	/**
 	 * @ejb.interface-method
      * @ejb.permission role-name = "administrator,vehicleupdate,drivervehicleupdate,dpachecklist"
 	 * @param data
-	 * @throws Exception 
+	 * @throws Exception
 	 */
-	public void vehicleUpdate(VehicleData data, String comment,UserSessionData userSessionData) 
+	public void vehicleUpdate(VehicleData data, String comment,UserSessionData userSessionData)
 		throws Exception {
 		vehicleUpdate(data,comment,false,userSessionData);
 	}
-		
+
 	/**
 	 * @ejb.interface-method
      * @ejb.permission role-name = "administrator,vehicleupdate,drivervehicleupdate,dpachecklist"
 	 * @param data
-	 * @throws Exception 
+	 * @throws Exception
 	 */
-	public void vehicleUpdate(VehicleData data, String comment,boolean asignDriver,UserSessionData userSessionData) 
+	public void vehicleUpdate(VehicleData data, String comment,boolean asignDriver,UserSessionData userSessionData)
 		throws Exception {
-		VehicleABM vehicleABM = null; 
+		VehicleABM vehicleABM = null;
 		try {
 			VehicleReport vehicleReport = VehicleReportUtil.getHome().create();
-			
+
 			boolean changed = false;
 			Integer[] divOrgs = null;
 			if(!asignDriver) {
 				// Nueva funcionalidad para todas las empresas menos FOSA y WEYERHAEUSER
-				// Si cambian las divisiones organizacionales del veh√≠culos se cambian las del conductor
+				// Si cambian las divisiones organizacionales del veh√É¬≠culos se cambian las del conductor
 				if(userSessionData.getCorporationId() != CorporationData.WEYERHAEUSER && userSessionData.getCorporationId() != CorporationData.FORESTALORIENTAL) {
 					if(data.getDriver() != null) {
 						divOrgs = data.getDivOrgIds();
@@ -462,15 +472,15 @@ public class VehicleABMFacadeBean implements SessionBean {
 			VehicleABMHome home = VehicleABMUtil.getHome();
 			vehicleABM = home.create();
 			vehicleABM.vehicleUpdate(data,userSessionData,comment,LogActions.UPDATE);
-			
+
         	Integer divOrgId = ((communication.administration.corporation.tables.ItemData)((DivOrgData)data.getDivOrgsIterator().next()).getDivOrgLevels().getItemIterator().next()).getId();
         	boolean isContractor = communication.administration.corporation.util.Util.isFraylogContractor(divOrgId);
 			if(userSessionData.isCorporation(new int[] {CorporationData.FORESTALORIENTAL, CorporationData.MONTES_DE_PLATA})) {
-/*				Integer[] links = {null,null,null}; 
+/*				Integer[] links = {null,null,null};
 				int[][] values = vehicleReport.getVehicleDataLinks(data.getMatricula(), userSessionData);
-				
+
 				if(values[0][0] == 0 && isContractor) {
-					if(userSessionData.isCorporation(CorporationData.FORESTALORIENTAL)) { 
+					if(userSessionData.isCorporation(CorporationData.FORESTALORIENTAL)) {
 						if(values[2][0] != 0 && !communication.administration.corporation.util.Util.isFraylogContractor(values[2][1])) {
 							data.replaceDivOrg(1,TransporterLink.FRAYLOG_INACTIVE,null,null);
 						}else {
@@ -488,7 +498,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 	        		data.setDriver(null);
 	        		data.setCorporation(new CorporationData(CorporationData.FRAYLOG,"",null,null,null,null));
 	        		links[0] = vehicleABM.vehicleCreate(data, userSessionData,comment);
-					if(userSessionData.isCorporation(CorporationData.FORESTALORIENTAL)) { 
+					if(userSessionData.isCorporation(CorporationData.FORESTALORIENTAL)) {
 						links[1] = data.getId();
 						links[2] = values[2][0];
 					}else {
@@ -500,7 +510,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 					if(values[0][0] != 0) {
 						boolean frayLogContractor  = values[0][1] != TransporterLink.FRAYLOG_INACTIVE;
 						boolean contractOther = true;
-						if(userSessionData.isCorporation(CorporationData.FORESTALORIENTAL)) { 
+						if(userSessionData.isCorporation(CorporationData.FORESTALORIENTAL)) {
 							contractOther = (values[2][1] == 0)  || communication.administration.corporation.util.Util.isFraylogContractor(values[2][1]);
 						}else{
 							contractOther = (values[1][1] == 0)  || communication.administration.corporation.util.Util.isFraylogContractor(values[1][1]);
@@ -514,7 +524,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 						}
 						if(frayId != null) {
 							vehicleABM.vehicleUpdateContractor(values[0][0], frayId, userSessionData);
-						}	        		
+						}
 					}
 				}*/
 			}
@@ -532,7 +542,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 				DriverData driverData = driverReport.findDriverByPrimaryKey(data.getDriver().getId(), userSessionData);
 
 				vehicleABM.updateDivisions(data.getId(),driverData.getDivOrgIds(),userSessionData);
-				
+
 			}else if(changed && (userSessionData.checkPermission(SecurityConstants.MODIFY_DRIVER)
 					|| userSessionData.checkPermission(SecurityConstants.DRIVER_MODIFY_OWN_DATA))) {
 				DriverABM driverABM = DriverABMUtil.getHome().create();
@@ -558,7 +568,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 		try {
 			DriverReport driverReport = DriverReportUtil.getHome().create();
 			DriverData driverData = driverReport.findDriverByPrimaryKey(driver, userSessionData);
-			
+
 			VehicleData vehicleData = VehicleReportUtil.getHome().create().findVehicleByPrimaryKey(vehicle,userSessionData);
 			vehicleData.setDriver(driverData);
 
@@ -575,18 +585,18 @@ public class VehicleABMFacadeBean implements SessionBean {
 
 	/**
      * @ejb.interface-method
-     * @ejb.transaction type="Required" 
+     * @ejb.transaction type="Required"
      * @ejb.permission role-name = "administrator,vehicleupdate"
-     * 
+     *
      * @param data
      * @throws Exception
      */
     public void vehicleExclude(String vehicles,Date exclusionDate, String comment,
     		UserSessionData userRequest) throws Exception {
-        
-    	VehicleABM vehicleABM = null; 
-        try{    
-            
+
+    	VehicleABM vehicleABM = null;
+        try{
+
             VehicleReportHome reportHome = VehicleReportUtil.getHome();
             VehicleReport vehicleReport = reportHome.create();
 
@@ -598,13 +608,13 @@ public class VehicleABMFacadeBean implements SessionBean {
                 String vehicleId = tokenizer.nextToken();
                 VehicleData vehicleData = vehicleReport.findVehicleByPrimaryKey(new Integer(vehicleId),userRequest);
                 vehicleData.setExclusionDate(exclusionDate);
-                
+
                 if(userRequest.getCorporationId() != CorporationData.ALLERGAN) {
-	                // Nueva funcionalidad, cuando se desactiva un veh√≠culo se desasocia de su conductor
+	                // Nueva funcionalidad, cuando se desactiva un veh√É¬≠culo se desasocia de su conductor
 	                vehicleData.setDriver(null);
 	                vehicleData.setUse(new TypeUseDataType(TypeUseDataType.INSTITUTIONAL));
                 }
-                
+
                 vehicleABM.vehicleUpdate(vehicleData, userRequest, comment, LogActions.EXCLUDE);
             }
         } catch (Exception exception) {
@@ -618,16 +628,16 @@ public class VehicleABMFacadeBean implements SessionBean {
 
     /**
      * @ejb.interface-method
-     * @ejb.transaction type="Required" 
+     * @ejb.transaction type="Required"
      * @ejb.permission role-name = "administrator,vehicleupdate"
-     * 
+     *
      * @param data
      * @throws Exception
      */
     public void vehicleInclude(String vehicles,String comment,
     		UserSessionData userRequest) throws Exception {
-        VehicleABM vehicleABM = null; 
-        try{    
+        VehicleABM vehicleABM = null;
+        try{
             if (userRequest == null) {
                 throw new DeslogedException("Class business.vehicle.VehicleABMFacade(vehicleUpdate), session data is empty","generic.error.deslogued");
             }
@@ -652,27 +662,27 @@ public class VehicleABMFacadeBean implements SessionBean {
             handler.handleException("vehicleInclude",exception,userRequest,p);
         }
     }
-    
+
 	/**
 	 * @ejb.interface-method
      * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle,vehiclechecklist,dpachecklist,jjreporter"
 	 * @param data
 	 * @throws Exception
-	 */	
+	 */
 	public Integer createOrUpdateVehicleCheck(VehicleCheckData data, String comment,
 			UserSessionData userSessionData) throws Exception {
 
 		VehicleABM vehicleABM = null;
-		try {		
-			
-			
+		try {
+
+
 			VehicleABMHome home = VehicleABMUtil.getHome();
 			vehicleABM = home.create();
-			
+
 			Integer vehicleCheckId = vehicleABM.createOrUpdateVehicleCheck(data,comment,userSessionData);
 
-			 
-			
+
+
 			return vehicleCheckId;
 
 		} catch (Exception exception) {
@@ -684,19 +694,19 @@ public class VehicleABMFacadeBean implements SessionBean {
 		return null;
 
 	}
-	
+
 	/**
 	 * @ejb.interface-method
      * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle,vehiclechecklist,dpachecklist"
 	 * @param data
 	 * @throws Exception
-	 */	
+	 */
 	public Integer createOrUpdateVehicleCheckUPMMDP( LinkedList imagesData,VehicleCheckData data, String comment,
 			UserSessionData userSessionData,Text messages) throws Exception {
 		System.out.println("createOrUpdateVehicleCheckUPMMDP");
 		VehicleABM vehicleABM = null;
-		try {		
-						
+		try {
+
 			VehicleABMHome home = VehicleABMUtil.getHome();
 			vehicleABM = home.create();
 			//Pasar a mayusculas y quitar punto en matriculas
@@ -704,13 +714,13 @@ public class VehicleABMFacadeBean implements SessionBean {
 			Collection<Integer> newItems = new LinkedList<Integer>();
 			if ((data.getName() != null) && ((data.getName().equals("80")) || (data.getName().equals("123")) || (data.getName().equals("79")))) {
 				Iterator<ItemValueStrData> itemsIter=data.getItemValueSet().iterator();
-				 
+
 				while(itemsIter.hasNext()) {
 					ItemValueStrData itemData=itemsIter.next();
-					int itemId = itemData.getItem().getId().intValue(); 
+					int itemId = itemData.getItem().getId().intValue();
 					if(itemId == 11477 || itemId == 11478 || itemId == 11479 || itemId == 11480 || itemId == 11481 || itemId == 11416) {
 						if(itemData.getItemValue()!=null){
-							itemData.setItemValue( itemData.getItemValue().replace(".", "").toUpperCase());	
+							itemData.setItemValue( itemData.getItemValue().replace(".", "").toUpperCase());
 						}
 					}
 					if(itemId == 11472) {
@@ -723,16 +733,16 @@ public class VehicleABMFacadeBean implements SessionBean {
 					}
 					if(userSessionData.isCorporation(CorporationData.FORESTALORIENTAL) && itemData.getItemValue().equals("2") &&
 							(itemId == 17005 || itemId == 17006 || itemId == 17015 || itemId == 17016)) {
-						//itemData.setItemTag("Su vehiculo tendrÌa 48 horas para el arreglo");
+						//itemData.setItemTag("Su vehiculo tendr√≠a 48 horas para el arreglo");
 						newItems.add(itemId);
 					}*/
 				}
 			}
-			
+
 			boolean newCheck = data.getVehicleCheckId() == null;
 			Integer vehicleCheckId = vehicleABM.createOrUpdateVehicleCheck(data,comment,userSessionData);
 			uploadCheckListImagesBase64(imagesData, vehicleCheckId, userSessionData);
-			
+
 			if(Util.isNumber(driver) && data.getName().equals("80") && newCheck) {
 				Collection drivers = DriverReportUtil.getHome().create().findDriverByCorporationId(driver, userSessionData);
 				if(drivers.size() > 0) {
@@ -741,135 +751,131 @@ public class VehicleABMFacadeBean implements SessionBean {
 			}
 
 			if(!doNotProccess(data)) {
-				try {
-					if(userSessionData.isCorporation(new int[] {CorporationData.FORESTALORIENTAL,CorporationData.MONTES_DE_PLATA,CorporationData.WEYERHAEUSER})) {
-						VehicleReport vehicleReport = VehicleReportUtil.getHome().create();
-						Integer[] ids = vehicleReport.getVehicleLinks(data.getVehicle().getId(), userSessionData);
-						if(ids != null) {
-							ReparationData reparation = data.getFraylogReparation(userSessionData.getFilter().getFirstName().toLowerCase(),userSessionData.getFilter().getLastName().toLowerCase(), userSessionData.getCorporationId());
-							if(reparation != null) {
-								VehicleData vehicle = vehicleReport.findVehicleTransporter(ids[0], userSessionData);
-								if(vehicle != null) {
-									reparation.setVehicle(vehicle);
-									if(reparation != null) {
-										EventABM eventABM = EventABMUtil.getHome().create();
-										Integer repId = eventABM.createReparation(reparation, userSessionData);
-										reparation = EventReportUtil.getHome().create().findReparationByPrimaryKey(repId, userSessionData);
-				
-							    		MailSender sender = new MailSender();
-							    		Integer corporation = (vehicle.getCorporation() == null) ? userSessionData.getCorporationId() : vehicle.getCorporation().getId();
-							    		if(corporation.equals(CorporationData.FRAYLOG)) {
-							    			Collection<Integer> sendTo = new LinkedList<Integer>();
-							    			boolean isVolvo = reparation.getVehicle().getTrade().getResourceBundleId().equals("Volvo");
-						        			String subdivision = reparation.getVehicle().getData(CEPAActivityScheduleData.DIV_ORG,1,2); 
-						        			if(subdivision.equals("Kemira - FB") || subdivision.equals("MDP - FB") || subdivision.equals("UPM - FB")) {
-									    		if(reparation.checkGroup(1)) { //camion
-									    			if(isVolvo) {
-									    				sendTo.add(ReparationData.FRAYLOG_FB);
-									    				sendTo.add(ReparationData.TALLER);
-									    			}
+				if(userSessionData.isCorporation(new int[] {CorporationData.FORESTALORIENTAL,CorporationData.MONTES_DE_PLATA,CorporationData.WEYERHAEUSER})) {
+					VehicleReport vehicleReport = VehicleReportUtil.getHome().create();
+					Integer[] ids = vehicleReport.getVehicleLinks(data.getVehicle().getId(), userSessionData);
+					if(ids != null) {
+						ReparationData reparation = data.getFraylogReparation(userSessionData.getFilter().getFirstName().toLowerCase(),userSessionData.getFilter().getLastName().toLowerCase(), userSessionData.getCorporationId());
+						if(reparation != null) {
+							VehicleData vehicle = vehicleReport.findVehicleTransporter(ids[0], userSessionData);
+							if(vehicle != null) {
+								reparation.setVehicle(vehicle);
+								if(reparation != null) {
+									EventABM eventABM = EventABMUtil.getHome().create();
+									Integer repId = eventABM.createReparation(reparation, userSessionData);
+									reparation = EventReportUtil.getHome().create().findReparationByPrimaryKey(repId, userSessionData);
+
+						    		MailSender sender = new MailSender();
+						    		Integer corporation = (vehicle.getCorporation() == null) ? userSessionData.getCorporationId() : vehicle.getCorporation().getId();
+						    		if(corporation.equals(CorporationData.FRAYLOG)) {
+						    			Collection<Integer> sendTo = new LinkedList<Integer>();
+						    			boolean isVolvo = reparation.getVehicle().getTrade().getResourceBundleId().equals("Volvo");
+					        			String subdivision = reparation.getVehicle().getData(CEPAActivityScheduleData.DIV_ORG,1,2);
+					        			if(subdivision.equals("Kemira - FB") || subdivision.equals("MDP - FB") || subdivision.equals("UPM - FB")) {
+								    		if(reparation.checkGroup(1)) { //camion
+								    			if(isVolvo) {
+								    				sendTo.add(ReparationData.FRAYLOG_FB);
+								    				sendTo.add(ReparationData.TALLER);
+								    			}
+							    				sendTo.add(ReparationData.MANTENIMIENTO);
+								    		}
+								    		if(reparation.checkGroup(2)) { //caja de carga
+								    			if(!sendTo.contains(ReparationData.FRAYLOG_FB))
+								    				sendTo.add(ReparationData.FRAYLOG_FB);
+								    			sendTo.add(ReparationData.METALURGIA);
+								    			if(!sendTo.contains(ReparationData.MANTENIMIENTO))
 								    				sendTo.add(ReparationData.MANTENIMIENTO);
-									    		}
-									    		if(reparation.checkGroup(2)) { //caja de carga
-									    			if(!sendTo.contains(ReparationData.FRAYLOG_FB))
-									    				sendTo.add(ReparationData.FRAYLOG_FB);
-									    			sendTo.add(ReparationData.METALURGIA);
+								    		}
+								    		if(reparation.checkGroup(3)) { //gomeria
+								    			sendTo.add(ReparationData.GOMERIA);
+								    			sendTo.add(ReparationData.GOMERIA_2);
+								    			sendTo.add(ReparationData.RESPAGNOLO);
+								    		}
+								    		if(reparation.checkGroup(4)) { //seguridad
+								    			sendTo.add(ReparationData.SIG);
+								    		}
+					        			} else if(subdivision.equals("Celulosa - PdT") || subdivision.equals("UPM - PdT")) {
+					        				sendTo.add(ReparationData.RESPAGNOLO);
+								    		if(reparation.checkGroup(1)) { //metalurgia
+								    			if(isVolvo)
+								    				sendTo.add(ReparationData.FRAYLOG_CN);
+								    			else {
 									    			if(!sendTo.contains(ReparationData.MANTENIMIENTO))
 									    				sendTo.add(ReparationData.MANTENIMIENTO);
-									    		}
-									    		if(reparation.checkGroup(3)) { //gomeria
-									    			sendTo.add(ReparationData.GOMERIA);
-									    			sendTo.add(ReparationData.GOMERIA_2);
-									    			sendTo.add(ReparationData.RESPAGNOLO);
-									    		}
-									    		if(reparation.checkGroup(4)) { //seguridad
-									    			sendTo.add(ReparationData.SIG);
-									    		}
-						        			} else if(subdivision.equals("Celulosa - PdT") || subdivision.equals("UPM - PdT")) {
-						        				sendTo.add(ReparationData.RESPAGNOLO);
-									    		if(reparation.checkGroup(1)) { //metalurgia
-									    			if(isVolvo)
-									    				sendTo.add(ReparationData.FRAYLOG_CN);
-									    			else {
-										    			if(!sendTo.contains(ReparationData.MANTENIMIENTO))
-										    				sendTo.add(ReparationData.MANTENIMIENTO);
-									    			}
-									    		}
-									    		if(reparation.checkGroup(2)) { //metalurgia
-									    			if(!sendTo.contains(ReparationData.FRAYLOG_CN))
-									    				sendTo.add(ReparationData.FRAYLOG_CN);
-									    		}
-									    		if(reparation.checkGroup(3)) { //gomeria
-									    			sendTo.add(ReparationData.GOMERIA);
-									    			sendTo.add(ReparationData.GOMERIA_2);
-									    			sendTo.add(ReparationData.GOMERIA_LOSTOROS);
-									    		}
-									    		if(reparation.checkGroup(4)) { //seguridad
-									    			sendTo.add(ReparationData.SIG);
-									    		}
-						        			} else if(subdivision.equals("MDP - Centro")) {
-									    		if(reparation.checkGroup(1)) { //camion
-									    			if(isVolvo)
-									    				sendTo.add(ReparationData.FRAYLOG_DZ);
-									    			if(!sendTo.contains(ReparationData.MANTENIMIENTO))
-									    				sendTo.add(ReparationData.MANTENIMIENTO);
-									    			sendTo.add(ReparationData.C_PEREZ);
-									    		}
-									    		if(reparation.checkGroup(2)) { //metalurgia
-									    			if(!sendTo.contains(ReparationData.FRAYLOG_DZ))
-									    				sendTo.add(ReparationData.FRAYLOG_DZ);
-									    			if(!sendTo.contains(ReparationData.MANTENIMIENTO))
-									    				sendTo.add(ReparationData.MANTENIMIENTO);
-									    			if(!sendTo.contains(ReparationData.C_PEREZ))
-									    				sendTo.add(ReparationData.C_PEREZ);
-									    		}
-									    		if(reparation.checkGroup(3)) { //gomeria
-									    			if(!sendTo.contains(ReparationData.GOMERIA))
-									    				sendTo.add(ReparationData.GOMERIA);
-									    			if(!sendTo.contains(ReparationData.GOMERIA_2))
-									    				sendTo.add(ReparationData.GOMERIA_2);
-									    			if(!sendTo.contains(ReparationData.MANTENIMIENTO))
-									    				sendTo.add(ReparationData.MANTENIMIENTO);
-									    			if(!sendTo.contains(ReparationData.C_PEREZ))
-									    				sendTo.add(ReparationData.C_PEREZ);
-									    		}
-									    		if(reparation.checkGroup(4)) { //seguridad
-									    			if(!sendTo.contains(ReparationData.SIG))
-									    				sendTo.add(ReparationData.SIG);
-									    			if(!sendTo.contains(ReparationData.C_PEREZ))
-									    				sendTo.add(ReparationData.C_PEREZ);
-									    		}
-						        			}
-						        			Iterator<Integer> it = sendTo.iterator();
-						        			while(it.hasNext()) {
-						    	    			sendReparationEmail(sender, reparation, messages, userSessionData, it.next());
-						        			}
-							    		}else if(corporation.equals(CorporationData.SOCTMA)){
-							    			sendReparationEmail(sender, reparation, messages, userSessionData, ReparationData.SOCTMA);
-							    		}else {
-							    			sendReparationEmail(sender, reparation, messages, userSessionData, -1);
-							    		}
-									}
+								    			}
+								    		}
+								    		if(reparation.checkGroup(2)) { //metalurgia
+								    			if(!sendTo.contains(ReparationData.FRAYLOG_CN))
+								    				sendTo.add(ReparationData.FRAYLOG_CN);
+								    		}
+								    		if(reparation.checkGroup(3)) { //gomeria
+								    			sendTo.add(ReparationData.GOMERIA);
+								    			sendTo.add(ReparationData.GOMERIA_2);
+								    			sendTo.add(ReparationData.GOMERIA_LOSTOROS);
+								    		}
+								    		if(reparation.checkGroup(4)) { //seguridad
+								    			sendTo.add(ReparationData.SIG);
+								    		}
+					        			} else if(subdivision.equals("MDP - Centro")) {
+								    		if(reparation.checkGroup(1)) { //camion
+								    			if(isVolvo)
+								    				sendTo.add(ReparationData.FRAYLOG_DZ);
+								    			if(!sendTo.contains(ReparationData.MANTENIMIENTO))
+								    				sendTo.add(ReparationData.MANTENIMIENTO);
+								    			sendTo.add(ReparationData.C_PEREZ);
+								    		}
+								    		if(reparation.checkGroup(2)) { //metalurgia
+								    			if(!sendTo.contains(ReparationData.FRAYLOG_DZ))
+								    				sendTo.add(ReparationData.FRAYLOG_DZ);
+								    			if(!sendTo.contains(ReparationData.MANTENIMIENTO))
+								    				sendTo.add(ReparationData.MANTENIMIENTO);
+								    			if(!sendTo.contains(ReparationData.C_PEREZ))
+								    				sendTo.add(ReparationData.C_PEREZ);
+								    		}
+								    		if(reparation.checkGroup(3)) { //gomeria
+								    			if(!sendTo.contains(ReparationData.GOMERIA))
+								    				sendTo.add(ReparationData.GOMERIA);
+								    			if(!sendTo.contains(ReparationData.GOMERIA_2))
+								    				sendTo.add(ReparationData.GOMERIA_2);
+								    			if(!sendTo.contains(ReparationData.MANTENIMIENTO))
+								    				sendTo.add(ReparationData.MANTENIMIENTO);
+								    			if(!sendTo.contains(ReparationData.C_PEREZ))
+								    				sendTo.add(ReparationData.C_PEREZ);
+								    		}
+								    		if(reparation.checkGroup(4)) { //seguridad
+								    			if(!sendTo.contains(ReparationData.SIG))
+								    				sendTo.add(ReparationData.SIG);
+								    			if(!sendTo.contains(ReparationData.C_PEREZ))
+								    				sendTo.add(ReparationData.C_PEREZ);
+								    		}
+					        			}
+					        			Iterator<Integer> it = sendTo.iterator();
+					        			while(it.hasNext()) {
+					    	    			sendReparationEmail(sender, reparation, messages, userSessionData, it.next());
+					        			}
+						    		}else if(corporation.equals(CorporationData.SOCTMA)){
+						    			sendReparationEmail(sender, reparation, messages, userSessionData, ReparationData.SOCTMA);
+						    		}else {
+						    			sendReparationEmail(sender, reparation, messages, userSessionData, -1);
+						    		}
 								}
 							}
 						}
 					}
-				}catch(Exception e) {
-					e.printStackTrace();
 				}
 				/*if(newItems.size() > 0 && true) {
 					sendMailNewItems(data.getVehicle(), newItems, messages, userSessionData);
 				}*/
-	
+
 				if(AlertConstants.isProductionServer()) {
 					System.out.println("AGREGAR CHEQUEO. isProductionServer");
 					if((data.getName() != null) && ((data.getName().equals("80")) || (data.getName().equals("123")) || (data.getName().equals("79")) || (data.getName().equals("84")))) {
 						//UPM MDP
 						try{
 							//procesarCheckList(vehicleCheckId,messages,userSessionData);
-							
+
 							System.out.println("ThreadProcessChecklist");
-	
+
 							UserReport userReport=UserReportUtil.getHome().create();
 							UserData userData=userReport.findUserByPrimaryKey(userSessionData.getFilter().getLoginName(), userSessionData);
 						    ThreadProcessChecklist threadStart=new ThreadProcessChecklist();
@@ -880,36 +886,36 @@ public class VehicleABMFacadeBean implements SessionBean {
 						    threadStart.start();
 						}catch(Throwable th){
 							th.printStackTrace();
-							//Se guarda si o si el checklist, si hay error en la notificaciÛn
-							
+							//Se guarda si o si el checklist, si hay error en la notificaci√≥n
+
 						}
 					}else if(data.getName()!=null && (data.getName().equals("92"))&& userSessionData.getCorporationId()==CorporationData.MONTES_DE_PLATA){
 							//UPM Mercancias peligrosas
 							try{
 								//notifyChecklistMP(vehicleCheckId,messages,userSessionData);
-								
-								 
+
+
 								ThreadNotifyMPChecklist threadStart=new ThreadNotifyMPChecklist();
 								UserReport userReport=UserReportUtil.getHome().create();
 								UserData userData=userReport.findUserByPrimaryKey(userSessionData.getFilter().getLoginName(), userSessionData);
-							    
+
 							    threadStart.userSessionData=userSessionData;
 							    threadStart.vehiclechecklistId=vehicleCheckId;
 							    threadStart.user=userData.getLoginName();
 							    threadStart.password=userData.getPassword();
-							    
+
 							    threadStart.start();
 							}catch(Throwable th){
 								th.printStackTrace();
-								//Se guarda si o si el checklist, si hay error en la notificaciÛn
-								
+								//Se guarda si o si el checklist, si hay error en la notificaci√≥n
+
 							}
 						}
 					}else {
 						System.out.println("procesarCheckList("+vehicleCheckId+");");
 						procesarCheckList(vehicleCheckId, messages, userSessionData);
 					}
-			}			
+			}
 			return vehicleCheckId;
 
 		} catch (Exception exception) {
@@ -923,7 +929,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 		return null;
 
 	}
-	
+
 	private boolean doNotProccess(VehicleCheckData data) {
 		Collection<String> v = new LinkedList<String>();
 		v.add("OTP3868");
@@ -943,9 +949,9 @@ public class VehicleABMFacadeBean implements SessionBean {
 		if(v.contains(data.getVehicle().getMatricula())) {
 			Calendar c = Calendar.getInstance();
 			c.setTime(data.getDate());
-			int d = c.get(Calendar.DATE); 
-			return (d == 18 || d == 19) && c.get(Calendar.MONTH) == Calendar.JANUARY && c.get(Calendar.YEAR) == 2024;	
-					
+			int d = c.get(Calendar.DATE);
+			return (d == 18 || d == 19) && c.get(Calendar.MONTH) == Calendar.JANUARY && c.get(Calendar.YEAR) == 2024;
+
 		}
 		return false;
 	}
@@ -954,7 +960,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 	private void sendReparationEmail(MailSender sender, ReparationData reparation, Text messages, UserSessionData userSessionData, int type) throws Exception {
     	VehicleData vehicle = reparation.getVehicle();
 		String[] fileValues = generateReparationReport(reparation, type, messages, userSessionData.getCorporationId());
-    	
+
         String plate = vehicle.getMatricula();
         if(vehicle.getAlias() != null)
         	plate = vehicle.getAlias()+" ("+plate+")";
@@ -963,7 +969,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 		Collection<String> names = new LinkedList<String>();
 		files.add(fileValues[1]);
 		names.add(fileValues[0]);
-		
+
 		String user = "";
 		String email = "";
 		String corporation = "Fraylog";
@@ -988,7 +994,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 					user = map.get("reparation_user").getValue();
 				}
 				if(map.containsKey("reparation_mail")) {
-					email = map.get("reparation_mail").getValue();				
+					email = map.get("reparation_mail").getValue();
 				}
 			}else {
 				String[] listUser = user.split(",");
@@ -996,7 +1002,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 				for(int i = 0; i < listUser.length; i++) {
 					String userSN = listUser[i];
 					String emailSN = listEmail[i];
-					
+
 					Collection<String> addressTo = new LinkedList<String>();
 					Collection<String> bcc = new LinkedList<String>();
 
@@ -1005,7 +1011,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 					if(!AlertConstants.isProductionServer()) {
 						link = "http://localhost:8080/datacenter/home.jsp?reporter="+userSN+"&reparation="+reparation.getId();
 					}
-					
+
 					if(type == ReparationData.MANTENIMIENTO) {
 						//bcc.add("cepasafedrive@gmail.com");
 					}
@@ -1023,9 +1029,9 @@ public class VehicleABMFacadeBean implements SessionBean {
 					int count = 0;
 					while(!sended && count < 10) {
 						try {
-							sended = sender.sendImageMandrill(addressTo, corporation + " FDM", AlertConstants.EMAIL_SUPPORT, 
+							sended = sender.sendImageMandrill(addressTo, corporation + " FDM", AlertConstants.EMAIL_SUPPORT,
 									"Sol. de Rep. Ingresada - "+plate, body, files,
-									names, 
+									names,
 									"", "", bcc,null);
 						}catch (Exception e) {
 							e.printStackTrace();
@@ -1042,11 +1048,11 @@ public class VehicleABMFacadeBean implements SessionBean {
 			user = ReparationData.LOGIN_REPARATION_USERS[type];
 			email = ReparationData.LOGIN_REPARATION_EMAILS[type];
 		}
-		
+
 		if(!AlertConstants.isProductionServer()) {
 			email = "jrodriguez@cepasafedrive.com";
 		}
-		
+
 		Collection<String> addressTo = new LinkedList<String>();
 		Collection<String> bcc = new LinkedList<String>();
 
@@ -1055,7 +1061,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 		if(!AlertConstants.isProductionServer()) {
 			link = "http://localhost:8080/datacenter/home.jsp?reporter="+user+"&reparation="+reparation.getId();
 		}
-		
+
 		if(type == ReparationData.MANTENIMIENTO) {
 			//bcc.add("cepasafedrive@gmail.com");
 		}
@@ -1073,9 +1079,9 @@ public class VehicleABMFacadeBean implements SessionBean {
 		int count = 0;
 		while(!sended && count < 10) {
 			try {
-				sended = sender.sendImageMandrill(addressTo, corporation + " Data Center", AlertConstants.EMAIL_SUPPORT, 
+				sended = sender.sendImageMandrill(addressTo, corporation + " Data Center", AlertConstants.EMAIL_SUPPORT,
 						"Sol. de Rep. Ingresada - "+plate, body, files,
-						names, 
+						names,
 						"", "", bcc,null);
 			}catch (Exception e) {
 				e.printStackTrace();
@@ -1086,8 +1092,8 @@ public class VehicleABMFacadeBean implements SessionBean {
 
 	public String[] generateReparationReport(ReparationData reparation, int type, Text messages, int corporation) throws Exception {
 		VehicleData vehicle = reparation.getVehicle();
-		String[] fileValues = new String[2]; 
-				
+		String[] fileValues = new String[2];
+
         String plate = vehicle.getMatricula();
         if(corporation == CorporationData.FRAYLOG && vehicle.getAlias() != null)
         	plate = vehicle.getAlias()+" ("+plate+")";
@@ -1123,7 +1129,7 @@ public class VehicleABMFacadeBean implements SessionBean {
         parameters2.put("back1", AlertConstants.TEMP_DIRECTORY_REPARATIONS_FRAYLOG+"back1.jpg");
         parameters2.put("back2",AlertConstants.TEMP_DIRECTORY_REPARATIONS_FRAYLOG+"back2.jpg");
         DriverData driver = reparation.getDriver();
-        
+
         parameters2.put("dateName", messages.getText("generic.event.eventdata.date")+":");
         parameters2.put("date", Util.formatDate(reparation.getDate()));
         parameters2.put("kmsName", messages.getText("generic.reparation.kms")+":");
@@ -1150,11 +1156,11 @@ public class VehicleABMFacadeBean implements SessionBean {
         JasperReport jasperReport = (JasperReport)JRLoader.loadObject(input2);
         FileOutputStream out2 = new FileOutputStream(new File(fileValues[1]));
         JasperPrint jasperPrint = JasperFillManager.fillReport(jasperReport, parameters2, dataSourceUn);
-       
+
         JRPdfExporter exporter = new JRPdfExporter();
         exporter.setParameter(JRExporterParameter.JASPER_PRINT, jasperPrint);
         exporter.setParameter(JRExporterParameter.OUTPUT_STREAM, out2);
-        exporter.exportReport();       
+        exporter.exportReport();
         out2.flush();
         out2.close();
 
@@ -1166,29 +1172,29 @@ public class VehicleABMFacadeBean implements SessionBean {
      * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle,vehiclechecklist,dpachecklist"
 	 * @param data
 	 * @throws Exception
-	 */	
+	 */
 	public Integer createOrUpdateVehicleCheckSyngentaBR( LinkedList imagesData,VehicleCheckData data, String comment,
 			UserSessionData userSessionData,Text messages) throws Exception {
 		System.out.println("createOrUpdateVehicleCheckSyngentaBR");
 		VehicleABM vehicleABM = null;
-		try {		
-						
+		try {
+
 			VehicleABMHome home = VehicleABMUtil.getHome();
 			vehicleABM = home.create();
 			//Pasar a mayusculas y quitar punto en matriculas
-						
+
 			Integer vehicleCheckId = vehicleABM.createOrUpdateVehicleCheck(data,comment,userSessionData);
 			uploadCheckListImagesBase64(imagesData, vehicleCheckId, userSessionData);
-			
+
 			try{
-				notifyChecklistSyngentaBR(vehicleCheckId, messages, userSessionData); 
+				notifyChecklistSyngentaBR(vehicleCheckId, messages, userSessionData);
 			}catch(Throwable th){
 				th.printStackTrace();
-				//Se guarda si o si el checklist, si hay error en la notificaciÛn
-				
+				//Se guarda si o si el checklist, si hay error en la notificaci√≥n
+
 			}
-			
-			
+
+
 			return vehicleCheckId;
 
 		} catch (Exception exception) {
@@ -1202,35 +1208,35 @@ public class VehicleABMFacadeBean implements SessionBean {
 		return null;
 
 	}
-	
+
 	private void notifyChecklistSyngentaBR(Integer vehicleCheckId, Text messages,UserSessionData userSys) throws Exception {
 		// TODO Auto-generated method stub
 		VehicleReport vehicleReport=VehicleReportUtil.getHome().create();
 		VehicleReportFacade vehicleReportFacade=VehicleReportFacadeUtil.getHome().create();
 	    CorporationABM corpABM=CorporationABMUtil.getHome().create();
-	    
-		VehicleCheckData data=vehicleReport.findVehicleCheck(vehicleCheckId, userSys); 
+
+		VehicleCheckData data=vehicleReport.findVehicleCheck(vehicleCheckId, userSys);
 		VehicleData vehicleData=vehicleReport.findVehicleByPrimaryKey(data.getVehicle().getId(), userSys);
 		CheckListData checkList = vehicleReport.getCheckList(new Integer(data.getName()),userSys);
-		
+
 		String pathReport=vehicleReportFacade.reportChecklistPDFSyngentaBR("checklistSBR.pdf", checkList, data, userSys, messages);
-		 
-			
+
+
         MailSender sender = new MailSender();
 		Collection bcc = new LinkedList();
 		Collection<String> files = new LinkedList();
 		Collection<String> names = new LinkedList();
-		
+
 		files.add(pathReport);
 		names.add("checklistSBR_"+vehicleData.getMatricula()+".pdf");
-		 
+
 		String castomerEmail="f.millan@cepasafedrive.com";
-		
+
 		//bcc.add("fcarriquiry@cepasafedrive.com");
-		
+
 		Collection addressTo = new LinkedList();
 		boolean test=false;
-		
+
 		if(data.getSerie()!=null && data.getSerie().contains("@")){
 			addressTo.add(data.getSerie());
 			bcc.add(castomerEmail);
@@ -1242,7 +1248,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 		UserReport userReport=UserReportUtil.getHome().create();
 		String mail=userReport.findUserByPrimaryKey(userSys.getFilter().getLoginName(), userSys).getEmail();
 		bcc.add(mail);
-		
+
 		String body="";
 		body+="<p>Em anexo enviamos o resumo.</p>";
 		String subject= "CEPA - Placa."+vehicleData.getMatricula()+"- Checklist Syngenta";
@@ -1250,25 +1256,25 @@ public class VehicleABMFacadeBean implements SessionBean {
 		int count = 0;
 		while(!sended && count < 10 && (bcc.size()+addressTo.size())>0 ) {
 			try {
-				sended =sender.sendImageMandrill(addressTo, AlertConstants.DIGITAL_SIGNATURE_SYNGENTA_BR, AlertConstants.EMAIL_SYNGENTA_BR, subject, 
-						Util.getCompleteHTMLMail(body,AlertConstants.DIGITAL_SIGNATURE_SYNGENTA_BR, AlertConstants.EMAIL_SYNGENTA_BR), 
+				sended =sender.sendImageMandrill(addressTo, AlertConstants.DIGITAL_SIGNATURE_SYNGENTA_BR, AlertConstants.EMAIL_SYNGENTA_BR, subject,
+						Util.getCompleteHTMLMail(body,AlertConstants.DIGITAL_SIGNATURE_SYNGENTA_BR, AlertConstants.EMAIL_SYNGENTA_BR),
 						files, names, AlertConstants.EMAIL_SYNGENTA_BR,
 						AlertConstants.DIGITAL_SIGNATURE_SYNGENTA_BR, bcc, null);
 			}catch (Exception e) {
 				e.printStackTrace();
 			}
-			count++; 
+			count++;
 		}
 
-		 
+
 	}
-	
+
 	/**
 	 * @ejb.interface-method
      * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle,dpachecklist,systemaccess"
 	 * @param data
 	 * @throws Exception
-	 */	
+	 */
 	public void notifyChecklistMP(Integer vehicleCheckId, Text messages,UserSessionData userSys) throws Exception {
 		// TODO Auto-generated method stub
 
@@ -1277,11 +1283,11 @@ public class VehicleABMFacadeBean implements SessionBean {
 	    CorporationABM corpABM=CorporationABMUtil.getHome().create();
 	    CorporationReport corpReport=CorporationReportUtil.getHome().create();
 		CorporationABMFacade corpABMFacade=CorporationABMFacadeUtil.getHome().create();
-		
-		VehicleCheckData data=vehicleReport.findVehicleCheck(vehicleCheckId, userSys); 
+
+		VehicleCheckData data=vehicleReport.findVehicleCheck(vehicleCheckId, userSys);
 		VehicleData vehicleData=vehicleReport.findVehicleByPrimaryKey(data.getVehicle().getId(), userSys);
 		CheckListData checkList = vehicleReport.getCheckList(new Integer(data.getName()),userSys);
-		
+
 		String pathReport=vehicleReportFacade.reportChecklistPDFMP("checklistMP.pdf", checkList, data, userSys, messages);
 		boolean negativePoints=false;
 		Iterator<PointData> points = checkList.getSortPoints();
@@ -1301,26 +1307,26 @@ public class VehicleABMFacadeBean implements SessionBean {
 				}
 			}
 		}
-		
+
 		if(negativePoints){
-			
+
 	        MailSender sender = new MailSender();
 			Collection bcc = new LinkedList();
 			Collection<String> files = new LinkedList();
 			Collection<String> names = new LinkedList();
-			
+
 			String guiaName="Guia_No_Conforidades_Contratistas.pdf";
 			String guiaFile=AlertConstants.TEMP_DIRECTORY_DPA+"checklist/Guia_No_Conforidades_Contratistas.pdf";
-		
+
 			 files.add(pathReport);
 			 names.add("checklistMP_"+vehicleData.getMatricula()+".pdf");
-			
+
 			 Iterator iter= data.getVehicle().getDivOrgsIterator();
 			 String transportista="";
 			 Integer divId=0;
 			 if(iter.hasNext()){
 				DivOrgData divData=(DivOrgData)iter.next();
-				
+
 				Collection colAux=divData.getDivOrgLevels().getItems();
 				if(colAux!=null){
 					Iterator iter2=divData.getDivOrgLevels().getItemIterator();
@@ -1331,24 +1337,24 @@ public class VehicleABMFacadeBean implements SessionBean {
 					}
 				}
 			 }
-			 
+
 			String castomerEmail="fcarriquiry@cepasafedrive.com";
-			
+
 			//bcc.add("fcarriquiry@cepasafedrive.com");
-			
+
 			Collection addressTo = new LinkedList();
 			boolean test=false;
-			
+
 			if(SecurityConstants.isProductionServer() || test){
-				
+
 				castomerEmail="fcarriquiry@cepasafedrive.com";
-			} 
-			 
+			}
+
 			addressTo.add(castomerEmail);
-			
+
 			String body="";
 			body+="<p>Adjunto le enviamos el &uacute;ltimo checklist de mercanc&iacute;as peligrosas realizado por CEPA el d&iacute;a de hoy.</p>";
-			String subject= "CEPA -"+"Check list MP NotificaciÛn"+" "+transportista;
+			String subject= "CEPA -"+"Check list MP Notificaci√≥n"+" "+transportista;
 			boolean sended = false;
 			int count = 0;
 			while(!sended && count < 10 && (bcc.size()+addressTo.size())>0 ) {
@@ -1359,10 +1365,10 @@ public class VehicleABMFacadeBean implements SessionBean {
 				}catch (Exception e) {
 					e.printStackTrace();
 				}
-				count++; 
+				count++;
 			}
 
-		}	
+		}
 	}
 
 	/**
@@ -1370,21 +1376,21 @@ public class VehicleABMFacadeBean implements SessionBean {
      * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle,dpachecklist,systemaccess"
 	 * @param data
 	 * @throws Exception
-	 */	
+	 */
 	public void procesarCheckList(Integer vehicleCheckId,Text messages,UserSessionData userSys) throws NumberFormatException, Exception {
 		// Checklist 80 Pesados UPM y MDP
-			
+
 			VehicleReport vehicleReport=VehicleReportUtil.getHome().create();
 			VehicleReportFacade vehicleReportFacade=VehicleReportFacadeUtil.getHome().create();
 		    CorporationABM corpABM=CorporationABMUtil.getHome().create();
 		    CorporationReport corpReport=CorporationReportUtil.getHome().create();
 			CorporationABMFacade corpABMFacade=CorporationABMFacadeUtil.getHome().create();
-			
+
 		    HashMap<String,CorporationConfigData> conf= corpReport.getCorporationConfig(userSys.getCorporationId(), userSys);
-			
-			VehicleCheckData data=vehicleReport.findVehicleCheck(vehicleCheckId, userSys); 
+
+			VehicleCheckData data=vehicleReport.findVehicleCheck(vehicleCheckId, userSys);
 			VehicleData vehicleData=vehicleReport.findVehicleByPrimaryKey(data.getVehicle().getId(), userSys);
-			
+
 			boolean mp = data.getName().equals("92");
 			boolean internos = data.getName().equals("84");
 			boolean pesados = data.getName().equals("80") || internos;
@@ -1392,7 +1398,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 		    boolean preventivo = data.getName().equals("123");
 
 			boolean sendToSIGMDP=false;
-			
+
 			CheckListData checkList = vehicleReport.getCheckList(new Integer(data.getName()),userSys);
 			UnconformityDPAData unconf=new UnconformityDPAData();
 			unconf.setComment(data.getObs());
@@ -1402,11 +1408,11 @@ public class VehicleABMFacadeBean implements SessionBean {
 			unconf.setComment(data.getInspectedby());
 			unconf.setStatus(UnconformityDPAData.STATUS_NEW);
 			unconf.setType(new UnconformityTypeDPADataType(UnconformityTypeDPADataType.TYPE_VEHICLE_CHECK));
-			//Se manda notificaciÛn solo si tiene puntos o general que indica paraada inmediata, 24 o 48 horas
+			//Se manda notificaci√≥n solo si tiene puntos o general que indica paraada inmediata, 24 o 48 horas
 			boolean negativePoints=false;
 			boolean war=false;
 			boolean notifItems=false;
-			
+
 			Iterator<PointData> points = checkList.getSortPoints();
 			String obsNegativePoints="Inspector:"+data.getInspectedby();
 			String lastPoint="";
@@ -1430,16 +1436,16 @@ public class VehicleABMFacadeBean implements SessionBean {
 							if(conf.containsKey("unconformities_cc_items") && conf.get("unconformities_cc_items").getValue().contains(item.getId().toString())){
 								notifItems=true;
 							}
-							
-							
+
+
 							if(obsNegativePoints.length()>0){
 								obsNegativePoints+="-";
 							}
 							if(!lastPoint.equals(messages.getText(point.getText()))){
-								obsNegativePoints+=" CategorÌa:"+messages.getText(point.getText())+"\n\r";
+								obsNegativePoints+=" Categor√≠a:"+messages.getText(point.getText())+"\n\r";
 								lastPoint=messages.getText(point.getText());
 							}
-							
+
 							pointComment=data.getValueFromCommentPoint(point.getId());
 							UnconformityItemDPAData itemU=new UnconformityItemDPAData();
 							itemU.setComment(pointComment);
@@ -1450,8 +1456,8 @@ public class VehicleABMFacadeBean implements SessionBean {
 							String tag=data.getValueTagFromItem(item.getId());
 							cal.add( Calendar.DATE, tag!=null?Integer.valueOf(tag):0);
 							itemU.setExpirity(cal.getTime());
-							obsNegativePoints+=" Item:"+messages.getText(item.getText())+",Obs:"+pointComment+",Tiempo ReparaciÛn:"+communication.administration.corporation.util.Util.getTiempoReparacion(checkList.getId(), tag!=null?Integer.valueOf(tag):-1)+"\n\r";
-									
+							obsNegativePoints+=" Item:"+messages.getText(item.getText())+",Obs:"+pointComment+",Tiempo Reparaci√≥n:"+communication.administration.corporation.util.Util.getTiempoReparacion(checkList.getId(), tag!=null?Integer.valueOf(tag):-1)+"\n\r";
+
 							//if(tag!=null && (Integer.valueOf(tag)>-1 && Integer.valueOf(tag) <3  )){
 							unconf.getItems().add(itemU);//Se guarda siempre
 							negativePoints=true;
@@ -1462,9 +1468,9 @@ public class VehicleABMFacadeBean implements SessionBean {
 							if(seguimiento){
 								negativePoints=true;//Si es Seguimiento en ruta, no hay parada y va siempre la notificacion.
 								war=false;
-								
+
 							}
-							
+
 							if(userSys.isCorporation(CorporationData.MONTES_DE_PLATA)){
 								if(war || conf.get("unconformities_cc_items").getValue().contains(item.getId().toString())){
 									sendToSIGMDP=true;
@@ -1474,7 +1480,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 					}
 				}
 			}
-			
+
 			if(negativePoints){
 				if(pesados && unconf.getItems().size() > 0){//Solo checklist pesados genera no conformidad
 					corpABM.createOrUpdateUnconformityDPA(unconf, userSys);
@@ -1482,24 +1488,24 @@ public class VehicleABMFacadeBean implements SessionBean {
 
 		        String fileName=data.getVehicleCheckId()+"_"+vehicleData.getMatricula().replace(" ", "_")+".pdf";
 		        String file = vehicleReportFacade.reportChecklistPDF(fileName, checkList, data, userSys, messages);
-		        
+
 		        MailSender sender = new MailSender();
 				Collection bcc = new LinkedList();
 				Collection<String> files = new LinkedList();
 				Collection<String> names = new LinkedList();
-				
+
 				String guiaName="Guia_No_Conforidades_Contratistas.pdf";
 				String guiaFile=AlertConstants.TEMP_DIRECTORY_DPA+"checklist/Guia_No_Conforidades_Contratistas.pdf";
-				
+
 				files.add(file);
 				names.add(fileName);
-				
-				
+
+
 				if(pesados){
 					files.add(guiaFile);
 					names.add(guiaName);
 				}
-				
+
 				 Iterator iter= data.getVehicle().getDivOrgsIterator();
 				 String transportista="";
 				 Integer divId=0;
@@ -1516,9 +1522,9 @@ public class VehicleABMFacadeBean implements SessionBean {
 						}else{
 							transportista="---";
 						}
-				
+
 					}
-					
+
 					Collection colAux=divData.getDivOrgLevels().getItems();
 					if(colAux!=null && !transportista.equals("---")){
 						Iterator iter2=divData.getDivOrgLevels().getItemIterator();
@@ -1529,11 +1535,11 @@ public class VehicleABMFacadeBean implements SessionBean {
 						}
 					}
 				 }
-				 
-				
+
+
 				 //En este campo se carga el ID del contratista en SIG.
 				Integer contractorIDSIG=0;
-				 
+
 				String contractorMail=vehicleReport.getContractorDataMail(divId, userSys);
 				if(contractorMail != null)
 					contractorMail = contractorMail.replaceAll(";", ",");
@@ -1541,10 +1547,10 @@ public class VehicleABMFacadeBean implements SessionBean {
 				if(userSys.isCorporation(CorporationData.MONTES_DE_PLATA) && sendToSIGMDP){
 					//Integracion con sistema SIG de Montes del Plata
 					corpABM.saveMDPSIGAsyncCall(contractorIDSIG,transportista,driver,data.getDate(),file, obsNegativePoints, vehicleData.getMatricula(), Integer.valueOf(data.getName()), data.getVehicleCheckId(), userSys);
-			 	} 
-				
+			 	}
+
 				Collection addressTo = new LinkedList();
-				
+
 				UserReport userReport=UserReportUtil.getHome().create();
 				//Copia al instructor que crea el checklist
 				String mail=userReport.findUserByPrimaryKey(userSys.getFilter().getLoginName(), userSys).getEmail();
@@ -1552,9 +1558,9 @@ public class VehicleABMFacadeBean implements SessionBean {
 
 				if(userSys.isCorporation(CorporationData.COFUSA)) {
 					if(data.getResult() == 2) {
-						addressTo.add("javier.tejera@ciaforestal.com.uy");	
-						addressTo.add("denisse.quintana@ciaforestal.com.uy"); 
-						addressTo.add("mauricio.demello@ciaforestal.com.uy");	
+						addressTo.add("javier.tejera@ciaforestal.com.uy");
+						addressTo.add("denisse.quintana@ciaforestal.com.uy");
+						addressTo.add("mauricio.demello@ciaforestal.com.uy");
 					}
 				} else if(!mp || userSys.getCorporationId()!=CorporationData.MONTES_DE_PLATA){
 					if(contractorMail!=null && contractorMail.trim().length()>0){
@@ -1565,18 +1571,18 @@ public class VehicleABMFacadeBean implements SessionBean {
 									addressTo.add(aux[i]);
 								}
 							}else {
-								addressTo.add(aux[i]); 
+								addressTo.add(aux[i]);
 							}
 						}
 					}
-					
-				
-						
+
+
+
 					if(seguimiento &&  userSys.isCorporation(CorporationData.MONTES_DE_PLATA)){
 						bcc.add("sebastian.sorondo@montesdelplata.com.uy");
-						
+
 					}
-					
+
 					if(notifItems){
 						//Solo mails a personas en la lista de los que reciben si se marco determinado item
 						//Pero ademas hay que filtrar que sean los responsables del contratista
@@ -1587,9 +1593,9 @@ public class VehicleABMFacadeBean implements SessionBean {
 								String[] aux2=contractorMail.split(",");
 								addressTo.add(aux[i]);
 							}
-						}	
+						}
 					}
-					
+
 					if(conf.containsKey("unconformities_email_cc_all") && !preventivo){
 						String[] aux=conf.get("unconformities_email_cc_all").getValue().split(",");
 						for(int i =0; i<aux.length;i++) {
@@ -1604,15 +1610,15 @@ public class VehicleABMFacadeBean implements SessionBean {
 							}
 						}
 					}
-					
+
 				}else{
 					//Es mercancias peligrosas y es montes del plata
 					addressTo.add("gonzalo.montandon@montesdelplata.com.uy");
 					addressTo.add("pablo.acosta@montesdelplata.com.uy");
 				}
-				
-					
-				 
+
+
+
 				String body="";
 				if(pesados){//Checklist pesados
 					addressTo.add("dlinale@cepamobility.com");
@@ -1625,8 +1631,8 @@ public class VehicleABMFacadeBean implements SessionBean {
 				} else if (preventivo) {
 			    	body = "<p>Estimado Contratista adjunto le enviamos la faltas/fallas del veh&iacute;culo " + data.getVehicle().getMatricula() + " verificadas en el Chequeo Preventivo realizado por CEPA el d&iacute;a de hoy.</p><br/>" + "Muchas Gracias<br/>";
 				}
-				String corpStr=userSys.getCorporationId()==CorporationData.MONTES_DE_PLATA?"MDP":userSys.getCorporationId()==CorporationData.FORESTALORIENTAL?"UPM":userSys.getCorporationId()==CorporationData.WEYERHAEUSER?"Lumin":userSys.getCorporationId()==CorporationData.COFUSA?"COFUSA":"";		
-			    String subject = pesados ? "CEPA -" + corpStr + " Check list NotificaciÛn" + (internos ? " INTERNOS " : "") : "CEPA - Seguimiento En Ruta - NotificaciÛn";
+				String corpStr=userSys.getCorporationId()==CorporationData.MONTES_DE_PLATA?"MDP":userSys.getCorporationId()==CorporationData.FORESTALORIENTAL?"UPM":userSys.getCorporationId()==CorporationData.WEYERHAEUSER?"Lumin":userSys.getCorporationId()==CorporationData.COFUSA?"COFUSA":"";
+			    String subject = pesados ? "CEPA -" + corpStr + " Check list Notificaci√≥n" + (internos ? " INTERNOS " : "") : "CEPA - Seguimiento En Ruta - Notificaci√≥n";
 			    if (preventivo) {
 			        subject = "CEPA -" + corpStr + " Chequeo Preventivo";
 			    }
@@ -1640,115 +1646,115 @@ public class VehicleABMFacadeBean implements SessionBean {
 					}catch (Exception e) {
 						e.printStackTrace();
 					}
-					count++; 
+					count++;
 				}
-				
+
 				if(seguimiento){
 					corpABMFacade.newSeguimientoRuta(vehicleData, checkList, data, userSys);
-				} 
+				}
 
 				//CorporationReportFacade corpReport=CorporationReportFacadeUtil.getHome().create();
 			//corpReport.sendDCMessageObserver(userSys.getFullName()+"_C_"+data.getVehicle().getId()+"_Checklist no aprobado "+data.getVehicle().getMatricula(), userSys);
-			
+
 		}
 	}
-	
-		
+
+
 
 	/**
 	 * @ejb.interface-method
      * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle,vehiclechecklist"
 	 * @param data
 	 * @throws Exception
-	 */	
+	 */
 	public Integer uploadCheckListImages(List images,Integer checkId, UserSessionData userRequest) throws Exception {
 
 		VehicleABM vehicleABM = null;
-		try {		
-			
-			
+		try {
+
+
 			VehicleABMHome home = VehicleABMUtil.getHome();
 			vehicleABM = home.create();
-			
+
 			vehicleABM.uploadCheckListImages(images, checkId, userRequest);
 
 		} catch (Exception exception) {
 			Object[] p = {};
-			
+
 			handler.handleException("uploadCheckListImages", exception, userRequest,p);
 	    }
 		return null;
 
 	}
-	
+
 	/**
 	 * @ejb.interface-method
      * @ejb.permission role-name = "administrator,dpachecklist,vehiclecreate,drivercreatevehicle,vehiclechecklist"
 	 * @param data
 	 * @throws Exception
-	 */	
+	 */
 	public Integer uploadCheckListImagesBase64(List images,Integer checkId, UserSessionData userRequest) throws Exception {
 
 		VehicleABM vehicleABM = null;
-		try {		
-			
-			
+		try {
+
+
 			VehicleABMHome home = VehicleABMUtil.getHome();
 			vehicleABM = home.create();
-			
+
 			vehicleABM.uploadCheckListImagesBase64(images, checkId, userRequest);
 
 		} catch (Exception exception) {
 			Object[] p = {};
-			
+
 			handler.handleException("uploadCheckListImages", exception, userRequest,p);
 	    }
 		return null;
 
 	}
-	
+
 	/**
 	 * @ejb.interface-method
      * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle,vehiclechecklist"
 	 * @param data
 	 * @throws Exception
-	 */	
+	 */
 	public Integer deleteCheckListImages(List images,Integer checkId, UserSessionData userRequest) throws Exception {
 
 		VehicleABM vehicleABM = null;
-		try {		
-			
-			
+		try {
+
+
 			VehicleABMHome home = VehicleABMUtil.getHome();
 			vehicleABM = home.create();
-			
+
 			vehicleABM.deleteCheckListImages(images, checkId, userRequest);
 
 		} catch (Exception exception) {
 			Object[] p = {};
-			
+
 			handler.handleException("deleteCheckListImages", exception, userRequest,p);
 	    }
 		return null;
 
 	}
-	
-	
+
+
 	/**
 	 * @ejb.interface-method
      * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle"
 	 * @param data
 	 * @throws Exception
-	 */	
-	public void createCheckLists(Collection list, UserSessionData userSessionData) 
+	 */
+	public void createCheckLists(Collection list, UserSessionData userSessionData)
 		throws Exception {
-		
+
 		VehicleABM vehicleABM = null;
-		try {		
-						
+		try {
+
 			VehicleABMHome home = VehicleABMUtil.getHome();
 			vehicleABM = home.create();
-			
+
 			Iterator it = list.iterator();
 			while(it.hasNext()) {
 				vehicleABM.createOrUpdateVehicleCheck((VehicleCheckData) it.next(),"Inserted by File",userSessionData);
@@ -1760,28 +1766,28 @@ public class VehicleABMFacadeBean implements SessionBean {
 			handler.handleException("createCheckLists", exception, userSessionData,p);
 	    }
 	}
-    
+
     /**
      * @ejb.interface-method
      * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle,vehiclechecklist"
      * @param data
      * @throws Exception
-     */ 
+     */
     public Integer createOrUpdateTruckCheck(VehicleCheckData data, Collection trailers ,
     		String comment,UserSessionData userSessionData) throws Exception {
 
         VehicleABM vehicleABM = null;
-        try {       
-             
-            
+        try {
+
+
             VehicleABMHome home = VehicleABMUtil.getHome();
             vehicleABM = home.create();
-            
+
             Integer vehicleCheckId = vehicleABM.createOrUpdateVehicleCheck(data,comment,userSessionData);
-            
+
             Iterator it = trailers.iterator();
             while(it.hasNext()) {
-                TrailerCheckData trailerData = (TrailerCheckData)it.next(); 
+                TrailerCheckData trailerData = (TrailerCheckData)it.next();
                 vehicleABM.createOrUpdateTrailerCheck(trailerData,vehicleCheckId,comment,userSessionData);
             }
 
@@ -1796,21 +1802,21 @@ public class VehicleABMFacadeBean implements SessionBean {
         }
         return null;
     }
-    
+
     /**
      * @ejb.interface-method
      * @ejb.permission role-name = "administrator,vehiclecreate,drivercreatevehicle,vehiclechecklist"
      * @param data
      * @throws Exception
-     */ 
+     */
     public Integer createOrUpdateVehiclePursuitRoute(VehiclePursuitRouteData data, String comment,
     		UserSessionData userSessionData) throws Exception {
 
         VehicleABM vehicleABM = null;
-        try {       
-                        
+        try {
+
             VehicleABMHome home = VehicleABMUtil.getHome();
-            vehicleABM = home.create(); 
+            vehicleABM = home.create();
             return vehicleABM.createOrUpdateVehiclePursuitRoute(data,comment,userSessionData);
 
         } catch (Exception exception) {
@@ -1821,21 +1827,21 @@ public class VehicleABMFacadeBean implements SessionBean {
         }
         return null;
     }
-    
+
 	/**
 	 * @ejb.interface-method view-type = "remote"
-	 * @ejb.transaction type="Required" 
+	 * @ejb.transaction type="Required"
      * @ejb.permission role-name = "administrator,cepascheduleactivitydelete,cepascheduleactivityregistrydelete,cdactivitydelete,vehiclechecklist"
 	 * @param data
 	 * @throws Exception
 	 */
 	public void deleteVehiclePursuitRoute(Integer id, String comment,
 			UserSessionData userSessionData) throws Exception {
-		try{	
-						
+		try{
+
 			VehicleABM vehicleABM=VehicleABMUtil.getHome().create();
-			vehicleABM.deleteVehiclePursuitRoute(id,comment,userSessionData);		
-			
+			vehicleABM.deleteVehiclePursuitRoute(id,comment,userSessionData);
+
 		} catch (Exception exception) {
 			Object[]p = new Object[2];
 			p[0] = id;
@@ -1843,21 +1849,21 @@ public class VehicleABMFacadeBean implements SessionBean {
 			handler.handleException("deleteVehiclePursuitRoute", exception, userSessionData, p);
 		}
 	}
-	
+
 	/**
 	 * @ejb.interface-method view-type = "remote"
-	 * @ejb.transaction type="Required" 
+	 * @ejb.transaction type="Required"
      * @ejb.permission role-name = "administrator,cepascheduleactivitydelete,cepascheduleactivityregistrydelete,cdactivitydelete"
 	 * @param data
 	 * @throws Exception
 	 */
 	public void deleteVehicleCheck(Integer id, String comment,
 			UserSessionData userSessionData) throws Exception {
-		try{	
-						
+		try{
+
 			VehicleABM vehicleABM=VehicleABMUtil.getHome().create();
 			vehicleABM.deleteVehicleCheck(id,comment,userSessionData);
-			
+
 		} catch (Exception exception) {
 			Object[]p=new Object[2];
 			p[0] = id;
@@ -1865,17 +1871,17 @@ public class VehicleABMFacadeBean implements SessionBean {
 			handler.handleException("deleteVehicleCheck", exception, userSessionData,p);
 		}
 	}
-		
+
     /**
      * @ejb.interface-method
-     * @ejb.transaction type="Required" 
+     * @ejb.transaction type="Required"
      * @ejb.permission role-name = "administrator,vehiclecreate"
      * @throws Exception
      */
     public void createVehicles(Collection vehicles, String note, UserSessionData userSessionData) throws Exception {
         VehicleABM vehicleABM = null;
-        try {       
-            
+        try {
+
             Iterator it = vehicles.iterator();
             CorporationData corp = new CorporationData(userSessionData.getFilter().getCorporationId(),null,null,null,null,null);
             while(it.hasNext()) {
@@ -1885,22 +1891,22 @@ public class VehicleABMFacadeBean implements SessionBean {
                 if (valid != null) {
                     throw new InvalidDataException("createVehicles",valid);
                 }
-    
+
                 VehicleABMHome home = VehicleABMUtil.getHome();
-                vehicleABM = home.create();      
+                vehicleABM = home.create();
                 try {
-                	String comment = (note == null || note.length() == 0) ? "Inserted by file" : note; 
+                	String comment = (note == null || note.length() == 0) ? "Inserted by file" : note;
                     vehicleABM.vehicleCreate(data, userSessionData,comment);
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
             }
-    
+
         } catch (Exception exception) {
         	Object[]p=new Object[1];
         	p[0] = vehicles;
             handler.handleException("createVehicles",exception,userSessionData,p);
-        } 
+        }
     }
 
     /**
@@ -1908,11 +1914,11 @@ public class VehicleABMFacadeBean implements SessionBean {
      * @ejb.permission role-name = "administrator,vehicleupdate,drivervehicleupdate,dpachecklist"
      * @throws Exception
      */
-    public void associateTrailer(Integer vehicleId, Collection trailers, 
+    public void associateTrailer(Integer vehicleId, Collection trailers,
     		UserSessionData userSessionData) throws Exception {
         try{
             VehicleABMHome home = VehicleABMUtil.getHome();
-            VehicleABM vehicleABM = home.create();      
+            VehicleABM vehicleABM = home.create();
             Iterator it = trailers.iterator();
             while(it.hasNext()) {
                 vehicleABM.associateTrailer(vehicleId, new Integer((String)it.next()), userSessionData);
@@ -1922,7 +1928,7 @@ public class VehicleABMFacadeBean implements SessionBean {
         	p[0] = vehicleId;
         	p[1] = trailers;
             handler.handleException("associateTrailer",e,userSessionData,p);
-        }   
+        }
     }
 
     /**
@@ -1930,11 +1936,11 @@ public class VehicleABMFacadeBean implements SessionBean {
      * @ejb.permission role-name = "administrator,vehicleupdate,drivervehicleupdate,dpachecklist"
      * @throws Exception
      */
-    public void desassociateTrailer(Integer vehicleId, Collection trailers, 
+    public void desassociateTrailer(Integer vehicleId, Collection trailers,
     		UserSessionData userSessionData) throws Exception {
         try{
             VehicleABMHome home = VehicleABMUtil.getHome();
-            VehicleABM vehicleABM = home.create();      
+            VehicleABM vehicleABM = home.create();
             Iterator it = trailers.iterator();
             while(it.hasNext()) {
                 vehicleABM.desassociateTrailer(vehicleId, new Integer((String)it.next()), userSessionData);
@@ -1944,7 +1950,7 @@ public class VehicleABMFacadeBean implements SessionBean {
         	p[0] = vehicleId;
         	p[1] = trailers;
             handler.handleException("desassociateTrailer",e,userSessionData,p);
-        }   
+        }
     }
 
     /**
@@ -1956,13 +1962,13 @@ public class VehicleABMFacadeBean implements SessionBean {
     	throws Exception {
         try{
             VehicleABMHome home = VehicleABMUtil.getHome();
-            VehicleABM vehicleABM = home.create();      
-            return vehicleABM.createTrailer(trailer,userSessionData); 
+            VehicleABM vehicleABM = home.create();
+            return vehicleABM.createTrailer(trailer,userSessionData);
         } catch (Exception e) {
         	Object[] p = new Object[1];
         	p[0] = trailer;
             handler.handleException("createTrailer",e,userSessionData,p);
-        }   
+        }
         return null;
     }
 
@@ -1974,13 +1980,13 @@ public class VehicleABMFacadeBean implements SessionBean {
     public void updateTrailer(TrailerData trailer, UserSessionData userSessionData) throws Exception {
         try{
             VehicleABMHome home = VehicleABMUtil.getHome();
-            VehicleABM vehicleABM = home.create();      
-            vehicleABM.updateTrailer(trailer,userSessionData); 
+            VehicleABM vehicleABM = home.create();
+            vehicleABM.updateTrailer(trailer,userSessionData);
         } catch (Exception e) {
         	Object[] p = new Object[1];
         	p[0] = trailer;
             handler.handleException("updateTrailer",e,userSessionData,p);
-        }   
+        }
     }
 
     /**
@@ -2000,7 +2006,7 @@ public class VehicleABMFacadeBean implements SessionBean {
         	Object[]p = new Object[1];
         	p[0] = ids;
             handler.handleException("deleteTrailer",e, userSessionData,p);
-        }   
+        }
     }
 
     /**
@@ -2021,9 +2027,9 @@ public class VehicleABMFacadeBean implements SessionBean {
         	p[0] = ids;
         	p[1] = exclusionDate;
         	p[2] = string;
-        	
+
             handler.handleException("trailerExclude",e,userSessionData,p);
-        }   
+        }
     }
 
     /**
@@ -2044,11 +2050,11 @@ public class VehicleABMFacadeBean implements SessionBean {
         	p[0] = ids;
         	p[1] = string;
             handler.handleException("trailerInclude",e,userSessionData,p);
-        }   
+        }
     }
-    
+
     /**
-     * 
+     *
      * @param items
      * @param item
      * @return
@@ -2056,7 +2062,7 @@ public class VehicleABMFacadeBean implements SessionBean {
      */
     @SuppressWarnings("unused")
 	private boolean contains(Collection items, Item item) {
-		boolean contiene = false;	
+		boolean contiene = false;
 	   	Iterator itItems = items.iterator();
 	 	// Tengo que fijarme si el orden del item es el correcto:
 	 	while (itItems.hasNext() && ! contiene)
@@ -2066,11 +2072,11 @@ public class VehicleABMFacadeBean implements SessionBean {
 		}
 		return contiene;
 	}
-    
-    
+
+
   /*  private void addItemAlert(Collection items, Integer CheckId, UserSessionData userSessionData) {
 		data.setVehicleCheckId(CheckId);
-	
+
 		AlertData alert;
 		try {
 			alert = AlertABMBean.findAlertByType(userSessionData.getFilter().getCorporationId(),
@@ -2082,17 +2088,17 @@ public class VehicleABMFacadeBean implements SessionBean {
 				String[] values = ((String)it.next()).split("-");
 				if(values.length == 2) {
 					itemValue = (ItemValueStr) it.next();
-					// Solo doy de alta alertas para aquellos items que la fecha l√≠mite de reparaci√≥n es distinta de null
+					// Solo doy de alta alertas para aquellos items que la fecha l√É¬≠mite de reparaci√É¬≥n es distinta de null
 					if (values[2] !=null) {
 
 					Item item = itemValue.getItem();
 					VehicleChecklistItemAlertData alertCheck = VehicleCheckllistItemsAlertHandler.findAlertByVehicleCheckItem(v.getVehicle().getId(),item.getId());
-					
+
 					if (alertCheck == null) {
 						VehicleCheckllistItemsAlertHandler.createVehicleChecklistItemAlert
 						(new VehicleChecklistItemAlertData(null,alert,v.getVehicleCheckData(),itemValue.getItem().getId(),new Date()));
-					}	
-				} 
+					}
+				}
 			}
 		}
 		catch (Exception e) {
@@ -2102,20 +2108,20 @@ public class VehicleABMFacadeBean implements SessionBean {
 			}
 			//}
 		}
-    
-    
+
+
     private void deleteItemAlert(Collection items,VehicleCheck v,UserSessionData userSessionData) {
 
-    	// Elimino alertas que corresponden a checklist del mismo vehiculo para items del formulario de checklist que no fueron seteados en el actual checklist		
-    	try {	
+    	// Elimino alertas que corresponden a checklist del mismo vehiculo para items del formulario de checklist que no fueron seteados en el actual checklist
+    	try {
     	VehicleReportHome home = VehicleReportUtil.getHome();
-    	VehicleReport vehicleReport = home.create();      
+    	VehicleReport vehicleReport = home.create();
         CheckListData checklist = vehicleReport.findVehicleCheckList(userSessionData);
-        
+
         Iterator it1= checklist.getPoints().iterator();
     	Point point;
     	Iterator itItems;
-    		
+
         while (it1.hasNext()) {
         	point = (Point)it1.next();
        	 itItems = point.getItems().iterator();
@@ -2128,12 +2134,12 @@ public class VehicleABMFacadeBean implements SessionBean {
      			VehicleChecklistItemAlertData alertCheck = VehicleCheckllistItemsAlertHandler.findAlertByVehicleCheckItem(v.getVehicle().getId(),itemCheck.getId());
      			if (alertCheck != null) {
      				VehicleCheckllistItemsAlertHandler.deleteVehicleChecklistItemAlert(alertCheck);
-     			}	
+     			}
      		}
      		else {
      			System.out.println("NO Borro " + itemCheck.getId());
      		}
-     		
+
         	}
         }
     	} catch (Exception e) {
@@ -2148,37 +2154,37 @@ public class VehicleABMFacadeBean implements SessionBean {
 	 * @throws InvalidDataException
 	 * @throws CommunicationProblemException
 	 * @throws DeslogedException
-	 */	
+	 */
 	/*public void vehicleChecklistAlertGenerate(VehicleCheckData data,Integer vehicleCheckId,
 			UserSessionData userSessionData) throws Exception {
 
-	// Genero alertas	
+	// Genero alertas
 	AlertData alert1 = AlertABMBean.findAlertByType(userSessionData.getFilter().getCorporationId(),
 				AlertConstants.VEHICLECHECKLIST);
-	
+
 	Collection to = alert1.getTargets(userSessionData.getFilter().getCorporationId());
-	
+
 	String body = "BODY Alerta general de Checklist";
-	
+
 	AlertHandlerFactory af = new AlertHandlerFactory();
 	af.getAlertHandler(AlertConstants.VEHICLECHECKLIST,to,
 			body, alert1.getSubject())
-			.alertar();		
-	
+			.alertar();
+
 	// Agrego Alerta Puntual
 	Session session=HibernateUtil.currentSession();
 	VehicleCheck v = new VehicleCheck();
 	session.load(v,vehicleCheckId);
-	
+
 	addItemAlert(data,vehicleCheckId,v,userSessionData);
-	
+
 	deleteItemAlert(data.getItemValueSet(),v,userSessionData);
 
 	System.out.println("FIN CHECKLIST");
 
 	}
 	*/
-	
+
 
     /**
      * @ejb.interface-method
@@ -2187,21 +2193,21 @@ public class VehicleABMFacadeBean implements SessionBean {
      */
     public void createUnconformity(Integer vehicleId, UnconformityData unconformity, UserSessionData userSessionData) throws Exception {
     	VehicleABM vehicleABM = null;
-        try{    
-           
+        try{
+
             VehicleABMHome home = VehicleABMUtil.getHome();
-            vehicleABM = home.create();      
+            vehicleABM = home.create();
             vehicleABM.createUnconformity(vehicleId,unconformity,userSessionData);
         } catch (Exception exception) {
         	Object[] parameters = new Object[2];
         	parameters[0] = vehicleId;
         	parameters[1] =  unconformity;
             handler.handleException("createUnconformity",exception, userSessionData, parameters);
-        } 
+        }
     }
-    
 
-    
+
+
     /**
      * @ejb.interface-method
      * @ejb.permission role-name = "administrator,vehicleupdate"
@@ -2209,11 +2215,11 @@ public class VehicleABMFacadeBean implements SessionBean {
      */
     public void deleteUnconformity(Integer vehicleId, Collection unconformities, UserSessionData userSessionData) throws Exception {
     	VehicleABM vehicleABM = null;
-        try{    
-           
+        try{
+
             VehicleABMHome home = VehicleABMUtil.getHome();
-            vehicleABM = home.create();      
-            
+            vehicleABM = home.create();
+
             Iterator it = unconformities.iterator();
             while(it.hasNext()) {
             	vehicleABM.deleteUnconformity(vehicleId,(String)it.next(),userSessionData);
@@ -2223,9 +2229,9 @@ public class VehicleABMFacadeBean implements SessionBean {
         	parameters[0] = vehicleId;
         	parameters[1] = unconformities;
             handler.handleException("deleteUnconformity",exception, userSessionData, parameters);
-        } 
+        }
     }
-    
+
     /**
      * Contratos de Alquiler de los Vehiculos (Allergan)
      * @ejb.interface-method
@@ -2234,33 +2240,33 @@ public class VehicleABMFacadeBean implements SessionBean {
      */
     public void createVehicleContract(Integer vehicleId, VehicleContractData contract, UserSessionData userSessionData) throws Exception {
     	VehicleABM vehicleABM = null;
-        try{    
-           
+        try{
+
             VehicleABMHome home = VehicleABMUtil.getHome();
-            vehicleABM = home.create();      
+            vehicleABM = home.create();
             vehicleABM.createVehicleContract(vehicleId,contract,userSessionData);
         } catch (Exception exception) {
         	Object[] parameters = new Object[2];
         	parameters[0] = vehicleId;
         	parameters[1] =  contract;
             handler.handleException("createVehicleContract",exception, userSessionData, parameters);
-        } 
+        }
     }
-    
+
     /**
      * Contratos de Alquiler de los Vehiculos (Allergan)
      * @ejb.interface-method
      * @ejb.permission role-name = "administrator,vehicleupdate"
      * @throws Exception
      */
-    public void createVehiclesContracts(Collection<Integer> vehiclesId, Date date, 
+    public void createVehiclesContracts(Collection<Integer> vehiclesId, Date date,
     		VehicleContractDataType type, UserSessionData userSessionData) throws Exception {
     	VehicleABM vehicleABM = null;
-        try{    
-           
+        try{
+
             VehicleABMHome home = VehicleABMUtil.getHome();
-            vehicleABM = home.create();      
-            
+            vehicleABM = home.create();
+
             if (vehiclesId != null && vehiclesId.size() > 0){
             	Iterator it = vehiclesId.iterator();
             	while(it.hasNext()) {
@@ -2277,9 +2283,9 @@ public class VehicleABMFacadeBean implements SessionBean {
         	parameters[1] = date;
         	parameters[2] = type;
             handler.handleException("createVehiclesContracts",exception, userSessionData, parameters);
-        } 
+        }
     }
-    
+
     /**
      * @ejb.interface-method
      * @ejb.permission role-name = "administrator,vehicleupdate"
@@ -2287,11 +2293,11 @@ public class VehicleABMFacadeBean implements SessionBean {
      */
     public void deleteVehicleContract(Integer vehicleId, Collection contracts, UserSessionData userSessionData) throws Exception {
     	VehicleABM vehicleABM = null;
-        try{    
-           
+        try{
+
             VehicleABMHome home = VehicleABMUtil.getHome();
-            vehicleABM = home.create();      
-            
+            vehicleABM = home.create();
+
             Iterator it = contracts.iterator();
             while(it.hasNext()) {
             	vehicleABM.deleteVehicleContract(vehicleId,(String)it.next(),userSessionData);
@@ -2301,9 +2307,9 @@ public class VehicleABMFacadeBean implements SessionBean {
         	parameters[0] = vehicleId;
         	parameters[1] = contracts;
             handler.handleException("deleteVehicleContract",exception, userSessionData, parameters);
-        } 
+        }
     }
-    
+
     /**
      * @ejb.interface-method
      * @ejb.permission role-name = "administrator,vehicleupdate"
@@ -2313,7 +2319,7 @@ public class VehicleABMFacadeBean implements SessionBean {
         try{
         	VehicleABM vehicleABM = null;
             VehicleABMHome home = VehicleABMUtil.getHome();
-            vehicleABM = home.create();      
+            vehicleABM = home.create();
             Iterator it = checks.iterator();
             while(it.hasNext()) {
             	vehicleABM.deleteSimpleVehicleCheck(new Integer((String)it.next()),userSessionData);
@@ -2323,7 +2329,7 @@ public class VehicleABMFacadeBean implements SessionBean {
             handler.handleException("deleteSimpleVehicleCheck",e, userSessionData, parameters);
         }
     }
-    
+
     /**
      * @ejb.interface-method
      * @ejb.permission role-name = "administrator,vehicleupdate"
@@ -2332,7 +2338,7 @@ public class VehicleABMFacadeBean implements SessionBean {
         try{
         	VehicleABM vehicleABM = null;
             VehicleABMHome home = VehicleABMUtil.getHome();
-            vehicleABM = home.create();      
+            vehicleABM = home.create();
             vehicleABM.createVehicleMaintenance(data,userSessionData);
         }catch(Exception e) {
 			Object[] parameters = {data};
@@ -2348,7 +2354,7 @@ public class VehicleABMFacadeBean implements SessionBean {
         try{
         	Calendar c = Calendar.getInstance();
         	VehicleABM vehicleABM = VehicleABMUtil.getHome().create();
-        	
+
         	Iterator it = maintenances.iterator();
     		CorporationReport corporationReport = CorporationReportUtil.getHome().create();
     		CorporationABM corporationABM = CorporationABMUtil.getHome().create();
@@ -2384,7 +2390,7 @@ public class VehicleABMFacadeBean implements SessionBean {
         try{
         	VehicleABM vehicleABM = null;
             VehicleABMHome home = VehicleABMUtil.getHome();
-            vehicleABM = home.create();      
+            vehicleABM = home.create();
             vehicleABM.updateVehicleMaintenance(data,userSessionData);
         }catch(Exception e) {
 			Object[] parameters = {data};
@@ -2398,8 +2404,8 @@ public class VehicleABMFacadeBean implements SessionBean {
      */
     public void deleteVehicleMaintenance(Collection maintenances, UserSessionData userSessionData) throws Exception {
         try{
-        	VehicleABM vehicleABM = VehicleABMUtil.getHome().create(); 
-            
+        	VehicleABM vehicleABM = VehicleABMUtil.getHome().create();
+
 			CorporationABMFacade corpABMFacade=CorporationABMFacadeUtil.getHome().create();
             Iterator it = maintenances.iterator();
             while(it.hasNext()) {
@@ -2420,7 +2426,7 @@ public class VehicleABMFacadeBean implements SessionBean {
         try{
         	VehicleABM vehicleABM = null;
             VehicleABMHome home = VehicleABMUtil.getHome();
-            vehicleABM = home.create();      
+            vehicleABM = home.create();
             vehicleABM.createComplaint(data,userSessionData);
         }catch(Exception e) {
 			Object[] parameters = {data};
@@ -2436,7 +2442,7 @@ public class VehicleABMFacadeBean implements SessionBean {
         try{
         	VehicleABM vehicleABM = null;
             VehicleABMHome home = VehicleABMUtil.getHome();
-            vehicleABM = home.create();      
+            vehicleABM = home.create();
             vehicleABM.updateComplaint(data,userSessionData);
         }catch(Exception e) {
 			Object[] parameters = {data};
@@ -2452,7 +2458,7 @@ public class VehicleABMFacadeBean implements SessionBean {
         try{
         	VehicleABM vehicleABM = null;
             VehicleABMHome home = VehicleABMUtil.getHome();
-            vehicleABM = home.create();      
+            vehicleABM = home.create();
            	vehicleABM.deleteComplaint(id,userSessionData);
         }catch(Exception e) {
 			Object[] parameters = {id};
@@ -2466,14 +2472,14 @@ public class VehicleABMFacadeBean implements SessionBean {
      */
     public void updateVehicleContract(VehicleContractData contract, int action, UserSessionData userSessionData) throws Exception {
         try{
-        	VehicleABM vehicleABM = VehicleABMUtil.getHome().create();      
+        	VehicleABM vehicleABM = VehicleABMUtil.getHome().create();
            	vehicleABM.updateVehicleContract(contract, action,userSessionData);
         }catch(Exception e) {
 			Object[] parameters = {contract,action};
             handler.handleException("updateVehicleContract",e, userSessionData, parameters);
         }
     }
-    
+
     /**
      * @ejb.interface-method
      * @ejb.permission role-name = "administrator,vehicleview,systemaccess"
@@ -2482,15 +2488,15 @@ public class VehicleABMFacadeBean implements SessionBean {
         try{
         	VehicleABM vehicleABM = VehicleABMUtil.getHome().create();
         	for(DPAGoalData d: goals){
-        		vehicleABM.createOrUpdateDPAGoals(d, userSessionData);	
+        		vehicleABM.createOrUpdateDPAGoals(d, userSessionData);
         	}
-           	
+
         }catch(Exception e) {
 			Object[] parameters = {};
             handler.handleException("createOrUpdateDLAGoals",e, userSessionData, parameters);
         }
     }
-    
+
     /**
      * @ejb.interface-method
      * @ejb.permission role-name = "administrator,vehicleview,systemaccess"
@@ -2499,9 +2505,9 @@ public class VehicleABMFacadeBean implements SessionBean {
         try{
         	VehicleABM vehicleABM = VehicleABMUtil.getHome().create();
         	for(DPAVehicleActiveData d: vehicleActives){
-        		vehicleABM.createOrUpdateDPAVehicleActive(d, userSessionData);	
+        		vehicleABM.createOrUpdateDPAVehicleActive(d, userSessionData);
         	}
-           	
+
         }catch(Exception e) {
 			Object[] parameters = {};
             handler.handleException("createOrUpdateDPAVehicleActive",e, userSessionData, parameters);
@@ -2522,7 +2528,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 		}
 
 		String body = "<p>Estimado Contratista,</p>";
-		body += "<p>En el chequeo realizado al vehÌculo "+vehicle.getMatricula()+" se detectÛ que faltan algunos Ìtems, la falta de estos hubiera provocado las siguientes No Conformidades:</p>";
+		body += "<p>En el chequeo realizado al veh√≠culo "+vehicle.getMatricula()+" se detect√≥ que faltan algunos √≠tems, la falta de estos hubiera provocado las siguientes No Conformidades:</p>";
 		body += "<ul>";
 		Iterator<Integer> it = items.iterator();
 		while(it.hasNext()) {
@@ -2532,13 +2538,13 @@ public class VehicleABMFacadeBean implements SessionBean {
 				case 17000: case 17001: case 17002: case 17012:
 					body += "<li>"+key+" (48 horas)</li>";
 					break;
-				case 17005: case 17006: case 17015: case 17016: 
-					body += "<li>"+key+" (DetenciÛn Inmediata)</li>";
+				case 17005: case 17006: case 17015: case 17016:
+					body += "<li>"+key+" (Detenci√≥n Inmediata)</li>";
 					break;
 			}
 		}
 		body += "</ul>";
-		body += "<p>A partir del 15 de agosto se pondr·n en funcionamiento estas acciones.</p>";
+		body += "<p>A partir del 15 de agosto se pondr√°n en funcionamiento estas acciones.</p>";
 
         MailSender sender = new MailSender();
 		String subject= "Chequeo Nuevos Items";
@@ -2549,37 +2555,37 @@ public class VehicleABMFacadeBean implements SessionBean {
 				sended =sender.sendImageMandrill(emails, "CEPA DataCenter", "datacenter@cepasafedrive.com",
 						subject, Util.getCompleteHTMLMail(body,"CEPA DataCenter", "datacenter@cepasafedrive.com")
 						, new LinkedList(), new LinkedList(), "datacenter@cepasafedrive.com", "CEPA DataCenter", new LinkedList(), null);
-				
+
 			}catch (Exception e) {
 				e.printStackTrace();
 			}
-			count++; 
+			count++;
 		}
 	}
 
 	private void sendVehicleEmail(VehicleData vehicle, UserSessionData userSessionData) {
     	try {
 	    	MailSender sender = new MailSender();
-	
+
 	    	Collection to = new LinkedList();
 	    	if(AlertConstants.isProductionServer()) {
-	    		to.add("mmunoz@fraylog.com.uy"); 
+	    		to.add("mmunoz@fraylog.com.uy");
 	    		to.add("mberrondo@fraylog.com.uy");
 	    	}else{
 		    	to.add("jrodriguez@cepasafedrive.com");
 	    	}
-			
+
 			//to.add("jrodriguez@cepadc.com");
 	    	Collection bcc = new LinkedList();
 	    	bcc.add("cepasafedrive@gmail.com");
 
-	    	String subject = "Nuevo vehÌculo ingresado";
-			
+	    	String subject = "Nuevo veh√≠culo ingresado";
+
 			String body = "<body>"+
-							"<p><span style='font-family:\"Lucida Grande\", \"Lucida Sans Unicode\",Tahoma, sans-serif';font-size:1.15em;color: #666666;'>Acaba de ser ingresado un nuevo vehÌculo en FleetDataManager Fraylog:</span></p>"+
+							"<p><span style='font-family:\"Lucida Grande\", \"Lucida Sans Unicode\",Tahoma, sans-serif';font-size:1.15em;color: #666666;'>Acaba de ser ingresado un nuevo veh√≠culo en FleetDataManager Fraylog:</span></p>"+
 							"<p>"+
 							"<span style='font-family:\"Lucida Grande\", \"Lucida Sans Unicode\",Tahoma, sans-serif';font-size:1.15em;color: #666666;'>"+
-							"MatrÌcula: "+vehicle.getMatricula()+"<br>"+
+							"Matr√≠cula: "+vehicle.getMatricula()+"<br>"+
 							"</span>"+
 							"</p>"+
 							"<p>"+
@@ -2588,7 +2594,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 							"</span>"+
 							"</p>"+
 							"</body>";
-			
+
 			boolean sended = false;
 			int count = 0;
 			while(!sended && count < 10) {
