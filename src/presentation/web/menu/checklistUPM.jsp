@@ -17,7 +17,7 @@
 <%@page import="communication.activity.tables.CheckListData"%>
 <%@page import="communication.vehicle.tables.VehicleCheckData" %>
 <%@page language="java" 
-	errorPage="../exception.jsp" 
+	errorPage="/exception.jsp" 
 	import="business.*"
 %>
 <%@page import="communication.administration.user.UserSessionData"%>
@@ -30,19 +30,20 @@
 	UserSessionData userSessionData = sys.getUserSessionData();
 	Text messages = sys.getText();
 
+	String id = request.getParameter("id");
 	
-	VehicleData data = sys.getVehicleReportFacade().findVehicleByPrimaryKey(new Integer(request.getParameter("id")),userSessionData); 
+	VehicleData data = sys.getVehicleReportFacade().findVehicleByPrimaryKey(new Integer(id),userSessionData); 
 	
 	VehicleCheckData checkData = null;
 	//Id=79/80	
 			
 	String checklist = request.getParameter("checklist");
 	
-	String next = "layout.jsp?refer=vehicle/VehicleView.jsp?id="+request.getParameter("id");
+	String next = "layout.jsp?refer=vehicle/VehicleView.jsp?id="+id;
 	String success = "layout.jsp";
 	String path="";
 	if(userSessionData.isDPACheckList()) {
-		next = "vehicle/selectCheckListFOSA.jsp?vehicle="+request.getParameter("id");
+		next = "vehicle/selectCheckListFOSA.jsp?vehicle="+id;
 		if(request.getParameter("fu")!=null){
 			success = "../vehicle/successUPM.jsp";
 			path="../";

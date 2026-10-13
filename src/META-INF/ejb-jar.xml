@@ -8651,6 +8651,46 @@
       <description><![CDATA[description not supported yet by ejbdoclet]]></description>
          <role-name>administrator</role-name>
          <role-name>eventcreate</role-name>
+         <role-name>dpachecklist</role-name>
+         <role-name>finecreate</role-name>
+         <role-name>drivervehicleedit</role-name>
+         <role-name>drivercreateevent</role-name>
+      <method >
+         <description><![CDATA[]]></description>
+         <ejb-name>VehicleReport</ejb-name>
+         <method-intf>Local</method-intf>
+         <method-name>findLastVehicleCheckByCheckId</method-name>
+         <method-params>
+            <method-param>java.lang.Integer</method-param>
+            <method-param>java.lang.Integer</method-param>
+            <method-param>communication.administration.user.UserSessionData</method-param>
+         </method-params>
+      </method>
+   </method-permission>
+   <method-permission >
+      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
+         <role-name>administrator</role-name>
+         <role-name>eventcreate</role-name>
+         <role-name>dpachecklist</role-name>
+         <role-name>finecreate</role-name>
+         <role-name>drivervehicleedit</role-name>
+         <role-name>drivercreateevent</role-name>
+      <method >
+         <description><![CDATA[]]></description>
+         <ejb-name>VehicleReport</ejb-name>
+         <method-intf>Remote</method-intf>
+         <method-name>findLastVehicleCheckByCheckId</method-name>
+         <method-params>
+            <method-param>java.lang.Integer</method-param>
+            <method-param>java.lang.Integer</method-param>
+            <method-param>communication.administration.user.UserSessionData</method-param>
+         </method-params>
+      </method>
+   </method-permission>
+   <method-permission >
+      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
+         <role-name>administrator</role-name>
+         <role-name>eventcreate</role-name>
          <role-name>finecreate</role-name>
          <role-name>drivervehicleedit</role-name>
          <role-name>drivercreateevent</role-name>
@@ -18605,6 +18645,7 @@
          <role-name>vehicleupdate</role-name>
          <role-name>vehicledelete</role-name>
          <role-name>vehiclecreate</role-name>
+         <role-name>dpachecklist</role-name>
          <role-name>vehicleview</role-name>
       <method >
          <description><![CDATA[]]></description>
@@ -18645,6 +18686,7 @@
          <role-name>vehicleupdate</role-name>
          <role-name>vehicledelete</role-name>
          <role-name>vehiclecreate</role-name>
+         <role-name>dpachecklist</role-name>
          <role-name>vehicleview</role-name>
       <method >
          <description><![CDATA[]]></description>
@@ -18665,6 +18707,7 @@
          <role-name>vehicleupdate</role-name>
          <role-name>vehicledelete</role-name>
          <role-name>vehiclecreate</role-name>
+         <role-name>dpachecklist</role-name>
          <role-name>vehicleview</role-name>
       <method >
          <description><![CDATA[]]></description>
@@ -31020,6 +31063,86 @@
          <method-intf>Remote</method-intf>
          <method-name>findLastVehicleCheck</method-name>
          <method-params>
+            <method-param>java.lang.Integer</method-param>
+            <method-param>communication.administration.user.UserSessionData</method-param>
+         </method-params>
+      </method>
+   </method-permission>
+   <method-permission >
+      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
+         <role-name>administrator</role-name>
+         <role-name>dpachecklist</role-name>
+         <role-name>eventcreate</role-name>
+         <role-name>finecreate</role-name>
+         <role-name>vehicleedit</role-name>
+         <role-name>drivervehicleedit</role-name>
+      <method >
+         <description><![CDATA[]]></description>
+         <ejb-name>VehicleReportFacade</ejb-name>
+         <method-intf>Local</method-intf>
+         <method-name>hasPendingCheck</method-name>
+         <method-params>
+            <method-param>java.lang.Integer</method-param>
+            <method-param>java.lang.Integer</method-param>
+            <method-param>communication.administration.user.UserSessionData</method-param>
+         </method-params>
+      </method>
+   </method-permission>
+   <method-permission >
+      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
+         <role-name>administrator</role-name>
+         <role-name>eventcreate</role-name>
+         <role-name>dpachecklist</role-name>
+         <role-name>finecreate</role-name>
+         <role-name>vehicleedit</role-name>
+         <role-name>drivervehicleedit</role-name>
+      <method >
+         <description><![CDATA[]]></description>
+         <ejb-name>VehicleReportFacade</ejb-name>
+         <method-intf>Remote</method-intf>
+         <method-name>hasPendingCheck</method-name>
+         <method-params>
+            <method-param>java.lang.Integer</method-param>
+            <method-param>java.lang.Integer</method-param>
+            <method-param>communication.administration.user.UserSessionData</method-param>
+         </method-params>
+      </method>
+   </method-permission>
+   <method-permission >
+      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
+         <role-name>administrator</role-name>
+         <role-name>dpachecklist</role-name>
+         <role-name>eventcreate</role-name>
+         <role-name>finecreate</role-name>
+         <role-name>vehicleedit</role-name>
+         <role-name>drivervehicleedit</role-name>
+      <method >
+         <description><![CDATA[]]></description>
+         <ejb-name>VehicleReportFacade</ejb-name>
+         <method-intf>Local</method-intf>
+         <method-name>findLastVehicleCheckByCheckId</method-name>
+         <method-params>
+            <method-param>java.lang.Integer</method-param>
+            <method-param>java.lang.Integer</method-param>
+            <method-param>communication.administration.user.UserSessionData</method-param>
+         </method-params>
+      </method>
+   </method-permission>
+   <method-permission >
+      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
+         <role-name>administrator</role-name>
+         <role-name>eventcreate</role-name>
+         <role-name>dpachecklist</role-name>
+         <role-name>finecreate</role-name>
+         <role-name>vehicleedit</role-name>
+         <role-name>drivervehicleedit</role-name>
+      <method >
+         <description><![CDATA[]]></description>
+         <ejb-name>VehicleReportFacade</ejb-name>
+         <method-intf>Remote</method-intf>
+         <method-name>findLastVehicleCheckByCheckId</method-name>
+         <method-params>
+            <method-param>java.lang.Integer</method-param>
             <method-param>java.lang.Integer</method-param>
             <method-param>communication.administration.user.UserSessionData</method-param>
          </method-params>
@@ -45988,6 +46111,7 @@
          <role-name>vehicleupdate</role-name>
          <role-name>vehicledelete</role-name>
          <role-name>vehiclecreate</role-name>
+         <role-name>dpachecklist</role-name>
          <role-name>vehicleview</role-name>
       <method >
          <description><![CDATA[]]></description>
@@ -46008,6 +46132,7 @@
          <role-name>vehicleupdate</role-name>
          <role-name>vehicledelete</role-name>
          <role-name>vehiclecreate</role-name>
+         <role-name>dpachecklist</role-name>
          <role-name>vehicleview</role-name>
       <method >
          <description><![CDATA[]]></description>

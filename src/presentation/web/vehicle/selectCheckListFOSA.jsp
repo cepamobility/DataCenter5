@@ -21,6 +21,7 @@
 <%@page import="java.util.List"%>
 <%@page import="java.util.Collection"%>
 <%@page import="communication.activity.tables.CheckListData"%>
+<%@page import="communication.security.SecurityConstants"%>
 <%@page import="presentation.translator.web.util.*"%>
 <%@ taglib uri="/WEB-INF/struts-html.tld"
         prefix="html"
@@ -37,6 +38,8 @@
 		title = (String) session.getAttribute("Msg");
 	}
 	VehicleData data = sys.getVehicleReportFacade().findVehicleByPrimaryKey(new Integer(id), userSessionData);
+	
+	boolean hasPendingCheck = sys.getVehicleReportFacade().hasPendingCheck(new Integer(id), 80, userSessionData);
 	
 	Collection trade = new LinkedList();
 	trade.add(new OptionItem(messages.getText("generic.messages.select"),""));                
@@ -202,6 +205,13 @@
 				}	
 		
 		 }
+
+		function checkPending(type, vehicle) {    
+	    	var form = document.getElementById('pendingCheck');
+            form.checklist.value = type;
+            form.id.value = vehicle;
+            form.submit();
+		}
 
 
 		function updateTrailer(vehicle){
@@ -422,7 +432,10 @@
 				</div>
 			</section>
 		</header>
-
+		<form name="pendingForm" id="pendingCheck" action="../pendingChecklist.jsp">
+			<input type="hidden" name="checklist" />
+			<input type="hidden" name="id" />
+		</form>
 		<form name="checklistForm" id='checklist3' action="../checklistACU.jsp">
 			<input type="hidden" name="checklist" />
 			<input type="hidden" name="id" />
@@ -430,8 +443,6 @@
 		<form name="checklistForm" id='checklist' action="../checklistUPM.jsp">
 			<input type="hidden" name="checklist" />
 			<input type="hidden" name="id" />
-			
-			
 		</form>
 		<form name="checklistForm" id='checklistSyngenta' action="../checklistSyngenta.jsp">
 			<input type="hidden" name="checklist" />
@@ -501,7 +512,13 @@
 							<b>Chequeos vehiculares</b>
 						</label>
 						<label for="q5">
-							<input type="button" class="button"  value="Chequeo Vehicular" onClick="javascript:doCheckList('80',<%=String.valueOf(data.getId())%>)"/>	
+							<%if (hasPendingCheck && (userSessionData.getFullName().contains("Test") || !SecurityConstants.isProductionServer())){%>
+							<input type="button" class="button"  value="Chequeo Vehicular" onClick="javascript:checkPending('80',<%=String.valueOf(data.getId())%>)"/>	
+								
+							<%}	else {	
+							%>
+							<input type="button" class="button"  value="Chequeo Vehicular" onclick="javascript:doCheckList('80',<%=String.valueOf(data.getId())%>)"/>
+							<%} %>
 							<input type="button" class="button" style="background-color: #E74405 !important; background: linear-gradient(to bottom, #E74405 0%, #E74405 100%)  !important; color: #FFFFFF !important;" value="Chequeo Preventivo" onClick="javascript:doCheckList('123',<%=String.valueOf(data.getId())%>)"/>	
 						</label>
 					</div>
@@ -559,7 +576,7 @@
 									
 								<%	}else{%>
 									
-									<input type="button" class="button"  value="<%=messages.getText("generic.messages.addvehiclecheckupm2") %>" onClick="javascript:doCheckList('80',<%=String.valueOf(data.getId())%>);"/>
+									<input type="button" class="button"  value="<%=messages.getText("generic.messages.addvehiclecheckupm2") %>" onClick="javascript:checkPending('80',<%=String.valueOf(data.getId())%>);"/>
 							<%		}
 								}%>
 							<%} %>

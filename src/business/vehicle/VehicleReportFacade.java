@@ -116,6 +116,9 @@ public interface VehicleReportFacade
    public communication.vehicle.tables.VehicleCheckData findLastVehicleCheck( java.lang.Integer id,communication.administration.user.UserSessionData userSessionData )
       throws java.lang.Exception, java.rmi.RemoteException;
    
+   public boolean hasPendingCheck( java.lang.Integer vehicleId, java.lang.Integer checkId, communication.administration.user.UserSessionData userSessionData )
+	  throws java.lang.Exception, java.rmi.RemoteException;
+   
    public communication.vehicle.tables.VehicleCheckData findLastVehicleCheckByCheckId( java.lang.Integer vehicleId, java.lang.Integer checkId, communication.administration.user.UserSessionData userSessionData )
       throws java.lang.Exception, java.rmi.RemoteException;
 

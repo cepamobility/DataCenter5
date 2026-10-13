@@ -43,6 +43,11 @@
 			<form-property name="remove" type="java.lang.String" />
 		</form-bean>
 		<form-bean name="UserCreateForm" type="presentation.translator.web.user.CreateForm" />
+		<form-bean name="PendingCheckForm"  type="org.apache.struts.action.DynaActionForm">
+			<form-property name="checklist" type="java.lang.String" />
+			<form-property name="checkId" type="java.lang.Integer" />
+			<form-property name="id" type="java.lang.String" />
+		</form-bean>
 		<form-bean name="DriverUserCreateForm"  type="org.apache.struts.action.DynaActionForm">
 			<form-property name="driver" type="java.lang.String" />
 			<form-property name="loginname" type="java.lang.String" />
@@ -1430,6 +1435,9 @@
 			<forward name="create" path="/layout.jsp?refer=/user/create.jsp"/>
 			<forward name="UserNEDList" path="/layout.jsp?refer=/user/UserNEDList.jsp"/>
 			<forward name="error" path="/layout.jsp?refer=/exception.jsp"/>
+		</action>
+		<action path="/PendingCheck" type="presentation.translator.web.vehicle.PendingCheckAction" name="PendingCheckForm"  scope="request">
+			<forward name="success" path="/checklistUPM.jsp" />
 		</action>
 		<action path="/ContractorUserCreate" type="presentation.translator.web.user.ContractorUserCreateAction" name="ContractorUserCreateForm"  scope="request" input="/layout.jsp?refer=/user/contractorUser.jsp">
 			<forward name="cancel" path="/layout.jsp?refer=/user/UserNEDList.jsp"/>
@@ -3336,7 +3344,7 @@
 		
 		<action path="/DPATelematicControlVehicleList" type="presentation.translator.web.vehicle.DPATelematicControlVehicleListAction" name="DPATelematicControlListForm" scope="session"></action>
 		<action path="/DPACorrectiveAction" type="presentation.translator.web.dpa.DPACorrectiveActionAction" name="DPACorrectiveActionForm" scope="session">
-			<forward name="next" path="/layout.jsp?refer=/dpa/DPAUnconformityView.jsp" />
+			<forward name="next" path="/pendingChecklist?checklist=80" />
 		</action>
 		<action path="/DPALevelOfServiceDriverAction" type="presentation.translator.web.dpa.DPALevelOfServiceDriverAction" name="DPALevelOfServiceDriverForm" scope="session">
 			<forward name="next" path="/layout.jsp?refer=/dpa/DPALevelOfServiceDriverForm.jsp" />

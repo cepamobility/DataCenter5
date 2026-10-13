@@ -1165,7 +1165,7 @@ public abstract class VehicleReportFacadeBean implements SessionBean {
 
 			if (id == null) {
 				throw new InvalidDataException(
-						"Class business.vehicle.VehicleReportFacade(findDriverByPrimaryKey), primary Key is empty",
+						"Class business.vehicle.VehicleReportFacade(findLastVehicleCheck), primary Key is empty",
 						"generic.vehicle.vehicledata.id.empty");
 			}
 
@@ -1186,6 +1186,39 @@ public abstract class VehicleReportFacadeBean implements SessionBean {
 		return null;
 	}
 	
+	public boolean hasPendingCheck(Integer vehicleId, Integer checkId, UserSessionData userSessionData) throws Exception {
+		try {
+			if (vehicleId == null)	{
+				throw new InvalidDataException(
+						"Class business.vehicle.VehicleReportFacade(findDriverByPrimaryKey), primary Key is empty",
+						"generic.vehicle.vehicledata.id.empty");
+			}
+			if (checkId == null)	{
+				throw new InvalidDataException(
+						"Class business.vehicle.VehicleReportFacade(findDriverByPrimaryKey), primary Key is empty",
+						"generic.vehicle.vehicledata.name.empty");
+			}
+			
+			VehicleCheckData data = null;
+			
+			VehicleReport vehicleReport = VehicleReportUtil.getHome().create();
+			
+			data = vehicleReport.findLastVehicleCheckByCheckId(vehicleId, checkId, userSessionData);
+			
+			if (data.getResult() != 0) {
+				return true;
+			}
+			
+		} catch (Exception e) {
+			Object[] p = new Object[2];
+			p[0] = vehicleId;
+			p[1] = checkId;
+			handler.handleException("findLastVehicleCheck",e,userSessionData,p);
+		}
+		
+		return false;
+	}
+	
 	public VehicleCheckData findLastVehicleCheckByCheckId(Integer vehicleId, Integer checkId, UserSessionData userSessionData) throws Exception{
 		try {
 			if (vehicleId == null)	{
@@ -1197,6 +1230,15 @@ public abstract class VehicleReportFacadeBean implements SessionBean {
 				throw new InvalidDataException(
 						"Class business.vehicle.VehicleReportFacade(findDriverByPrimaryKey), primary Key is empty",
 						"generic.vehicle.vehicledata.name.empty");
+			}
+			VehicleCheckData data = null;
+			
+			VehicleReport vehicleReport = VehicleReportUtil.getHome().create();
+			
+			data = vehicleReport.findLastVehicleCheckByCheckId(vehicleId, checkId, userSessionData);
+			
+			if (data != null) {
+				return data;
 			}
 		} catch (Exception e) {
 			Object[] p = new Object[2];

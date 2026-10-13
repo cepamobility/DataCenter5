@@ -79,26 +79,32 @@
 		id=(String)request.getParameter("id");
 		cData=null;
 		if(unconformitydpaid==null){
-	unconformitydpaid=(String)session.getAttribute("unconformitydpaid");
-	session.removeAttribute("unconformitydpaid");
+			unconformitydpaid=(String)session.getAttribute("unconformitydpaid");
+			session.removeAttribute("unconformitydpaid");
 		}
+		
+		if (unconformitydpaid == null || unconformitydpaid.trim().isEmpty()) {
+		    throw new IllegalArgumentException(
+		        "Falta el parámetro unconformitydpaid"
+		    );
+		}
+		
 		data=sys.getCorporationReportFacade().findUnconformityDPAById(sys.getUserSessionData(), Integer.valueOf(unconformitydpaid));
 		
 		DPACorrectiveActionForm form=new DPACorrectiveActionForm();
 		if(request.getAttribute("DPACorrectiveActionForm")!=null){
-	form=(DPACorrectiveActionForm)request.getAttribute("DPACorrectiveActionForm");
-		}
-		else if(id!=null){
-	cData =form.load(Integer.valueOf(id),sys);	
-		}else{
-	Calendar cal=Calendar.getInstance();
-	cal.setTime(new Date());
-	cal.add(Calendar.HOUR,-4);//Hora de Uruguay
-	form.setDay(String.valueOf(cal.get(Calendar.DATE)));
-	form.setMonth(String.valueOf(cal.get(Calendar.MONTH)+1));
-	form.setYear(String.valueOf(cal.get(Calendar.YEAR)));
-	form.setHour(String.valueOf(cal.get(Calendar.HOUR_OF_DAY)));
-	form.setMinute(String.valueOf(cal.get(Calendar.MINUTE)));
+			form=(DPACorrectiveActionForm)request.getAttribute("DPACorrectiveActionForm");
+		} else if(id!=null){
+			cData =form.load(Integer.valueOf(id),sys);	
+		} else{
+			Calendar cal=Calendar.getInstance();
+			cal.setTime(new Date());
+			cal.add(Calendar.HOUR,-4);//Hora de Uruguay
+			form.setDay(String.valueOf(cal.get(Calendar.DATE)));
+			form.setMonth(String.valueOf(cal.get(Calendar.MONTH)+1));
+			form.setYear(String.valueOf(cal.get(Calendar.YEAR)));
+			form.setHour(String.valueOf(cal.get(Calendar.HOUR_OF_DAY)));
+			form.setMinute(String.valueOf(cal.get(Calendar.MINUTE)));
 		}
 		
 		form.setUnconformityDPAId(Integer.valueOf(unconformitydpaid));
@@ -114,12 +120,19 @@
 
 <head>
 	<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1">
-	<script type="text/javascript" src="./menu/js/jquery-1.10.2.min.js"></script>
 	<script type="text/javascript">
 	var index=0;
 	var topBack=0;
 	$(document).ready(function(){
-		var date=new Date();
+		var date = new Date(); //CASO123456
+
+		var year = date.getFullYear();
+		var day = ("0" + date.getDate()).slice(-2);
+		var month = ("0" + (date.getMonth()+1)).slice(-2);
+		
+		var fDate = year+"-"+month+"-"+day;
+
+		document.getElementById('q3').value = fDate;
 		$('#hour').val(date.getHours());
 		$('#minute').val(date.getMinutes());
 
@@ -165,177 +178,140 @@
 </head>
 
 <body>
-	 
-	<center>
 	<html:form action="/DPACorrectiveAction" styleId="DPACorrectiveAction" enctype="multipart/form-data" >
 		<html:hidden property="unconformityDPAId"/>
 		<html:hidden property="id"/>
 		<input type="hidden"  name="status"/>
 		<input type="hidden" name="cancel" value="no" id="cancel"/>
-		<table width="768" border="0" cellspacing="0" cellpadding="0">  
-			<tr class="guide1">
-			<%
-				String page14 = "../component/titlecomponent.jsp?title="+messages.getText("generic.dpa.correctiveaction.title");
-			%>
-				<jsp:include  page='<%=page14 %>' />
-  			</tr>
-      		<tr>
-				<jsp:include  page="../component/spaceline.jsp" />
-  			</tr>
-		<tr> 
-			<td height="40" colspan="3" valign="middle">
-<%
-		String page13 = "../component/utilityboxtop.jsp?title="+messages.getText("generic.dpa.correctiveaction");
-				%>
-				<jsp:include  page='<%=page13 %>' />
-				<table width="100%" height="60" border="0" cellpadding="0" cellspacing="0">
+		<div class="container-fluid">
+			<div class="row">
+				<div class="col-xs-12">
+					<div class="panel panel-default">
+						<div class="panel-heading">
+					    	<h3 class="panel-title"><%=messages.getText("generic.dpa.correctiveaction.title")%></h3>
+					  	</div>
+					  	<div class="panel-body">
+ 							<div class="col-xs-12">
+								<fieldset>
+									<legend><%=messages.getText("generic.dpa.correctiveaction")%></legend>
 <%			if(sys.isCorporation(new int[]{CorporationData.FORESTALORIENTAL, CorporationData.MONTES_DE_PLATA}) && sys.getUserSessionData().isCepaUser()) {	
-%>	 				<tr> 
-   	   					<td width="50%" align="left" class="texts">        
-   							<%= messages.getText("generic.messages.type")%>
-						</td>
-						<td width="50%" align="right" class="linetwo">
-							<html:select property="type">
-								<html:option value='<%=String.valueOf(CorrectiveActionDPAData.PROVISORIO) %>'><%=messages.getText("generic.dpa.unconformity.provisorio")%></html:option>
-								<html:option value='<%=String.valueOf(CorrectiveActionDPAData.DEFINITIVO) %>'><%=messages.getText("generic.dpa.unconformity.definitivo")%></html:option>
-							</html:select>
-						</td>
-					</tr>
+%>									<div class="form-group col-xs-12" align="left">
+										<div class="col-xs-4" align="left"><%= messages.getText("generic.messages.type")%></div>
+										<div class="col-xs-8" align="right">
+											<html:select property="type">
+												<html:option value='<%=String.valueOf(CorrectiveActionDPAData.PROVISORIO) %>'><%=messages.getText("generic.dpa.unconformity.provisorio")%></html:option>
+												<html:option value='<%=String.valueOf(CorrectiveActionDPAData.DEFINITIVO) %>'><%=messages.getText("generic.dpa.unconformity.definitivo")%></html:option>
+											</html:select>
+										</div>
+									</div>
 <%			}else {
-%>	 				<tr> 
-   	   					<td width="50%" align="left" class="texts">        
-   							<%= messages.getText("generic.messages.type")%>
-						</td>
-						<td width="50%" align="right" class="linetwo">
-							<%=(cData == null || cData.getType().equals(CorrectiveActionDPAData.DEFINITIVO)) ? messages.getText("generic.dpa.unconformity.definitivo") : messages.getText("generic.dpa.unconformity.provisorio")%>
-							<html:hidden property="type" value='<%=(cData == null || cData.getType().equals(CorrectiveActionDPAData.DEFINITIVO)) ? String.valueOf(CorrectiveActionDPAData.DEFINITIVO) : String.valueOf(CorrectiveActionDPAData.PROVISORIO)%>' />
-						</td>
-					</tr>
+%>									<div class="form-group col-xs-12" align="left">
+										<div class="col-xs-4" align="left"><%= messages.getText("generic.messages.type")%></div>
+										<div class="col-xs-8" align="right">
+											<%=(cData == null || cData.getType() == null || cData.getType().equals(CorrectiveActionDPAData.DEFINITIVO)) ? messages.getText("generic.dpa.unconformity.definitivo") : messages.getText("generic.dpa.unconformity.provisorio")%>
+										</div>
+									</div>
+									<html:hidden property="type" value="<%=(cData == null || cData.getType() == null || cData.getType().equals(CorrectiveActionDPAData.DEFINITIVO)) ? String.valueOf(CorrectiveActionDPAData.DEFINITIVO) : String.valueOf(CorrectiveActionDPAData.PROVISORIO)%>"/>
 <%			}
-%>   				<tr> 
-   	   					<td width="50%" align="left" class="texts">        
-   							<%= messages.getText("generic.activity.date")%><%=" ( "+messages.getText("generic.messages.dateformat")+" ) "%>
-						</td>
-						<td width="50%" align="right" class="linetwo">
-							
-							<html:text style="width:30;"  disabled="true"  property="day" styleClass="input"  />&nbsp;/&nbsp;                
-							<html:text style="width:30;"  disabled="true" property="month" styleClass="input"  />&nbsp;/&nbsp; 
-							<html:text style="width:60;"  disabled="true" property="year" styleClass="input"  />&nbsp;         
-							<html:text style="width:30;"    property="hour" styleId="hour" styleClass="input"  />&nbsp;:&nbsp;                
-							<html:text style="width:30;"  property="minute" styleId="minute" styleClass="input"  />&nbsp;&nbsp; 
-							
-						</td>
-   					</tr>
-   					<tr><td colspan=2>&nbsp</td></tr>
-   					<tr> 
-       					<td width="50%" align="left" class="texts">        
-   							<%= messages.getText("generic.dpa.uncnformity.comment")%>
-						</td>
-						<td width="50%" align="right" class="linetwo">
-							<html:textarea style="width:600px;height:100px" property="comment" styleClass="input"  />&nbsp;         
-						</td>
-   					</tr>
-					<tr  class="space"><th align="right">&nbsp;</th><td align="right">&nbsp;</td></tr>
-					<td colspan="2">
-						<input type="button"  onclick="javascript:addPhoto();" value='<%=messages.getText("general.dpa.imagegalery.addphoto")%>' />
-						<table width="100%"  id="addphoto">
-						</table>
-					</td>
-				</table>
-				<jsp:include  page="../component/utilityboxbottom.jsp" />
-			</td>
-		</tr>  
-<% if(cData!=null){%>
-      	<tr>
-			<jsp:include  page="../component/spaceline.jsp" />
-  		</tr>
-  		<tr> 
-			<td height="40" colspan="3" valign="middle">
-<%
-			 page13 = "../component/utilityboxtop.jsp?title="+messages.getText("generic.dpa.unconformity.files");
-				%>
-				<jsp:include  page='<%=page13 %>' />
-				<table width="100%" height="60" border="0" cellpadding="0" cellspacing="0">
-				
-					<% Iterator iter;
-						iter=cData.getImages().iterator();
-						while(iter.hasNext()){
-							CorrectiveActionImageDPAData item=(CorrectiveActionImageDPAData)iter.next();
-						
-					%>
-					<tr>
-						<td width="5%" align="left" class="texts">
-							<input type="checkbox" value="on" name='<%="fileB["+ item.getFileName()+"]"%>'  checked> </input>        
-						</td> 
-       					<td width="50%" align="left" class="texts">        
-   							<%= item.getFileName()%>
-						</td>
-						<td>
-							<img src='ImageService?file=<%=item.getFileName()%>' width="200px" style="cursor: pointer;" onclick="showImage(this);" />
-							
-						</td>
-   					</tr>
-   					<tr><td colspan=3>&nbsp</td></tr>
-   					<%}%>
-   	 			</table>
-				<jsp:include  page="../component/utilityboxbottom.jsp" />
-			</td>
-		</tr>  
-<%}%>		
-      	<tr>
-			<jsp:include  page="../component/spaceline.jsp" />
-  		</tr>
-  		<tr> 
-			<td height="40" colspan="3" valign="middle">
-<%
-			 page13 = "../component/utilityboxtop.jsp?title="+messages.getText("generic.dpa.unconformity.items");
-				%>
-				<jsp:include  page='<%=page13 %>' />
-				<table width="100%" height="60" border="0" cellpadding="0" cellspacing="0">
-				
-					<% Iterator iter;
-						iter=data.getItems().iterator();
-						while(iter.hasNext()){
-							UnconformityItemDPAData item=(UnconformityItemDPAData)iter.next();
-							boolean selected=false;
-							if(cData!=null){
-								Iterator iter2=cData.getItems().iterator();
-								while(!selected && iter2.hasNext()){
-									UnconformityItemDPAData itemS=(UnconformityItemDPAData)iter2.next();
-									selected=itemS.getId().equals(item.getId());
-								}
-							}
-							selected=selected ||(preSelected!=null && preSelected.equals(item.getType()));
-							
-							if(item.getCorrectiveActionId()==null || item.getCorrectiveActionId()==0 || selected) {
-					%>
-					<tr>
-						<td width="5%" align="left" class="texts">
-<%								if(!(item.getType().startsWith("forestales.check2.v") && !sys.getUserSessionData().isCepaUser())) {
-%>							<input type="checkbox" name='<%="item["+ item.getId()+"]"%>'  <%=selected?"checked":"" %> > </input>        
-<%								}
-%>   						</td> 
-       					<td width="50%" align="left" class="texts">        
-   							<%= messages.getText(item.getType())%>
-						</td>
-   					</tr>
-   					<tr><td colspan=2>&nbsp</td></tr>
-   					<%}}%>
-   	 			</table>
-				<jsp:include  page="../component/utilityboxbottom.jsp" />
-			</td>
-		</tr>  
-       	<tr>   		
-	   		<td align="right">
-	   			<input name="button2" type="button" onclick="document.location.href='layout.jsp?refer=/dpa/DPAUnconformityView.jsp?id=<%=unconformitydpaid%>&href=/dpa/DPAUnconformityList.jsp'" value='<%=messages.getText("generic.messages.back")%>' class="input"/>
-	   			<input name="button2" type="button" onclick="DPACorrectiveAction.submit();" value='<%=messages.getText("generic.messages.save")%>' class="input"/>
-	   	   	</td>             
-   	  	</tr>              
-	</table>
-
+%>									<div class="form-group col-xs-12" align="left">
+										<div class="col-xs-4" align="left"><%= messages.getText("generic.activity.date")%><%=" ( "+messages.getText("generic.messages.dateformat")+" ) "%></div>
+										<div class="col-xs-8" align="right">
+											<html:text style="width:40px;"  disabled="true"  property="day" />&nbsp;/&nbsp;                
+											<html:text style="width:40px;"  disabled="true" property="month" />&nbsp;/&nbsp; 
+											<html:text style="width:80px;"  disabled="true" property="year" />&nbsp;         
+											<html:text style="width:40px;"    property="hour" styleId="hour" />&nbsp;:&nbsp;                
+											<html:text style="width:40px;"  property="minute" styleId="minute" />&nbsp;&nbsp; 
+										</div>
+									</div>
+									<div class="form-group col-xs-12" align="left">
+									  	<div class="col-sm-4 control-label" align="left"><%=messages.getText("generic.dpa.uncnformity.comment")%></div>
+									  	<div class="col-sm-8" align="right">
+										  	<html:textarea style="width:600px;height:100px" property="comment"/>
+									    </div>
+									</div>
+									<div class="form-group col-xs-12" align="right">
+										<input type="button"  onclick="javascript:addPhoto();" value='<%=messages.getText("general.dpa.imagegalery.addphoto")%>' />
+										<table width="100%"  id="addphoto">
+										</table>
+									</div>
+								</fieldset>
+							</div>
+<% 		if(cData!=null){
+%> 							<div class="col-xs-12">
+								<fieldset>
+									<legend><%=messages.getText("generic.dpa.unconformity.files")%></legend>
+								  	<div class="table-responsive">
+										<table class="table table-bordered table-hover table-condensed table-striped table-custom">
+											<tbody>
+<% 			Iterator iter = cData.getImages().iterator();
+			while(iter.hasNext()){
+				CorrectiveActionImageDPAData item=(CorrectiveActionImageDPAData)iter.next();
+%>												<tr>
+													<td width="5%" align="left">
+														<input type="checkbox" value="on" name='<%="fileB["+ item.getFileName()+"]"%>'  checked> </input>        
+							   						</td> 
+							       					<td width="50%" align="left">        
+							   							<%= item.getFileName()%>
+													</td>
+													<td>
+														<img src='ImageService?file=<%=item.getFileName()%>' width="200px" style="cursor: pointer;" onclick="showImage(this);" />
+													</td>
+							   					</tr>
+<%			}
+%>											</tbody>
+							 			</table>
+							 		</div>
+							 	</fieldset>
+							 </div>
+<%		}
+%> 							<div class="col-xs-12">
+								<fieldset>
+									<legend><%=messages.getText("generic.dpa.unconformity.items")%></legend>
+								  	<div class="table-responsive">
+										<table class="table table-bordered table-hover table-condensed table-striped table-custom">
+											<thead></thead>
+											<tbody>
+<% 		Iterator iter =data.getItems().iterator();
+		while(iter.hasNext()){
+			UnconformityItemDPAData item=(UnconformityItemDPAData)iter.next();
+			boolean selected=false;
+			if(cData!=null){
+				Iterator iter2=cData.getItems().iterator();
+				while(!selected && iter2.hasNext()){
+					UnconformityItemDPAData itemS=(UnconformityItemDPAData)iter2.next();
+					selected=itemS.getId().equals(item.getId());
+				}
+			}
+			selected=selected ||(preSelected!=null && preSelected.equals(item.getType()));
+			if(item.getCorrectiveActionId()==null || item.getCorrectiveActionId()==0 || selected) {
+%>												<tr>
+													<td width="5%" align="left">
+<%				if(!(item.getType().startsWith("forestales.check2.v") && !sys.getUserSessionData().isCepaUser())) {
+%>														<input type="checkbox" name='<%="item["+ item.getId()+"]"%>'  <%=selected?"checked":"" %> > </input>        
+<%				}
+%>							   						</td> 
+							       					<td width="50%" align="left">        
+							   							<%= messages.getText(item.getType())%>
+													</td>
+							   					</tr>
+<%			}
+		}
+%>											</tbody>
+										</table>
+									</div>
+								</fieldset>
+							</div>
+							<div class="col-xs-12" align="right">
+					   			<input name="button2" type="button" onclick="document.location.href='layout.jsp?refer=/dpa/DPAUnconformityView.jsp?id=<%=unconformitydpaid%>&href=/dpa/DPAUnconformityList.jsp'" value='<%=messages.getText("generic.messages.back")%>' class="btn btn-default"/>
+					   			<input name="button2" type="button" onclick="DPACorrectiveAction.submit();" value='<%=messages.getText("generic.messages.save")%>' class="btn btn-primary"/>
+					   		</div>
+					   	</div>
+					</div>
+				</div>
+			</div>
+		</div>
 	</html:form>
-	</center>
-	</body>
+</body>
 	
 </html:html>
 <%

@@ -540,6 +540,7 @@ public abstract class VehicleABMBean implements SessionBean {
             
             VehicleCheck vehicleCheck= null;
             VehicleCheckLog log = null;
+            System.out.println("DEBUG::::: "+data.getVehicleCheckId());
             if(data.getVehicleCheckId() != null) {
                 Query query = session.createQuery("SELECT vc from VehicleCheck vc WHERE vc.vehicleCheckId = "+String.valueOf(data.getVehicleCheckId()));
                 Object result = query.uniqueResult();
