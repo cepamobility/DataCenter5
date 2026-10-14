@@ -6,11 +6,6 @@
  */
 package presentation.translator.web.dpa;
 
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
-import java.util.StringTokenizer;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
@@ -18,20 +13,13 @@ import javax.servlet.http.HttpSession;
 import org.apache.struts.action.ActionForm;
 import org.apache.struts.action.ActionForward;
 import org.apache.struts.action.ActionMapping;
-import org.apache.struts.action.DynaActionForm;
-import org.apache.struts.upload.FormFile;
 
-import presentation.translator.web.util.AbstractAction;
-import presentation.translator.web.util.Util;
 import business.SystemAccess;
-import business.driver.DriverABMFacade;
-import business.vehicle.VehicleABMFacade;
-
+import communication.administration.dpa.CorrectiveActionDPAData;
 import communication.language.Text;
 import communication.security.SecurityConstants;
-import communication.vehicle.report.CheckListImageData;
-import communication.vehicle.tables.UnconformityData;
-import communication.vehicle.tables.VehicleCheckData;
+import presentation.translator.web.util.AbstractAction;
+import presentation.translator.web.util.Util;
 
 /**
  * @author fcarriquiry
@@ -49,12 +37,19 @@ public class DPACorrectiveActionAction extends AbstractAction {
          }
          DPACorrectiveActionForm formDPA=(DPACorrectiveActionForm)form;
          
-         sys.getCorporationABMFacade().createOrUpdateCorrectiveActionDPA(formDPA.makeCorrectiveActionDPAData(sys, request),sys.getText(), sys.getUserSessionData());
+         CorrectiveActionDPAData correctiveAction = formDPA.makeCorrectiveActionDPAData(sys, request);
          
-         session.setAttribute("unconformitydpaid", formDPA.getUnconformityDPAId());
-         request.setAttribute("unconformitydpaid", formDPA.getUnconformityDPAId().toString());
+         Integer vehicleId = (Integer) session.getAttribute("vehicle");
+         session.removeAttribute("vehicle");
+         if((correctiveAction.getId() == null || correctiveAction.getId().intValue() == 0) && correctiveAction.getItems().size() == 0) {
+        	 sys.getUserSessionData().setUrl("/pendingChecklist.jsp?checklist=80&id="+vehicleId);
+        	 return mapping.findForward("back");
+         }
+         sys.getCorporationABMFacade().createOrUpdateCorrectiveActionDPA(correctiveAction, sys.getText(), sys.getUserSessionData());
          
-	     return mapping.findForward("next");
+         response.sendRedirect(request.getContextPath()+"/pendingChecklist.jsp?checklist=80&id="+vehicleId);
+         
+	     return null;
         	
 	}
 	

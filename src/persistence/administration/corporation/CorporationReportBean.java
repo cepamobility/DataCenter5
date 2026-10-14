@@ -1660,7 +1660,7 @@ public abstract class CorporationReportBean implements SessionBean {
             	
             	if(caId==null){
 	            	ArrayList<String> xlsRow=new ArrayList<String>();
-	            	xlsRow.add("https://fdmpro.cepasafedrive.com/datacenter/home.jsp?refer=/dpa/DPAUnconformityView.jsp?id="+uId+"&href=/vehicle/VehicleView.jsp");
+	            	xlsRow.add(uId.toString());
 	            	xlsRow.add(matricula);
 	            	xlsRow.add(Util.formatDate(uDate));
 	            	xlsRow.add(messages.getText(iType));
