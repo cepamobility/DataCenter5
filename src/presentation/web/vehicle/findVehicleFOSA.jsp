@@ -12,6 +12,7 @@
 <%@page import="java.util.Collection"%>
 <%@page import="communication.activity.tables.CheckListData"%>
 <%@page import="presentation.translator.web.util.*"%>
+<%@page import="communication.administration.corporation.util.DPAUnconformityItemFilter" %>
 <%@page language="java" 
 	errorPage="../exception.jsp" 
 	import="business.*"
@@ -26,9 +27,11 @@
 	UserSessionData userSessionData = sys.getUserSessionData();
 	Text messages = sys.getText();
 	
+	DPAUnconformityItemFilter filter=new DPAUnconformityItemFilter();
+	
+	
 	String plate = request.getParameter("q1");
 	ListResult result = sys.getVehicleReportFacade().findVehicleList("matricula", plate, 0, -1, VehicleData.ALL, userSessionData);
-
 %>
 
 <html lang="en">
@@ -80,6 +83,12 @@
 	            form.id.value = vehicle;
 	            form.submit();
 	        }
+			function checkPending(type, vehicle) {    
+		    	var form = document.getElementById('pendingCheck');
+	            form.checklist.value = type;
+	            form.id.value = vehicle;
+	            form.submit();
+			}
 		</script>
 	</head>
 	<style>
@@ -104,6 +113,10 @@
 		<form name="repeat" action="vehicleSearchFOSA.jsp"></form>
 		<form name="create" action="checklistAddVehicleFOSA.jsp"></form>
 		<form name="checklistForm" action="../checklistUPM.jsp">
+			<input type="hidden" name="checklist" />
+			<input type="hidden" name="id" />
+		</form>
+		<form name="pendingForm" id="pendingCheck" action="../pendingChecklist.jsp">
 			<input type="hidden" name="checklist" />
 			<input type="hidden" name="id" />
 		</form>
@@ -157,6 +170,10 @@
 <%				break;	
 			case 1:
 				VehicleData data = (VehicleData)result.getElements().iterator().next();
+				filter.setId(data.getId());
+				Collection unconformities=sys.getCorporationReportFacade().exportUnconformityItemsCheckList(sys.getUserSessionData(), sys.getText(),null, filter);
+				
+				boolean hasPendingCheck = unconformities.size() != 0;
 				if(sys.isCorporation(CorporationData.MONTES_DE_PLATA)){
 					response.sendRedirect("selectCheckListFOSA.jsp?vehicle="+data.getId());
 				}
@@ -200,7 +217,12 @@
 							<b>Chequeos vehiculares</b>
 						</label>
 						<label for="q5">
-							<input type="button" class="button"  value="Nuevo Chequeo Vehicular" onClick="javascript:doCheckList('80',<%=String.valueOf(data.getId())%>)"/>	
+						<%if (hasPendingCheck){%>
+							<input type="button" class="button"  value="Nuevo Chequeo Vehicular" onClick="javascript:checkPending('80',<%=String.valueOf(data.getId())%>)"/>	
+						<%}	else {	
+							%>
+							<input type="button" class="button"  value="Nuevo Chequeo Vehicular" onclick="javascript:doCheckList('80',<%=String.valueOf(data.getId())%>)"/>
+						<%} %>	
 							<input type="button" class="button" style="background-color: #E74405 !important; background: linear-gradient(to bottom, #E74405 0%, #E74405 100%)  !important; color: #FFFFFF !important;" value="Nuevo Chequeo Preventivo" onClick="javascript:doCheckList('123',<%=String.valueOf(data.getId())%>)"/>	
 						</label>
 					</div>

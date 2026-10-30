@@ -99,7 +99,7 @@ public interface DriverReport
       throws java.lang.Exception, java.rmi.RemoteException;
 
    /**
-    * Obtiene los conductores con su color únicamente (segun el comportamient telematico del período) Tipos de Eventos: SOLO DE VELOCIDAD Color: Solo VERDE
+    * Obtiene los conductores con su color Ãºnicamente (segun el comportamient telematico del perÃ­odo) Tipos de Eventos: SOLO DE VELOCIDAD Color: Solo VERDE
     * @throws Exception
     */
    public communication.util.ListResult getTelematicControlQueryByColorGreen( java.lang.Integer fromday,java.lang.Integer frommonth,java.lang.Integer fromYear,java.lang.Integer today,java.lang.Integer tomonth,java.lang.Integer toYear,java.lang.Integer[][] divOrgs,java.lang.Integer[][] divGeos,java.lang.String firstname,java.lang.String lastname,java.lang.String idDallas,java.lang.String status,int first,int count,java.lang.String color,communication.administration.user.UserSessionData userSessionData )

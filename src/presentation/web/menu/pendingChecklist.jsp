@@ -43,8 +43,6 @@
 	
 	String next = "layout.jsp?refer=vehicle/VehicleView.jsp?id="+id;
 	
-	VehicleCheckData data = sys.getVehicleReportFacade().findLastVehicleCheckByCheckId(id, 80, userSessionData);
-	
 	SimpleDateFormat sdf = new SimpleDateFormat("dd/MM/yyyy");
 %>
 <style>
@@ -174,7 +172,7 @@
 			}
 		</style>
 		<script type="text/javascript">
-			function doCheckList(type, checkId, vehicle) {
+			function doCheckList(type, vehicle) {
 	            var form = document.getElementById('checklist');
 	            form.checklist.value = type;
 	            form.id.value = vehicle;
@@ -251,7 +249,7 @@
 					</div>
 				</fieldset>
 			</div>
-		  	<button onClick="javascript:doCheckList('80',<%=String.valueOf(data.getVehicleCheckId())%>,<%=String.valueOf(id)%>)">Continuar de igual manera</button>
+		  	<button onClick="javascript:doCheckList('80', <%=String.valueOf(id)%>)"><%= unconformities.size() == 0 ? "Continuar" : "Continuar de igual manera" %></button>
 		  	<button onClick="history.back()">Cancelar</button>
 		</div>
 		<script type="text/javascript" src="scripts/json2.min.js?<%=version%>"></script>
