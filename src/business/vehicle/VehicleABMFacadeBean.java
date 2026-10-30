@@ -733,7 +733,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 					}
 					if(userSessionData.isCorporation(CorporationData.FORESTALORIENTAL) && itemData.getItemValue().equals("2") &&
 							(itemId == 17005 || itemId == 17006 || itemId == 17015 || itemId == 17016)) {
-						//itemData.setItemTag("Su vehiculo tendr√≠a 48 horas para el arreglo");
+						//itemData.setItemTag("Su vehiculo tendrÌa 48 horas para el arreglo");
 						newItems.add(itemId);
 					}*/
 				}
@@ -889,7 +889,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 						    threadStart.start();
 						}catch(Throwable th){
 							th.printStackTrace();
-							//Se guarda si o si el checklist, si hay error en la notificaci√≥n
+							//Se guarda si o si el checklist, si hay error en la notificaciÛn
 
 						}
 					}else if(data.getName()!=null && (data.getName().equals("92"))&& userSessionData.getCorporationId()==CorporationData.MONTES_DE_PLATA){
@@ -910,7 +910,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 							    threadStart.start();
 							}catch(Throwable th){
 								th.printStackTrace();
-								//Se guarda si o si el checklist, si hay error en la notificaci√≥n
+								//Se guarda si o si el checklist, si hay error en la notificaciÛn
 
 							}
 						}
@@ -1193,7 +1193,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 				notifyChecklistSyngentaBR(vehicleCheckId, messages, userSessionData);
 			}catch(Throwable th){
 				th.printStackTrace();
-				//Se guarda si o si el checklist, si hay error en la notificaci√≥n
+				//Se guarda si o si el checklist, si hay error en la notificaciÛn
 
 			}
 
@@ -1357,7 +1357,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 
 			String body="";
 			body+="<p>Adjunto le enviamos el &uacute;ltimo checklist de mercanc&iacute;as peligrosas realizado por CEPA el d&iacute;a de hoy.</p>";
-			String subject= "CEPA -"+"Check list MP Notificaci√≥n"+" "+transportista;
+			String subject= "CEPA -"+"Check list MP NotificaciÛn"+" "+transportista;
 			boolean sended = false;
 			int count = 0;
 			while(!sended && count < 10 && (bcc.size()+addressTo.size())>0 ) {
@@ -1411,7 +1411,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 			unconf.setComment(data.getInspectedby());
 			unconf.setStatus(UnconformityDPAData.STATUS_NEW);
 			unconf.setType(new UnconformityTypeDPADataType(UnconformityTypeDPADataType.TYPE_VEHICLE_CHECK));
-			//Se manda notificaci√≥n solo si tiene puntos o general que indica paraada inmediata, 24 o 48 horas
+			//Se manda notificaciÛn solo si tiene puntos o general que indica paraada inmediata, 24 o 48 horas
 			boolean negativePoints=false;
 			boolean war=false;
 			boolean notifItems=false;
@@ -1445,7 +1445,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 								obsNegativePoints+="-";
 							}
 							if(!lastPoint.equals(messages.getText(point.getText()))){
-								obsNegativePoints+=" Categor√≠a:"+messages.getText(point.getText())+"\n\r";
+								obsNegativePoints+=" CategorÌa:"+messages.getText(point.getText())+"\n\r";
 								lastPoint=messages.getText(point.getText());
 							}
 
@@ -1459,7 +1459,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 							String tag=data.getValueTagFromItem(item.getId());
 							cal.add( Calendar.DATE, tag!=null?Integer.valueOf(tag):0);
 							itemU.setExpirity(cal.getTime());
-							obsNegativePoints+=" Item:"+messages.getText(item.getText())+",Obs:"+pointComment+",Tiempo Reparaci√≥n:"+communication.administration.corporation.util.Util.getTiempoReparacion(checkList.getId(), tag!=null?Integer.valueOf(tag):-1)+"\n\r";
+							obsNegativePoints+=" Item:"+messages.getText(item.getText())+",Obs:"+pointComment+",Tiempo ReparaciÛn:"+communication.administration.corporation.util.Util.getTiempoReparacion(checkList.getId(), tag!=null?Integer.valueOf(tag):-1)+"\n\r";
 
 							//if(tag!=null && (Integer.valueOf(tag)>-1 && Integer.valueOf(tag) <3  )){
 							unconf.getItems().add(itemU);//Se guarda siempre
@@ -1625,9 +1625,11 @@ public class VehicleABMFacadeBean implements SessionBean {
 				String body="";
 				if(pesados){//Checklist pesados
 					addressTo.add("dlinale@cepamobility.com");
-					body = "<p>Estimado Contratista adjunto le enviamos la fallas del veh&iacute;culo "+data.getVehicle().getMatricula()+" verificadas en el chequeo vehicular realizado por CEPA el d&iacute;a de hoy.</p>"+
-						  "<p>Una vez reparadas las fallas le agradecemos ingresar al Data Center para corregir la NO conformidad.</p>"+
-						  "<p>Muchas Gracias</p>";
+					body = "<p>Estimado Contratista adjunto le enviamos la fallas del veh&iacute;culo "+data.getVehicle().getMatricula()+" verificadas en el chequeo vehicular realizado por CEPA el d&iacute;a de hoy.</p>";
+					if(!userSys.isCorporation(CorporationData.COFUSA)) {
+						body += "<p>Una vez reparadas las fallas le agradecemos ingresar al Data Center para corregir la NO conformidad.</p>";
+					}
+					body += "<p>Muchas Gracias</p>";
 				}else if(seguimiento){//Seguiento en ruta
 					body= "<p>Estimado Contratista adjunto le enviamos la faltas/fallas del veh&iacute;culo "+data.getVehicle().getMatricula()+" verificadas en el Seguimiento en Ruta realizado por CEPA el d&iacute;a de hoy.</p><br/>"+
 						  "<p>Muchas Gracias</p>";
@@ -1635,7 +1637,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 			    	body = "<p>Estimado Contratista adjunto le enviamos la faltas/fallas del veh&iacute;culo " + data.getVehicle().getMatricula() + " verificadas en el Chequeo Preventivo realizado por CEPA el d&iacute;a de hoy.</p><br/>" + "Muchas Gracias<br/>";
 				}
 				String corpStr=userSys.getCorporationId()==CorporationData.MONTES_DE_PLATA?"MDP":userSys.getCorporationId()==CorporationData.FORESTALORIENTAL?"UPM":userSys.getCorporationId()==CorporationData.WEYERHAEUSER?"Lumin":userSys.getCorporationId()==CorporationData.COFUSA?"COFUSA":"";
-			    String subject = pesados ? "CEPA -" + corpStr + " Check list Notificaci√≥n" + (internos ? " INTERNOS " : "") : "CEPA - Seguimiento En Ruta - Notificaci√≥n";
+			    String subject = pesados ? "CEPA -" + corpStr + " Check list NotificaciÛn" + (internos ? " INTERNOS " : "") : "CEPA - Seguimiento En Ruta - NotificaciÛn";
 			    if (preventivo) {
 			        subject = "CEPA -" + corpStr + " Chequeo Preventivo";
 			    }
@@ -2531,7 +2533,7 @@ public class VehicleABMFacadeBean implements SessionBean {
 		}
 
 		String body = "<p>Estimado Contratista,</p>";
-		body += "<p>En el chequeo realizado al veh√≠culo "+vehicle.getMatricula()+" se detect√≥ que faltan algunos √≠tems, la falta de estos hubiera provocado las siguientes No Conformidades:</p>";
+		body += "<p>En el chequeo realizado al vehÌculo "+vehicle.getMatricula()+" se detectÛ que faltan algunos Ìtems, la falta de estos hubiera provocado las siguientes No Conformidades:</p>";
 		body += "<ul>";
 		Iterator<Integer> it = items.iterator();
 		while(it.hasNext()) {
@@ -2542,12 +2544,12 @@ public class VehicleABMFacadeBean implements SessionBean {
 					body += "<li>"+key+" (48 horas)</li>";
 					break;
 				case 17005: case 17006: case 17015: case 17016:
-					body += "<li>"+key+" (Detenci√≥n Inmediata)</li>";
+					body += "<li>"+key+" (DetenciÛn Inmediata)</li>";
 					break;
 			}
 		}
 		body += "</ul>";
-		body += "<p>A partir del 15 de agosto se pondr√°n en funcionamiento estas acciones.</p>";
+		body += "<p>A partir del 15 de agosto se pondr·n en funcionamiento estas acciones.</p>";
 
         MailSender sender = new MailSender();
 		String subject= "Chequeo Nuevos Items";
@@ -2582,13 +2584,13 @@ public class VehicleABMFacadeBean implements SessionBean {
 	    	Collection bcc = new LinkedList();
 	    	bcc.add("cepasafedrive@gmail.com");
 
-	    	String subject = "Nuevo veh√≠culo ingresado";
+	    	String subject = "Nuevo vehÌculo ingresado";
 
 			String body = "<body>"+
-							"<p><span style='font-family:\"Lucida Grande\", \"Lucida Sans Unicode\",Tahoma, sans-serif';font-size:1.15em;color: #666666;'>Acaba de ser ingresado un nuevo veh√≠culo en FleetDataManager Fraylog:</span></p>"+
+							"<p><span style='font-family:\"Lucida Grande\", \"Lucida Sans Unicode\",Tahoma, sans-serif';font-size:1.15em;color: #666666;'>Acaba de ser ingresado un nuevo vehÌculo en FleetDataManager Fraylog:</span></p>"+
 							"<p>"+
 							"<span style='font-family:\"Lucida Grande\", \"Lucida Sans Unicode\",Tahoma, sans-serif';font-size:1.15em;color: #666666;'>"+
-							"Matr√≠cula: "+vehicle.getMatricula()+"<br>"+
+							"MatrÌcula: "+vehicle.getMatricula()+"<br>"+
 							"</span>"+
 							"</p>"+
 							"<p>"+
