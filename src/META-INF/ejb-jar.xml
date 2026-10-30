@@ -4997,7 +4997,7 @@
          <role-name>driverview</role-name>
          <role-name>administrator</role-name>
       <method >
-         <description><![CDATA[Obtiene los conductores con su color únicamente (segun el comportamient telematico del período) Tipos de Eventos: SOLO DE VELOCIDAD Color: Solo VERDE]]></description>
+         <description><![CDATA[Obtiene los conductores con su color Ãºnicamente (segun el comportamient telematico del perÃ­odo) Tipos de Eventos: SOLO DE VELOCIDAD Color: Solo VERDE]]></description>
          <ejb-name>DriverReport</ejb-name>
          <method-intf>Local</method-intf>
          <method-name>getTelematicControlQueryByColorGreen</method-name>
@@ -5026,7 +5026,7 @@
          <role-name>driverview</role-name>
          <role-name>administrator</role-name>
       <method >
-         <description><![CDATA[Obtiene los conductores con su color únicamente (segun el comportamient telematico del período) Tipos de Eventos: SOLO DE VELOCIDAD Color: Solo VERDE]]></description>
+         <description><![CDATA[Obtiene los conductores con su color Ãºnicamente (segun el comportamient telematico del perÃ­odo) Tipos de Eventos: SOLO DE VELOCIDAD Color: Solo VERDE]]></description>
          <ejb-name>DriverReport</ejb-name>
          <method-intf>Remote</method-intf>
          <method-name>getTelematicControlQueryByColorGreen</method-name>
@@ -7557,6 +7557,44 @@
          <description><![CDATA[]]></description>
          <ejb-name>VehicleReport</ejb-name>
          <method-intf>Local</method-intf>
+         <method-name>findInstructorActivityListByInstructor</method-name>
+         <method-params>
+            <method-param>java.lang.String</method-param>
+            <method-param>communication.administration.user.UserSessionData</method-param>
+         </method-params>
+      </method>
+   </method-permission>
+   <method-permission >
+      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
+         <role-name>administrator</role-name>
+         <role-name>eventcreate</role-name>
+         <role-name>vehicleview</role-name>
+         <role-name>drivervehicleview</role-name>
+         <role-name>driverodometer</role-name>
+         <role-name>dpachecklist</role-name>
+      <method >
+         <description><![CDATA[]]></description>
+         <ejb-name>VehicleReport</ejb-name>
+         <method-intf>Remote</method-intf>
+         <method-name>findInstructorActivityListByInstructor</method-name>
+         <method-params>
+            <method-param>java.lang.String</method-param>
+            <method-param>communication.administration.user.UserSessionData</method-param>
+         </method-params>
+      </method>
+   </method-permission>
+   <method-permission >
+      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
+         <role-name>administrator</role-name>
+         <role-name>eventcreate</role-name>
+         <role-name>vehicleview</role-name>
+         <role-name>drivervehicleview</role-name>
+         <role-name>driverodometer</role-name>
+         <role-name>dpachecklist</role-name>
+      <method >
+         <description><![CDATA[]]></description>
+         <ejb-name>VehicleReport</ejb-name>
+         <method-intf>Local</method-intf>
          <method-name>findList</method-name>
          <method-params>
             <method-param>java.lang.String</method-param>
@@ -7622,46 +7660,6 @@
             <method-param>java.lang.String</method-param>
             <method-param>int</method-param>
             <method-param>int</method-param>
-         </method-params>
-      </method>
-   </method-permission>
-   <method-permission >
-      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
-         <role-name>administrator</role-name>
-         <role-name>eventcreate</role-name>
-         <role-name>vehicleview</role-name>
-         <role-name>drivervehicleview</role-name>
-         <role-name>driverodometer</role-name>
-         <role-name>dpachecklist</role-name>
-         <role-name>systemaccess</role-name>
-      <method >
-         <description><![CDATA[]]></description>
-         <ejb-name>VehicleReport</ejb-name>
-         <method-intf>Local</method-intf>
-         <method-name>findInstructorActivityListByInstructor</method-name>
-         <method-params>
-         	<method-param>java.lang.String</method-param>
-            <method-param>communication.administration.user.UserSessionData</method-param>
-         </method-params>
-      </method>
-   </method-permission>
-   <method-permission >
-      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
-         <role-name>administrator</role-name>
-         <role-name>eventcreate</role-name>
-         <role-name>vehicleview</role-name>
-         <role-name>drivervehicleview</role-name>
-         <role-name>driverodometer</role-name>
-         <role-name>dpachecklist</role-name>
-         <role-name>systemaccess</role-name>
-      <method >
-         <description><![CDATA[]]></description>
-         <ejb-name>VehicleReport</ejb-name>
-         <method-intf>Remote</method-intf>
-         <method-name>findInstructorActivityListByInstructor</method-name>
-         <method-params>
-         	<method-param>java.lang.String</method-param>
-            <method-param>communication.administration.user.UserSessionData</method-param>
          </method-params>
       </method>
    </method-permission>
@@ -8068,7 +8066,7 @@
          <role-name>administrator</role-name>
          <role-name>query</role-name>
       <method >
-         <description><![CDATA[Devuelve una coleccion de objetos[] (date, driver) del log de vehìculos segun el id del vehiculo.]]></description>
+         <description><![CDATA[Devuelve una coleccion de objetos[] (date, driver) del log de vehÃ¬culos segun el id del vehiculo.]]></description>
          <ejb-name>VehicleReport</ejb-name>
          <method-intf>Local</method-intf>
          <method-name>findVehicleDriversLogList</method-name>
@@ -8083,7 +8081,7 @@
          <role-name>administrator</role-name>
          <role-name>query</role-name>
       <method >
-         <description><![CDATA[Devuelve una coleccion de objetos[] (date, driver) del log de vehìculos segun el id del vehiculo.]]></description>
+         <description><![CDATA[Devuelve una coleccion de objetos[] (date, driver) del log de vehÃ¬culos segun el id del vehiculo.]]></description>
          <ejb-name>VehicleReport</ejb-name>
          <method-intf>Remote</method-intf>
          <method-name>findVehicleDriversLogList</method-name>
@@ -8542,7 +8540,7 @@
          <role-name>drivercreateevent</role-name>
          <role-name>eventupload</role-name>
       <method >
-         <description><![CDATA[Devuelve un listado de vehiculos cuya matricula sea "plate" y que pertenezcan a la corporaraciòn indicada en el userRequest.]]></description>
+         <description><![CDATA[Devuelve un listado de vehiculos cuya matricula sea "plate" y que pertenezcan a la corporaraciÃ²n indicada en el userRequest.]]></description>
          <ejb-name>VehicleReport</ejb-name>
          <method-intf>Local</method-intf>
          <method-name>findVehicleByPlateWithRepeats</method-name>
@@ -8561,7 +8559,7 @@
          <role-name>drivercreateevent</role-name>
          <role-name>eventupload</role-name>
       <method >
-         <description><![CDATA[Devuelve un listado de vehiculos cuya matricula sea "plate" y que pertenezcan a la corporaraciòn indicada en el userRequest.]]></description>
+         <description><![CDATA[Devuelve un listado de vehiculos cuya matricula sea "plate" y que pertenezcan a la corporaraciÃ²n indicada en el userRequest.]]></description>
          <ejb-name>VehicleReport</ejb-name>
          <method-intf>Remote</method-intf>
          <method-name>findVehicleByPlateWithRepeats</method-name>
@@ -8580,7 +8578,7 @@
          <role-name>drivercreateevent</role-name>
          <role-name>eventupload</role-name>
       <method >
-         <description><![CDATA[Devuelve un listado de vehiculos cuya matricula sea "plate" y que pertenezcan a la corporaraciòn indicada en el userRequest.]]></description>
+         <description><![CDATA[Devuelve un listado de vehiculos cuya matricula sea "plate" y que pertenezcan a la corporaraciÃ²n indicada en el userRequest.]]></description>
          <ejb-name>VehicleReport</ejb-name>
          <method-intf>Local</method-intf>
          <method-name>findVehiclesByPlate</method-name>
@@ -8599,7 +8597,7 @@
          <role-name>drivercreateevent</role-name>
          <role-name>eventupload</role-name>
       <method >
-         <description><![CDATA[Devuelve un listado de vehiculos cuya matricula sea "plate" y que pertenezcan a la corporaraciòn indicada en el userRequest.]]></description>
+         <description><![CDATA[Devuelve un listado de vehiculos cuya matricula sea "plate" y que pertenezcan a la corporaraciÃ²n indicada en el userRequest.]]></description>
          <ejb-name>VehicleReport</ejb-name>
          <method-intf>Remote</method-intf>
          <method-name>findVehiclesByPlate</method-name>
@@ -8655,6 +8653,7 @@
          <role-name>finecreate</role-name>
          <role-name>drivervehicleedit</role-name>
          <role-name>drivercreateevent</role-name>
+         <role-name>dpachecklist</role-name>
       <method >
          <description><![CDATA[]]></description>
          <ejb-name>VehicleReport</ejb-name>
@@ -8675,6 +8674,7 @@
          <role-name>finecreate</role-name>
          <role-name>drivervehicleedit</role-name>
          <role-name>drivercreateevent</role-name>
+         <role-name>dpachecklist</role-name>
       <method >
          <description><![CDATA[]]></description>
          <ejb-name>VehicleReport</ejb-name>
@@ -9372,7 +9372,7 @@
          <role-name>administrator</role-name>
          <role-name>query</role-name>
       <method >
-         <description><![CDATA[Devuelve los conductores que no hicieron la Evaluación en Cabina para Vehiculos Pesados (Forestales)]]></description>
+         <description><![CDATA[Devuelve los conductores que no hicieron la EvaluaciÃ³n en Cabina para Vehiculos Pesados (Forestales)]]></description>
          <ejb-name>VehicleReport</ejb-name>
          <method-intf>Local</method-intf>
          <method-name>vehicleWithoutPursuitRoute</method-name>
@@ -9394,7 +9394,7 @@
          <role-name>administrator</role-name>
          <role-name>query</role-name>
       <method >
-         <description><![CDATA[Devuelve los conductores que no hicieron la Evaluación en Cabina para Vehiculos Pesados (Forestales)]]></description>
+         <description><![CDATA[Devuelve los conductores que no hicieron la EvaluaciÃ³n en Cabina para Vehiculos Pesados (Forestales)]]></description>
          <ejb-name>VehicleReport</ejb-name>
          <method-intf>Remote</method-intf>
          <method-name>vehicleWithoutPursuitRoute</method-name>
@@ -15410,7 +15410,7 @@
          <role-name>fleetview</role-name>
          <role-name>driverodometer</role-name>
       <method >
-         <description><![CDATA[Trae los vehículos asociados a una flota]]></description>
+         <description><![CDATA[Trae los vehÃ­culos asociados a una flota]]></description>
          <ejb-name>FleetReportFacade</ejb-name>
          <method-intf>Local</method-intf>
          <method-name>findFleetVehicles</method-name>
@@ -15426,7 +15426,7 @@
          <role-name>fleetview</role-name>
          <role-name>driverodometer</role-name>
       <method >
-         <description><![CDATA[Trae los vehículos asociados a una flota]]></description>
+         <description><![CDATA[Trae los vehÃ­culos asociados a una flota]]></description>
          <ejb-name>FleetReportFacade</ejb-name>
          <method-intf>Remote</method-intf>
          <method-name>findFleetVehicles</method-name>
@@ -18645,7 +18645,6 @@
          <role-name>vehicleupdate</role-name>
          <role-name>vehicledelete</role-name>
          <role-name>vehiclecreate</role-name>
-         <role-name>dpachecklist</role-name>
          <role-name>vehicleview</role-name>
       <method >
          <description><![CDATA[]]></description>
@@ -18686,8 +18685,8 @@
          <role-name>vehicleupdate</role-name>
          <role-name>vehicledelete</role-name>
          <role-name>vehiclecreate</role-name>
-         <role-name>dpachecklist</role-name>
          <role-name>vehicleview</role-name>
+         <role-name>dpachecklist</role-name>
       <method >
          <description><![CDATA[]]></description>
          <ejb-name>CorporationReport</ejb-name>
@@ -18707,8 +18706,8 @@
          <role-name>vehicleupdate</role-name>
          <role-name>vehicledelete</role-name>
          <role-name>vehiclecreate</role-name>
-         <role-name>dpachecklist</role-name>
          <role-name>vehicleview</role-name>
+         <role-name>dpachecklist</role-name>
       <method >
          <description><![CDATA[]]></description>
          <ejb-name>CorporationReport</ejb-name>
@@ -24820,7 +24819,7 @@
          <role-name>query</role-name>
          <role-name>cepascheduleactivityview</role-name>
       <method >
-         <description><![CDATA[Devuelve los conductores que no hicieron la Evaluación en Cabina para Vehiculos Pesados (Forestales)]]></description>
+         <description><![CDATA[Devuelve los conductores que no hicieron la EvaluaciÃ³n en Cabina para Vehiculos Pesados (Forestales)]]></description>
          <ejb-name>ActivityReport</ejb-name>
          <method-intf>Remote</method-intf>
          <method-name>driversWithOutEC</method-name>
@@ -27527,116 +27526,6 @@
    <method-permission >
       <description><![CDATA[description not supported yet by ejbdoclet]]></description>
          <role-name>administrator</role-name>
-         <role-name>vehicledelete</role-name>
-      <method >
-         <description><![CDATA[]]></description>
-         <ejb-name>VehicleABM</ejb-name>
-         <method-intf>Local</method-intf>
-         <method-name>vehicleDelete</method-name>
-         <method-params>
-            <method-param>communication.vehicle.tables.VehicleData</method-param>
-            <method-param>communication.administration.user.UserSessionData</method-param>
-            <method-param>java.lang.String</method-param>
-         </method-params>
-      </method>
-   </method-permission>
-   <method-permission >
-      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
-         <role-name>administrator</role-name>
-         <role-name>vehicledelete</role-name>
-      <method >
-         <description><![CDATA[]]></description>
-         <ejb-name>VehicleABM</ejb-name>
-         <method-intf>Remote</method-intf>
-         <method-name>vehicleDelete</method-name>
-         <method-params>
-            <method-param>communication.vehicle.tables.VehicleData</method-param>
-            <method-param>communication.administration.user.UserSessionData</method-param>
-            <method-param>java.lang.String</method-param>
-         </method-params>
-      </method>
-   </method-permission>
-   <method-permission >
-      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
-         <role-name>administrator</role-name>
-         <role-name>vehicleupdate</role-name>
-         <role-name>drivervehicleupdate</role-name>
-         <role-name>dpachecklist</role-name>
-      <method >
-         <description><![CDATA[]]></description>
-         <ejb-name>VehicleABM</ejb-name>
-         <method-intf>Local</method-intf>
-         <method-name>vehicleUpdate</method-name>
-         <method-params>
-            <method-param>communication.vehicle.tables.VehicleData</method-param>
-            <method-param>communication.administration.user.UserSessionData</method-param>
-            <method-param>java.lang.String</method-param>
-            <method-param>int</method-param>
-         </method-params>
-      </method>
-   </method-permission>
-   <method-permission >
-      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
-         <role-name>administrator</role-name>
-         <role-name>vehicleupdate</role-name>
-         <role-name>drivervehicleupdate</role-name>
-         <role-name>dpachecklist</role-name>
-      <method >
-         <description><![CDATA[]]></description>
-         <ejb-name>VehicleABM</ejb-name>
-         <method-intf>Remote</method-intf>
-         <method-name>vehicleUpdate</method-name>
-         <method-params>
-            <method-param>communication.vehicle.tables.VehicleData</method-param>
-            <method-param>communication.administration.user.UserSessionData</method-param>
-            <method-param>java.lang.String</method-param>
-            <method-param>int</method-param>
-         </method-params>
-      </method>
-   </method-permission>
-   <method-permission >
-      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
-         <role-name>administrator</role-name>
-         <role-name>cepascheduleactivitycreate</role-name>
-         <role-name>cdactivitycreate</role-name>
-         <role-name>vehiclechecklist</role-name>
-         <role-name>dpachecklist</role-name>
-         <role-name>jjreporter</role-name>
-      <method >
-         <description><![CDATA[]]></description>
-         <ejb-name>VehicleABM</ejb-name>
-         <method-intf>Local</method-intf>
-         <method-name>createOrUpdateVehicleCheck</method-name>
-         <method-params>
-            <method-param>communication.vehicle.tables.VehicleCheckData</method-param>
-            <method-param>java.lang.String</method-param>
-            <method-param>communication.administration.user.UserSessionData</method-param>
-         </method-params>
-      </method>
-   </method-permission>
-   <method-permission >
-      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
-         <role-name>administrator</role-name>
-         <role-name>cepascheduleactivitycreate</role-name>
-         <role-name>cdactivitycreate</role-name>
-         <role-name>vehiclechecklist</role-name>
-         <role-name>dpachecklist</role-name>
-         <role-name>jjreporter</role-name>
-      <method >
-         <description><![CDATA[]]></description>
-         <ejb-name>VehicleABM</ejb-name>
-         <method-intf>Remote</method-intf>
-         <method-name>createOrUpdateVehicleCheck</method-name>
-         <method-params>
-            <method-param>communication.vehicle.tables.VehicleCheckData</method-param>
-            <method-param>java.lang.String</method-param>
-            <method-param>communication.administration.user.UserSessionData</method-param>
-         </method-params>
-      </method>
-   </method-permission>
-   <method-permission >
-      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
-         <role-name>administrator</role-name>
          <role-name>cepascheduleactivitycreate</role-name>
          <role-name>cdactivitycreate</role-name>
          <role-name>vehiclechecklist</role-name>
@@ -27653,23 +27542,135 @@
          </method-params>
       </method>
    </method-permission>
-	<method-permission>
-	  <role-name>administrator</role-name>
-	  <role-name>cepascheduleactivitycreate</role-name>
-	  <role-name>cdactivitycreate</role-name>
-	  <role-name>vehiclechecklist</role-name>
-	  <role-name>dpachecklist</role-name>
-	  <role-name>jjreporter</role-name>
-	  <method>
-	      <ejb-name>VehicleABM</ejb-name>
-	      <method-intf>Remote</method-intf>
-	      <method-name>instructorActivityCreate</method-name>
-	      <method-params>
-	          <method-param>communication.vehicle.tables.InstructorActivityData</method-param>
-	          <method-param>communication.administration.user.UserSessionData</method-param>
-	      </method-params>
-	  </method>
-	</method-permission>
+   <method-permission >
+      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
+         <role-name>administrator</role-name>
+         <role-name>cepascheduleactivitycreate</role-name>
+         <role-name>cdactivitycreate</role-name>
+         <role-name>vehiclechecklist</role-name>
+         <role-name>dpachecklist</role-name>
+         <role-name>jjreporter</role-name>
+      <method >
+         <description><![CDATA[]]></description>
+         <ejb-name>VehicleABM</ejb-name>
+         <method-intf>Remote</method-intf>
+         <method-name>instructorActivityCreate</method-name>
+         <method-params>
+            <method-param>communication.vehicle.tables.InstructorActivityData</method-param>
+            <method-param>communication.administration.user.UserSessionData</method-param>
+         </method-params>
+      </method>
+   </method-permission>
+   <method-permission >
+      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
+         <role-name>administrator</role-name>
+         <role-name>vehicledelete</role-name>
+      <method >
+         <description><![CDATA[]]></description>
+         <ejb-name>VehicleABM</ejb-name>
+         <method-intf>Local</method-intf>
+         <method-name>vehicleDelete</method-name>
+         <method-params>
+            <method-param>communication.vehicle.tables.VehicleData</method-param>
+            <method-param>communication.administration.user.UserSessionData</method-param>
+            <method-param>java.lang.String</method-param>
+         </method-params>
+      </method>
+   </method-permission>
+   <method-permission >
+      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
+         <role-name>administrator</role-name>
+         <role-name>vehicledelete</role-name>
+      <method >
+         <description><![CDATA[]]></description>
+         <ejb-name>VehicleABM</ejb-name>
+         <method-intf>Remote</method-intf>
+         <method-name>vehicleDelete</method-name>
+         <method-params>
+            <method-param>communication.vehicle.tables.VehicleData</method-param>
+            <method-param>communication.administration.user.UserSessionData</method-param>
+            <method-param>java.lang.String</method-param>
+         </method-params>
+      </method>
+   </method-permission>
+   <method-permission >
+      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
+         <role-name>administrator</role-name>
+         <role-name>vehicleupdate</role-name>
+         <role-name>drivervehicleupdate</role-name>
+         <role-name>dpachecklist</role-name>
+      <method >
+         <description><![CDATA[]]></description>
+         <ejb-name>VehicleABM</ejb-name>
+         <method-intf>Local</method-intf>
+         <method-name>vehicleUpdate</method-name>
+         <method-params>
+            <method-param>communication.vehicle.tables.VehicleData</method-param>
+            <method-param>communication.administration.user.UserSessionData</method-param>
+            <method-param>java.lang.String</method-param>
+            <method-param>int</method-param>
+         </method-params>
+      </method>
+   </method-permission>
+   <method-permission >
+      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
+         <role-name>administrator</role-name>
+         <role-name>vehicleupdate</role-name>
+         <role-name>drivervehicleupdate</role-name>
+         <role-name>dpachecklist</role-name>
+      <method >
+         <description><![CDATA[]]></description>
+         <ejb-name>VehicleABM</ejb-name>
+         <method-intf>Remote</method-intf>
+         <method-name>vehicleUpdate</method-name>
+         <method-params>
+            <method-param>communication.vehicle.tables.VehicleData</method-param>
+            <method-param>communication.administration.user.UserSessionData</method-param>
+            <method-param>java.lang.String</method-param>
+            <method-param>int</method-param>
+         </method-params>
+      </method>
+   </method-permission>
+   <method-permission >
+      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
+         <role-name>administrator</role-name>
+         <role-name>cepascheduleactivitycreate</role-name>
+         <role-name>cdactivitycreate</role-name>
+         <role-name>vehiclechecklist</role-name>
+         <role-name>dpachecklist</role-name>
+         <role-name>jjreporter</role-name>
+      <method >
+         <description><![CDATA[]]></description>
+         <ejb-name>VehicleABM</ejb-name>
+         <method-intf>Local</method-intf>
+         <method-name>createOrUpdateVehicleCheck</method-name>
+         <method-params>
+            <method-param>communication.vehicle.tables.VehicleCheckData</method-param>
+            <method-param>java.lang.String</method-param>
+            <method-param>communication.administration.user.UserSessionData</method-param>
+         </method-params>
+      </method>
+   </method-permission>
+   <method-permission >
+      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
+         <role-name>administrator</role-name>
+         <role-name>cepascheduleactivitycreate</role-name>
+         <role-name>cdactivitycreate</role-name>
+         <role-name>vehiclechecklist</role-name>
+         <role-name>dpachecklist</role-name>
+         <role-name>jjreporter</role-name>
+      <method >
+         <description><![CDATA[]]></description>
+         <ejb-name>VehicleABM</ejb-name>
+         <method-intf>Remote</method-intf>
+         <method-name>createOrUpdateVehicleCheck</method-name>
+         <method-params>
+            <method-param>communication.vehicle.tables.VehicleCheckData</method-param>
+            <method-param>java.lang.String</method-param>
+            <method-param>communication.administration.user.UserSessionData</method-param>
+         </method-params>
+      </method>
+   </method-permission>
    <method-permission >
       <description><![CDATA[description not supported yet by ejbdoclet]]></description>
          <role-name>administrator</role-name>
@@ -29922,46 +29923,6 @@
       <description><![CDATA[description not supported yet by ejbdoclet]]></description>
          <role-name>administrator</role-name>
          <role-name>eventcreate</role-name>
-         <role-name>vehicleview</role-name>
-         <role-name>drivervehicleview</role-name>
-         <role-name>driverodometer</role-name>
-         <role-name>dpachecklist</role-name>
-         <role-name>systemaccess</role-name>
-      <method >
-         <description><![CDATA[]]></description>
-         <ejb-name>VehicleReportFacade</ejb-name>
-         <method-intf>Local</method-intf>
-         <method-name>findInstructorActivityListByInstructor</method-name>
-         <method-params>
-            <method-param>java.lang.String</method-param>
-            <method-param>communication.administration.user.UserSessionData</method-param>
-         </method-params>
-      </method>
-   </method-permission>
-   <method-permission >
-      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
-         <role-name>administrator</role-name>
-         <role-name>eventcreate</role-name>
-         <role-name>vehicleview</role-name>
-         <role-name>drivervehicleview</role-name>
-         <role-name>driverodometer</role-name>
-         <role-name>dpachecklist</role-name>
-         <role-name>systemaccess</role-name>
-      <method >
-         <description><![CDATA[]]></description>
-         <ejb-name>VehicleReportFacade</ejb-name>
-         <method-intf>Remote</method-intf>
-         <method-name>findInstructorActivityListByInstructor</method-name>
-         <method-params>
-            <method-param>java.lang.String</method-param>
-            <method-param>communication.administration.user.UserSessionData</method-param>
-         </method-params>
-      </method>
-   </method-permission>
-   <method-permission >
-      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
-         <role-name>administrator</role-name>
-         <role-name>eventcreate</role-name>
          <role-name>finecreate</role-name>
          <role-name>dpachecklist</role-name>
          <role-name>drivervehicleedit</role-name>
@@ -30965,7 +30926,7 @@
          <role-name>drivervehicleedit</role-name>
          <role-name>eventupload</role-name>
       <method >
-         <description><![CDATA[Devuelve un listado de vehiculos cuya matricula sea "plate" y que pertenezcan a la corporaraciòn indicada en el userSessionData.]]></description>
+         <description><![CDATA[Devuelve un listado de vehiculos cuya matricula sea "plate" y que pertenezcan a la corporaraciÃ²n indicada en el userSessionData.]]></description>
          <ejb-name>VehicleReportFacade</ejb-name>
          <method-intf>Local</method-intf>
          <method-name>findVehicleByPlateWithRepeats</method-name>
@@ -30984,7 +30945,7 @@
          <role-name>drivervehicleedit</role-name>
          <role-name>eventupload</role-name>
       <method >
-         <description><![CDATA[Devuelve un listado de vehiculos cuya matricula sea "plate" y que pertenezcan a la corporaraciòn indicada en el userSessionData.]]></description>
+         <description><![CDATA[Devuelve un listado de vehiculos cuya matricula sea "plate" y que pertenezcan a la corporaraciÃ²n indicada en el userSessionData.]]></description>
          <ejb-name>VehicleReportFacade</ejb-name>
          <method-intf>Remote</method-intf>
          <method-name>findVehicleByPlateWithRepeats</method-name>
@@ -31003,7 +30964,7 @@
          <role-name>drivervehicleedit</role-name>
          <role-name>eventupload</role-name>
       <method >
-         <description><![CDATA[Devuelve un listado de vehiculos cuya matricula sea "plate" y que pertenezcan a la corporaraciòn indicada en el userSessionData.]]></description>
+         <description><![CDATA[Devuelve un listado de vehiculos cuya matricula sea "plate" y que pertenezcan a la corporaraciÃ²n indicada en el userSessionData.]]></description>
          <ejb-name>VehicleReportFacade</ejb-name>
          <method-intf>Local</method-intf>
          <method-name>findVehiclesByPlate</method-name>
@@ -31022,7 +30983,7 @@
          <role-name>drivervehicleedit</role-name>
          <role-name>eventupload</role-name>
       <method >
-         <description><![CDATA[Devuelve un listado de vehiculos cuya matricula sea "plate" y que pertenezcan a la corporaraciòn indicada en el userSessionData.]]></description>
+         <description><![CDATA[Devuelve un listado de vehiculos cuya matricula sea "plate" y que pertenezcan a la corporaraciÃ²n indicada en el userSessionData.]]></description>
          <ejb-name>VehicleReportFacade</ejb-name>
          <method-intf>Remote</method-intf>
          <method-name>findVehiclesByPlate</method-name>
@@ -31063,86 +31024,6 @@
          <method-intf>Remote</method-intf>
          <method-name>findLastVehicleCheck</method-name>
          <method-params>
-            <method-param>java.lang.Integer</method-param>
-            <method-param>communication.administration.user.UserSessionData</method-param>
-         </method-params>
-      </method>
-   </method-permission>
-   <method-permission >
-      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
-         <role-name>administrator</role-name>
-         <role-name>dpachecklist</role-name>
-         <role-name>eventcreate</role-name>
-         <role-name>finecreate</role-name>
-         <role-name>vehicleedit</role-name>
-         <role-name>drivervehicleedit</role-name>
-      <method >
-         <description><![CDATA[]]></description>
-         <ejb-name>VehicleReportFacade</ejb-name>
-         <method-intf>Local</method-intf>
-         <method-name>hasPendingCheck</method-name>
-         <method-params>
-            <method-param>java.lang.Integer</method-param>
-            <method-param>java.lang.Integer</method-param>
-            <method-param>communication.administration.user.UserSessionData</method-param>
-         </method-params>
-      </method>
-   </method-permission>
-   <method-permission >
-      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
-         <role-name>administrator</role-name>
-         <role-name>eventcreate</role-name>
-         <role-name>dpachecklist</role-name>
-         <role-name>finecreate</role-name>
-         <role-name>vehicleedit</role-name>
-         <role-name>drivervehicleedit</role-name>
-      <method >
-         <description><![CDATA[]]></description>
-         <ejb-name>VehicleReportFacade</ejb-name>
-         <method-intf>Remote</method-intf>
-         <method-name>hasPendingCheck</method-name>
-         <method-params>
-            <method-param>java.lang.Integer</method-param>
-            <method-param>java.lang.Integer</method-param>
-            <method-param>communication.administration.user.UserSessionData</method-param>
-         </method-params>
-      </method>
-   </method-permission>
-   <method-permission >
-      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
-         <role-name>administrator</role-name>
-         <role-name>dpachecklist</role-name>
-         <role-name>eventcreate</role-name>
-         <role-name>finecreate</role-name>
-         <role-name>vehicleedit</role-name>
-         <role-name>drivervehicleedit</role-name>
-      <method >
-         <description><![CDATA[]]></description>
-         <ejb-name>VehicleReportFacade</ejb-name>
-         <method-intf>Local</method-intf>
-         <method-name>findLastVehicleCheckByCheckId</method-name>
-         <method-params>
-            <method-param>java.lang.Integer</method-param>
-            <method-param>java.lang.Integer</method-param>
-            <method-param>communication.administration.user.UserSessionData</method-param>
-         </method-params>
-      </method>
-   </method-permission>
-   <method-permission >
-      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
-         <role-name>administrator</role-name>
-         <role-name>eventcreate</role-name>
-         <role-name>dpachecklist</role-name>
-         <role-name>finecreate</role-name>
-         <role-name>vehicleedit</role-name>
-         <role-name>drivervehicleedit</role-name>
-      <method >
-         <description><![CDATA[]]></description>
-         <ejb-name>VehicleReportFacade</ejb-name>
-         <method-intf>Remote</method-intf>
-         <method-name>findLastVehicleCheckByCheckId</method-name>
-         <method-params>
-            <method-param>java.lang.Integer</method-param>
             <method-param>java.lang.Integer</method-param>
             <method-param>communication.administration.user.UserSessionData</method-param>
          </method-params>
@@ -33613,6 +33494,25 @@
    <method-permission >
       <description><![CDATA[description not supported yet by ejbdoclet]]></description>
          <role-name>administrator</role-name>
+         <role-name>vehiclecreate</role-name>
+         <role-name>drivercreatevehicle</role-name>
+         <role-name>vehiclechecklist</role-name>
+         <role-name>dpachecklist</role-name>
+         <role-name>jjreporter</role-name>
+      <method >
+         <description><![CDATA[]]></description>
+         <ejb-name>VehicleABMFacade</ejb-name>
+         <method-intf>Remote</method-intf>
+         <method-name>instructorActivityCreate</method-name>
+         <method-params>
+            <method-param>communication.vehicle.tables.InstructorActivityData</method-param>
+            <method-param>communication.administration.user.UserSessionData</method-param>
+         </method-params>
+      </method>
+   </method-permission>
+   <method-permission >
+      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
+         <role-name>administrator</role-name>
          <role-name>vehicledelete</role-name>
       <method >
          <description><![CDATA[]]></description>
@@ -33741,25 +33641,6 @@
          <role-name>drivercreatevehicle</role-name>
          <role-name>vehiclechecklist</role-name>
          <role-name>dpachecklist</role-name>
-         <role-name>jjreporter</role-name>
-      <method >
-         <description><![CDATA[]]></description>
-         <ejb-name>VehicleABMFacade</ejb-name>
-         <method-intf>Remote</method-intf>
-         <method-name>instructorActivityCreate</method-name>
-         <method-params>
-            <method-param>communication.vehicle.tables.InstructorActivityData</method-param>
-            <method-param>communication.administration.user.UserSessionData</method-param>
-         </method-params>
-      </method>
-   </method-permission>
-   <method-permission >
-      <description><![CDATA[description not supported yet by ejbdoclet]]></description>
-         <role-name>administrator</role-name>
-         <role-name>vehiclecreate</role-name>
-         <role-name>drivercreatevehicle</role-name>
-         <role-name>vehiclechecklist</role-name>
-         <role-name>dpachecklist</role-name>
       <method >
          <description><![CDATA[]]></description>
          <ejb-name>VehicleABMFacade</ejb-name>
@@ -33774,7 +33655,6 @@
          </method-params>
       </method>
    </method-permission>
-   
    <method-permission >
       <description><![CDATA[description not supported yet by ejbdoclet]]></description>
          <role-name>administrator</role-name>
@@ -46111,8 +45991,8 @@
          <role-name>vehicleupdate</role-name>
          <role-name>vehicledelete</role-name>
          <role-name>vehiclecreate</role-name>
-         <role-name>dpachecklist</role-name>
          <role-name>vehicleview</role-name>
+         <role-name>dpachecklist</role-name>
       <method >
          <description><![CDATA[]]></description>
          <ejb-name>CorporationReportFacade</ejb-name>
@@ -46132,8 +46012,8 @@
          <role-name>vehicleupdate</role-name>
          <role-name>vehicledelete</role-name>
          <role-name>vehiclecreate</role-name>
-         <role-name>dpachecklist</role-name>
          <role-name>vehicleview</role-name>
+         <role-name>dpachecklist</role-name>
       <method >
          <description><![CDATA[]]></description>
          <ejb-name>CorporationReportFacade</ejb-name>

@@ -23,6 +23,7 @@
 <%@page import="communication.activity.tables.CheckListData"%>
 <%@page import="communication.security.SecurityConstants"%>
 <%@page import="presentation.translator.web.util.*"%>
+<%@page import="communication.administration.corporation.util.DPAUnconformityItemFilter" %>
 <%@ taglib uri="/WEB-INF/struts-html.tld"
         prefix="html"
 %>
@@ -39,7 +40,11 @@
 	}
 	VehicleData data = sys.getVehicleReportFacade().findVehicleByPrimaryKey(new Integer(id), userSessionData);
 	
-	boolean hasPendingCheck = sys.getVehicleReportFacade().hasPendingCheck(new Integer(id), 80, userSessionData);
+	DPAUnconformityItemFilter filter=new DPAUnconformityItemFilter();
+	filter.setId(Integer.valueOf(id));
+	Collection unconformities=sys.getCorporationReportFacade().exportUnconformityItemsCheckList(sys.getUserSessionData(), sys.getText(),null, filter);
+	
+	boolean hasPendingCheck = unconformities.size() != 0;
 	
 	Collection trade = new LinkedList();
 	trade.add(new OptionItem(messages.getText("generic.messages.select"),""));                
@@ -512,7 +517,7 @@
 							<b>Chequeos vehiculares</b>
 						</label>
 						<label for="q5">
-							<%if (hasPendingCheck && (userSessionData.getFullName().contains("Test") || !SecurityConstants.isProductionServer())){%>
+							<%if (hasPendingCheck){%>
 							<input type="button" class="button"  value="Chequeo Vehicular" onClick="javascript:checkPending('80',<%=String.valueOf(data.getId())%>)"/>	
 								
 							<%}	else {	

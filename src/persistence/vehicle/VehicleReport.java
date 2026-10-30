@@ -16,12 +16,12 @@ public interface VehicleReport
    public boolean validateDeleteChecklist( java.lang.Integer idChecklist,communication.administration.user.UserSessionData userSessionData )
       throws java.lang.Exception, java.rmi.RemoteException;
 
+   public java.util.List findInstructorActivityListByInstructor( java.lang.String instructor,communication.administration.user.UserSessionData userSessionData )
+      throws java.lang.Exception, java.rmi.RemoteException;
+
    public communication.util.ListResult findList( java.lang.String value,communication.administration.user.UserSessionData userRequest,int attribute,int first,int count,int status )
       throws java.lang.Exception, java.rmi.RemoteException;
 
-   public java.util.List<communication.vehicle.tables.InstructorActivityData> findInstructorActivityListByInstructor( java.lang.String instructor,communication.administration.user.UserSessionData userSessionData )
-      throws java.lang.Exception, java.rmi.RemoteException;
-   
    public java.util.List findVehicleByLike( communication.administration.user.UserSessionData userRequest,int attribute,java.lang.String value,int first,int count )
       throws java.lang.Exception, java.rmi.RemoteException;
 
@@ -56,7 +56,7 @@ public interface VehicleReport
       throws java.lang.Exception, java.rmi.RemoteException;
 
    /**
-    * Devuelve una coleccion de objetos[] (date, driver) del log de vehìculos segun el id del vehiculo.
+    * Devuelve una coleccion de objetos[] (date, driver) del log de vehÃ¬culos segun el id del vehiculo.
     * @param idVehicle
     * @return     */
    public java.util.Collection findVehicleDriversLogList( java.lang.Integer idVehicle,communication.administration.user.UserSessionData userSessionData )
@@ -96,14 +96,14 @@ public interface VehicleReport
       throws java.lang.Exception, java.rmi.RemoteException;
 
    /**
-    * Devuelve un listado de vehiculos cuya matricula sea "plate" y que pertenezcan a la corporaraciòn indicada en el userRequest. "With Repeats" significa que devuelve todos los que encuentre con esa placa, no solo el primero.
+    * Devuelve un listado de vehiculos cuya matricula sea "plate" y que pertenezcan a la corporaraciÃ²n indicada en el userRequest. "With Repeats" significa que devuelve todos los que encuentre con esa placa, no solo el primero.
     * @throws Exception
     */
    public communication.util.ListResult findVehicleByPlateWithRepeats( java.lang.String plate,communication.administration.user.UserSessionData userRequest )
       throws java.lang.Exception, java.rmi.RemoteException;
 
    /**
-    * Devuelve un listado de vehiculos cuya matricula sea "plate" y que pertenezcan a la corporaraciòn indicada en el userRequest. "With Repeats" significa que devuelve todos los que encuentre con esa placa, no solo el primero.
+    * Devuelve un listado de vehiculos cuya matricula sea "plate" y que pertenezcan a la corporaraciÃ²n indicada en el userRequest. "With Repeats" significa que devuelve todos los que encuentre con esa placa, no solo el primero.
     * @throws Exception
     */
    public communication.util.ListResult findVehiclesByPlate( java.lang.String plate,communication.administration.user.UserSessionData userRequest )
@@ -112,9 +112,9 @@ public interface VehicleReport
    public communication.vehicle.tables.VehicleCheckData findLastVehicleCheck( java.lang.Integer id,communication.administration.user.UserSessionData userRequest )
       throws java.lang.Exception, java.rmi.RemoteException;
 
-   public communication.vehicle.tables.VehicleCheckData findLastVehicleCheckByCheckId( java.lang.Integer vehicleId, java.lang.Integer checkId, communication.administration.user.UserSessionData userRequest )
-		      throws java.lang.Exception, java.rmi.RemoteException;
-   
+   public communication.vehicle.tables.VehicleCheckData findLastVehicleCheckByCheckId( java.lang.Integer vehicleId,java.lang.Integer checkId,communication.administration.user.UserSessionData userRequest )
+      throws java.lang.Exception, java.rmi.RemoteException;
+
    public java.util.Date findLastVehicleCheckDate( java.lang.Integer id,communication.administration.user.UserSessionData userRequest )
       throws java.lang.Exception, java.rmi.RemoteException;
 
@@ -164,7 +164,7 @@ public interface VehicleReport
       throws java.lang.Exception, java.rmi.RemoteException;
 
    /**
-    * Devuelve los conductores que no hicieron la Evaluación en Cabina para Vehiculos Pesados (Forestales)
+    * Devuelve los conductores que no hicieron la EvaluaciÃ³n en Cabina para Vehiculos Pesados (Forestales)
     * @param userRequest - logged user
     * @param type - type of activity
     * @param first - first index of the search to return
